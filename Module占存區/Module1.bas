@@ -66,8 +66,8 @@ Select Case PartString_Type
          Type_09 fullString
     ' Case "10"
         ' Type_10 fullString
-    ' Case "11"
-        ' Type_11 fullString
+    Case "11"
+        Type_11 fullString
     ' Case "12"
         ' Type_12 fullString
     ' Case "13"

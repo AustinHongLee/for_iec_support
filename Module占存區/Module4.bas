@@ -368,7 +368,147 @@ Sub Type_09(ByVal fullString As String)
         .Cells(i, "Q").value = "螺絲類"
     End With
 End Sub
+Sub Type_11(ByVal fullString As String)
+    Dim PartString_Type As String
+    Dim PipeSize As String
+    Dim letter As String
+    Dim pi As Double
+    Dim Support_Pipe_Size As String
+    Dim Pipe_ThickNess_mm As String
+    Dim Main_Pipe_Length As Double
+    Dim Support_Pipe_Length As Double
+    Dim anotherbuttompipeSize As String
+    Dim anotherbuttompipeThickNess_mm As String
+    Dim anotherbuttompipelegth As Double
+    
+    
+    Set ws_M42 = Worksheets("Weight_Analysis")
+    Set ws_Pipe_Table = Worksheets("Pipe_Table")
+    Set ws = Worksheets("Weight_Analysis")
+          
 
+    '-------------------------------抽取區-------------------------------------------
+    '給 Support Line Size "A" 數字
+    PartString_Type = GetPartOfString(fullString, 2, "-")
+    PipeSize = Replace(PartString_Type, "B", "")
+    
+    '抽取M42的標記
+    letter = GetPartOfString(fullString, 3, "-")
+    letter = Right(letter, 1)
+    
+    '抽取H值
+    H_Value = Replace(GetPartOfString(fullString, 3, "-"), letter, "")
+    
+    '抽取"D"值 - Machine Bolt Length
+    D_Value = GetPartOfString(fullString, 4, "-")
+    
+    
+    ' 抽取L值
+    Support_Pipe_Size = "'1.5"
+    Pipe_ThickNess_mm = "SCH.80"
+            
+    Select Case PipeSize
+        Case 2
+        L_Value = 71
+        Case 3
+        L_Value = 81
+        Case 4
+        L_Value = 97
+        Case 6
+        L_Value = 129
+        Case 8
+        L_Value = 162
+        Case 10
+        L_Value = 195
+    Case Else
+        Exit Sub
+    End Select
+    '-------------------------------整理區-------------------------------------------
+    'Note 4 - another buttom pipe
+    MachineBoltLength = 300
+    anotherbuttompipelegth = H_Value - 100 - (MachineBoltLength - 9)
+    anotherbuttompipeSize = "2"
+    anotherbuttompipeThickNess_mm = "SCH.80"
+    'Spring dim
+    If PipeSize <= 4 Then
+        Spring_Matirial = "A229"
+        Spring_Wire = "12"
+        Spring_ID = "46"
+        Spring_Active_Coils = "4"
+        Spring_inactive_Coils = "2"
+        Spring_constant = 25
+        Spring_Free_Length = 100
+        Spring_max_recommended_deflection = 22
+    ElseIf PipeSize > 4 Then
+        Spring_Matirial = "A229"
+        Spring_Wire = "14"
+        Spring_ID = "46"
+        Spring_Active_Coils = "4"
+        Spring_inactive_Coils = "2"
+        Spring_constant = 42
+        Spring_Free_Length = 115
+        Spring_max_recommended_deflection = 24
+    End If
+
+
+
+
+    '-------------------------------導入區-------------------------------------------
+    '主管長度 - 通常為SUS304
+    Main_Pipe_Length = L_Value + 100
+    AddPipeEntry Support_Pipe_Size, Pipe_ThickNess_mm, Main_Pipe_Length, "SUS304"
+    '支管長度 - 通常為"A53Gr.B"
+    AddPipeEntry anotherbuttompipeSize, anotherbuttompipeThickNess_mm, anotherbuttompipelegth, "A53Gr.B"
+    ' 底板用
+    PipeSize = Replace(Support_Pipe_Size, "'", "")
+    PerformActionByLetter letter, PipeSize
+    ' 導入11-Tpye特有屬性 : Machine Bolt
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "MACHINE BOLT"
+        .Cells(i, "D").value = "1-5/8""""*300L"
+        .Cells(i, "G").value = "A307Gr.B(熱浸鋅)"
+        .Cells(i, "H").value = 1
+        .Cells(i, "J").value = 20 ' 假設每個螺栓的單個重量是20（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "螺絲類"
+    End With
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "washer"
+        .Cells(i, "D").value = "92*9t*50"
+        .Cells(i, "G").value = "A307Gr.B(熱浸鋅)"
+        .Cells(i, "H").value = 2
+        .Cells(i, "J").value = 1 ' 假設每個螺栓的單個重量是1（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "素材類"
+    End With
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "Spring"
+        .Cells(i, "D").value = Spring_Wire & "W" & Spring_ID & "ID"
+        .Cells(i, "G").value = Spring_Matirial
+        .Cells(i, "H").value = 2
+        .Cells(i, "J").value = 1 ' 假設每個螺栓的單個重量是1（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "素材類"
+    End With
+End Sub
 Sub Type_14(ByVal fullString As String)
     '範例格式A : 14-2B-1005
     
