@@ -115,7 +115,7 @@ Sub clear_contents()
     Set ws = Worksheets("List_Table")
     
     ' Find the last row with data in column A
-    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.count, "A").End(xlUp).Row
     
     ' Set the range to clear
     Set Clear_Rng = ws.Range("A2:A" & lastRow)

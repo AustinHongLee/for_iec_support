@@ -2255,7 +2255,93 @@ Dim Plate_Size As String                            ' 存儲鋼板尺寸的字符串，格式
     MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name, MatL
 End Sub
 
+Sub Type_51(ByVal fullString As String)
+    '範例格式A : 51-2B
+    '2B  = Line Size
 
+Dim Ssize As String
+Dim M As String
+Dim H As String
+
+Dim MatL As String                                 ' 材料類型，可以是碳鋼、合金鋼或不銹鋼，根據括號內的標記確定
+Dim Plate_Size_a As Double                ' 鋼板的長度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim Plate_Size_b As Double                ' 鋼板的寬度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim Plate_Thickness As Double          ' 鋼板的厚度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim Plate_Name As String               ' 用於存儲生成的鋼板名稱，將在 MainAddPlate 子程序中使用
+    
+Dim SectionType As String
+Dim The_Section_Size As String
+Dim Total_Length As Double
+    '------------------------抽取第二部分並抽出正確尺寸------------------------
+    PartString_Type = GetPartOfString(fullString, 2)
+    Line_Size = Replace(PartString_Type, "B", "")
+    '------------------------判讀區域------------------------
+    If Line_Size <= "3" Then
+        M = "FlateBar"
+        Ssize = "50*9"
+    ElseIf Line_Size > "3" And Line_Size <= "6" Then
+        M = "Angle"
+        Ssize = "50*50*6"
+    ElseIf Line_Size > "6" Then
+        M = "Angle"
+        Ssize = "65*65*6"
+    End If
+    '------------------------獲取H值------------------------
+    Select Case Line_Size
+        Case "3/4"
+            H = "25"
+        Case "1"
+            H = "30"
+        Case "1 1/2"
+            H = "45"
+        Case "2"
+            H = "60"
+        Case "2 1/2"
+            H = "70"
+        Case "3"
+            H = "80"
+        Case "4"
+            H = "125"
+        Case "5"
+            H = "125"
+        Case "6"
+            H = "125"
+        Case "8"
+            H = "150"
+        Case "10"
+            H = "150"
+        Case "12"
+            H = "200"
+        Case "14"
+            H = "200"
+        Case "16"
+            H = "250"
+        Case "18"
+            H = "300"
+        Case "20"
+            H = "300"
+        Case "24"
+            H = "300"
+    End Select
+
+'------------------------分割出需要的值------------------------
+    If M = "FlateBar" Then
+            Plate_Size_a = Val(GetPartOfString(Ssize, 1, "*"))
+            Plate_Size_b = Val(GetPartOfString(Ssize, 1, "*"))
+            Plate_Thickness = Val(GetPartOfString(Ssize, 2, "*"))
+            Plate_Name = "FlateBar"
+            MatL = "A36/SS400"
+            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+        ElseIf M = "Angle" Then
+            The_Section_Size = Ssize
+            SectionType = M
+            Total_Length = H
+            AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
+            MatL = "A36/SS400"
+    End If
+
+
+End Sub
 Sub Type_52(ByVal fullString As String)
     '範例格式A : 52-2B(P)-A(A)-130-500
     '2B  = Line Size
@@ -2265,6 +2351,21 @@ Sub Type_52(ByVal fullString As String)
     '130 = HOPS = 130 IN MM IF ANY
     '500 = LOPS = 500 IN MM IF ANY
     
+        ' 指定編號的含義：
+        ' 52-2B(P)-A(A)-130-500：這是部件的設計編號，每部分的含義如下：
+        ' 52：代表型號編號。
+        ' 2B：代表線徑尺寸。
+        ' P：需要特別注意，可能表示材料的特殊屬性或處理方式。
+        ' A(A)：代表一個重要的分類或規格。
+        ' 130-500：可能指部件的尺寸或與特定設計相關的參數。
+        ' 修改 LOpS=500 (in mm) if any：如果有需要，可以修改 LOpS（管鞋長度）的標準值至 500 毫米。
+        ' 修改 HOpS=130 (in mm) if any：如果有需要，可以修改 HOpS（管鞋高度）的標準值至 130 毫米。
+        ' 參見 SHT D-80A 表 'A' 和表 'B'：具體細節或條款可以在文件的 D-80A 頁面的表 'A' 和表 'B' 中查找。
+        ' 組件最大長度：
+        ' 此部件的最大長度不應超過梁的寬度。
+        ' HOpS 和 LOpS 的定義：
+        ' HOpS：高度，指的是管鞋的高度。
+        ' LOpS：長度，指的是管鞋的長度。
     
     ' 宣告變數
     Dim pi As Double

@@ -17,7 +17,7 @@ Sub List_to_Analysis()
     Set ws_M42 = Worksheets("Weight_Analysis")
     Set ws_Weight_Analysis = Worksheets("Weight_Analysis")
     ' 標記運行時間
-    ws.Cells(4, "F") = Now()
+    ws.Cells(9, "F") = Now()
     ' 清除所有內容
     ws_M42.Cells.ClearContents
     
@@ -36,7 +36,7 @@ Sub List_to_Analysis()
         End With
     
     ' 修改了找尋最後一列的方法
-    Row_max = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    Row_max = ws.Cells(ws.Rows.count, "A").End(xlUp).Row
 
     ' 主處理循環
     For i = 2 To Row_max
@@ -122,6 +122,8 @@ Select Case PartString_Type
          Type_39 fullString
      Case "48"
          Type_48 fullString
+     Case "51"
+         Type_51 fullString
      Case "52"
          Type_52 fullString
     Case "108"
@@ -229,7 +231,7 @@ Function GetNextRowInColumnB() As Long
     Set ws = Worksheets("Weight_Analysis")
 
     ' 找到第 B 列的最後一行
-    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.count, "B").End(xlUp).Row
 
     ' 返回下一行的行號
     GetNextRowInColumnB = lastRow + 1
@@ -247,6 +249,19 @@ Function GetPartOfString(fullString As String, partIndex As Integer, Optional sp
         GetPartOfString = "N/A" ' 如果索引無效，返回 "N/A"
     End If
 End Function
+Function CountCharacter(ByVal text As String, ByVal character As String) As Integer
+    Dim count As Integer
+    Dim i As Integer
+    
+    For i = 1 To Len(text)
+        If Mid(text, i, 1) = character Then
+            count = count + 1
+        End If
+    Next i
+    
+    CountCharacter = count
+End Function
+
 
 
 Function CalculatePipeWeight(Pipe_Dn_inch As Double, Pipe_Weight_thickness_mm As Double) As Double
@@ -461,7 +476,7 @@ Sub AddPlateEntry(PlateType As String, PipeSize As Variant)
     Set ws_M42 = Worksheets("M_42_Table")
 
     ' 找到列 B 的最後一行，並為新數據準備下一行
-    i = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row + 1
+    i = ws.Cells(ws.Rows.count, "B").End(xlUp).Row + 1
 
     ' 根據板子類型決定是否需要鑽孔
     Select Case PlateType
