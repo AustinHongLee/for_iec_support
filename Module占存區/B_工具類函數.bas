@@ -79,12 +79,12 @@ Function GetLookupValue(value As Variant) As Variant
     End If
 End Function
 
-Function GetPartOfString(fullString As String, partIndex As Integer, Optional splitLogic As String = "-") As String
+Function GetPartOfString(fullstring As String, partIndex As Integer, Optional splitLogic As String = "-") As String
     Dim splitString As Variant
     PrintStepCalculator "[Tool_Function-GetPartOfString] - 開始執行切割區字元函數"
-    PrintStepCalculator "[Tool_Function-GetPartOfString] - 目前的fullString是 : " & fullString & "目前的區域數是 : " & partIndex & " 憑切割字元為 : " & splitLogic
+    PrintStepCalculator "[Tool_Function-GetPartOfString] - 目前的fullString是 : " & fullstring & "目前的區域數是 : " & partIndex & " 憑切割字元為 : " & splitLogic
     ' 使用 Split 函數按指定分隔符分割字符串
-    splitString = Split(fullString, splitLogic)
+    splitString = Split(fullstring, splitLogic)
     
     ' 檢查 partIndex 是否有效（大於 0 且不超過分割後陣列的長度）
     If partIndex > 0 And partIndex <= UBound(splitString) + 1 Then
@@ -143,4 +143,17 @@ Function ExtractParts(fourthString As String) As Variant
         ExtractParts = Array(fourthString, "")
     End If
 End Function
+Function CleanPipeSize(PipeSize As Variant) As String
+    ' 用來進出管線計算用
+    ' 移除字符"B"和引號，如果存在
+    If InStr(PipeSize, "B") > 0 Then
+        PipeSize = Replace(PipeSize, "B", "")
+    End If
+    ' 從GetLookupValue獲取實際的值
+    PipeSize = GetLookupValue(PipeSize)
+    If InStr(PipeSize, "'") > 0 Then
+        PipeSize = Replace(PipeSize, "'", "")
+    End If
+    CleanPipeSize = PipeSize
 
+End Function

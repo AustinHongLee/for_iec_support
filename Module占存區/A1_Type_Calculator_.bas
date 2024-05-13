@@ -1,5 +1,5 @@
 Attribute VB_Name = "A1_Type_Calculator_"
-Sub Type_01(ByVal fullString As String)
+Sub Type_01(ByVal fullstring As String)
     Dim PartString_Type As String
     Dim PipeSize As String
     Dim letter As String
@@ -16,17 +16,17 @@ Sub Type_01(ByVal fullString As String)
 
     
     '給M42資料
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     PipeSize = Replace(PartString_Type, "B", "")
     
 
-    letter = GetThirdPartOfString(fullString)
+    letter = GetThirdPartOfString(fullstring)
     letter = Right(letter, 1)
     
 
     
     'Main_Pipe
-    Third_Length_export = Replace(GetThirdPartOfString(fullString), letter, "") * 100
+    Third_Length_export = Replace(GetThirdPartOfString(fullstring), letter, "") * 100
         ' 處理主管與輔助管的編制:
             
             Select Case PipeSize
@@ -129,7 +129,7 @@ End Select
     PipeSize = Replace(Support_Pipe_Size, "'", "")
     PerformActionByLetter letter, PipeSize
 End Sub
-Sub Type_05(ByVal fullString As String)
+Sub Type_05(ByVal fullstring As String)
     '範例格式A : 20-L50-05L
     Dim PartString_Type As String
     Dim PipeSize As String
@@ -143,7 +143,7 @@ Sub Type_05(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
     
     '區分出角鐵尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
         Select Case PartString_Type
             
             Case "L50"
@@ -158,9 +158,9 @@ Sub Type_05(ByVal fullString As String)
             End Select
 
     '區分出M42類型
-        Support_05_Type_Choice_M42 = Right(GetThirdPartOfString(fullString), 1)
+        Support_05_Type_Choice_M42 = Right(GetThirdPartOfString(fullstring), 1)
     '區分出長度"H"
-         Section_Length_H = Replace(GetThirdPartOfString(fullString), Support_05_Type_Choice_M42, "") * 100
+         Section_Length_H = Replace(GetThirdPartOfString(fullstring), Support_05_Type_Choice_M42, "") * 100
          Section_Length_L = 130
          
        '轉換為部分必要需求 :
@@ -176,7 +176,7 @@ Sub Type_05(ByVal fullString As String)
             AddSteelSectionEntry SectionType, Section_Dim, Total_Length
             PerformActionByLetter letter, PipeSize
 End Sub
-Sub Type_08(ByVal fullString As String)
+Sub Type_08(ByVal fullstring As String)
     '範例格式A : 08-2B-1005G
     Dim PartString_Type As String
     Dim PipeSize As String
@@ -190,10 +190,10 @@ Sub Type_08(ByVal fullString As String)
     Dim Pipe_ThickNess_mm As String
     Dim Main_Pipe_Length As Double
     Dim Support_Pipe_Length As Double
-    Dim Plate_Size_a As Double
-    Dim Plate_Size_b As Double
-    Dim Plate_Thickness As Double
-    Dim Plate_Name As String
+    Dim plate_size_a As Double
+    Dim plate_size_b As Double
+    Dim plate_thickness As Double
+    Dim plate_name As String
     
     
     Set ws_M42 = Worksheets("M_42_Table")
@@ -203,17 +203,17 @@ Sub Type_08(ByVal fullString As String)
 
     
     '給定管尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     PipeSize = Replace(PartString_Type, "B", "")
     '給定H&L 長度
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
     
     '給M42資料
-    letter = GetThirdPartOfString(fullString)
+    letter = GetThirdPartOfString(fullstring)
     letter = Right(letter, 1)
     
     '注意 以下給個H值為暫定
-    Pipe_Length_H_part = Replace(Right(GetThirdPartOfString(fullString), 3), letter, "") * 100
+    Pipe_Length_H_part = Replace(Right(GetThirdPartOfString(fullstring), 3), letter, "") * 100
     
     '主管長度 - 通常為SUS304
         
@@ -266,23 +266,23 @@ End Select
 '導入14-Tpye特有屬性 : Plate(STOPPER)_08Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 4, False) 'K
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 5, False) 'M
-            Plate_Thickness = 6
-            Plate_Name = "Plate(STOPPER)_08Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 4, False) 'K
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 5, False) 'M
+            plate_thickness = 6
+            plate_name = "Plate(STOPPER)_08Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入14-Tpye特有屬性 : Plate(TOP)_08Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 6, False) 'B
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 6, False) 'B
-            Plate_Thickness = 6
-            Plate_Name = "Plate(TOP)_08Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 6, False) 'B
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_08_Table.Range("A:G"), 6, False) 'B
+            plate_thickness = 6
+            plate_name = "Plate(TOP)_08Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 End Sub
-Sub Type_09(ByVal fullString As String)
+Sub Type_09(ByVal fullstring As String)
     ' 範例格式A : 09-2B-05B
     Dim PartString_Type As String
     Dim PipeSize As String
@@ -298,13 +298,13 @@ Sub Type_09(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 給M42資料
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     PipeSize = Replace(PartString_Type, "B", "")
-    letter = GetThirdPartOfString(fullString)
+    letter = GetThirdPartOfString(fullstring)
     letter = Right(letter, 1)
 
     ' Main_Pipe
-    Third_Length_export = Replace(GetThirdPartOfString(fullString), letter, "") * 100
+    Third_Length_export = Replace(GetThirdPartOfString(fullstring), letter, "") * 100
     
     ' 處理主管與輔助管的編制:
     Select Case PipeSize
@@ -368,7 +368,7 @@ Sub Type_09(ByVal fullString As String)
         .Cells(i, "Q").value = "螺絲類"
     End With
 End Sub
-Sub Type_11(ByVal fullString As String)
+Sub Type_11(ByVal fullstring As String)
     Dim PartString_Type As String
     Dim PipeSize As String
     Dim letter As String
@@ -389,18 +389,18 @@ Sub Type_11(ByVal fullString As String)
 
     '-------------------------------抽取區-------------------------------------------
     '給 Support Line Size "A" 數字
-    PartString_Type = GetPartOfString(fullString, 2, "-")
+    PartString_Type = GetPartOfString(fullstring, 2, "-")
     PipeSize = Replace(PartString_Type, "B", "")
     
     '抽取M42的標記
-    letter = GetPartOfString(fullString, 3, "-")
+    letter = GetPartOfString(fullstring, 3, "-")
     letter = Right(letter, 1)
     
     '抽取H值
-    H_Value = Replace(GetPartOfString(fullString, 3, "-"), letter, "")
+    H_Value = Replace(GetPartOfString(fullstring, 3, "-"), letter, "")
     
     '抽取"D"值 - Machine Bolt Length
-    D_Value = GetPartOfString(fullString, 4, "-")
+    D_Value = GetPartOfString(fullstring, 4, "-")
     
     
     ' 抽取L值
@@ -509,7 +509,7 @@ Sub Type_11(ByVal fullString As String)
         .Cells(i, "Q").value = "素材類"
     End With
 End Sub
-Sub Type_14(ByVal fullString As String)
+Sub Type_14(ByVal fullstring As String)
     '範例格式A : 14-2B-1005
     
     Dim PartString_Type As String ' 用於儲存分割後的字串部分
@@ -526,10 +526,10 @@ Sub Type_14(ByVal fullString As String)
     Dim Support_Pipe_Length As Double ' 支撐管長度，如果有的話
     '...
     ' 以下變量用於 MainAddPlate 過程
-    Dim Plate_Size_a As Double ' 板材的長度尺寸
-    Dim Plate_Size_b As Double ' 板材的寬度尺寸
-    Dim Plate_Thickness As Double ' 板材的厚度
-    Dim Plate_Name As String ' 板材的命名，用於標識不同板材
+    Dim plate_size_a As Double ' 板材的長度尺寸
+    Dim plate_size_b As Double ' 板材的寬度尺寸
+    Dim plate_thickness As Double ' 板材的厚度
+    Dim plate_name As String ' 板材的命名，用於標識不同板材
     
     
     Set ws_M42 = Worksheets("Weight_Analysis")
@@ -539,12 +539,12 @@ Sub Type_14(ByVal fullString As String)
 
     
     '給定管尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     PipeSize = Replace(PartString_Type, "B", "")
     '給定H&L 長度
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
     '注意 以下給個H值為暫定
-    Pipe_Length_H_part = Right(GetThirdPartOfString(fullString), 2) * 100
+    Pipe_Length_H_part = Right(GetThirdPartOfString(fullstring), 2) * 100
     
     '主管長度 - 通常為SUS304
         
@@ -602,38 +602,38 @@ End Select
 '導入14-Tpye特有屬性 : Plate(wing)_14Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 9, False) 'Q
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 8, False) 'P
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
-            Plate_Name = "Plate(wing)_14Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 9, False) 'Q
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 8, False) 'P
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
+            plate_name = "Plate(wing)_14Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入14-Tpye特有屬性 : Plate(STOPPER)_14Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 7, False) 'M
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 6, False) 'K
-            Plate_Thickness = 6
-            Plate_Name = "Plate(STOPPER)_14Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 7, False) 'M
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 6, False) 'K
+            plate_thickness = 6
+            plate_name = "Plate(STOPPER)_14Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入14-Tpye特有屬性 : Plate(BASE PLATE)_14Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 2, False) 'C
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 2, False) 'C
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
-            Plate_Name = "Plate(BASE PLATE)_14Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 2, False) 'C
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 2, False) 'C
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
+            plate_name = "Plate(BASE PLATE)_14Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入14-Tpye特有屬性 : Plate(TOP)_14Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 11, False) 'C
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 11, False) 'C
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
-            Plate_Name = "Plate(TOP)_14Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 11, False) 'C
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 11, False) 'C
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 5, False) 'F
+            plate_name = "Plate(TOP)_14Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 '導入14-Tpye特有屬性 : EXP.BOLT
 ' 填充數據
    BoltSize = Application.WorksheetFunction.VLookup(PipeSize, Type_14_Table.Range("A:L"), 10, False) 'J
@@ -655,7 +655,7 @@ End Select
 
 
 End Sub
-Sub Type_15(ByVal fullString As String)
+Sub Type_15(ByVal fullstring As String)
     '範例格式A : 15-2B-1005
     Dim PartString_Type As String
     Dim PipeSize As String
@@ -671,10 +671,10 @@ Sub Type_15(ByVal fullString As String)
     Dim Support_Pipe_Length As Double
     
     ' 以下變量用於 MainAddPlate 過程
-    Dim Plate_Size_a As Double ' 板材的長度尺寸
-    Dim Plate_Size_b As Double ' 板材的寬度尺寸
-    Dim Plate_Thickness As Double ' 板材的厚度
-    Dim Plate_Name As String ' 板材的命名，用於標識不同板材
+    Dim plate_size_a As Double ' 板材的長度尺寸
+    Dim plate_size_b As Double ' 板材的寬度尺寸
+    Dim plate_thickness As Double ' 板材的厚度
+    Dim plate_name As String ' 板材的命名，用於標識不同板材
     
     
     Set ws_M42 = Worksheets("Weight_Analysis")
@@ -684,12 +684,12 @@ Sub Type_15(ByVal fullString As String)
 
     
     '給定管尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     PipeSize = Replace(PartString_Type, "B", "")
     '給定H&L 長度
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
     '注意 以下給個H值為暫定
-    Pipe_Length_H_part = Right(GetThirdPartOfString(fullString), 2) * 100
+    Pipe_Length_H_part = Right(GetThirdPartOfString(fullstring), 2) * 100
     
     '主管長度 - 通常為SUS304
         
@@ -747,49 +747,49 @@ End Select
 '導入15-Tpye特有屬性 : Plate(wing)_15Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 7, False) 'Q
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 6, False) 'P
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
-            Plate_Name = "Plate(wing)_15Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 7, False) 'Q
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 6, False) 'P
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
+            plate_name = "Plate(wing)_15Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入15-Tpye特有屬性 : Plate(STOPPER)_15Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 5, False) 'M
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 4, False) 'K
-            Plate_Thickness = 6
-            Plate_Name = "Plate(STOPPER)_15Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 5, False) 'M
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 4, False) 'K
+            plate_thickness = 6
+            plate_name = "Plate(STOPPER)_15Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 '導入15-Tpye特有屬性 : Plate(BASE PLATE)_15Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 2, False) 'D
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 2, False) 'D
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
-            Plate_Name = "Plate(BASE PLATE)_15Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 2, False) 'D
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 2, False) 'D
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
+            plate_name = "Plate(BASE PLATE)_15Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 '導入15-Tpye特有屬性 : Plate(TOP)_15Type
 ' 填充數據
             PipeSize = GetLookupValue(PipeSize)
-            Plate_Size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 8, False) 'B
-            Plate_Size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 8, False) 'B
-            Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
-            Plate_Name = "Plate(TOP)_15Type"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            plate_size_a = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 8, False) 'B
+            plate_size_b = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 8, False) 'B
+            plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, Type_15_Table.Range("A:I"), 3, False) 'F
+            plate_name = "Plate(TOP)_15Type"
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
 
 
 End Sub
-Sub Type_16(ByVal fullString As String)
+Sub Type_16(ByVal fullstring As String)
     Dim Support_Pipe_Size As String
     Dim Pipe_ThickNess_mm As String
     Dim Main_Pipe_Length As Double
     Dim Support_Pipe_Length As Double
-    Dim Plate_Size_a As Double ' 板材的長度尺寸
-    Dim Plate_Size_b As Double ' 板材的寬度尺寸
-    Dim Plate_Thickness As Double ' 板材的厚度
-    Dim Plate_Name As String ' 板材的命名，用於標識不同板材
+    Dim plate_size_a As Double ' 板材的長度尺寸
+    Dim plate_size_b As Double ' 板材的寬度尺寸
+    Dim plate_thickness As Double ' 板材的厚度
+    Dim plate_name As String ' 板材的命名，用於標識不同板材
     Dim PartString_Type As String
     Dim PipeSize As String
     Dim Third_Length_export As Double
@@ -799,13 +799,13 @@ Sub Type_16(ByVal fullString As String)
 
     PrintStepCalculator "Type_16 - 開始處理"
 
-    PartString_Type = GetPartOfString(fullString, 2)
+    PartString_Type = GetPartOfString(fullstring, 2)
     PrintStepCalculator "Type_16 - 抽取第二部分字符串: " & PartString_Type
 
     PipeSize = Replace(PartString_Type, "B", "")
     PrintStepCalculator "Type_16 - 抽取管徑: " & PipeSize
 
-    Third_Length_export = GetPartOfString(fullString, 3) * 100
+    Third_Length_export = GetPartOfString(fullstring, 3) * 100
     PrintStepCalculator "Type_16 - 抽取第三部分字符串: " & Third_Length_export
 
        ' 處理主管與輔助管的編制:
@@ -912,16 +912,16 @@ Support_Pipe_Thickness = Pipe_ThickNess_mm  ' 輔助管的厚度等於主管的厚度
     End If
 
     PrintStepCalculator "Type_16 - 開始添加板材"
-    Plate_Size_a = Plate_Size
-    Plate_Size_b = Plate_Size
-    Plate_Thickness = 6
-    Plate_Name = "Plate"
-    PrintStepCalculator "Type_16 - 開始添加板材 - 板材尺寸 : " & Plate_Size_a & " x " & Plate_Size_b & " x " & Plate_Thickness
-    MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+    plate_size_a = Plate_Size
+    plate_size_b = Plate_Size
+    plate_thickness = 6
+    plate_name = "Plate"
+    PrintStepCalculator "Type_16 - 開始添加板材 - 板材尺寸 : " & plate_size_a & " x " & plate_size_b & " x " & plate_thickness
+    MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
     PrintStepCalculator "Type_16 - Plate added successfully"
 
 End Sub
-Sub Type_20(ByVal fullString As String)
+Sub Type_20(ByVal fullstring As String)
     '範例格式A : 20-L50-05A
     ' ----------------------------------------------------------------------------------------
     ' |                             子程序 Type_20 功能描述                                   |
@@ -948,22 +948,22 @@ Sub Type_20(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
 
     ' 區分出Fig類型
-    Support_20_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_20_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
 
     ' 錯誤處理
     If IsNumeric(Support_20_Type_Choice) Then
         Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Numeric value found where text was expected for " & fullString
+                  Description:="Numeric value found where text was expected for " & fullstring
     End If
 
     ' 區分出長度"H"
-    Section_Length_H = Replace(GetThirdPartOfString(fullString), Support_20_Type_Choice, "") * 100
+    Section_Length_H = Replace(GetThirdPartOfString(fullstring), Support_20_Type_Choice, "") * 100
 
     ' 導入 Function addSteelSectionEntry
     The_Section_Size = Replace(The_Section_Size, Left(The_Section_Size, 1), "")
@@ -973,7 +973,7 @@ Sub Type_20(ByVal fullString As String)
 
 End Sub
 
-Sub Type_21(ByVal fullString As String)
+Sub Type_21(ByVal fullstring As String)
     '範例格式A : 21-L50-05A
     '範例格式B : 21-L50-05C-07
 ' ----------------------------------------------------------------------------------------
@@ -1007,7 +1007,7 @@ Sub Type_21(ByVal fullString As String)
     ' ----------------------------------<<<Action area>>>------------------------------------------
     '----------------------------------------------------------------------------------------------
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
@@ -1015,7 +1015,7 @@ Sub Type_21(ByVal fullString As String)
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
     
@@ -1024,12 +1024,12 @@ Sub Type_21(ByVal fullString As String)
     '-----------------------------------------------------------------------------------
 
     ' 區分出Fig類型
-    Support_21_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_21_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
 
     ' (錯誤處理)[Fig類型或者M42] 檢查是否為數字 @ 514
     If IsNumeric(Support_21_Type_Choice) Then
         Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Numeric value found where text was expected for " & fullString
+                  Description:="Numeric value found where text was expected for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
@@ -1038,13 +1038,13 @@ Sub Type_21(ByVal fullString As String)
     '-----------------------------------------------------------------------------------
     
     ' 區分出長度"H"
-    Section_Length_H = Replace(GetThirdPartOfString(fullString), Support_21_Type_Choice, "") * 100
+    Section_Length_H = Replace(GetThirdPartOfString(fullstring), Support_21_Type_Choice, "") * 100
     
 
     ' (錯誤處理)[字數判讀] 檢查是否含3碼 @ 515
-    If Len(GetThirdPartOfString(fullString)) < 3 Then
+    If Len(GetThirdPartOfString(fullstring)) < 3 Then
         Err.Raise Number:=vbObjectError + 515, _
-                  Description:="Len Value < 3 " & fullString
+                  Description:="Len Value < 3 " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
@@ -1055,7 +1055,7 @@ Sub Type_21(ByVal fullString As String)
         Case "B"
             Section_Length_L = 500
         Case "C"
-            Section_Length_L = GetFourthPartOfString(fullString) * 100
+            Section_Length_L = GetFourthPartOfString(fullstring) * 100
     End Select
 
    
@@ -1071,7 +1071,7 @@ Sub Type_21(ByVal fullString As String)
 End Sub
    
 
-Sub Type_22(ByVal fullString As String)
+Sub Type_22(ByVal fullstring As String)
     '範例格式A : 22-L50-05A(L)
     '範例格式B : 21-L50-05(L)C-07
     Dim ws As Worksheet
@@ -1111,53 +1111,68 @@ Sub Type_22(ByVal fullString As String)
     
     ' ----------------------------------<<<Action area>>>------------------------------------------
     '----------------------------------------------------------------------------------------------
-    ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    ' 區分出鋼構尺寸 , 第一種可能性
+    PartString_Type = GetPartOfString(fullstring, 2)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
 
+
+
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
                   
                   
-                  
+    '區分出Fig類型 - 主要值抽出
+    strValue = GetPartOfString(fullstring, 3)
     '----------------------------------------------------------------------------------------------
-    '區分出Fig類型
-    Support_22_Type_Choice = Mid(Right(GetThirdPartOfString(fullString), 3), 1, 1)
-    
-    ' (錯誤處理)[特殊Fig類型] 檢查格式是否正確 @ 514
-    If Not (Support_22_Type_Choice = "A" Or Support_22_Type_Choice = "B" Or Support_22_Type_Choice = "C") Then
-        If Not (Left(Support_22_Type_Choice, 1) = "(" And Right(Support_22_Type_Choice, 1) = ")") Then
-            Err.Raise Number:=vbObjectError + 514, _
-                      Description:="Invalid format for Fig type in " & fullString
-        End If
-    End If
-    '---------------------------------------------------------------------------------------------------------------
-        
-        
-    '----------------------------------------------------------------------------------------------
+    '區分出Fig類型 - 第一種可能性 - 22-L50-05(A)L-07
+    If InStr(1, strValue, "(") > 0 Then
+    Support_22_Type_Choice = Mid(Right(GetPartOfString(fullstring, 3), 3), 1, 1)
     '區分出M-42類型
-    Support_22_Type_Choice_M42 = Right(GetThirdPartOfString(fullString), 1)
-    
-    ' (錯誤處理)[M-42類型] 檢查格式是否正確 @ 514
-    If Not Left(Right(GetThirdPartOfString(fullString), 2), 1) = ")" Or Not (Support_22_Type_Choice_M42 Like "[A-Za-z]") Then
-        Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Invalid format for M-42 type in " & fullString
-    End If
-
-    '----------------------------------------------------------------------------------------------
-    
-    
+    Support_22_Type_Choice_M42 = Right(GetPartOfString(fullstring, 4), 1)
     ' 區分出長度"H"
     '修剪出 Replace 邏輯 for 長度
         Type_22_Replace_A = "(" & Support_22_Type_Choice & ")"
         Type_22_Replace_B = Support_22_Type_Choice_M42
-        Section_Length_H = Replace(Replace(GetThirdPartOfString(fullString), Type_22_Replace_A, ""), Type_22_Replace_B, "") * 100
+        Section_Length_H = Replace(Replace(GetThirdPartOfString(fullstring), Type_22_Replace_A, ""), Type_22_Replace_B, "") * 100
+    End If
+    '----------------------------------------------------------------------------------------------
+    '區分出Fig類型 - 第二種可能性 - 22-L50-07A-L
+    If InStr(1, strValue, "(") = 0 Then
+        Support_22_Type_Choice = Right(GetPartOfString(fullstring, 3), 1)
+        '區分出M-42類型
+        Support_22_Type_Choice_M42 = GetPartOfString(fullstring, 4)
+        ' 區分出長度"H"
+        '修剪出 Replace 邏輯 for 長度
+        Section_Length_H = Replace(GetPartOfString(fullstring, 3), Support_22_Type_Choice, "") * 100
+        
+    End If
+    
+    ' ' (錯誤處理)[特殊Fig類型] 檢查格式是否正確 @ 514
+    ' If Not (Support_22_Type_Choice = "A" Or Support_22_Type_Choice = "B" Or Support_22_Type_Choice = "C") Then
+        ' If Not (Left(Support_22_Type_Choice, 1) = "(" And Right(Support_22_Type_Choice, 1) = ")") Then
+            ' Err.Raise Number:=vbObjectError + 514, _
+                      ' Description:="Invalid format for Fig type in " & fullstring
+        ' End If
+    ' End If
+    ' '---------------------------------------------------------------------------------------------------------------
+    
+    
+    ' ' (錯誤處理)[M-42類型] 檢查格式是否正確 @ 514
+    ' If Not Left(Right(GetThirdPartOfString(fullstring), 2), 1) = ")" Or Not (Support_22_Type_Choice_M42 Like "[A-Za-z]") Then
+        ' Err.Raise Number:=vbObjectError + 514, _
+                  ' Description:="Invalid format for M-42 type in " & fullstring
+    ' End If
+
+    ' '----------------------------------------------------------------------------------------------
+    
+    
+
         
     
     ' 區分出長度"L"
@@ -1167,7 +1182,7 @@ Sub Type_22(ByVal fullString As String)
         Case "B"
             Section_Length_L = 500
         Case "C"
-            Section_Length_L = GetFourthPartOfString(fullString) * 100
+            Section_Length_L = GetFourthPartOfString(fullstring) * 100
     End Select
       
       '轉換為部分必要需求 :
@@ -1186,7 +1201,7 @@ Sub Type_22(ByVal fullString As String)
       '導入Function addSteelSectionEntry
             
 End Sub
-Sub Type_23(ByVal fullString As String)
+Sub Type_23(ByVal fullstring As String)
     '範例格式A : 23-L50-05A
     '範例格式B : 23-L50-05C-07
 ' ----------------------------------------------------------------------------------------
@@ -1221,7 +1236,7 @@ Sub Type_23(ByVal fullString As String)
     ' ----------------------------------<<<Action area>>>------------------------------------------
     '----------------------------------------------------------------------------------------------
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
@@ -1229,7 +1244,7 @@ Sub Type_23(ByVal fullString As String)
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
     
@@ -1238,12 +1253,12 @@ Sub Type_23(ByVal fullString As String)
     '-----------------------------------------------------------------------------------
 
     ' 區分出Fig類型
-    Support_23_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_23_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
 
     ' (錯誤處理)[Fig類型或者M42] 檢查是否為數字 @ 514
     If IsNumeric(Support_23_Type_Choice) Then
         Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Numeric value found where text was expected for " & fullString
+                  Description:="Numeric value found where text was expected for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
@@ -1252,13 +1267,13 @@ Sub Type_23(ByVal fullString As String)
     '-----------------------------------------------------------------------------------
     
     ' 區分出長度"H"
-    Section_Length_H = Replace(GetThirdPartOfString(fullString), Support_23_Type_Choice, "") * 100 + Mid(GetSecondPartOfString(fullString), 2, 99)
+    Section_Length_H = Replace(GetThirdPartOfString(fullstring), Support_23_Type_Choice, "") * 100 + Mid(GetSecondPartOfString(fullstring), 2, 99)
     
 
     ' (錯誤處理)[字數判讀] 檢查是否含3碼 @ 515
-    If Len(GetThirdPartOfString(fullString)) < 3 Then
+    If Len(GetThirdPartOfString(fullstring)) < 3 Then
         Err.Raise Number:=vbObjectError + 515, _
-                  Description:="Len Value < 3 " & fullString
+                  Description:="Len Value < 3 " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
@@ -1269,7 +1284,7 @@ Sub Type_23(ByVal fullString As String)
         Case "B"
             Section_Length_L = 500
         Case "C"
-            Section_Length_L = GetFourthPartOfString(fullString) * 100
+            Section_Length_L = GetFourthPartOfString(fullstring) * 100
     End Select
 
    
@@ -1284,7 +1299,7 @@ Sub Type_23(ByVal fullString As String)
 
 End Sub
 
-Sub Type_24(ByVal fullString As String)
+Sub Type_24(ByVal fullstring As String)
     '範例格式A : 24-L50-05
 
     ' ----------------------------------------------------------------------------------------
@@ -1310,13 +1325,13 @@ Sub Type_24(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
 
     ' 區分出長度"H"
-    Section_Length_H = GetThirdPartOfString(fullString) * 100
+    Section_Length_H = GetThirdPartOfString(fullstring) * 100
 
     ' 導入 Function addSteelSectionEntry
     The_Section_Size = Replace(The_Section_Size, Left(The_Section_Size, 1), "")
@@ -1326,7 +1341,7 @@ Sub Type_24(ByVal fullString As String)
 
 End Sub
 
-Sub Type_25(ByVal fullString As String)
+Sub Type_25(ByVal fullstring As String)
     '範例格式A : 25-L50-0505A
      ' ----------------------------------------------------------------------------------------
     ' |                             子程序 Type_25 功能描述                                   |
@@ -1357,7 +1372,7 @@ Sub Type_25(ByVal fullString As String)
     
     '----------------------------------------------------------------------------------------------
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
@@ -1365,32 +1380,32 @@ Sub Type_25(ByVal fullString As String)
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
     
     '-----------------------------------------------------------------------------------
     '區分出Fig類型
-    Support_25_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_25_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
     
     ' (錯誤處理)[Fig類型或者M42] 檢查是否為數字 @ 514
     If IsNumeric(Support_25_Type_Choice) Then
         Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Numeric value found where text was expected for " & fullString
+                  Description:="Numeric value found where text was expected for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
     
     '-----------------------------------------------------------------------------------
     '區分出"L"值
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
     '-----------------------------------------------------------------------------------
     
     
     '-----------------------------------------------------------------------------------
     '區分出"H"值
-    Section_Length_H = Replace(Right(GetThirdPartOfString(fullString), 3), Support_25_Type_Choice, "") * 100
+    Section_Length_H = Replace(Right(GetThirdPartOfString(fullstring), 3), Support_25_Type_Choice, "") * 100
 
     '-----------------------------------------------------------------------------------
 
@@ -1411,7 +1426,7 @@ Sub Type_25(ByVal fullString As String)
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
 
 End Sub
-Sub Type_26(ByVal fullString As String)
+Sub Type_26(ByVal fullstring As String)
     '範例格式A : 26-L50-0505A
      ' ----------------------------------------------------------------------------------------
     ' |                             子程序 Type_26 功能描述
@@ -1442,7 +1457,7 @@ Sub Type_26(ByVal fullString As String)
     
     '----------------------------------------------------------------------------------------------
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
@@ -1450,32 +1465,32 @@ Sub Type_26(ByVal fullString As String)
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
     
     '-----------------------------------------------------------------------------------
     '區分出Fig類型
-    Support_26_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_26_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
     
     ' (錯誤處理)[Fig類型或者M42] 檢查是否為數字 @ 514
     If IsNumeric(Support_26_Type_Choice) Then
         Err.Raise Number:=vbObjectError + 514, _
-                  Description:="Numeric value found where text was expected for " & fullString
+                  Description:="Numeric value found where text was expected for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
 
     
     '-----------------------------------------------------------------------------------
     '區分出"L"值
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
     '-----------------------------------------------------------------------------------
     
     
     '-----------------------------------------------------------------------------------
     '區分出"H"值
-    Section_Length_H = Replace(Right(GetThirdPartOfString(fullString), 3), Support_26_Type_Choice, "") * 100 * 2
+    Section_Length_H = Replace(Right(GetThirdPartOfString(fullstring), 3), Support_26_Type_Choice, "") * 100 * 2
 
     '-----------------------------------------------------------------------------------
      
@@ -1489,7 +1504,7 @@ Sub Type_26(ByVal fullString As String)
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
  
 End Sub
-Sub Type_27(ByVal fullString As String)
+Sub Type_27(ByVal fullstring As String)
     '範例格式A : 27-L50-0505A-0402
     Dim PartString_Type As String
     Dim PipeSize As String
@@ -1497,56 +1512,30 @@ Sub Type_27(ByVal fullString As String)
     Dim SectionType As String
     Dim Section_Dim As String
     Dim Total_Length As Double
-
+    Dim Details As SectionDetails
     Set ws_M42 = Worksheets("Weight_Analysis")
     Set ws_Pipe_Table = Worksheets("Pipe_Table")
     Set Type_15_Table = Worksheets("For_15_Type_data")
     Set ws = Worksheets("Weight_Analysis")
     
         
-                                  
-        
-    '區分出角鐵尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
-        Select Case PartString_Type
-            
-            Case "L50"
-               The_Angle_Size = "L50*50*6"
-               SectionType = "Angle"
-            Case "L75"
-               The_Angle_Size = "L75*75*9"
-               SectionType = "Angle"
-            Case "L100"
-               The_Angle_Size = "L100*100*10"
-               SectionType = "Angle"
-            
-            Case "C100"
-               The_Angle_Size = "C100*50*5"
-               SectionType = "Channel"
-            
-            Case "H150"
-               The_Angle_Size = "H150*150*10"
-               SectionType = "H Beam"
-            Case Else
-                i = GetNextRowInColumnB()
-                ws.Cells(i, "B").value = "-"
-                Exit Sub
-            
-            End Select
-            
+                                     
+    Details = GetSectionDetails(GetPartOfString(fullstring, 2))
+    The_Angle_Size = Details.Size
+    SectionType = Details.Type
                   
 
     '區分出M-42類型
-        Support_27_Type_Choice_M42 = Right(GetThirdPartOfString(fullString), 1)
+        Support_27_Type_Choice_M42 = Right(GetThirdPartOfString(fullstring), 1)
 
     '區分出長度"H"
-        Section_Length_H_1 = Right(Replace(GetThirdPartOfString(fullString), Support_27_Type_Choice_M42, ""), 2) * 100
+        Section_Length_H_1 = Right(Replace(GetThirdPartOfString(fullstring), Support_27_Type_Choice_M42, ""), 2) * 100
         Section_Length_H_2 = 15
         Section_Length_H = Section_Length_H_1 - Section_Length_H_2
         
         
     '區分出長度"L"
-        Section_Length_L = Left(Replace(GetThirdPartOfString(fullString), Support_27_Type_Choice_M42, ""), 2) * 100
+        Section_Length_L = Left(Replace(GetThirdPartOfString(fullstring), Support_27_Type_Choice_M42, ""), 2) * 100
         
 
       '轉換為部分必要需求 :
@@ -1567,18 +1556,18 @@ Sub Type_27(ByVal fullString As String)
  '如果是H Bean 類型 則使用以下
  '導入27-Tpye特有屬性 : Plate(Wing)_27Type
 ' 填充數據
-            Plate_Size_a = 200
-            Plate_Size_b = 100
-            Plate_Thickness = 9
-            Weight_calculator = Plate_Size_a / 1000 * Plate_Size_b / 1000 * Plate_Thickness * 7.85
+            plate_size_a = 200
+            plate_size_b = 100
+            plate_thickness = 9
+            Weight_calculator = plate_size_a / 1000 * plate_size_b / 1000 * plate_thickness * 7.85
 
             i = GetNextRowInColumnB()
                   With ws
                       .Cells(i, "B").value = .Cells(i - 1, "B").value + 1 '項次
                       .Cells(i, "C").value = "Plate(Wing)_27Type"
-                      .Cells(i, "D").value = Plate_Thickness
-                      .Cells(i, "E").value = Plate_Size_a
-                      .Cells(i, "F").value = Plate_Size_b
+                      .Cells(i, "D").value = plate_thickness
+                      .Cells(i, "E").value = plate_size_a
+                      .Cells(i, "F").value = plate_size_b
                       .Cells(i, "G").value = "A36/SS400"
                       .Cells(i, "H").value = 1
                       .Cells(i, "J").value = Weight_calculator
@@ -1594,7 +1583,7 @@ Sub Type_27(ByVal fullString As String)
   End If
   
 End Sub
-Sub Type_28(ByVal fullString As String)
+Sub Type_28(ByVal fullstring As String)
     ' 範例格式A : 28-L50-1005L
 
     ' 宣告變數
@@ -1622,7 +1611,7 @@ Sub Type_28(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
     
     ' 區分出角鐵尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
 
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1634,12 +1623,12 @@ Sub Type_28(ByVal fullString As String)
     End If
 
     '區分出M-42類型
-        Support_28_Type_Choice_M42 = Right(GetThirdPartOfString(fullString), 1)
+        Support_28_Type_Choice_M42 = Right(GetThirdPartOfString(fullstring), 1)
     
     ' 區分出 "H" 值
-        Section_Length_H = Replace(Right(GetThirdPartOfString(fullString), 3), Support_28_Type_Choice_M42, "") * 100 * 2
+        Section_Length_H = Replace(Right(GetThirdPartOfString(fullstring), 3), Support_28_Type_Choice_M42, "") * 100 * 2
     ' 區分出 "L" 值
-        Section_Length_L = Left(GetThirdPartOfString(fullString), 2)
+        Section_Length_L = Left(GetThirdPartOfString(fullstring), 2)
         
         letter = Support_28_Type_Choice_M42
         PipeSize = The_Section_Size
@@ -1650,7 +1639,7 @@ Sub Type_28(ByVal fullString As String)
     AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
     PerformActionByLetter letter, PipeSize
 End Sub
-Sub Type_30(ByVal fullString As String)
+Sub Type_30(ByVal fullstring As String)
     ' 範例格式A : 30-L50-0505A
     ' 範例格式B : 30-L50-0505A-0401
 
@@ -1671,7 +1660,7 @@ Sub Type_30(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 區分出角鐵尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
 
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1683,13 +1672,13 @@ Sub Type_30(ByVal fullString As String)
     End If
 
     ' 區分出 Fig 類型
-    Support_30_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+    Support_30_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
     
     Select Case Support_30_Type_Choice
         Case "A"
-            Section_Length_H = Left(GetThirdPartOfString(fullString), 2) * 100
+            Section_Length_H = Left(GetThirdPartOfString(fullstring), 2) * 100
         Case "B"
-            Section_Length_H_1 = Left(GetThirdPartOfString(fullString), 2) * 100
+            Section_Length_H_1 = Left(GetThirdPartOfString(fullstring), 2) * 100
             Section_Length_H_2 = 15
             Section_Length_H = Section_Length_H_1 - Section_Length_H_2
         Case Else
@@ -1697,14 +1686,14 @@ Sub Type_30(ByVal fullString As String)
     End Select
 
     ' 區分出 "L" 值
-    Section_Length_L = Replace(Right(GetThirdPartOfString(fullString), 3), Support_30_Type_Choice, "") * 100
+    Section_Length_L = Replace(Right(GetThirdPartOfString(fullstring), 3), Support_30_Type_Choice, "") * 100
 
     ' 導入 Function addSteelSectionEntry
     The_Section_Size = Replace(The_Section_Size, Left(The_Section_Size, 1), "")
     Total_Length = Section_Length_H + Section_Length_L
     AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
 End Sub
-Sub Type_31(ByVal fullString As String)
+Sub Type_31(ByVal fullstring As String)
     '範例格式A : 31-L50-05A
     '範例格式B : 31-L50-05C-07
 ' ----------------------------------------------------------------------------------------
@@ -1746,7 +1735,7 @@ Sub Type_31(ByVal fullString As String)
     '----------------------------------------------------------------------------------------------
     Set ws = Worksheets("Weight_Analysis")
     ' 區分出鋼構尺寸
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     Details = GetSectionDetails(PartString_Type)
     The_Section_Size = Details.Size
     SectionType = Details.Type
@@ -1754,7 +1743,7 @@ Sub Type_31(ByVal fullString As String)
     ' (錯誤處理)[鋼材] 檢查是否找到匹配項 @ 513
     If The_Section_Size = "" And SectionType = "" Then
         Err.Raise Number:=vbObjectError + 513, _
-                  Description:="No matching item found for " & fullString
+                  Description:="No matching item found for " & fullstring
     End If
     '-----------------------------------------------------------------------------------
     
@@ -1762,10 +1751,10 @@ Sub Type_31(ByVal fullString As String)
     
     '-----------------------------------------------------------------------------------
     ' 檢查 lengthStrH 是否足夠長且為數字
-    If GetThirdPartOfString(fullString) >= 3 Then
+    If GetThirdPartOfString(fullstring) >= 3 Then
         ' 從字符串中提取高度和長度部分
-        lengthStrL = Left(GetThirdPartOfString(fullString), 2)
-        lengthStrH = Right(GetThirdPartOfString(fullString), 2)
+        lengthStrL = Left(GetThirdPartOfString(fullstring), 2)
+        lengthStrH = Right(GetThirdPartOfString(fullstring), 2)
         
         ' 檢查是否全部為數字
         If IsNumeric(lengthStrH) And IsNumeric(lengthStrL) Then
@@ -1773,7 +1762,7 @@ Sub Type_31(ByVal fullString As String)
             Section_Length_L = Val(lengthStrL) * 100  ' 假設每個單位表示100倍的長度  DENOTE DIMENSION "L" (IN 100 mm)
         Else
             Err.Raise Number:=vbObjectError + 516, _
-                      Description:="Non-numeric characters found in dimensions: " & fullString
+                      Description:="Non-numeric characters found in dimensions: " & fullstring
         End If
     Else
         Err.Raise Number:=vbObjectError + 515, _
@@ -1791,7 +1780,7 @@ Sub Type_31(ByVal fullString As String)
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length    ' 調用以添加鋼結構條目到工作表
 
 End Sub
-Sub Type_32(ByVal fullString As String)
+Sub Type_32(ByVal fullstring As String)
     '範例格式A : 32-L50-1005
     Dim SectionType As String
     Dim The_Section_Size As String ' 確保此變數已被定義
@@ -1805,7 +1794,7 @@ Sub Type_32(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取部分字符串
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
 
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1821,11 +1810,11 @@ Sub Type_32(ByVal fullString As String)
     
     ' 區分出 "H" 值
 
-    Section_Length_H = Right(GetThirdPartOfString(fullString), 2) * 100 * 2
+    Section_Length_H = Right(GetThirdPartOfString(fullstring), 2) * 100 * 2
 
     ' 區分出 "L" 值
     
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
 
     ' 導入 Function addSteelSectionEntry
     SectionType = SectionType
@@ -1833,7 +1822,7 @@ Sub Type_32(ByVal fullString As String)
     Total_Length = Section_Length_H + Section_Length_L
     AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
 End Sub
-Sub Type_33(ByVal fullString As String)
+Sub Type_33(ByVal fullstring As String)
     ' 示例格式A: 33-L50-1005
     ' ----------------------------------------------------------------------------------------
 ' |                             子程序 Type_33 功能描述
@@ -1867,7 +1856,7 @@ Sub Type_33(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取部分字符串
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
 
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1882,8 +1871,8 @@ Sub Type_33(ByVal fullString As String)
     End If
 
     ' 計算H L長度
-    Section_Length_H = Right(GetThirdPartOfString(fullString), 2) * 100
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_H = Right(GetThirdPartOfString(fullstring), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
 
     ' 計算總長度
     Total_Length = Section_Length_H + Section_Length_L
@@ -1897,7 +1886,7 @@ Sub Type_33(ByVal fullString As String)
             Total_Length = Section_Length_L
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length    ' 調用以添加鋼結構條目到工作表
 End Sub
-Sub Type_34(ByVal fullString As String)
+Sub Type_34(ByVal fullstring As String)
     ' 示例格式A: 34-L50-1005
     ' ----------------------------------------------------------------------------------------
 ' |                             子程序 Type_34 功能描述
@@ -1931,7 +1920,7 @@ Sub Type_34(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取部分字符串
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
 
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1946,8 +1935,8 @@ Sub Type_34(ByVal fullString As String)
     End If
 
     ' 計算H L長度
-    Section_Length_H = Right(GetThirdPartOfString(fullString), 2) * 100
-    Section_Length_L = Left(GetThirdPartOfString(fullString), 2) * 100
+    Section_Length_H = Right(GetThirdPartOfString(fullstring), 2) * 100
+    Section_Length_L = Left(GetThirdPartOfString(fullstring), 2) * 100
 
     ' 計算總長度
     Total_Length = Section_Length_H + Section_Length_L
@@ -1961,7 +1950,7 @@ Sub Type_34(ByVal fullString As String)
             Total_Length = Section_Length_L
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length    ' 調用以添加鋼結構條目到工作表
 End Sub
-Sub Type_35(ByVal fullString As String)
+Sub Type_35(ByVal fullstring As String)
     '範例格式A : 35-L50-05A
     '未驗證
     
@@ -1977,10 +1966,10 @@ Sub Type_35(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取第二部分字符串
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     
     '區分出Fig類型
-        Support_35_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+        Support_35_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
         
     ' 使用 GetSectionDetails 函數取代 Select Case
     Details = GetSectionDetails(PartString_Type)
@@ -1997,9 +1986,9 @@ Sub Type_35(ByVal fullString As String)
  Select Case Support_35_Type_Choice
     Case "A"
     
-        Section_Length_H = Left(GetThirdPartOfString(fullString), 2) * 100
+        Section_Length_H = Left(GetThirdPartOfString(fullstring), 2) * 100
     Case "B"
-        Section_Length_H = Left(GetThirdPartOfString(fullString), 2) * 100 * 2
+        Section_Length_H = Left(GetThirdPartOfString(fullstring), 2) * 100 * 2
     Case Else
         Exit Sub
     End Select
@@ -2011,7 +2000,7 @@ Sub Type_35(ByVal fullString As String)
     Total_Length = Section_Length_H
     AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
 End Sub
-Sub Type_37(ByVal fullString As String)
+Sub Type_37(ByVal fullstring As String)
     '範例格式A : 37-C125-1200A-05
     '範例格式B : 37-C125-1200B-05
     
@@ -2028,18 +2017,18 @@ Sub Type_37(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取第二部分字符串 - 第二部分取得槽鋼類別
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     
     '區分出角度類型 - 從 fullString 中提取第三部分字符串
-        Support_37_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+        Support_37_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
     
     ' 區分出 "H" 值 - 從 fullString 中提取第三部分字符串 - 水平長第一部分
-        Section_Length_H_1 = Replace(GetThirdPartOfString(fullString), Support_37_Type_Choice, "")
+        Section_Length_H_1 = Replace(GetThirdPartOfString(fullstring), Support_37_Type_Choice, "")
         
     ' 檢查是否存在第四部分字符串
-    If IsFourthPartAvailable(fullString) Then
+    If IsFourthPartAvailable(fullstring) Then
         ' 存在第四部分，從 fullString 中提取第四部分字符串 - 水平長第二部分
-        Section_Length_H_2 = GetFourthPartOfString(fullString) * 100
+        Section_Length_H_2 = GetFourthPartOfString(fullstring) * 100
     Else
         ' 第四部分不存在，設定預設值
         Section_Length_H_2 = 200
@@ -2060,7 +2049,7 @@ Sub Type_37(ByVal fullString As String)
         
     ' 演算出L值 - 需四個步驟
         '必要值變數
-            Section_Length = Replace(GetSecondPartOfString(fullString), Left(GetSecondPartOfString(fullString), 1), "")
+            Section_Length = Replace(GetSecondPartOfString(fullstring), Left(GetSecondPartOfString(fullstring), 1), "")
             pi = 4 * Atn(1) ' 計算圓周率 π
             
             '第一步驟
@@ -2103,7 +2092,7 @@ Sub Type_37(ByVal fullString As String)
     Total_Length = Section_Length_H + Section_Length_L
     AddSteelSectionEntry SectionType, The_Section_Size, Total_Length
 End Sub
-Sub Type_39(ByVal fullString As String)
+Sub Type_39(ByVal fullstring As String)
     '範例格式A : 39-C100-800A
     '範例格式B : 39-C125-1200B-05
     
@@ -2120,18 +2109,18 @@ Sub Type_39(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取第二部分字符串 - 第二部分取得槽鋼類別
-    PartString_Type = GetSecondPartOfString(fullString)
+    PartString_Type = GetSecondPartOfString(fullstring)
     
     '區分出角度類型 - 從 fullString 中提取第三部分字符串
-        Support_39_Type_Choice = Right(GetThirdPartOfString(fullString), 1)
+        Support_39_Type_Choice = Right(GetThirdPartOfString(fullstring), 1)
     
     ' 區分出 "H" 值 - 從 fullString 中提取第三部分字符串 - 水平長第一部分
-        Section_Length_H_1 = Replace(GetThirdPartOfString(fullString), Support_39_Type_Choice, "")
+        Section_Length_H_1 = Replace(GetThirdPartOfString(fullstring), Support_39_Type_Choice, "")
         
     ' 檢查是否存在第四部分字符串
-    If IsFourthPartAvailable(fullString) Then
+    If IsFourthPartAvailable(fullstring) Then
         ' 存在第四部分，從 fullString 中提取第四部分字符串 - 水平長第二部分
-        Section_Length_H_2 = GetFourthPartOfString(fullString) * 100
+        Section_Length_H_2 = GetFourthPartOfString(fullstring) * 100
     Else
         ' 第四部分不存在，設定預設值
         Section_Length_H_2 = 200
@@ -2152,7 +2141,7 @@ Sub Type_39(ByVal fullString As String)
         
     ' 演算出L值 - 需四個步驟
         '必要值變數
-            Section_Length = Replace(GetSecondPartOfString(fullString), Left(GetSecondPartOfString(fullString), 1), "")
+            Section_Length = Replace(GetSecondPartOfString(fullstring), Left(GetSecondPartOfString(fullstring), 1), "")
             pi = 4 * Atn(1) ' 計算圓周率 π
             
             '第一步驟
@@ -2197,18 +2186,18 @@ Sub Type_39(ByVal fullString As String)
             AddSteelSectionEntry SectionType, The_Section_Size, Total_Length    ' 調用以添加鋼結構條目到工作表
 
 End Sub
-Sub Type_48(ByVal fullString As String)
+Sub Type_48(ByVal fullstring As String)
     '範例格式A : 48-1/2B(A)
     '範例格式B : 48-1B
     
 Dim ws As Worksheet                          ' Excel 工作表對象，用於引用和操作工作表中的數據
 Dim PartString_Type As String          ' 用於存儲從 fullString 提取的第二部分字符串
-Dim Plate_Name As String               ' 用於存儲生成的鋼板名稱，將在 MainAddPlate 子程序中使用
+Dim plate_name As String               ' 用於存儲生成的鋼板名稱，將在 MainAddPlate 子程序中使用
 
 Dim MatL As String                                 ' 材料類型，可以是碳鋼、合金鋼或不銹鋼，根據括號內的標記確定
-Dim Plate_Size_a As Double                ' 鋼板的長度，從 Plate_Size 字符串中提取並轉換為 Double 類型
-Dim Plate_Size_b As Double                ' 鋼板的寬度，從 Plate_Size 字符串中提取並轉換為 Double 類型
-Dim Plate_Thickness As Double          ' 鋼板的厚度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_size_a As Double                ' 鋼板的長度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_size_b As Double                ' 鋼板的寬度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_thickness As Double          ' 鋼板的厚度，從 Plate_Size 字符串中提取並轉換為 Double 類型
 
 Dim needValue() As Variant                   ' 用於存儲從 PartString_Type 中提取的包含括號的字符串部分的結果
 Dim Value0 As String                                 ' 從 needValue(0) 提取出的字符串，移除 "B" 之後用於進一步處理
@@ -2220,7 +2209,7 @@ Dim Plate_Size As String                            ' 存儲鋼板尺寸的字符串，格式
     Set ws = Worksheets("Weight_Analysis")
 
     ' 從 fullString 中提取部分字符串
-    PartString_Type = GetPartOfString(fullString, 2)
+    PartString_Type = GetPartOfString(fullstring, 2)
     
     ' 檢查是否存在括號，以確定是否可以正常提取部分
     ValueCondition = InStr(PartString_Type, "(")
@@ -2260,16 +2249,16 @@ Dim Plate_Size As String                            ' 存儲鋼板尺寸的字符串，格式
     End If
     
     ' 切出需要的值給予MainAddPlate
-    Plate_Size_a = Val(GetPartOfString(Plate_Size, 1, "*"))
-    Plate_Size_b = Val(GetPartOfString(Plate_Size, 2, "*"))
-    Plate_Thickness = Val(GetPartOfString(Plate_Size, 3, "*"))
-    Plate_Name = "Plate_48Type"
+    plate_size_a = Val(GetPartOfString(Plate_Size, 1, "*"))
+    plate_size_b = Val(GetPartOfString(Plate_Size, 2, "*"))
+    plate_thickness = Val(GetPartOfString(Plate_Size, 3, "*"))
+    plate_name = "Plate_48Type"
     
     ' 導入 MainAddPlate
-    MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name, MatL
+    MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, MatL
 End Sub
 
-Sub Type_51(ByVal fullString As String)
+Sub Type_51(ByVal fullstring As String)
     '範例格式A : 51-2B
     '2B  = Line Size
 
@@ -2278,16 +2267,16 @@ Dim M As String
 Dim H As String
 
 Dim MatL As String                                 ' 材料類型，可以是碳鋼、合金鋼或不銹鋼，根據括號內的標記確定
-Dim Plate_Size_a As Double                ' 鋼板的長度，從 Plate_Size 字符串中提取並轉換為 Double 類型
-Dim Plate_Size_b As Double                ' 鋼板的寬度，從 Plate_Size 字符串中提取並轉換為 Double 類型
-Dim Plate_Thickness As Double          ' 鋼板的厚度，從 Plate_Size 字符串中提取並轉換為 Double 類型
-Dim Plate_Name As String               ' 用於存儲生成的鋼板名稱，將在 MainAddPlate 子程序中使用
+Dim plate_size_a As Double                ' 鋼板的長度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_size_b As Double                ' 鋼板的寬度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_thickness As Double          ' 鋼板的厚度，從 Plate_Size 字符串中提取並轉換為 Double 類型
+Dim plate_name As String               ' 用於存儲生成的鋼板名稱，將在 MainAddPlate 子程序中使用
     
 Dim SectionType As String
 Dim The_Section_Size As String
 Dim Total_Length As Double
     '------------------------抽取第二部分並抽出正確尺寸------------------------
-    PartString_Type = GetPartOfString(fullString, 2)
+    PartString_Type = GetPartOfString(fullstring, 2)
     Line_Size = Replace(PartString_Type, "B", "")
     '------------------------判讀區域------------------------
     If Line_Size <= "3" Then
@@ -2340,12 +2329,12 @@ Dim Total_Length As Double
 
 '------------------------分割出需要的值------------------------
     If M = "FlateBar" Then
-            Plate_Size_a = Val(GetPartOfString(Ssize, 1, "*"))
-            Plate_Size_b = Val(GetPartOfString(Ssize, 1, "*"))
-            Plate_Thickness = Val(GetPartOfString(Ssize, 2, "*"))
-            Plate_Name = "FlateBar"
+            plate_size_a = Val(GetPartOfString(Ssize, 1, "*"))
+            plate_size_b = Val(GetPartOfString(Ssize, 1, "*"))
+            plate_thickness = Val(GetPartOfString(Ssize, 2, "*"))
+            plate_name = "FlateBar"
             MatL = "A36/SS400"
-            MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
         ElseIf M = "Angle" Then
             The_Section_Size = Ssize
             SectionType = M
@@ -2356,7 +2345,7 @@ Dim Total_Length As Double
 
 
 End Sub
-Sub Type_52(ByVal fullString As String)
+Sub Type_52(ByVal fullstring As String)
     '範例格式A : 52-2B(P)-A(A)-130-500
     '2B  = Line Size
     '(P) = Pad is Req'D
@@ -2401,7 +2390,7 @@ Sub Type_52(ByVal fullString As String)
     Dim Hops_Value As Variant, Lops_Value As Variant
     Dim PipeSize As Variant, Pad_symbol As Variant
     Dim Insulation_Value As Variant, Material_Value As Variant
-    Dim Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness As Double
+    Dim plate_size_a As Double, plate_size_b As Double, plate_thickness As Double
     Dim The_Section_Size As String
     Dim SectionType As String
     Dim Total_Length As Double
@@ -2411,55 +2400,55 @@ Sub Type_52(ByVal fullString As String)
     Dim Matirial_Value As String
     
     ' 以下變量用於 MainAddPlate 過程
-    Dim Plate_Name As String ' 板材的命名，用於標識不同板材
+    Dim plate_name As String ' 板材的命名，用於標識不同板材
     
-
+    First_condition_input = GetPartOfString(fullstring, 1)
     '------------------------------------------第四部分判讀與分析------------------------------------------
-    Special_symbol_count = CountCharacter(fullString, "-")  ' if fullstring = "52-2B(P)-A(A)-130-500" then Special_symbol_count = 4
+    Special_symbol_count = CountCharacter(fullstring, "-")  ' if fullstring = "52-2B(P)-A(A)-130-500" then Special_symbol_count = 4
     Select Case Special_symbol_count
         Case 1
         ' 他只有Type 52-2B   這種情況 需附加第二階段判讀 且insulation = 75 & lesser  hope = 130 lops = 500
-            Hops_Value = GetPartOfString(fullString, 4)
+            Hops_Value = GetPartOfString(fullstring, 4)
             PrintStepCalculator "[Type_52] - 檢測階段"
             PrintStepCalculator "[Type_52] - 目前Hope_Value值=" & Hops_Value & " "
             If Hops_Value = "N/A" Then
                 PrintStepCalculator "[Type_52] - 檢測階段 - 發現Hops_Value為N/A - 設置Hops_Value為150並開始進行下一階段判讀 "
                 Hops_Value = 150
-                PipeSize = GetLookupValue(Replace(Type52_GetPipeSize(fullString), "B", "")) ' 這裡的Replace函數是為了去掉B,因為我們只需要數字
-                Pad_symbol = Type52_GetPadSymbol(fullString)
+                PipeSize = GetLookupValue(Replace(Type52_GetPipeSize(fullstring), "B", "")) ' 這裡的Replace函數是為了去掉B,因為我們只需要數字
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
                 Lops_Value = Type_GetTable66_D(PipeSize)
             End If
         Case 2
         ' 他只有Type 52-2B(P)-"*(*)" 或者  Type 52-2B(P)-"*" 這種情況需附加第三階段判讀
-            Hops_Value = GetPartOfString(fullString, 4)
+            Hops_Value = GetPartOfString(fullstring, 4)
             If Hops_Value = "N/A" Then
                 Hops_Value = 150
-                PipeSize = Type52_GetPipeSize(fullString)
-                Pad_symbol = Type52_GetPadSymbol(fullString)
-                Insulation_Value = Type52_GetInsulationValue(fullString)
-                Matirial_Value = Type52_GetMaterialValue(fullString)
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
                 Lops_Value = Type_GetTable66_D(PipeSize)
             End If
         Case 4
         ' 他有Type 52-2B(P)-A(A)-130-500 這種情況需附加第四階段判讀
-            Hops_Value = GetPartOfString(fullString, 4)
+            Hops_Value = GetPartOfString(fullstring, 4)
             If Hops_Value = "N/A" Then
                 Hops_Value = 150
-                PipeSize = Type52_GetPipeSize(fullString)
-                Pad_symbol = Type52_GetPadSymbol(fullString)
-                Insulation_Value = Type52_GetInsulationValue(fullString)
-                Matirial_Value = Type52_GetMaterialValue(fullString)
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
                 Lops_Value = Type_GetTable66_D(PipeSize)
             Else
-                Hops_Value = GetPartOfString(fullString, 4)
-                Lops_Value = GetPartOfString(fullString, 5)
-                PipeSize = Type52_GetPipeSize(fullString)
-                Pad_symbol = Type52_GetPadSymbol(fullString)
-                Insulation_Value = Type52_GetInsulationValue(fullString)
-                Matirial_Value = Type52_GetMaterialValue(fullString)
+                Hops_Value = GetPartOfString(fullstring, 4)
+                Lops_Value = GetPartOfString(fullstring, 5)
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
                 
             End If
-            Lops_Value = GetFifthPartOfString(fullString)
+            Lops_Value = GetFifthPartOfString(fullstring)
             
         If Lops_Value = " " Then
             Lops_Value = Type_GetTable66_D(PipeSize)
@@ -2528,47 +2517,77 @@ Sub Type_52(ByVal fullString As String)
             End If
                 
                 
-            'Pad Calculator
-                Plate_Size_a = PAD_Calculator_A
-                Plate_Size_b = PAD_Calculator_B
-                Plate_Thickness = PAD_Calculator_t
-                Plate_Name = "Pad_52Type"
-                MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name
+            'Pad Calculatorˋ
+                plate_size_a = PAD_Calculator_A
+                plate_size_b = PAD_Calculator_B
+                plate_thickness = PAD_Calculator_t
+                plate_name = "Pad_52Type"
+                MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
     End If
+    '-----------------
+    
+    
+    
     '------------------ 角鐵專區-----------------------
     '角鐵的尺寸為不變
-    SectionType = "Angle"
-    The_Section_Size = "40*40*5"
-    Total_Length = 150
-    AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+    If First_condition_input <> "66" Then
+        SectionType = "Angle"
+        The_Section_Size = "40*40*5"
+        Total_Length = 150
+        AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+    End If
     '------------------ C專區-----------------------
     SectionType = "H Beam"
     The_Section_Size = Type52_GetTable66_C(PipeSize)
     Total_Length = Lops_Value
-    AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+    If The_Section_Size = "FB12" Then
+        ' 第一個板子
+        plate_size_a = Type52_GetTable66_A(PipeSize) + (35 * 2) ' A + 35*2
+        plate_size_b = Lops_Value + (25 * 2) ' Lops + 25*2
+        plate_thickness = 12
+        plate_name = "FB_52Type_1"
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
+        ' 第二個板子
+        plate_size_a = 100
+        plate_size_b = Lops_Value + (25 * 2) ' Lops + 25*2
+        plate_thickness = 12
+        plate_name = "FB_52Type_2"
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
+    Else
+        AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+    End If
+    '------------------ D專區-----------------------
+    If PipeSize >= 10 Then
+        plate_size_a = Type52_GetTable66_HopesPlate(PipeSize) + 100
+        plate_size_b = Lops_Value + (25 * 2) ' Lops + 25*2
+        plate_thickness = Type52_GetTable66_B(PipeSize)
+        plate_name = "FB_52Type_3"
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
     
-End Sub
-Sub Type_53(ByVal fullString As String)
-Type_52 (fullString)
+    End If
 
 End Sub
-Sub Type_54(ByVal fullString As String)
-Type_52 (fullString)
+Sub Type_53(ByVal fullstring As String)
+Type_52 (fullstring)
 
 End Sub
-Sub Type_55(ByVal fullString As String)
-Type_52 (fullString)
+Sub Type_54(ByVal fullstring As String)
+Type_52 (fullstring)
+
+End Sub
+Sub Type_55(ByVal fullstring As String)
+Type_52 (fullstring)
 
 End Sub
 
-Sub Type_57(ByVal fullString As String)
+Sub Type_57(ByVal fullstring As String)
     Dim ws As Worksheet
 
     Set ws = Worksheets("Weight_Analysis")
     '抽取第二階段 - 管徑
-    PipeSize = GetPartOfString(fullString, 2)
+    PipeSize = GetPartOfString(fullstring, 2)
     '抽取第三階段 - Fig.No
-    Fig = GetPartOfString(fullString, 3)
+    fig = GetPartOfString(fullstring, 3)
     
     'PipeSize = GetLookupValue(CleanPipeSize(PipeSize))
        ' 找到列 B 的下一個空白行
@@ -2595,7 +2614,216 @@ Sub Type_57(ByVal fullString As String)
 
 
 End Sub
-Sub Type_108(ByVal fullString As String)
+Sub Type_59(ByVal fullstring As String)
+' ------變數宣告 -----
+    Dim linesize As String
+    Dim fig As Variant
+    Dim material As Variant
+    Dim Main_material As String
+    Dim Lug_material As String
+    Dim func_material As String
+    Dim A As Double, B As Double, C As Double, D As Double
+    Dim T As Double, S_T As Double, Plate_qty As Double
+    Dim plate_size_a As Double, plate_size_b As Double, plate_thickness As Double, plate_name As String
+    
+
+'Example : 59-14B-A(S)
+'59 = Type
+'14B = Line Size
+'A   = Fig
+'(S) = Matirial
+
+' ------抽出與錯誤判讀 -----
+linesize = GetPartOfString(fullstring, 2, "-")
+groupforfigandmaterial = ExtractParts(GetPartOfString(fullstring, 3, "-"))
+If groupforfigandmaterial(0) = "" Then
+    fig = GetPartOfString(fullstring, 3, "-")
+    material = GetPartOfString(fullstring, 3, "-")
+Else
+    fig = groupforfigandmaterial(0)
+    material = groupforfigandmaterial(1)
+End If
+
+'----------------
+
+' ------表格製作 -----
+'# Table A (about material table)
+'use the material symbol to find the LUG PLATE material name
+'if symbol = "" then
+    'Main_material = Carbon Steel
+    'Lug_material = A-283-C
+' if symbol = (A) then
+    'Main_material = Alloy Steel
+    'Lug_material = A-387-22
+' if symbol = (S) then
+    'Main_material = Stainless Steel
+    'Lug_material = A-240-304
+' if symbol = (R) then
+    'Main_material = Carbon Steel
+    'Lug_material = A-516-70
+If material = "(A)" Then
+    Main_material = "Alloy Steel"
+    Lug_material = "A-387-22"
+    func_material = "AS"
+ElseIf material = "(S)" Then
+    Main_material = "Stainless Steel"
+    Lug_material = "A-240-304"
+    func_material = "SUS304"
+ElseIf material = "(R)" Then
+    Main_material = "Carbon Steel"
+    Lug_material = "A-516-70"
+    func_material = "A36/SS400"
+Else
+    Main_material = "Carbon Steel"
+    Lug_material = "A-283-C"
+    func_material = "A36/SS400"
+End If
+'----------------
+' ------表格製作 -----
+' Lug plate table
+linesize = CleanPipeSize(linesize) '清除管徑的空格
+' 14B = 14 subsitute B , 1-1/2 = 1.5
+Select Case linesize
+    Case Is <= 2.5
+        A = 80
+        B = 55
+        C = 15
+        D = 0
+        T = 9
+        S_T = 6
+    Case 3 To 8
+        A = 150
+        B = 100
+        C = 50
+        D = 0
+        T = 12
+        S_T = 9
+    Case 10 To 12
+        A = 150
+        B = 130
+        C = 100
+        D = 120
+        T = 12
+    End Select
+'-------輸出前特別判讀
+    If Main_material = "Stainless Steel" Then
+        T = S_T
+    End If
+    If D = 0 Then
+        Plate_qty = 1
+    Else
+        Plate_qty = 2
+    End If
+' ------輸出結果 -----
+'LUG PLATE Calculator
+    plate_size_a = B
+    plate_size_b = A
+    plate_thickness = T
+    plate_name = "LUGPLATE_59Type"
+    MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+
+
+
+End Sub
+Sub Type_66(ByVal fullstring As String)
+Type_52 (fullstring)
+
+End Sub
+Sub Type_67(ByVal fullstring As String)
+Type_52 (fullstring)
+
+End Sub
+Sub Type_80(ByVal fullstring As String)
+
+   ' 宣告變數
+    Dim pi As Double
+    Dim ws_For_52_Type_Table As Worksheet
+    Dim Special_symbol_count As Integer
+    Dim Hops_Value As Variant, Lops_Value As Variant
+    Dim PipeSize As Variant, Pad_symbol As Variant
+    Dim Insulation_Value As Variant, Material_Value As Variant
+    Dim plate_size_a As Double, plate_size_b As Double, plate_thickness As Double
+    Dim The_Section_Size As String
+    Dim SectionType As String
+    Dim Total_Length As Double
+    Dim PartString_Type As String
+    Dim Section_Length_H As Double
+    Dim Section_Length_L As Double
+    Dim Matirial_Value As String
+    
+    ' 以下變量用於 MainAddPlate 過程
+    Dim plate_name As String ' 板材的命名，用於標識不同板材
+    
+    First_condition_input = GetPartOfString(fullstring, 1)
+    '------------------------------------------第四部分判讀與分析------------------------------------------
+    Special_symbol_count = CountCharacter(fullstring, "-")  ' if fullstring = "52-2B(P)-A(A)-130-500" then Special_symbol_count = 4
+    Select Case Special_symbol_count
+        Case 1
+        ' 他只有Type 52-2B   這種情況 需附加第二階段判讀 且insulation = 75 & lesser  hope = 130 lops = 500
+            Hops_Value = GetPartOfString(fullstring, 4)
+            PrintStepCalculator "[Type_52] - 檢測階段"
+            PrintStepCalculator "[Type_52] - 目前Hope_Value值=" & Hops_Value & " "
+            If Hops_Value = "N/A" Then
+                PrintStepCalculator "[Type_52] - 檢測階段 - 發現Hops_Value為N/A - 設置Hops_Value為150並開始進行下一階段判讀 "
+                Hops_Value = 150
+                PipeSize = GetLookupValue(Replace(Type52_GetPipeSize(fullstring), "B", "")) ' 這裡的Replace函數是為了去掉B,因為我們只需要數字
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Lops_Value = Type_GetTable66_D(PipeSize)
+            End If
+        Case 2
+        ' 他只有Type 52-2B(P)-"*(*)" 或者  Type 52-2B(P)-"*" 這種情況需附加第三階段判讀
+            Hops_Value = GetPartOfString(fullstring, 4)
+            If Hops_Value = "N/A" Then
+                Hops_Value = 150
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
+                Lops_Value = Type_GetTable66_D(PipeSize)
+            End If
+        Case 4
+        ' 他有Type 52-2B(P)-A(A)-130-500 這種情況需附加第四階段判讀
+            Hops_Value = GetPartOfString(fullstring, 4)
+            If Hops_Value = "N/A" Then
+                Hops_Value = 150
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
+                Lops_Value = Type_GetTable66_D(PipeSize)
+            Else
+                Hops_Value = GetPartOfString(fullstring, 4)
+                Lops_Value = GetPartOfString(fullstring, 5)
+                PipeSize = Type52_GetPipeSize(fullstring)
+                Pad_symbol = Type52_GetPadSymbol(fullstring)
+                Insulation_Value = Type52_GetInsulationValue(fullstring)
+                Matirial_Value = Type52_GetMaterialValue(fullstring)
+                
+            End If
+            Lops_Value = GetFifthPartOfString(fullstring)
+            
+        If Lops_Value = " " Then
+            Lops_Value = Type_GetTable66_D(PipeSize)
+        End If
+            If Hops_Value = " " Then
+            Hops_Value = 150
+        End If
+    End Select
+
+'評估目前獲得的變數值
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前Hops_Value值=" & Hops_Value & " "
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前Lops_Value值=" & Lops_Value & " "
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前PipeSize值=" & PipeSize & " "
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前Pad_symbol值=" & Pad_symbol & " "
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前Insulation_Value值=" & Insulation_Value & " "
+PrintStepCalculator "[Type_80] - 檢測階段 - 目前Matirial_Value值=" & Matirial_Value & " "
+' 這邊PipeSize 並未被解除"B"
+
+
+
+End Sub
+Sub Type_108(ByVal fullstring As String)
+
     Dim needValue As Variant
     
     Dim PartString_Type As String
@@ -2617,29 +2845,29 @@ Sub Type_108(ByVal fullString As String)
     Set ws = Worksheets("Weight_Analysis")
         
         '區分出尺吋 符合Line Size : "D"
-            PartString_Type = GetSecondPartOfString(fullString)
+            PartString_Type = GetSecondPartOfString(fullstring)
             PipeSize = Replace(PartString_Type, "B", "")
           
           '區分出M42板類型
-        letter = GetThirdPartOfString(fullString)
+        letter = GetThirdPartOfString(fullstring)
         letter = Right(letter, 1)
         
         '區分出"H"值並乘上100
-        Main_Pipe_Length = Replace(GetThirdPartOfString(fullString), letter, "") * 100
+        Main_Pipe_Length = Replace(GetThirdPartOfString(fullstring), letter, "") * 100
         
 
         
         '區分出Fig number
-        needValue = ExtractParts(GetFourthPartOfString(fullString))
+        needValue = ExtractParts(GetFourthPartOfString(fullstring))
         Fig_number = needValue(0)
                 
                 Select Case Fig_number
                 Case "A"
-                    Fig = "Fig_A"
+                    fig = "Fig_A"
                 Case "B"
-                    Fig = "Fig_B"
+                    fig = "Fig_B"
                 Case "C"
-                    Fig = "Fig_C"
+                    fig = "Fig_C"
                 
                 Case Else
                    Exit Sub
@@ -2758,17 +2986,17 @@ Sub Type_108(ByVal fullString As String)
             
             'Spacer Plate 選用
             Plate_Size = 120
-            Plate_Size_b = 80
-            Plate_Thickness = 6
-            Weight_calculator = Plate_Size / 1000 * Plate_Size_b / 1000 * Plate_Thickness * 7.85
+            plate_size_b = 80
+            plate_thickness = 6
+            Weight_calculator = Plate_Size / 1000 * plate_size_b / 1000 * plate_thickness * 7.85
 
             i = GetNextRowInColumnB()
                   With ws
                       .Cells(i, "B").value = .Cells(i - 1, "B").value + 1 '項次
                       .Cells(i, "C").value = "Plate"
-                      .Cells(i, "D").value = Plate_Thickness
+                      .Cells(i, "D").value = plate_thickness
                       .Cells(i, "E").value = Plate_Size
-                      .Cells(i, "F").value = Plate_Size_b
+                      .Cells(i, "F").value = plate_size_b
                       .Cells(i, "G").value = Mtl
                       .Cells(i, "H").value = 1
                       .Cells(i, "J").value = Weight_calculator
@@ -2784,20 +3012,20 @@ Sub Type_108(ByVal fullString As String)
 
             '特殊板選用
             ' 給定定義特殊板 Fig.A = 108_Fig_A_Plate
-            Select Case Fig
+            Select Case fig
             Case "Fig_A"
             Plate_Size = 120
-            Plate_Size_b = 100
-            Plate_Thickness = 9
-            Weight_calculator = Plate_Size / 1000 * Plate_Size_b / 1000 * Plate_Thickness * 7.85
+            plate_size_b = 100
+            plate_thickness = 9
+            Weight_calculator = Plate_Size / 1000 * plate_size_b / 1000 * plate_thickness * 7.85
 
             i = GetNextRowInColumnB()
                   With ws
                       .Cells(i, "B").value = .Cells(i - 1, "B").value + 1 '項次
                       .Cells(i, "C").value = "108_Fig_A_Plate"
-                      .Cells(i, "D").value = Plate_Thickness
+                      .Cells(i, "D").value = plate_thickness
                       .Cells(i, "E").value = Plate_Size
-                      .Cells(i, "F").value = Plate_Size_b
+                      .Cells(i, "F").value = plate_size_b
                       .Cells(i, "G").value = Mtl
                       .Cells(i, "H").value = 1
                       .Cells(i, "J").value = Weight_calculator
@@ -2811,17 +3039,17 @@ Sub Type_108(ByVal fullString As String)
              
              Case "Fig_B"
             Plate_Size = 120
-            Plate_Size_b = 100
-            Plate_Thickness = 9
-            Weight_calculator = Plate_Size / 1000 * Plate_Size_b / 1000 * Plate_Thickness * 7.85
+            plate_size_b = 100
+            plate_thickness = 9
+            Weight_calculator = Plate_Size / 1000 * plate_size_b / 1000 * plate_thickness * 7.85
 
             i = GetNextRowInColumnB()
                   With ws
                       .Cells(i, "B").value = .Cells(i - 1, "B").value + 1 '項次
                       .Cells(i, "C").value = "108_Fig_B_Plate"
-                      .Cells(i, "D").value = Plate_Thickness
+                      .Cells(i, "D").value = plate_thickness
                       .Cells(i, "E").value = Plate_Size
-                      .Cells(i, "F").value = Plate_Size_b
+                      .Cells(i, "F").value = plate_size_b
                       .Cells(i, "G").value = Mtl
                       .Cells(i, "H").value = 1
                       .Cells(i, "J").value = Weight_calculator
@@ -2835,17 +3063,17 @@ Sub Type_108(ByVal fullString As String)
              
              Case "Fig_C"
             Plate_Size = 65
-            Plate_Size_b = 210
-            Plate_Thickness = 9
-            Weight_calculator = Plate_Size / 1000 * Plate_Size_b / 1000 * Plate_Thickness * 7.85
+            plate_size_b = 210
+            plate_thickness = 9
+            Weight_calculator = Plate_Size / 1000 * plate_size_b / 1000 * plate_thickness * 7.85
 
             i = GetNextRowInColumnB()
                   With ws
                       .Cells(i, "B").value = .Cells(i - 1, "B").value + 1 '項次
                       .Cells(i, "C").value = "108_Fig_C_Plate"
-                      .Cells(i, "D").value = Plate_Thickness
+                      .Cells(i, "D").value = plate_thickness
                       .Cells(i, "E").value = Plate_Size
-                      .Cells(i, "F").value = Plate_Size_b
+                      .Cells(i, "F").value = plate_size_b
                       .Cells(i, "G").value = Mtl
                       .Cells(i, "H").value = 1
                       .Cells(i, "J").value = Weight_calculator

@@ -1,31 +1,31 @@
 Attribute VB_Name = "Y_Type_52_Tool"
-Function Type52_GetPipeSize(ByVal fullString As String) As String
+Function Type52_GetPipeSize(ByVal fullstring As String) As String
     Dim Second_Part_needValue_list As Variant
     PrintStepCalculator "[Type52_GetPipeSize] - 開啟讀取管線尺寸判別"
-    If InStr(GetPartOfString(fullString, 2), "(") > 0 Then
+    If InStr(GetPartOfString(fullstring, 2), "(") > 0 Then
         PrintStepCalculator "[Type52_GetPipeSize] - 發現裡面藏有Pad字元 拆分之"
-        Second_Part_needValue_list = ExtractParts(GetPartOfString(fullString, 2))
+        Second_Part_needValue_list = ExtractParts(GetPartOfString(fullstring, 2))
         Type52_GetPipeSize = Second_Part_needValue_list(0)
     Else
-        Type52_GetPipeSize = GetPartOfString(fullString, 2)
+        Type52_GetPipeSize = GetPartOfString(fullstring, 2)
     End If
 End Function
 
-Function Type52_GetPadSymbol(ByVal fullString As String) As String
+Function Type52_GetPadSymbol(ByVal fullstring As String) As String
     Dim Second_Part_needValue_list As Variant
 
-    If InStr(GetPartOfString(fullString, 2), "(") > 0 Then
-        Second_Part_needValue_list = ExtractParts(GetPartOfString(fullString, 2))
+    If InStr(GetPartOfString(fullstring, 2), "(") > 0 Then
+        Second_Part_needValue_list = ExtractParts(GetPartOfString(fullstring, 2))
         Type52_GetPadSymbol = Second_Part_needValue_list(1)
     Else
         Type52_GetPadSymbol = "N/A"
     End If
 End Function
-Function Type52_GetMaterialValue(ByVal fullString As String) As String
+Function Type52_GetMaterialValue(ByVal fullstring As String) As String
     Dim Third_Part_value As String
     Dim Third_Part_needValue_list As Variant
 
-    Third_Part_value = GetPartOfString(fullString, 3)
+    Third_Part_value = GetPartOfString(fullstring, 3)
     If Third_Part_value = " " Then
         Type52_GetMaterialValue = "A36/SS400"
     Else
@@ -45,11 +45,11 @@ Function Type52_GetMaterialValue(ByVal fullString As String) As String
         End If
     End If
 End Function
-Function Type52_GetInsulationValue(ByVal fullString As String) As Integer
+Function Type52_GetInsulationValue(ByVal fullstring As String) As Integer
     Dim Third_Part_value As String
     Dim Third_Part_needValue_list As Variant
 
-    Third_Part_value = GetPartOfString(fullString, 3)
+    Third_Part_value = GetPartOfString(fullstring, 3)
     If Third_Part_value = " " Then
         GetInsulationValue = 75
     Else
@@ -89,7 +89,7 @@ Function Type52_GetTable66_A(PipeSize) As Variant
             Type52_GetTable66_A = 130
         Case 16 To 20
             Type52_GetTable66_A = 250
-        Case 24
+        Case 22 To 40
             Type52_GetTable66_A = 300
     End Select
 End Function
@@ -100,7 +100,7 @@ Function Type52_GetTable66_B(PipeSize) As Variant
             Type52_GetTable66_B = 0
         Case 10 To 14
             Type52_GetTable66_B = 9
-        Case 18 To 24
+        Case 16 To 40
             Type52_GetTable66_B = 12
     End Select
 End Function
@@ -114,7 +114,7 @@ Function Type52_GetTable66_C(PipeSize) As String
             Type52_GetTable66_C = "200*100*5.5" ' Hbeam
         Case 10 To 14
             Type52_GetTable66_C = "200*200*8"
-        Case 18 To 24
+        Case 16 To 40
             Type52_GetTable66_C = "FB12"
     End Select
 End Function
@@ -129,8 +129,8 @@ Function Type_GetTable66_D(PipeSize As Variant) As Variant
             Type_GetTable66_D = 150
         Case 3 To 8
             Type_GetTable66_D = 250
-        Case 10 To 24
-            Type_GetTable66_D = 0
+        Case 10 To 40
+            Type_GetTable66_D = 250
         Case Else
             Type_GetTable66_D = "Error: Invalid size"  ' 添加錯誤處理以提醒無效輸入
     End Select
@@ -143,20 +143,27 @@ Function Type_GetTable66_E(PipeSize) As Variant
     Select Case PipeSize
         Case 1.5 To 2
             Type_GetTable66_E = 0
-        Case 2 To 24
+        Case 2 To 40
             Type_GetTable66_E = 50
     End Select
 End Function
-Function CleanPipeSize(PipeSize As Variant) As String
-    ' 移除字符"B"和引號，如果存在
-    If InStr(PipeSize, "B") > 0 Then
-        PipeSize = Replace(PipeSize, "B", "")
-    End If
-    ' 從GetLookupValue獲取實際的值
-    PipeSize = GetLookupValue(PipeSize)
-    If InStr(PipeSize, "'") > 0 Then
-        PipeSize = Replace(PipeSize, "'", "")
-    End If
-    CleanPipeSize = PipeSize
+Function Type52_GetTable66_HopesPlate(PipeSize) As Variant
+    
+    Select Case PipeSize
+        Case 10
+            Type52_GetTable66_HopesPlate = 68.25
+        Case 12
+            Type52_GetTable66_HopesPlate = 76.2
+         Case 14
+            Type52_GetTable66_HopesPlate = 88.9
+        Case 16
+            Type52_GetTable66_HopesPlate = 101.6
+        Case 18
+            Type52_GetTable66_HopesPlate = 114.3
+        Case 20
+            Type52_GetTable66_HopesPlate = 127
+        Case 22 To 40
+            Type52_GetTable66_HopesPlate = 152.4
+    End Select
 
 End Function

@@ -1,12 +1,12 @@
 Attribute VB_Name = "A_主程序"
 ' debug.print 開關
-Global Const DEBUG_MODE As Boolean = False
+Global Const DEBUG_MODE As Boolean = True
 Global globalPrintStep As Long
 Sub List_to_Analysis()
     Dim ws As Worksheet
     Dim Row_max As Long
     Dim i As Long
-    Dim fullString As String
+    Dim fullstring As String
     Dim PartString_Type As String
     Dim headers As Variant
     Dim ii As Integer
@@ -38,14 +38,14 @@ Sub List_to_Analysis()
     
     ' 主處理循環
     For i = 2 To Row_max
-        fullString = ws.Cells(i, "A").value
-        PartString_Type = GetFirstPartOfString(fullString)
+        fullstring = ws.Cells(i, "A").value
+        PartString_Type = GetFirstPartOfString(fullstring)
         Last_row_main_Title = GetNextRowInColumnB()
-        ws_Weight_Analysis.Cells(Last_row_main_Title, "A") = fullString
+        ws_Weight_Analysis.Cells(Last_row_main_Title, "A") = fullstring
         On Error GoTo ErrorHandler
 Select Case PartString_Type
     Case "01"
-        Type_01 fullString
+        Type_01 fullstring
     ' Case "02"
         ' Type_02 fullString
     ' Case "03"
@@ -53,29 +53,29 @@ Select Case PartString_Type
     ' Case "04"
         ' Type_04 fullString
      Case "05"
-         Type_05 fullString
+         Type_05 fullstring
     ' Case "06"
         ' Type_06 fullString
     ' Case "07"
         ' Type_07 fullString
      Case "08"
-         Type_08 fullString
+         Type_08 fullstring
      Case "09"
-         Type_09 fullString
+         Type_09 fullstring
     ' Case "10"
         ' Type_10 fullString
     Case "11"
-        Type_11 fullString
+        Type_11 fullstring
     ' Case "12"
         ' Type_12 fullString
     ' Case "13"
         ' Type_13 fullString
      Case "14"
-         Type_14 fullString
+         Type_14 fullstring
      Case "15"
-         Type_15 fullString
+         Type_15 fullstring
     Case "16"
-        Type_16 fullString
+        Type_16 fullstring
     ' Case "17"
         ' Type_17 fullString
     ' Case "18"
@@ -83,57 +83,67 @@ Select Case PartString_Type
     ' Case "19"
         ' Type_19 fullString
      Case "20"
-         Type_20 fullString
+         Type_20 fullstring
      Case "21"
-         Type_21 fullString
+         Type_21 fullstring
      Case "22"
-         Type_22 fullString
+         Type_22 fullstring
      Case "23"
-         Type_23 fullString
+         Type_23 fullstring
      Case "24"
-         Type_24 fullString
+         Type_24 fullstring
      Case "25"
-         Type_25 fullString
+         Type_25 fullstring
      Case "26"
-         Type_26 fullString
+         Type_26 fullstring
      Case "27"
-         Type_27 fullString
+         Type_27 fullstring
      Case "28"
-         Type_28 fullString
+         Type_28 fullstring
     ' Case "29"
         ' Type_29 fullString
      Case "30"
-         Type_30 fullString
+         Type_30 fullstring
       Case "31"
-         Type_31 fullString
+         Type_31 fullstring
      Case "32"
-         Type_32 fullString
+         Type_32 fullstring
      Case "33"
-         Type_33 fullString
+         Type_33 fullstring
      Case "34"
-         Type_34 fullString
+         Type_34 fullstring
      Case "35"
-         Type_35 fullString
+         Type_35 fullstring
      Case "37"
-         Type_37 fullString
+         Type_37 fullstring
      Case "39"
-         Type_39 fullString
+         Type_39 fullstring
      Case "48"
-         Type_48 fullString
+         Type_48 fullstring
      Case "51"
-         Type_51 fullString
+         Type_51 fullstring
      Case "52"
-         Type_52 fullString
+         Type_52 fullstring
      Case "53"
-         Type_53 fullString
+         Type_53 fullstring
      Case "54"
-         Type_54 fullString
+         Type_54 fullstring
      Case "55"
-         Type_55 fullString
+         Type_55 fullstring
      Case "57"
-         Type_57 fullString
+         Type_57 fullstring
+     Case "59"
+         Type_59 fullstring
+     'Case "60"
+         'Type_60 fullString
+      Case "66"
+         Type_66 fullstring
+      Case "67"
+         Type_67 fullstring
+      Case "80"
+         Type_80 fullstring
     Case "108"
-        Type_108 fullString
+        Type_108 fullstring
     Case Else
         ws_Weight_Analysis.Cells(Last_row_main_Title, "B") = "Error"
         End Select

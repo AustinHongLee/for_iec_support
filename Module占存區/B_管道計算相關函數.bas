@@ -75,7 +75,7 @@ Function CalculatePipeDetails(PipeSize As Variant, PipeThickness As Variant) As 
 End Function
 
 
-Sub AddPipeEntry(Pipe_Size As String, Pipe_Thickness As String, Pipe_Length As Double, Material As String)
+Sub AddPipeEntry(Pipe_Size As String, Pipe_Thickness As String, Pipe_Length As Double, material As String)
     Dim i As Integer
     
     
@@ -154,7 +154,7 @@ Sub AddPipeEntry(Pipe_Size As String, Pipe_Thickness As String, Pipe_Length As D
                 .Cells(i, "C").value = "Pipe" '品名
                 .Cells(i, "D").value = Pipe_Size & """" & "*" & Pipe_ThickNess_For_Title '尺寸厚度
                 .Cells(i, "E").value = Pipe_Length '長度
-                .Cells(i, "G").value = Material '材值
+                .Cells(i, "G").value = material '材值
                 .Cells(i, "H").value = 1 '數量
                 .Cells(i, "I").value = PipeDetails.Item("PerWeight") '每米重
                 .Cells(i, "J").value = .Cells(i, "E").value / 1000 * .Cells(i, "I").value '單重

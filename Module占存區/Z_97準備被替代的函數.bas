@@ -1,9 +1,9 @@
 Attribute VB_Name = "Z_97非称砆蠢ㄧ计"
-Function GetFirstPartOfString(fullString As String) As String
+Function GetFirstPartOfString(fullstring As String) As String
     Dim splitString As Variant
     Dim firstPart As String
     
-    splitString = Split(fullString, "-") ' ㄏノ"-"だ筳才ㄓだ澄才﹃
+    splitString = Split(fullstring, "-") ' ㄏノ"-"だ筳才ㄓだ澄才﹃
     
     If UBound(splitString) >= 1 Then ' 絋玂Τì镑だ筳才
         firstPart = splitString(0) ' 莉だ澄计舱材じ材"-"ぇ玡
@@ -15,11 +15,11 @@ Function GetFirstPartOfString(fullString As String) As String
 End Function
 
 
-Function GetSecondPartOfString(fullString As String) As String
+Function GetSecondPartOfString(fullstring As String) As String
     Dim splitString As Variant
     Dim secondPart As String
     
-    splitString = Split(fullString, "-") ' ㄏノ"-"だ筳才ㄓだ澄才﹃
+    splitString = Split(fullstring, "-") ' ㄏノ"-"だ筳才ㄓだ澄才﹃
     
     If UBound(splitString) >= 1 Then ' 絋玂Τì镑だ筳才
         secondPart = splitString(1) ' 莉だ澄计舱材じ材㎝材"-"ぇ丁
@@ -30,9 +30,9 @@ Function GetSecondPartOfString(fullString As String) As String
     GetSecondPartOfString = secondPart
 End Function
 
-Function GetThirdPartOfString(fullString As String) As String
+Function GetThirdPartOfString(fullstring As String) As String
     Dim splitString As Variant
-    splitString = Split(fullString, "-") ' ㄏノ "-" ㄓだ澄才﹃
+    splitString = Split(fullstring, "-") ' ㄏノ "-" ㄓだ澄才﹃
 
     If UBound(splitString) >= 2 Then ' 絋玂Τì镑だ筳才
         GetThirdPartOfString = splitString(2) ' 材场だ
@@ -40,9 +40,9 @@ Function GetThirdPartOfString(fullString As String) As String
         GetThirdPartOfString = "N/A" ' 狦⊿Τì镑だ筳才砞竚岿粇┪纐粄
     End If
 End Function
-Function GetFourthPartOfString(fullString As String) As String
+Function GetFourthPartOfString(fullstring As String) As String
     Dim splitString As Variant
-    splitString = Split(fullString, "-") ' ㄏノ "-" ㄓだ澄才﹃
+    splitString = Split(fullstring, "-") ' ㄏノ "-" ㄓだ澄才﹃
 
     If UBound(splitString) >= 3 Then ' 絋玂Τì镑だ筳才
         GetFourthPartOfString = splitString(3) ' 材场だ
@@ -50,9 +50,9 @@ Function GetFourthPartOfString(fullString As String) As String
         GetFourthPartOfString = "N/A" ' 狦⊿Τì镑だ筳才砞竚岿粇┪纐粄
     End If
 End Function
-Function GetFifthPartOfString(fullString As String) As String
+Function GetFifthPartOfString(fullstring As String) As String
     Dim splitString As Variant
-    splitString = Split(fullString, "-") ' ㄏノ "-" ㄓだ澄才﹃
+    splitString = Split(fullstring, "-") ' ㄏノ "-" ㄓだ澄才﹃
 
     If UBound(splitString) >= 4 Then ' 絋玂Τì镑だ筳才
         GetFifthPartOfString = splitString(4) ' 材き场だ
@@ -61,9 +61,9 @@ Function GetFifthPartOfString(fullString As String) As String
     End If
 End Function
 
-Function IsFourthPartAvailable(ByVal fullString As String) As Boolean
+Function IsFourthPartAvailable(ByVal fullstring As String) As Boolean
     Dim parts() As String
-    parts = Split(fullString, "-") ' ㄏノ硈才だ筳才﹃
+    parts = Split(fullstring, "-") ' ㄏノ硈才だ筳才﹃
     
     ' 狦だ澄计舱┪单 4玥ボ材场だ
     If UBound(parts) >= 3 Then

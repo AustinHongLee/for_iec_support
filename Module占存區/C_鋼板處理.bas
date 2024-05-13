@@ -1,5 +1,5 @@
 Attribute VB_Name = "C_鋼板處理"
-Sub MainAddPlate(Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness As Double, Plate_Name As String, Optional Plate_Material As String)
+Sub MainAddPlate(plate_size_a As Double, plate_size_b As Double, plate_thickness As Double, plate_name As String, Optional Plate_Material As String, Optional Plate_qty As Double)
  ' ----------------------------------------------------------------------------------------
 ' |                        程序 AddNewMaterial 功能描述                                  |
 ' | ------------------------------------------------------------------------------------- |
@@ -9,7 +9,8 @@ Sub MainAddPlate(Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness
 ' | - 獲取下一個可用行以插入新數據，保持工作表的整潔和組織。                              |
 ' | - 檢查第一個值是否已存在，以確定是否從1開始編號或繼續序列。                           |
 ' | - 將計算和輸入的數據填充到工作表的特定列，以便進行重量分析。                          |
-' | - 適用板類配分                                                                        |
+' | - 適用板類配分
+' | - MainAddPlate Plate_Size_a, Plate_Size_b, Plate_Thickness, Plate_Name.Plate_Material,Plate_qty
 ' ----------------------------------------------------------------------------------------
    
     
@@ -20,12 +21,15 @@ Sub MainAddPlate(Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness
     Dim First_Value_Checking As Long
     Dim ws As Worksheet
     Set ws = Worksheets("Weight_Analysis")
-    
+    '------Optional remake---
+    If Plate_qty = 0 Then
+        Plate_qty = 1
+    End If
    
     If Plate_Material = "" Then
         Plate_Material = "A36/SS400"
     End If
-    
+    '-----------------------------
     Select Case Plate_Material
         Case "A36/SS400"
             Pipeline_Density = 7.85
@@ -36,7 +40,7 @@ Sub MainAddPlate(Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness
     End Select
            
 
-    weight = Plate_Size_a / 1000 * Plate_Size_b / 1000 * Plate_Thickness * Pipeline_Density
+    weight = plate_size_a / 1000 * plate_size_b / 1000 * plate_thickness * Pipeline_Density
     
 
     i = GetNextRowInColumnB()
@@ -51,18 +55,18 @@ Sub MainAddPlate(Plate_Size_a As Double, Plate_Size_b As Double, Plate_Thickness
 
     With ws
         .Cells(i, "B").value = First_Value_Checking
-        .Cells(i, "C").value = Plate_Name
-        .Cells(i, "D").value = Plate_Thickness
-        .Cells(i, "E").value = Plate_Size_a
-        .Cells(i, "F").value = Plate_Size_b
+        .Cells(i, "C").value = plate_name
+        .Cells(i, "D").value = plate_thickness
+        .Cells(i, "E").value = plate_size_a
+        .Cells(i, "F").value = plate_size_b
         .Cells(i, "G").value = Plate_Material
-        .Cells(i, "H").value = 1
+        .Cells(i, "H").value = Plate_qty
         .Cells(i, "J").value = weight
-        .Cells(i, "K").value = weight
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
         .Cells(i, "L").value = "PC"
         .Cells(i, "M").value = 1
-        .Cells(i, "O").value = 1
-        .Cells(i, "P").value = weight
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
         .Cells(i, "Q").value = "鋼板類"
     End With
 End Sub
@@ -74,9 +78,9 @@ Sub AddPlateEntry(PlateType As String, PipeSize As Variant)
     Dim ws_M42 As Worksheet
     Dim col_type As Integer
     Dim Plate_Size As Double
-    Dim Plate_Thickness As Double
+    Dim plate_thickness As Double
     Dim Weight_calculator As Double
-    Dim Plate_Name As String
+    Dim plate_name As String
     Dim RequireDrilling As Boolean
     Dim ws As Worksheet
     Dim i As Long
@@ -116,20 +120,20 @@ Sub AddPlateEntry(PlateType As String, PipeSize As Variant)
         ' 若PipeSize為特定格式的字符串
         col_type = col_type - 1
         Plate_Size = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("B:L"), col_type, False)
-        Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("B:L"), 10, False)
+        plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("B:L"), 10, False)
     Else
         ' 若PipeSize為數字
         PipeSize = GetLookupValue(PipeSize)
         Plate_Size = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("A:L"), col_type, False)
-        Plate_Thickness = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("A:L"), 11, False)
+        plate_thickness = Application.WorksheetFunction.VLookup(PipeSize, ws_M42.Range("A:L"), 11, False)
     End If
-    Weight_calculator = Plate_Size / 1000 * Plate_Size / 1000 * Plate_Thickness * 7.85
+    Weight_calculator = Plate_Size / 1000 * Plate_Size / 1000 * plate_thickness * 7.85
 
     ' 確定Plate名稱
-    Plate_Name = "Plate_" & PlateType & IIf(RequireDrilling, "_需鑽孔", "_不需鑽孔")
+    plate_name = "Plate_" & PlateType & IIf(RequireDrilling, "_需鑽孔", "_不需鑽孔")
 
     
-    MainAddPlate Plate_Size, Plate_Size, Plate_Thickness, Plate_Name
+    MainAddPlate Plate_Size, Plate_Size, plate_thickness, plate_name
     ' 填充數據
     ' With ws
         ' .Cells(i, "B").value = .Cells(i - 1, "B").value + 1

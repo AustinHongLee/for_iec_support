@@ -1,7 +1,7 @@
 Attribute VB_Name = "X_M42©³ªOµ{§Ç"
 Function PerformActionByLetter(letter As String, PipeSize As String) As String
     Dim Plate_Size As Double
-    Dim Plate_Thickness As Double
+    Dim plate_thickness As Double
     Dim Weight_calculator As Double
     Dim ws As Worksheet
     Dim Bolt_size As String
