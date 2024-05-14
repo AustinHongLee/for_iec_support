@@ -142,6 +142,14 @@ Select Case PartString_Type
          Type_67 fullstring
       Case "80"
          Type_80 fullstring
+      Case "85"
+         Type_85 fullstring
+      Case "86"
+         Type_86 fullstring
+      Case "87"
+         Type_87 fullstring
+    Case "102"
+        Type_102 fullstring
     Case "108"
         Type_108 fullstring
     Case Else

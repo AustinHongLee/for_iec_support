@@ -127,8 +127,9 @@ Sub AddPipeEntry(Pipe_Size As String, Pipe_Thickness As String, Pipe_Length As D
     '特定標題
     Pipe_ThickNess_For_Title = Pipe_Thickness
    ' 可能性 "SCH.80"
-    
-    If Pipe_Thickness <> "STD.WT" Then
+    If Pipe_Thickness = "STD" Then
+        Pipe_Thickness = "STD.WT"
+    ElseIf Pipe_Thickness <> "STD.WT" Then
         Pipe_Thickness = Replace(Pipe_Thickness, "SCH.", "") & "S"
     Else
         Pipe_Thickness = Pipe_Thickness

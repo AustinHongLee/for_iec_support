@@ -401,9 +401,9 @@ Sub Type_11(ByVal fullstring As String)
     
     '抽取"D"值 - Machine Bolt Length
     D_Value = GetPartOfString(fullstring, 4, "-")
+    '-------------------------------抽取區-------------------------------------------
     
-    
-    ' 抽取L值
+    ' 抽取L值-主管尺寸-------------------------------------------------------------
     Support_Pipe_Size = "'1.5"
     Pipe_ThickNess_mm = "SCH.80"
             
@@ -425,10 +425,12 @@ Sub Type_11(ByVal fullstring As String)
     End Select
     '-------------------------------整理區-------------------------------------------
     'Note 4 - another buttom pipe
-    MachineBoltLength = 300
-    anotherbuttompipelegth = H_Value - 100 - (MachineBoltLength - 9)
+    Machine_Bolt_Length = 300
+    '--------------------------------另外的輔助管-------------------------------------
+    anotherbuttompipelegth = (H_Value * 100) - 100 - (Machine_Bolt_Length - 9)
     anotherbuttompipeSize = "2"
     anotherbuttompipeThickNess_mm = "SCH.80"
+    '-------------------------------彈簧區-------------------------------------------
     'Spring dim
     If PipeSize <= 4 Then
         Spring_Matirial = "A229"
@@ -2277,20 +2279,20 @@ Dim The_Section_Size As String
 Dim Total_Length As Double
     '------------------------抽取第二部分並抽出正確尺寸------------------------
     PartString_Type = GetPartOfString(fullstring, 2)
-    Line_Size = Replace(PartString_Type, "B", "")
+    line_size = Replace(PartString_Type, "B", "")
     '------------------------判讀區域------------------------
-    If Line_Size <= "3" Then
+    If line_size <= "3" Then
         M = "FlateBar"
         Ssize = "50*9"
-    ElseIf Line_Size > "3" And Line_Size <= "6" Then
+    ElseIf line_size > "3" And line_size <= "6" Then
         M = "Angle"
         Ssize = "50*50*6"
-    ElseIf Line_Size > "6" Then
+    ElseIf line_size > "6" Then
         M = "Angle"
         Ssize = "65*65*6"
     End If
     '------------------------獲取H值------------------------
-    Select Case Line_Size
+    Select Case line_size
         Case "3/4"
             H = "25"
         Case "1"
@@ -2530,12 +2532,14 @@ Sub Type_52(ByVal fullstring As String)
     
     '------------------ 角鐵專區-----------------------
     '角鐵的尺寸為不變
-    If First_condition_input <> "66" Then
-        SectionType = "Angle"
-        The_Section_Size = "40*40*5"
-        Total_Length = 150
-        AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
-    End If
+    ' Type52,53,54,55
+    Select Case First_condition_input
+        Case "52", "53", "54", "55"
+            SectionType = "Angle"
+            The_Section_Size = "40*40*5"
+            Total_Length = 150
+            AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+    End Select
     '------------------ C專區-----------------------
     SectionType = "H Beam"
     The_Section_Size = Type52_GetTable66_C(PipeSize)
@@ -2821,6 +2825,261 @@ PrintStepCalculator "[Type_80] - 檢測階段 - 目前Matirial_Value值=" & Matirial_Va
 
 
 
+End Sub
+Sub Type_85(ByVal fullstring As String)
+Type_52 (fullstring)
+
+End Sub
+Sub Type_86(ByVal fullstring As String)
+Dim M47 As PipeDimensions
+Dim PipeSize As String
+Dim plate_size_a As Double
+Dim plate_size_b As Double
+Dim plate_thickness As Double
+Dim plate_name As String
+
+
+Type_52 (fullstring)
+PipeSize = GetPartOfString(fullstring, 2)
+M47 = M_47(PipeSize)
+        ' Clamp 鐵板
+        plate_size_a = M47.W
+        plate_size_b = M47.L
+        plate_thickness = 1.5
+        plate_name = "Type86_M47Clamp"
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
+End Sub
+Sub Type_87(ByVal fullstring As String)
+'範例 : 87 - 1 - 10G
+'宣告區
+Dim ws_M42 As Worksheet
+Dim ws_Pipe_Table As Worksheet
+Dim ws As Worksheet
+Dim first As String
+Dim second As String
+Dim third As String
+Dim A As Double
+Dim B As String
+Dim C As String
+Dim D As String
+Dim E As String
+Dim M2_t As Double
+Dim M2_D As Double
+Dim letter As String
+Dim H_Value As Double
+Dim PipeSize As String
+Dim MachineBoltRod_Dia As Double
+Dim Support_Pipe_Size As String
+Dim Pipe_ThickNess_mm As String
+Dim Support_Pipe_Length As Double
+Dim Plate_buttom_Size As String
+Dim Plate_top_Size As String
+Dim MachineBoltRod_Length As String
+Dim plate_size_a As Double
+Dim plate_size_b As Double
+Dim plate_thickness As Double
+Dim plate_name As String
+Dim Plate_qty As Double
+Dim i As Double
+Dim func_material As String
+
+'範圍區
+    Set ws_M42 = Worksheets("Weight_Analysis")
+    Set ws_Pipe_Table = Worksheets("Pipe_Table")
+    Set ws = Worksheets("Weight_Analysis")
+'抽取區
+first = GetPartOfString(fullstring, 1)
+second = GetPartOfString(fullstring, 2)
+third = GetPartOfString(fullstring, 3)
+
+'表格區
+second = GetLookupValue(second)
+Select Case second
+Case "1"
+    A = 1
+    B = "3B-STD"
+    C = "120*120*9t"
+    D = "210*210*9t"
+    E = "190"
+    M2_t = 9
+    M2_D = 72
+Case "1.5"
+    A = 1.5
+    B = "4B-STD"
+    C = "150*150*9t"
+    D = "290*290*9t"
+    E = "215"
+    M2_t = 9
+    M2_D = 96
+Case "2"
+    A = 2
+    B = "6B-STD"
+    C = "200*200*12t"
+    D = "290*290*12t"
+    E = "245"
+    M2_t = 12
+    M2_D = 148
+Case "2.5"
+    A = 2.5
+    B = "8B-STD"
+    C = "250*250*16t"
+    D = "390*390*16t"
+    E = "275"
+    M2_t = 12
+    M2_D = 197
+End Select
+
+'判斷區
+letter = Right(third, 1)
+H_Value = Replace(third, letter, "")
+PipeSize = Left(B, 1)
+
+MachineBoltRod_Dia = A
+Support_Pipe_Size = Left(B, 1)
+Pipe_ThickNess_mm = Mid(B, InStr(1, B, "-") + 1, 99)
+Support_Pipe_Length = H_Value * 100
+Plate_buttom_Size = C
+Plate_top_Size = D
+MachineBoltRod_Length = E
+
+'導出區
+AddPipeEntry Support_Pipe_Size, Pipe_ThickNess_mm, Support_Pipe_Length, "A53Gr.B"  '管線導出
+PerformActionByLetter letter, PipeSize ' M42導出
+' Top Plate
+plate_size_a = GetPartOfString(Plate_top_Size, 1, "*")
+plate_size_b = GetPartOfString(Plate_top_Size, 2, "*")
+plate_thickness = Replace(GetPartOfString(Plate_top_Size, 3, "*"), "t", "")
+plate_name = "PLATE_Type87_Top"
+Plate_qty = 1
+MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+' Bottom Plate
+plate_size_a = GetPartOfString(Plate_buttom_Size, 1, "*")
+plate_size_b = GetPartOfString(Plate_buttom_Size, 2, "*")
+plate_thickness = Replace(GetPartOfString(Plate_buttom_Size, 3, "*"), "t", "")
+plate_name = "PLATE_Type87_buttom"
+Plate_qty = 1
+MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+' Machine Bolt Rod
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "MACHINE BOLT"
+        .Cells(i, "D").value = MachineBoltRod_Dia & """" & "*" & MachineBoltRod_Length & "L"
+        .Cells(i, "G").value = "A307Gr.B(熱浸鋅)"
+        .Cells(i, "H").value = 1
+        .Cells(i, "J").value = 20 ' 假設每個螺栓的單個重量是20（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "螺絲類"
+    End With
+' Machine Nut
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "Lock Nut"
+        .Cells(i, "D").value = M2_D & "mm Nut dimeter"
+        .Cells(i, "G").value = "A283-C GALV."
+        .Cells(i, "H").value = 1
+        .Cells(i, "J").value = 5 ' 假設每個螺栓的單個重量是20（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "螺絲類"
+    End With
+' Machine Nut-2
+    i = GetNextRowInColumnB() '運用Function取得下一行的位置
+    With ws
+        .Cells(i, "B").value = .Cells(i - 1, "B").value + 1
+        .Cells(i, "C").value = "ADJUT Nut"
+        .Cells(i, "D").value = M2_D & "mm Nut dimeter"
+        .Cells(i, "G").value = "A283-C GALV."
+        .Cells(i, "H").value = 1
+        .Cells(i, "J").value = 5 ' 假設每個螺栓的單個重量是20（可以根據實際情況調整）
+        .Cells(i, "K").value = .Cells(i, "J").value * .Cells(i, "H").value
+        .Cells(i, "L").value = "SET"
+        .Cells(i, "M").value = 1
+        .Cells(i, "O").value = .Cells(i, "M").value * .Cells(i, "H").value
+        .Cells(i, "P").value = .Cells(i, "M").value * .Cells(i, "K").value
+        .Cells(i, "Q").value = "螺絲類"
+    End With
+
+End Sub
+Sub Type_102(ByVal fullstring As String)
+' 範例: 102 - 1B - A
+' 102 = Type
+' 1B = Size
+' A = Fig
+' 宣告區
+Dim plate_size_a As Double
+Dim plate_size_b As Double
+Dim plate_thickness As Double
+Dim plate_name As String
+Dim Plate_qty As Double
+Dim W As Double
+Dim E As Double
+Dim fig As String
+Dim PipeSize As Double
+Dim Type_ As String
+Dim func_material As String
+
+' 抽取區
+Type_ = GetPartOfString(fullstring, 1)
+PipeSize_ = GetPartOfString(fullstring, 2)
+Fig_ = GetPartOfString(fullstring, 3)
+
+' 轉化區
+PipeSize = Replace(PipeSize_, "B", "")
+fig = Fig_
+
+' 表格區
+Select Case PipeSize
+Case 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20
+    W = 9
+    E = 6
+Case 6, 8, 10, 12, 14, 16, 18, 20
+    W = 12
+    E = 10
+End Select
+
+' 輸出區
+' 一定有2種板子 但是2兩版本
+Select Case fig
+    Case "A"
+        ' 第一種板子
+        plate_size_a = 40 + 50
+        plate_size_b = 80
+        plate_thickness = E
+        plate_name = "PLATE_102Type_T"
+        Plate_qty = 2
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+    ' 第二種板子
+        plate_size_a = 60
+        plate_size_b = 100
+        plate_thickness = E
+        plate_name = "PLATE_102Type_B"
+        Plate_qty = 2
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+    Case "B"
+    ' 第一種板子
+        plate_size_a = 75 + 50
+        plate_size_b = 80
+        plate_thickness = E
+        plate_name = "PLATE_102Type_T"
+        Plate_qty = 2
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+    ' 第二種板子
+        plate_size_a = 60
+        plate_size_b = 100
+        plate_thickness = E
+        plate_name = "PLATE_102Type_B"
+        Plate_qty = 2
+        MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name, func_material, Plate_qty
+    End Select
 End Sub
 Sub Type_108(ByVal fullstring As String)
 
