@@ -22,7 +22,27 @@ Sub List_to_Analysis()
     ' 檢測是否有資訊若無則追加
 
     ' 定義列標題和對應的列號
-    headers = Array(Array("A", "管支撐型號"), Array("B", "項次"), Array("C", "品名"), Array("D", "尺寸/厚度"), Array("E", "長度"), Array("F", "寬度"), Array("G", "材質"), Array("H", "數量"), Array("I", "每米重"), Array("J", "單重"), Array("K", "重量小計"), Array("L", "單位"), Array("M", "組數"), Array("N", "長度小計"), Array("O", "數量小計"), Array("P", "重量合計"), Array("Q", "屬性"))
+headers = Array( _
+    Array("A", "管支撐型號"), _
+    Array("B", "項次"), _
+    Array("C", "品名"), _
+    Array("D", "尺寸/厚度"), _
+    Array("E", "長度"), _
+    Array("F", "寬度"), _
+    Array("G", "材質"), _
+    Array("H", "數量"), _
+    Array("I", "每米重"), _
+    Array("J", "單重"), _
+    Array("K", "重量小計"), _
+    Array("L", "單位"), _
+    Array("M", "組數"), _
+    Array("N", "長度小計"), _
+    Array("O", "數量小計"), _
+    Array("P", "重量合計"), _
+    Array("Q", "屬性"), _
+    Array("R", "額外備註") _
+)
+
 
     ' 遍歷數組並設置列標題
        With ws_Weight_Analysis
