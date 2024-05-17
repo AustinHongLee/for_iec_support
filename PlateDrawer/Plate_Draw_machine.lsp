@@ -1,53 +1,171 @@
 (defun GetFullDWGPath ()
+  ; Àò¨ú·í«e DWG ¤å¥óªº§¹¾ã¸ô®|¨Ãªð¦^
   (setq dwgPath (strcat (getvar "dwgprefix") (getvar "dwgname")))
-  ; dwgPath = direction for this dwg path 
-
+  dwgPath
 )
 
 (defun radium_change_func (value mode)
-  ; we need to know what kind of value input here 
+  ; ±N¨¤«×Âà´«¬°©·«×©Î±N©·«×Âà´«¬°¨¤«×
   (cond 
-    ((or (= mode "r") (= mode "R")) ; æª¢æŸ¥ mode æ˜¯å¦ç‚º "r" æˆ– "R"
-     (setq finish_value (* (/ pi 180.0) value))) ; å°‡è§’åº¦è½‰æ›ç‚ºå¼§åº¦
-    ((or (= mode "d") (= mode "D")) ; æª¢æŸ¥ mode æ˜¯å¦ç‚º "d" æˆ– "D"
-     (setq finish_value (* (/ 180.0 pi) value))) ; å°‡å¼§åº¦è½‰æ›ç‚ºè§’åº¦
+    ((or (= mode "r") (= mode "R")) ; ÀË¬d mode ¬O§_¬° "r" ©Î "R"
+     (setq finish_value (* (/ pi 180.0) value))) ; ±N¨¤«×Âà´«¬°©·«×
+    ((or (= mode "d") (= mode "D")) ; ÀË¬d mode ¬O§_¬° "d" ©Î "D"
+     (setq finish_value (* (/ 180.0 pi) value))) ; ±N©·«×Âà´«¬°¨¤«×
   )
-  finish_value ; è¿”å›žè½‰æ›å¾Œçš„å€¼
+  finish_value ; ªð¦^Âà´««áªº­È
 )
 
-(defun GetPartOfString (fullstring partIndex / splitString splitLogic)
-  (setq splitLogic (if splitLogic splitLogic "-")) ; é è¨­åˆ†éš”ç¬¦ç‚º "-"ï¼Œå¦‚æžœæ²’æœ‰æä¾›å‰‡ä½¿ç”¨ "-"
+(defun GetPartOfString (fullstring partIndex splitLogic / splitString start pos)
+  ; ¨Ï¥Î¤À¹j²Å¤À³Î¦r²Å¦ê¨Ãªð¦^«ü©w³¡¤À
+  (setq start 0)
+  (setq splitString '())
+
+  ; ´`Àô¤À³Î¦r²Å¦ê
+  (while (setq pos (vl-string-search splitLogic fullstring start))
+    (setq splitString (append splitString (list (substr fullstring (+ start 1) (- pos start)))))
+    (setq start (+ pos (strlen splitLogic)))
+  )
   
-  ; ä½¿ç”¨ VL ä¸²æ“ä½œå‡½æ•¸åˆ†å‰²å­—ç¬¦ä¸²
-  (setq splitString (vl-string->list (vl-string-subst " " splitLogic fullstring)))
-  
-  ; æª¢æŸ¥ partIndex æ˜¯å¦æœ‰æ•ˆï¼ˆå¤§æ–¼ 0 ä¸”ä¸è¶…éŽåˆ†å‰²å¾Œåˆ—è¡¨çš„é•·åº¦ï¼‰
+  ; ²K¥[³Ì«á¤@­Ó³¡¤À
+  (setq splitString (append splitString (list (substr fullstring (+ start 1)))))
+
+  ; ÀË¬d partIndex ¬O§_¦³®Ä¡]¤j©ó 0 ¥B¤£¶W¹L¤À³Î«á¦Cªíªºªø«×¡^
   (if (and (> partIndex 0) (<= partIndex (length splitString)))
-    (nth (1- partIndex) splitString) ; ç´¢å¼•å¾ž 1 é–‹å§‹ï¼Œåˆ—è¡¨å¾ž 0 é–‹å§‹ï¼Œæ‰€ä»¥è¦æ¸› 1
-    "N/A" ; å¦‚æžœç´¢å¼•ç„¡æ•ˆï¼Œè¿”å›ž "N/A"
+    (nth (1- partIndex) splitString ; ¯Á¤Þ±q 1 ¶}©l¡A¦Cªí±q 0 ¶}©l¡A©Ò¥H­n´î 1
+    )
+    "N/A" ; ¦pªG¯Á¤ÞµL®Ä¡Aªð¦^ "N/A"
   )
 )
 
-
+(defun ReadLinesFromFile (filePath)
+  ; Åª¨ú«ü©w¤å¥óªº©Ò¦³¦æ¨Ãªð¦^¤@­Ó¦Cªí
+  (setq lines '())
+  (setq file (open filePath "r"))
+  (if file
+    (progn
+      (while (setq line (read-line file))
+        (setq lines (append lines (list line))))
+      (close file)
+    )
+  )
+  lines
+)
 
 (defun c:Main_Draw ()
-  (setq c1 (getpoint "\nChoice your first point \t attention: this is rec center point !!"))
+  ; «O¦s·í«eªº OSMODE ­È¡A¨Ã±N¨ä³]¸m¬° 0 ¥H¸T¥Î©Ò¦³ª«¥óÂêÂI
+  (setq currentOSMODE (getvar "OSMODE"))
+  (setvar "OSMODE" 0)
   
-  ; æ¸¬è©¦å­—ç¬¦ä¸²
-  (setq testing "290x290x9[220x220]")
+  ; ´£¥Ü¥Î¤á¿ï¾Ü²Ä¤@­Ó¤¤¤ßÂI
+  (setq c1 (getpoint "\n¿ï¾Ü±zªº²Ä¤@­Ó¤¤¤ßÂI: "))
   
-  ; åˆ†å‰²å­—ç¬¦ä¸²
-  (setq t1 (GetPartOfString testing 1 "x"))
-  (setq t2 (GetPartOfString testing 2 "x"))
-  (setq t3 (GetPartOfString testing 3 "x"))
+  ; Àò¨ú DWG ¤å¥óªº§¹¾ã¸ô®|
+  (setq dwgPath (GetFullDWGPath))
   
-  ; æ›¿æ›å­—ç¬¦ä¸²ä¸­çš„ "]"
-  (setq f1 (vl-string-subst "" "]" (GetPartOfString testing 2 "[")))
+  ; ºc«Ø Product_PlateForm.txt ¤å¥óªº¸ô®|
+  (setq filePath (strcat (substr dwgPath 1 (- (strlen dwgPath) (strlen (vl-filename-base dwgPath)) 4)) "Product_PlateForm.txt"))
   
-  ; åˆ†å‰²å­å­—ç¬¦ä¸²
-  (setq t4 (GetPartOfString f1 1 "x"))
-  (setq t5 (GetPartOfString f1 2 "x"))
-  
-  (setq p1 ( polar c1 (radium_change_func(135 "R") (sqrt(int(t1))))))
+  ; Åª¨ú Product_PlateForm.txt ¤å¥ó¤¤ªº©Ò¦³¦æ
+  (setq lines (ReadLinesFromFile filePath))
 
+  ; ªì©l¤Æ¤¤¤ßÂI initialX ©M initialY ¥H¤ÎÃB¥~¶ZÂ÷ offset
+  (setq initialX (car c1))
+  (setq initialY (cadr c1))
+  (setq offset 200) ; ÃB¥~¶ZÂ÷
+
+  (setq previousWidth 0) ; «O¦s«e¤@­Ó¯x§Îªº¼e«×
+
+  (foreach testing lines
+    ; ¤À³Î¦r²Å¦ê¥HÀò¨ú¥~¯x§Îªºªø«×©M¼e«×
+    (setq lengthX (GetPartOfString testing 1 "x"))
+    (setq lengthY (GetPartOfString testing 2 "x"))
+
+    ; ­pºâ¥~¯x§Îªº¥bªø©M¥b¼e
+    (setq halfLengthX (/ (atof lengthX) 2))
+    (setq halfLengthY (/ (atof lengthY) 2))
+
+    ; ¤À³Î¦r²Å¦ê¥HÀò¨ú¤º¯x§Îªºªø«×©M¼e«×
+    (setq f1 (vl-string-subst "" "]" (GetPartOfString testing 2 "[")))
+    (setq innerLengthX (GetPartOfString f1 1 "x"))
+    (setq innerLengthY (GetPartOfString f1 2 "x"))
+
+    ; ­pºâ¤º¯x§Îªº¥bªø©M¥b¼e
+    (setq innerHalfLengthX (/ (atof innerLengthX) 2))
+    (setq innerHalfLengthY (/ (atof innerLengthY) 2))
+
+    ; ´£¨úÃB¥~ªº¼Æ¾Ú
+    (setq extraData (GetPartOfString testing 2 "_"))
+    (setq holesize (GetPartOfString extraData 1 "%"))
+    (setq boltsize (GetPartOfString extraData 2 "%"))
+
+    ; ­pºâ·sªº¤¤¤ßÂI
+    (setq c1x (+ initialX previousWidth halfLengthX halfLengthX offset))
+    (setq c1 (list c1x initialY))
+
+    ; §ó·s«e¤@­Ó¯x§Îªº¼e«×
+    (setq previousWidth (* 2 halfLengthX))
+
+    ; ©w¸q¨¤«×¦Cªí
+    (setq a1_list '(135 45 315 225))
+    
+    ; ¨Ï¥Î´`Àô­pºâ p1 ¨ì p4¡]¥~¯x§Î¡^
+    (setq points '())
+    (foreach a1 a1_list
+      (setq radian (radium_change_func a1 "R"))
+      (setq l1 (sqrt (+ (* halfLengthX halfLengthX) (* halfLengthY halfLengthY))))
+      (setq point (polar c1 radian l1))
+      (setq points (append points (list point)))
+    )
+
+    ; ¨ú±o¥~¯x§Îªº¥|­ÓÂI
+    (setq p1 (nth 0 points))
+    (setq p2 (nth 1 points))
+    (setq p3 (nth 2 points))
+    (setq p4 (nth 3 points))
+
+    ; ¨Ï¥Î RECTANG ©R¥OÃ¸»s¥~¯x§Î
+    (command "RECTANG" p1 p3)
+
+    ; ¨Ï¥Î´`Àô­pºâ p5 ¨ì p8¡]¤º¯x§Î¡^
+    (setq innerPoints '())
+    (foreach a1 a1_list
+      (setq radian (radium_change_func a1 "R"))
+      (setq l1 (sqrt (+ (* innerHalfLengthX innerHalfLengthX) (* innerHalfLengthY innerHalfLengthY))))
+      (setq point (polar c1 radian l1))
+      (setq innerPoints (append innerPoints (list point)))
+    )
+
+    ; ¨ú±o¤º¯x§Îªº¥|­ÓÂI
+    (setq p5 (nth 0 innerPoints))
+    (setq p6 (nth 1 innerPoints))
+    (setq p7 (nth 2 innerPoints))
+    (setq p8 (nth 3 innerPoints))
+
+
+    ; ¨Ï¥Î´`ÀôÃ¸»s¤ºÁ³¤Õ
+    (setq lemporary_cir holesize) ; Á³¤Õª½®|
+    (foreach point innerPoints
+      (command "CIRCLE" point lemporary_cir)
+    )
+	; ¨D¥X¤å¦r¦ì¸m mtxt1 OK
+	(setq mtxt1 (polar p2 (radium_change_func 0 "R") (/ l1 2) ))
+    	(setq mtxt2 (polar mtxt1 (radium_change_func 315 "R") c1x))
+    	; ¤å¦r¿é¥X
+  (setq plate_size_name (strcat lengthX "x" lengthY))
+  (setq plate_thickness_name "9")
+  (setq plate_material "A36/ss400")
+  (setq plate_boltsize boltsize)
+  (setq plate_holesize holesize)
+    (setq formattedString (strcat "Plate Size: " plate_size_name "\n\n"
+                                "Plate Material: " plate_material "\n\n"
+                                "Plate Bolt Size: " plate_boltsize))
+    (command "mtext" mtxt1 "H" (/ innerHalfLengthX 5) mtxt2 formattedString "") 
+    ; §ó·sªì©lX§¤¼Ð
+    (setq initialX c1x)
+  )
+
+  ; «ì´_¤§«eªº OSMODE ­È
+  (setvar "OSMODE" currentOSMODE)
+
+  (princ)
 )
