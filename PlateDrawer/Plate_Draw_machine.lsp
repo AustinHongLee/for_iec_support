@@ -51,6 +51,16 @@
   lines
 )
 
+(defun ModifyDimPropsVlx (obj newTextHeight newArrowSize newTextStyle)
+  ; 修改標註的文字高度、箭頭大小和文字形式
+  (if (and obj (vlax-property-available-p obj 'TextHeight))
+    (vlax-put-property obj 'TextHeight newTextHeight))
+  (if (and obj (vlax-property-available-p obj 'ArrowheadSize))
+    (vlax-put-property obj 'ArrowheadSize newArrowSize))
+  (if (and obj (vlax-property-available-p obj 'TextStyle))
+    (vlax-put-property obj 'TextStyle newTextStyle))
+)
+
 (defun c:Main_Draw ()
   ; 保存當前的 OSMODE 值，並將其設置為 0 以禁用所有物件鎖點
   (setq currentOSMODE (getvar "OSMODE"))
@@ -142,24 +152,52 @@
     (setq p8 (nth 3 innerPoints))
 
 
+
     ; 使用循環繪製內螺孔
     (setq lemporary_cir holesize) ; 螺孔直徑
     (foreach point innerPoints
       (command "CIRCLE" point lemporary_cir)
     )
-	; 求出文字位置 mtxt1 OK
-	(setq mtxt1 (polar p2 (radium_change_func 0 "R") (/ l1 2) ))
-    	(setq mtxt2 (polar mtxt1 (radium_change_func 315 "R") c1x))
-    	; 文字輸出
-  (setq plate_size_name (strcat lengthX "x" lengthY))
-  (setq plate_thickness_name "9")
-  (setq plate_material "A36/ss400")
-  (setq plate_boltsize boltsize)
-  (setq plate_holesize holesize)
+
+	; 求出標註線的位置 - 內矩形 螺孔位置 上
+	(setq p6_ap_dim (polar p6 (radium_change_func 90 "R") (/ (atof lengthX) 4)))
+	(command "_dimlinear" p5 p6 p6_ap_dim)
+	(setq obj_dim_1 (entlast))
+
+	; 獲取 p6_ap_dim 的 Y 坐標值
+	(setq p6_ap_dim_y (cadr p6_ap_dim))
+
+	; 求出標註線的位置 - 外矩形 鐵板 上，並確保它的 Y 坐標值比 p6_ap_dim 大
+	(setq p2_ap_dim_y (+ p6_ap_dim_y (/ (atof lengthX) 4))) ; 確保它大於 p6_ap_dim 的 Y 坐標值
+	(setq p2_ap_dim (list (car p2) p2_ap_dim_y)) ; 設定 p2_ap_dim 的新坐標值
+	(command "_dimlinear" p1 p2 p2_ap_dim)
+	(setq obj_dim_2 (entlast))
+    (command "_chprop" obj_dim_1 "" "_la" "AM_5" "")
+  	(command "_chprop" obj_dim_2 "" "_la" "AM_5" "")
+	
+	
+    ; 更新標註文字高度和箭頭大小，並將文字形式設為 "Standard"
+    (setq new-text-height (/ (atof lengthX) 20))
+    (setq new-arrow-size (* new-text-height 2)) ; 假設箭頭大小是文字高度的兩倍
+    (ModifyDimPropsVlx (vlax-ename->vla-object obj_dim_1) new-text-height new-arrow-size "Standard") ; 針對內矩形 螺孔位置 上
+	(ModifyDimPropsVlx (vlax-ename->vla-object obj_dim_2) new-text-height new-arrow-size "Standard") ; 針對外矩形 鐵板 上
+	
+	
+    ; 求出文字位置 mtxt1
+    (setq mtxt1 (polar p2 (radium_change_func 0 "R") (/ l1 2)))
+    (setq mtxt2 (polar mtxt1 (radium_change_func 315 "R") c1x))
+
+    ; 文字輸出
+    (setq plate_size_name (strcat lengthX "x" lengthY))
+    (setq plate_thickness_name "9")
+    (setq plate_material "A36/ss400")
+    (setq plate_boltsize boltsize)
+    (setq plate_holesize holesize)
     (setq formattedString (strcat "Plate Size: " plate_size_name "\n\n"
-                                "Plate Material: " plate_material "\n\n"
-                                "Plate Bolt Size: " plate_boltsize))
-    (command "mtext" mtxt1 "H" (/ innerHalfLengthX 5) mtxt2 formattedString "") 
+                                  "Plate Material: " plate_material "\n\n"
+                                  "Plate Bolt Size: " plate_boltsize))
+    (command "mtext" mtxt1 "H" (/ innerHalfLengthX 5) mtxt2 formattedString "")
+
     ; 更新初始X坐標
     (setq initialX c1x)
   )
