@@ -1,0 +1,68 @@
+{
+    "type_id": "01",
+    "name": "Pipe Support TYPE-01",
+    "drawing_no": "STM-05.01",
+    "applicable_range": "2\" ~ 24\"",
+    "h_limit": 1500,
+    "h_unit_mm": 100,
+    "notes": [
+        "材質隨主管線 (L.T.C.S. / Alloy / SUS / Stress Relief)",
+        "H 由現場切割，需搭配 M-42 底板",
+        "L 值基於 Long Radius Elbow 焊接位置",
+        "焊接尺寸不超過管壁厚",
+        "H ≤ 1500mm 適用，支撐到 Grade 或 Plate"
+    ],
+    "connection_types": {
+        "elbow": {
+            "code": "01",
+            "description": "Long Radius Elbow 接入 (預設)",
+            "upper_pipe_formula": "L + 100"
+        },
+        "tee": {
+            "code": "01T",
+            "description": "三通 (Tee) 接入",
+            "upper_pipe_formula": "100 + M (ASME B16.9 TEE_DATA)"
+        }
+    },
+    "restrain_functions": {
+        "": "Resting Only, No Restrain (空白=僅承載)",
+        "A": "Axial Stop (軸向止擋)",
+        "G": "Guide (導向)",
+        "F": "Both Axial Stop & Guide (軸向止擋+導向)"
+    },
+    "material_rules": {
+        "upper_pipe": "跟隨主管線材質 (預設 SUS304)",
+        "lower_pipe": "A53Gr.B (固定黑鐵)",
+        "default_upper": "SUS304"
+    },
+    "designation_format": {
+        "pattern": "{type}-{line_size}B-{H_code}{M42_letter}",
+        "example": "01-2B-05B-A",
+        "fields": {
+            "type": "Type 編號 (01 or 01T)",
+            "line_size": "主管線尺寸 A (inch)",
+            "H_code": "H 高度 (×100mm)",
+            "M42_letter": "M-42 底板代碼",
+            "restrain": "Restrain Function (可選，第4段)"
+        }
+    },
+    "table": [
+        {"line_size": 2,  "pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
+        {"line_size": 3,  "pipe_size": "2",     "schedule": "SCH.40",  "L": 93},
+        {"line_size": 4,  "pipe_size": "3",     "schedule": "SCH.40",  "L": 139},
+        {"line_size": 6,  "pipe_size": "4",     "schedule": "SCH.40",  "L": 186},
+        {"line_size": 8,  "pipe_size": "6",     "schedule": "SCH.40",  "L": 271},
+        {"line_size": 10, "pipe_size": "8",     "schedule": "SCH.40",  "L": 353},
+        {"line_size": 12, "pipe_size": "8",     "schedule": "SCH.40",  "L": 370},
+        {"line_size": 14, "pipe_size": "10",    "schedule": "SCH.40",  "L": 473},
+        {"line_size": 16, "pipe_size": "10",    "schedule": "SCH.40",  "L": 491},
+        {"line_size": 18, "pipe_size": "12",    "schedule": "STD.WT",  "L": 572},
+        {"line_size": 20, "pipe_size": "12",    "schedule": "STD.WT",  "L": 594},
+        {"line_size": 24, "pipe_size": "12",    "schedule": "STD.WT",  "L": 647}
+    ],
+    "version": "1.0",
+    "last_modified": "2026-04-15",
+    "change_log": [
+        {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"}
+    ]
+}

@@ -1,0 +1,484 @@
+{
+  "version": "1.0",
+  "description": "Pipe Support Ontology — 支撐型式語意分類、家族關係與選型規則",
+  "last_updated": "2026-04-17",
+
+  "status_definitions": {
+    "documented": {
+      "label_zh": "已分析",
+      "label_en": "Documented",
+      "color": "#4CAF50",
+      "criteria": "有 .md 分析文件且檔案確實存在於磁碟",
+      "badge_style": "bold"
+    },
+    "cataloged": {
+      "label_zh": "已建檔",
+      "label_en": "Cataloged",
+      "color": "#2196F3",
+      "criteria": "有名稱 (name_zh 或 name_en)，尚無 .md 分析文件",
+      "badge_style": "normal"
+    },
+    "placeholder": {
+      "label_zh": "預留",
+      "label_en": "Placeholder",
+      "color": "#9E9E9E",
+      "criteria": "僅有 type_id，空白預留位",
+      "badge_style": "dim"
+    }
+  },
+
+  "status_rules": {
+    "principle": "狀態反映使用者在此 App 能看到什麼，不反映 VBA 端實作狀態",
+    "determination_logic": [
+      "1. doc_file 存在且磁碟有對應 .md → documented",
+      "2. 磁碟有符合命名慣例的 .md 但 catalog 未登錄 → 自動補 doc_file → documented",
+      "3. 有 name_zh 或 name_en → cataloged",
+      "4. 其餘 → placeholder"
+    ],
+    "integrity_checks": [
+      "doc_file 指向不存在的檔案 → 清空 doc_file + 降級",
+      "status 只允許三種值，其他一律重新判定",
+      "type_id 和 category 為必要欄位"
+    ]
+  },
+
+  "sub_groups": [
+    {
+      "id": "small_pipe",
+      "label_zh": "小管徑基本支撐",
+      "label_en": "Small Pipe Basic Support",
+      "sort": 1,
+      "icon": "🔩",
+      "types": ["01", "03", "05", "06"],
+      "verified": true
+    },
+    {
+      "id": "slide_adjust",
+      "label_zh": "滑動 / 可調式支撐",
+      "label_en": "Sliding / Adjustable Support",
+      "sort": 2,
+      "icon": "↔️",
+      "types": ["07", "08", "09", "10", "20"],
+      "verified": true
+    },
+    {
+      "id": "spring",
+      "label_zh": "彈簧支撐",
+      "label_en": "Spring Support",
+      "sort": 3,
+      "icon": "🌀",
+      "types": ["11"],
+      "verified": true
+    },
+    {
+      "id": "clamp_mount",
+      "label_zh": "夾持 / 固定型支撐",
+      "label_en": "Clamp / Fixed Mount",
+      "sort": 4,
+      "icon": "🔧",
+      "types": ["12", "13", "30", "36"],
+      "verified": true
+    },
+    {
+      "id": "structural_post",
+      "label_zh": "結構鋼立柱 / 限位",
+      "label_en": "Structural Post / Restraint",
+      "sort": 5,
+      "icon": "🏗️",
+      "types": ["14", "15"],
+      "verified": true
+    },
+    {
+      "id": "hanger",
+      "label_zh": "吊掛式支撐",
+      "label_en": "Hanger / Suspended Support",
+      "sort": 6,
+      "icon": "⬇️",
+      "types": ["16", "21", "22", "23", "32"],
+      "verified": true
+    },
+    {
+      "id": "lateral_angle",
+      "label_zh": "側向 / 角鋼支撐",
+      "label_en": "Lateral / Angle Support",
+      "sort": 7,
+      "icon": "📐",
+      "types": ["19", "24", "25"],
+      "verified": true
+    },
+    {
+      "id": "frame_cantilever",
+      "label_zh": "框架 / 懸臂支撐",
+      "label_en": "Frame / Cantilever Support",
+      "sort": 8,
+      "icon": "🏛️",
+      "types": ["26", "27", "28", "31", "33", "34", "35", "37"],
+      "verified": true
+    },
+    {
+      "id": "vessel",
+      "label_zh": "容器 / 設備支撐",
+      "label_en": "Vessel / Equipment Support",
+      "sort": 9,
+      "icon": "🛢️",
+      "types": ["39", "41", "42", "43", "44", "45", "46", "47"],
+      "verified": true
+    },
+    {
+      "id": "pipe_base",
+      "label_zh": "管底座 / 立管支撐",
+      "label_en": "Pipe Base / Riser Support",
+      "sort": 10,
+      "icon": "📍",
+      "types": ["48", "49"],
+      "verified": true
+    },
+    {
+      "id": "beam_shoe",
+      "label_zh": "梁上管鞍座承托",
+      "label_en": "Beam-Mounted Shoe Support",
+      "sort": 11,
+      "icon": "🪑",
+      "types": ["51", "52", "53", "54", "55", "56"],
+      "verified": true
+    },
+    {
+      "id": "trunnion",
+      "label_zh": "Trunnion 設計",
+      "label_en": "Trunnion Design",
+      "sort": 12,
+      "icon": "⚙️",
+      "types": ["61"],
+      "verified": true
+    },
+    {
+      "id": "interface",
+      "label_zh": "介面層 / 零件詳圖",
+      "label_en": "Interface / Detail Sheet",
+      "sort": 13,
+      "icon": "📋",
+      "types": ["66", "67"],
+      "verified": true,
+      "note": "被其他 TYPE 引用的共用零件圖，本身不是獨立支撐"
+    }
+  ],
+
+  "families": {
+    "beam_shoe_51_56": {
+      "label_zh": "梁上承托家族",
+      "label_en": "Beam-Mounted Shoe Family",
+      "description": "TYPE 51~56 組成的管線承托支撐家族，搭配 TYPE 66/67 介面層",
+      "members": ["51", "52", "53", "54", "55", "56"],
+      "interfaces": ["66", "67"],
+      "detail_refs": {
+        "D-80": {"type_id": "66", "role": "Pipe Shoe (CS)", "used_by": ["52", "53"]},
+        "D-81": {"type_id": "67", "role": "Clamped Shoe + Gasket (AS/SS)", "used_by": ["54", "55"]}
+      },
+      "architecture": {
+        "layers": [
+          "Pipe → Contact Layer → Restraint Layer → Beam",
+          "自有零件型 (51, 56): 不引用介面層，自成一體",
+          "D-80 引用型 (52, 53): 使用 TYPE-66 Shoe 介面",
+          "D-81 引用型 (54, 55): 使用 TYPE-67 Shoe+Clamp+Gasket 介面"
+        ],
+        "diagram": [
+          "TYPE-51: Pipe → [自有Saddle 80°]                              → Beam",
+          "TYPE-52: Pipe → [Shoe D-80 120°] → [Retainer]                 → Beam",
+          "TYPE-53: Pipe → [Shoe D-80 120°] → [Guide]                    → Beam",
+          "TYPE-54: Pipe → [Gasket] → [Clamp D-81] → [Shoe]              → Beam",
+          "TYPE-55: Pipe → [Gasket] → [Clamp D-81] → [Shoe] → [Guide]   → Beam",
+          "TYPE-56: Pipe → [自有結構框架 MEMBER C]                         → Beam"
+        ]
+      },
+      "constraint_matrix": {
+        "columns": ["type_id", "axial", "lateral", "vertical_up", "isolation", "essence_zh"],
+        "rows": [
+          ["51", "FREE",    "FREE",                "FREE",  false, "自由承托"],
+          ["52", "PARTIAL", "RESTRAINED",           "FREE",  false, "側向防偏"],
+          ["53", "FREE",    "STRONGLY_RESTRAINED",  "FREE",  false, "軸向導向"],
+          ["54", "FIXED",   "FIXED",                "FIXED", true,  "隔離固定"],
+          ["55", "FIXED",   "FIXED",                "FIXED", true,  "隔離固定+導向"],
+          ["56", "PARTIAL", "RESTRAINED",           "FREE",  false, "結構檔止"]
+        ]
+      }
+    },
+
+    "vessel_44_47": {
+      "label_zh": "曲面設備支撐家族",
+      "label_en": "Vessel / Equipment Support Family",
+      "description": "TYPE 44~47 組成的容器/曲面設備管線支撐家族",
+      "members": ["44", "45", "46", "47"],
+      "related": ["39", "41", "42", "43"],
+      "detail_refs": {
+        "D-80": {"type_id": "66", "role": "Pipe Shoe", "used_by": ["46", "47"]}
+      },
+      "architecture": {
+        "layers": [
+          "44: 直接斜撐 (最簡，無 Shoe)",
+          "45: 直接夾持 (Lug Plate，無 Shoe)",
+          "46: D-80 Shoe 接口 (有 Shoe，無夾持)",
+          "47: D-80 Shoe + Lug Plate (有 Shoe + 夾持)"
+        ]
+      }
+    }
+  },
+
+  "selector_rules": {
+    "beam_shoe": {
+      "family_id": "beam_shoe_51_56",
+      "title_zh": "梁上承托選型決策",
+      "title_en": "Beam-Mounted Shoe Type Selector",
+      "description": "根據管材、約束需求決定 51~56 家族的適用 TYPE",
+
+      "input_fields": [
+        {
+          "id": "material_isolated",
+          "label_zh": "管材是否需要隔離?",
+          "label_en": "Material requires isolation?",
+          "type": "boolean",
+          "help": "AS (Alloy Steel) 或 SS (Stainless Steel) 管線，溫度 ≤ 750°F 時需隔離"
+        },
+        {
+          "id": "restraint_need",
+          "label_zh": "約束需求",
+          "label_en": "Restraint requirement",
+          "type": "enum",
+          "options": [
+            {"value": "free", "label_zh": "自由 (無約束)", "label_en": "Free (no restraint)"},
+            {"value": "lateral", "label_zh": "側向防偏", "label_en": "Lateral restraint only"},
+            {"value": "guided", "label_zh": "導向 (允許軸向)", "label_en": "Guided (axial free)"},
+            {"value": "fixed", "label_zh": "固定 (完全約束)", "label_en": "Fixed (full restraint)"},
+            {"value": "structural_stop", "label_zh": "結構檔止 (重型)", "label_en": "Structural stop (heavy)"}
+          ],
+          "depends_on": {
+            "field": "material_isolated",
+            "when_true": {
+              "available": ["fixed"],
+              "note": "隔離型只有 FIXED 約束，由 guide_needed 決定 54 或 55"
+            },
+            "when_false": {
+              "available": ["free", "lateral", "guided", "structural_stop"]
+            }
+          }
+        },
+        {
+          "id": "guide_needed",
+          "label_zh": "是否需要導向?",
+          "label_en": "Guide mechanism needed?",
+          "type": "boolean",
+          "visible_when": {
+            "material_isolated": true
+          },
+          "help": "導向機構允許管線軸向熱膨脹移動，同時限制側向偏移"
+        }
+      ],
+
+      "decision_tree": [
+        {
+          "condition": {"material_isolated": true, "guide_needed": true},
+          "result": "55",
+          "reason_zh": "隔離固定 + 導向：D-81 Shoe+Clamp+Gasket + Guide",
+          "reason_en": "Isolated fixed + guided: D-81 interface with guide bars"
+        },
+        {
+          "condition": {"material_isolated": true, "guide_needed": false},
+          "result": "54",
+          "reason_zh": "隔離固定：D-81 Shoe+Clamp+Gasket + 側框",
+          "reason_en": "Isolated fixed: D-81 interface with side frame"
+        },
+        {
+          "condition": {"material_isolated": false, "restraint_need": "free"},
+          "result": "51",
+          "reason_zh": "自由承托：自有 80° 鞍座，無約束",
+          "reason_en": "Free support: self-contained 80° saddle, no restraint"
+        },
+        {
+          "condition": {"material_isolated": false, "restraint_need": "lateral"},
+          "result": "52",
+          "reason_zh": "側向防偏：D-80 Shoe + Retainer 板",
+          "reason_en": "Lateral restraint: D-80 Shoe with retainer plates"
+        },
+        {
+          "condition": {"material_isolated": false, "restraint_need": "guided"},
+          "result": "53",
+          "reason_zh": "軸向導向：D-80 Shoe + Guide 導向條",
+          "reason_en": "Guided: D-80 Shoe with guide bars"
+        },
+        {
+          "condition": {"material_isolated": false, "restraint_need": "structural_stop"},
+          "result": "56",
+          "reason_zh": "結構檔止：自有 MEMBER C 結構框架，3mm 間隙側板",
+          "reason_en": "Structural stop: self-contained MEMBER C frame, 3mm gap side plates"
+        }
+      ],
+
+      "fallback": {
+        "result": "51",
+        "reason_zh": "預設推薦：最簡單的自由承托",
+        "reason_en": "Default: simplest free support"
+      }
+    }
+  },
+
+  "type_tags": {
+    "01": ["small-pipe", "dummy", "base-plate"],
+    "03": ["small-pipe", "elbow", "post"],
+    "05": ["small-pipe", "post", "top-support"],
+    "06": ["small-pipe", "dual-pipe", "post"],
+    "07": ["slide", "elbow"],
+    "08": ["slide", "stop"],
+    "09": ["adjustable", "screw"],
+    "10": ["adjustable", "four-bolt", "platform"],
+    "11": ["spring", "variable-load"],
+    "12": ["clamp", "weld", "dual-plate"],
+    "13": ["clamp", "bolt", "dual-plate"],
+    "14": ["structural-post", "restraint"],
+    "15": ["structural-post", "restraint", "on-steel"],
+    "16": ["hanger", "pipe-clamp"],
+    "19": ["lateral", "brace"],
+    "20": ["slide", "slotted-base"],
+    "21": ["hanger", "u-bolt", "side-mount"],
+    "22": ["hanger", "u-bolt", "floor-mount"],
+    "23": ["hanger", "top-mount"],
+    "24": ["angle", "wall-mount"],
+    "25": ["angle", "cantilever"],
+    "26": ["frame", "cantilever", "standard"],
+    "27": ["frame", "post"],
+    "28": ["frame", "portal"],
+    "30": ["clamp", "weld-to-steel"],
+    "31": ["frame", "on-steel"],
+    "32": ["hanger", "frame"],
+    "33": ["frame", "cantilever", "side-weld"],
+    "34": ["frame", "cantilever", "reinforced"],
+    "35": ["rail", "track"],
+    "36": ["clamp", "bolt", "plate"],
+    "37": ["frame", "cantilever", "brace"],
+    "39": ["vessel", "brace"],
+    "41": ["wall", "anchor"],
+    "42": ["vessel", "trunnion", "brace"],
+    "43": ["vessel", "trunnion", "full-restraint"],
+    "44": ["vessel", "direct", "brace"],
+    "45": ["vessel", "direct", "lug-clamp"],
+    "46": ["vessel", "d80-ref", "shoe"],
+    "47": ["vessel", "d80-ref", "shoe", "lug-clamp"],
+    "48": ["pipe-base", "drain-hub", "offset"],
+    "49": ["pipe-base", "riser", "fixed"],
+    "51": ["beam-mounted", "self-contained", "saddle-80", "free-support"],
+    "52": ["beam-mounted", "d80-ref", "retainer", "lateral-restraint"],
+    "53": ["beam-mounted", "d80-ref", "guide", "lateral-restraint"],
+    "54": ["beam-mounted", "d81-ref", "isolated", "clamp", "fixed-support", "as-ss"],
+    "55": ["beam-mounted", "d81-ref", "isolated", "clamp", "guide", "fixed-support", "as-ss"],
+    "56": ["beam-mounted", "self-contained", "structural-stop", "member-c"],
+    "61": ["trunnion", "design"],
+    "66": ["interface", "shoe", "d80", "detail-sheet"],
+    "67": ["interface", "shoe", "clamp", "gasket", "d81", "detail-sheet", "isolated"]
+  },
+
+  "tag_definitions": {
+    "beam-mounted":     {"zh": "梁上安裝", "description": "管線承托於鋼梁上"},
+    "self-contained":   {"zh": "自成一體", "description": "不引用外部介面圖，零件自包含"},
+    "d80-ref":          {"zh": "引用 D-80", "description": "引用 TYPE-66 (D-80/D-80A/D-80B) Pipe Shoe"},
+    "d81-ref":          {"zh": "引用 D-81", "description": "引用 TYPE-67 (D-81/D-81A) Clamped Shoe+Gasket"},
+    "interface":        {"zh": "介面層", "description": "被其他 TYPE 引用的共用零件詳圖"},
+    "detail-sheet":     {"zh": "零件詳圖", "description": "提供尺寸表的標準化零件圖"},
+    "isolated":         {"zh": "隔離型", "description": "含 Gasket 隔離層，適用 AS/SS 管線"},
+    "as-ss":            {"zh": "AS/SS 專用", "description": "僅用於合金鋼或不鏽鋼管線"},
+    "guide":            {"zh": "導向", "description": "含導向機構，限制側向允許軸向"},
+    "retainer":         {"zh": "止擋", "description": "含 Retainer 側板，防止管線側向偏移"},
+    "clamp":            {"zh": "夾持", "description": "含管夾(Clamp)固定管線"},
+    "free-support":     {"zh": "自由承托", "description": "管線僅承重，無約束"},
+    "fixed-support":    {"zh": "固定支撐", "description": "管線全方向約束"},
+    "lateral-restraint": {"zh": "側向約束", "description": "限制管線側向移動"},
+    "structural-stop":  {"zh": "結構檔止", "description": "以結構鋼框架限制管線"},
+    "shoe":             {"zh": "管鞍座", "description": "弧形承托件 (Pipe Shoe)"},
+    "vessel":           {"zh": "容器", "description": "安裝在容器/設備曲面上"},
+    "hanger":           {"zh": "吊掛", "description": "從上方吊掛管線"},
+    "small-pipe":       {"zh": "小管徑", "description": "適用於小口徑管線"},
+    "slide":            {"zh": "滑動", "description": "允許管線滑動"},
+    "frame":            {"zh": "框架", "description": "框架結構支撐"},
+    "pipe-base":        {"zh": "管底座", "description": "管線底座/立管支撐"},
+    "spring":           {"zh": "彈簧", "description": "彈簧式可變載荷支撐"},
+    "trunnion":         {"zh": "Trunnion", "description": "Trunnion 耳座設計"},
+    "member-c":         {"zh": "MEMBER C", "description": "自有結構鋼框架 (切自 H-beam)"},
+    "saddle-80":        {"zh": "80° 鞍座", "description": "80° 包覆角鞍座"},
+    "lug-clamp":        {"zh": "Lug 夾持", "description": "Lug Plate 夾持"},
+    "direct":           {"zh": "直接連接", "description": "直接連接設備表面"},
+    "drain-hub":        {"zh": "Drain Hub", "description": "排放口偏移底座"},
+    "riser":            {"zh": "立管", "description": "立管固定"},
+    "adjustable":       {"zh": "可調式", "description": "高度或位置可調整"},
+    "post":             {"zh": "立柱", "description": "立柱式結構"},
+    "wall":             {"zh": "牆面", "description": "牆面安裝"},
+    "anchor":           {"zh": "錨定", "description": "錨定固定"},
+    "rail":             {"zh": "軌道", "description": "軌道/托條"},
+    "brace":            {"zh": "斜撐", "description": "斜撐結構"},
+    "dummy":            {"zh": "假管", "description": "假管件"},
+    "elbow":            {"zh": "彎頭", "description": "彎頭部位"},
+    "bolt":             {"zh": "螺栓", "description": "螺栓連接"},
+    "weld":             {"zh": "焊接", "description": "焊接連接"},
+    "cantilever":       {"zh": "懸臂", "description": "懸臂結構"},
+    "offset":           {"zh": "偏移", "description": "偏移底座"},
+    "stop":             {"zh": "止擋", "description": "止擋結構"},
+    "gasket":           {"zh": "墊片", "description": "隔離墊片"},
+    "d80":              {"zh": "D-80 圖號", "description": "引用 D-80 系列圖面"},
+    "d81":              {"zh": "D-81 圖號", "description": "引用 D-81 系列圖面"}
+  },
+
+  "display_config": {
+    "tree_mode": "sub_group",
+    "sub_group_style": {
+      "font_weight": "bold",
+      "show_icon": true,
+      "show_count": true,
+      "expanded_by_default": ["beam_shoe", "vessel", "interface"]
+    },
+    "unassigned_group": {
+      "label_zh": "其他 / 未分類",
+      "label_en": "Other / Unclassified",
+      "sort": 99,
+      "icon": "📦"
+    }
+  },
+
+  "standards": [
+    {
+      "id": "iec",
+      "label": "IEC (International Engineering)",
+      "is_default": true,
+      "description": "本案主要設計標準，Type 01~120 + M/N 系列",
+      "naming_convention": "TYPE-{number}",
+      "unit_system": "imperial (inch, lb)",
+      "catalog_file": "type_catalog.json",
+      "note": "目前唯一載入的標準"
+    }
+  ],
+
+  "standards_extension_guide": {
+    "purpose": "未來擴充其他設計公司標準時的對應規則",
+    "workflow": [
+      "1. 在 standards[] 新增一筆，指定 id / label / catalog_file",
+      "2. 建立該公司專屬的 catalog JSON (或共用 type_catalog.json 加 standard 欄位)",
+      "3. 在 type_mapping 中建立 IEC ↔ 該公司的 type 對照表",
+      "4. 在 unit_overrides 中定義單位換算 (e.g. mm → inch)",
+      "5. 在 constant_deltas 中定義常數差異 (e.g. 不同的 HOPS 計算)"
+    ],
+    "type_mapping_example": {
+      "company_x": {
+        "PS-101": {"iec_equivalent": "51", "note": "類似 TYPE-51 自由承托，但 saddle 角 90°"},
+        "PS-102": {"iec_equivalent": "52", "note": "類似 TYPE-52 但 retainer 用角鋼非平板"},
+        "PS-201": {"iec_equivalent": "54", "note": "隔離型，gasket 厚度不同 (6mm vs 3mm)"}
+      }
+    },
+    "unit_overrides_example": {
+      "company_x": {
+        "length": {"from": "mm", "to": "inch", "factor": 0.03937},
+        "force": {"from": "kgf", "to": "lb", "factor": 2.20462}
+      }
+    },
+    "constant_deltas_example": {
+      "company_x": {
+        "shoe_angle": {"iec": 120, "company": 90, "unit": "deg"},
+        "gasket_thickness": {"iec": 3, "company": 6, "unit": "mm"}
+      }
+    }
+  }
+}

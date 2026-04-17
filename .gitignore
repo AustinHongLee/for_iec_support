@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+~$*
+
+# Temp
+_tmp_*
+*.bak
+
+# Generated outputs
+python_app/output/

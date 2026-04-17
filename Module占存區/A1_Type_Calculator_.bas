@@ -2400,6 +2400,7 @@ Sub Type_52(ByVal fullstring As String)
     Dim Section_Length_H As Double
     Dim Section_Length_L As Double
     Dim Matirial_Value As String
+    Dim Steel_Qty As Double
     
     ' 以下變量用於 MainAddPlate 過程
     Dim plate_name As String ' 板材的命名，用於標識不同板材
@@ -2520,8 +2521,8 @@ Sub Type_52(ByVal fullstring As String)
                 
                 
             'Pad Calculatorˋ
-                plate_size_a = PAD_Calculator_A
-                plate_size_b = PAD_Calculator_B
+                plate_size_a = Round(PAD_Calculator_A, 0)
+                plate_size_b = Round(PAD_Calculator_B, 0)
                 plate_thickness = PAD_Calculator_t
                 plate_name = "Pad_52Type"
                 MainAddPlate plate_size_a, plate_size_b, plate_thickness, plate_name
@@ -2538,7 +2539,8 @@ Sub Type_52(ByVal fullstring As String)
             SectionType = "Angle"
             The_Section_Size = "40*40*5"
             Total_Length = 150
-            AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, , Matirial_Value
+            Steel_Qty = 2
+            AddSteelSectionEntry SectionType, The_Section_Size, Total_Length, Steel_Qty, Matirial_Value
     End Select
     '------------------ C專區-----------------------
     SectionType = "H Beam"

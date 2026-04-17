@@ -8,7 +8,9 @@ Sub MainAddPlate( _
     Optional Plate_qty As Double = 1, _
     Optional PlateBolt_switch As Boolean = False, _
     Optional PlateBolt_Length_x As Double = 0, _
-    Optional PlateBolt_Length_y As Double = 0 _
+    Optional PlateBolt_Length_y As Double = 0, _
+    Optional PlateBolt_Bolt_hole As Double = 0, _
+    Optional PlateBolt_Bolt_Size As String = 0 _
 )
     Dim Pipeline_Density As Double
     Dim weight As Double
@@ -33,7 +35,7 @@ Sub MainAddPlate( _
     End Select
 
     If PlateBolt_switch = True Then
-        bolt_length_join = PlateBolt_Length_x & "x" & PlateBolt_Length_y & "x" & plate_thickness
+        bolt_length_join = plate_size_a & "x" & plate_size_b & "x" & plate_thickness & "[" & PlateBolt_Length_x & "x" & PlateBolt_Length_y & "]" & "_" & PlateBolt_Bolt_hole & "%" & PlateBolt_Bolt_Size
     End If
 
     weight = plate_size_a / 1000 * plate_size_b / 1000 * plate_thickness * Pipeline_Density

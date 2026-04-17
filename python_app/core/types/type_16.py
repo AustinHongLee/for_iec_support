@@ -1,0 +1,65 @@
+"""
+Type 16 計算器
+格式: 16-2B-05
+- 第二段: 管徑
+- 第三段: 長度 (純數字, *100mm)
+"""
+import math
+from ..models import AnalysisResult
+from ..parser import get_part, get_lookup_value
+from ..pipe import add_pipe_entry
+from ..plate import add_plate_entry
+from data.pipe_table import get_pipe_details
+
+
+# Type 16: 管徑 -> (支撐管徑, 壁厚, 鋼板尺寸)
+TYPE16_MAP = {
+    2:  ("1.5", "SCH.80",  70),
+    3:  ("2",   "SCH.40",  80),
+    4:  ("3",   "SCH.40",  110),
+    6:  ("4",   "SCH.40",  140),
+    8:  ("6",   "SCH.40",  190),
+    10: ("8",   "SCH.40",  240),
+    12: ("10",  "SCH.40",  290),
+    14: ("12",  "STD.WT",  340),
+    16: ("12",  "STD.WT",  340),
+    18: ("14",  "STD.WT",  380),
+    20: ("14",  "STD.WT",  380),
+    24: ("16",  "STD.WT",  430),
+}
+
+
+def calculate(fullstring: str) -> AnalysisResult:
+    result = AnalysisResult(fullstring=fullstring)
+
+    # 解析
+    part2 = get_part(fullstring, 2)
+    pipe_size = int(get_lookup_value(part2))
+    third_length = int(get_part(fullstring, 3)) * 100
+
+    if pipe_size not in TYPE16_MAP:
+        result.error = f"Type 16: 不支援管徑 {pipe_size}"
+        return result
+
+    support_pipe_size, pipe_thickness, plate_size = TYPE16_MAP[pipe_size]
+
+    # 計算管道細節
+    pipe_details = get_pipe_details(pipe_size, "10S")
+
+    # 主管長度
+    main_pipe_length = round(
+        (pipe_size * 1.5 * 25.4) + (pipe_details["od_mm"] / 2) + 100
+    )
+    add_pipe_entry(result, support_pipe_size, pipe_thickness, main_pipe_length, "SUS304")
+
+    # 支管長度
+    support_pipe_length = round(
+        third_length - (pipe_details["od_mm"] / 2) - 100 + 300
+    )
+    if support_pipe_length > 0:
+        add_pipe_entry(result, support_pipe_size, pipe_thickness, support_pipe_length, "A53Gr.B")
+
+    # 鋼板
+    add_plate_entry(result, plate_size, plate_size, 6, "Plate")
+
+    return result

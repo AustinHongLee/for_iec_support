@@ -22,7 +22,7 @@ Sub ExportAllStandardModules()
     Dim sFilePath As String
     Dim nFileNum As Integer
 
-    SaveFolder = "C:\Users\a0976\Desktop\新增資料夾 (3)\for_iec_support\Module占存區" ' 更改為您的導出文件夾
+    SaveFolder = "C:\Users\a0976\Documents\GitHub\for_iec_support\Module占存區" ' 更改為您的導出文件夾
 
     For Each vbComp In ThisWorkbook.VBProject.VBComponents
         If vbComp.Type = vbext_ct_StdModule Then
