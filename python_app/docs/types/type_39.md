@@ -1,6 +1,6 @@
 # Type 39 — Vessel 斜撐支撐 (Vessel Braced Support)
 
-> **圖號**: 39 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 計畫中
+> **圖號**: 39 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **日期**: 12/12/19
 
 將管線支撐轉換為 Vessel 載荷的參數化斜撐系統。

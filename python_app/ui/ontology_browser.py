@@ -106,8 +106,16 @@ def _load_catalog():
         return {}
     with open(_CATALOG_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
+    items = data.get("types", [])
+    for item in items:
+        inferred_doc = item.get("doc_file") or f"type_{item.get('type_id', '').lower()}.md"
+        doc_path = os.path.join(_DOCS_DIR, inferred_doc)
+        if os.path.exists(doc_path):
+            item["doc_file"] = inferred_doc
+            if item.get("status") == "implemented":
+                item["status"] = "documented"
     # 建立 type_id → entry 的快速查表
-    return {t["type_id"]: t for t in data.get("types", [])}
+    return {t["type_id"]: t for t in items}
 
 
 # ─── Widget ───────────────────────────────────
@@ -359,15 +367,15 @@ class OntologyBrowserWidget(QWidget):
         label = sg.get("label_zh", sg["id"])
         count = len(sg.get("types", []))
 
-        # 計算已分析數
-        doc_count = sum(
+        # 計算可計算數 (documented + implemented)
+        run_count = sum(
             1 for tid in sg.get("types", [])
             if self._catalog.get(tid, {}).get("status")
-            == "documented"
+            in ("documented", "implemented")
         )
 
         node.setText(
-            0, f"{icon} {label}  ({doc_count}/{count})"
+            0, f"{icon} {label}  ({run_count}/{count})"
         )
         node.setText(1, sg.get("label_en", ""))
         node.setFont(
@@ -413,6 +421,12 @@ class OntologyBrowserWidget(QWidget):
             child.setFont(0, f)
             child.setFont(1, f)
             child.setForeground(0, QColor("#1B5E20"))
+        elif status == "implemented":
+            f = QFont("Microsoft JhengHei UI", 9,
+                      QFont.Weight.Bold)
+            child.setFont(0, f)
+            child.setFont(1, f)
+            child.setForeground(0, QColor("#E65100"))
         elif status == "placeholder":
             child.setForeground(0, QColor("#BDBDBD"))
             child.setForeground(1, QColor("#BDBDBD"))
@@ -453,8 +467,8 @@ class OntologyBrowserWidget(QWidget):
             "",
             f"**分組數**: {len(groups)}　"
             f"**家族數**: {len(families)}　"
-            f"**已分析**: "
-            f"{sum(1 for e in self._catalog.values() if e.get('status')=='documented')}",
+            f"**可計算**: "
+            f"{sum(1 for e in self._catalog.values() if e.get('status') in ('documented', 'implemented'))}",
             "",
             "---",
             "",
@@ -472,7 +486,7 @@ class OntologyBrowserWidget(QWidget):
             doc = sum(
                 1 for tid in tids
                 if self._catalog.get(tid, {}).get("status")
-                == "documented"
+                in ("documented", "implemented")
             )
             lines.append(
                 f"| {sg.get('sort','')} "
@@ -765,6 +779,10 @@ class OntologyBrowserWidget(QWidget):
             1 for e in self._catalog.values()
             if e.get("status") == "documented"
         )
+        implemented = sum(
+            1 for e in self._catalog.values()
+            if e.get("status") == "implemented"
+        )
         groups = len(
             self._ontology.get("sub_groups", [])
         )
@@ -774,7 +792,7 @@ class OntologyBrowserWidget(QWidget):
         self.lbl_stats.setText(
             f"分組: {groups}　"
             f"家族: {families}　"
-            f"已分析: {documented}/{total}"
+            f"可計算: {documented + implemented}/{total}"
         )
 
     # ══════════════════════════════════════════

@@ -1,6 +1,6 @@
 # Type 46 — 曲面設備直接支撐（含 D-80 接口）(Vessel Direct Support with D-80 Detail)
 
-> **圖號**: 46 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 參考
+> **圖號**: 46 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-56 (1/1)
 > **日期**: 12/12/19
 

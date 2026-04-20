@@ -1,6 +1,6 @@
 # Type 43 — Trunnion 曲面設備全約束支撐 (Trunnion Vessel Clamp Support)
 
-> **圖號**: 43 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 參考
+> **圖號**: 43 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-51 (1/2), D-52 (2/2)
 > **日期**: 12/12/19
 

@@ -1,6 +1,6 @@
 # Type 48 — Drain Hub 偏移底座支撐 (Offset Base Support for Drain Hub)
 
-> **圖號**: 48 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 參考
+> **圖號**: 48 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-59 (1/1)
 > **日期**: 12/12/19
 

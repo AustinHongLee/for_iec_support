@@ -7,6 +7,7 @@
 | 分類 | Pipe Shoe Support with Lateral Restraint |
 | 圖面數 | 1 頁 |
 | 圖面編號 | E1906-DSP-500-006 |
+| 狀態 | ✅ 已實作 |
 
 ---
 
@@ -242,6 +243,43 @@ Pipe（水平）
 8. 如需修改 HOPS/LOPS，加入 designation
 9. 編碼: 52-{size}B{(P)}-{TABLE_A}{(TABLE_B)}-{HOPS}-{LOPS}
 ```
+
+---
+
+## Calculator Handoff
+
+給 Claude 的落地建議是：把 TYPE-52 當成 `D-80 shoe 外掛框件`，不要把 D-80 shoe 幾何重算在 TYPE-52 裡。
+
+### 最小輸入
+
+```text
+52-{size}B{(P)}-{TABLE_A}{(TABLE_B)}-{HOPS}-{LOPS}
+```
+
+### 第一版 calculator 最穩的做法
+
+| 項目 | 建議 |
+|------|------|
+| Shoe 幾何 | 直接引用 `D-80 / TYPE-66` 對應資料 |
+| L-angle | 固定 `L40×40×5 ×2` |
+| `≤ 8"` | 不加底板補強 |
+| `10"~24"` | 加 `PL 12t` 底板 |
+| `(P)` | 視為是否要加 reinforcing pad |
+| `TABLE_A/B` | 視為 metadata + material / insulation decode |
+| `HOPS/LOPS` | 覆寫值，若沒有就取 D-80 預設 |
+
+### BOM 觀點
+
+- TYPE-52 本體應該只負責：
+  - lateral retaining angle ×2
+  - optional base plate
+  - optional pad
+- shoe 本體若系統已由 TYPE-66 / D-80 建立，應避免重複計入
+
+### 實作風險提醒
+
+- 現有 `type_52.py` 已混合處理 `52/53/54/55/66/67/85`，之後若 Claude 要重構，最好先把各 type 的差異規則拆開
+- `LOPS` / `HOPS` 與 `TABLE_A/B` 比較像 interface metadata，不應該全部硬塞成 plate 幾何公式
 
 ---
 

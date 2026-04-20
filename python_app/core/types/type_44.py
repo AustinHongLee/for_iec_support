@@ -1,0 +1,82 @@
+"""
+Type 44 計算器 — 曲面設備直接斜撐支撐 (D-53)
+格式: 44-{line_size}B-{MEMBER}-{H} {A|B}
+
+H = P - √(R² - Q²)
+無 Trunnion, 無 Lug Plate, 僅 8"~14"
+
+BOM: ① Channel (H) ② L50 斜撐 (條件: H≥1200) ③ Plate 90×45×6 ④ M.B.
+"""
+from ..models import AnalysisResult
+from ..parser import get_part, get_lookup_value
+from ..steel import add_steel_section_entry
+from ..plate import add_plate_entry
+from ..bolt import add_custom_entry
+from data.steel_sections import get_section_details
+from data.type44_table import get_type44_q, get_type44_brace, TYPE44_BRACE_H_MIN
+
+
+def calculate(fullstring: str) -> AnalysisResult:
+    result = AnalysisResult(fullstring=fullstring)
+
+    # 第二段: 管徑
+    part2 = get_part(fullstring, 2)
+    if not part2:
+        result.error = "Type 44: 缺少管徑"
+        return result
+    line_size = get_lookup_value(part2)
+    q_val = get_type44_q(line_size)
+    if q_val is None:
+        result.error = f"Type 44: 管徑 {part2} ({line_size}\") 不在範圍 (8\"/10\"/12\"/14\")"
+        return result
+
+    # 第三段: 型鋼代碼
+    part3 = get_part(fullstring, 3)
+    if not part3:
+        result.error = "Type 44: 缺少型鋼代碼"
+        return result
+    member_code = part3.strip()
+    details = get_section_details(member_code)
+    if not details:
+        result.error = f"Type 44: 未知型鋼 {member_code} (支援 C100/C125/C150)"
+        return result
+
+    # 第四段: "H FIG"
+    part4 = get_part(fullstring, 4)
+    if not part4:
+        result.error = "Type 44: 缺少 H 值與 FIG 類型"
+        return result
+    parts4 = part4.strip().split()
+    h_mm = int(parts4[0])
+    fig_type = parts4[1].upper() if len(parts4) > 1 else "A"
+
+    section_type = details["type"]
+    section_dim = details["size"][1:]
+    theta = 30 if fig_type == "A" else 45
+
+    # ① Channel 主柱 — length = H
+    add_steel_section_entry(result, section_type, section_dim, h_mm)
+    result.entries[-1].remark = f"主柱, H={h_mm}mm, Q={q_val}mm"
+
+    # ② L50 斜撐 (條件: H ≥ 1200)
+    if h_mm >= TYPE44_BRACE_H_MIN:
+        brace = get_type44_brace(fig_type)
+        if brace:
+            add_steel_section_entry(result, "Angle", "50*50*6", brace["length"])
+            result.entries[-1].remark = (
+                f"斜撐 FIG-{fig_type}(θ={theta}°), "
+                f"L={brace['length']}mm, H≥{TYPE44_BRACE_H_MIN}"
+            )
+
+    # ③ Plate 90×45×6 (承托板)
+    add_plate_entry(result, plate_a=90, plate_b=45,
+                    plate_thickness=6, plate_name="PLATE",
+                    material="A36/SS400", plate_qty=1)
+    result.entries[-1].remark = "承托板"
+
+    # ④ M.B. 1/2"×30
+    add_custom_entry(result, name="M.BOLT", spec='1/2"x30',
+                     material="SUS304", quantity=2,
+                     unit_weight=0.3, unit="SET")
+
+    return result

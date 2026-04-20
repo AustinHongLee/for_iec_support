@@ -8,14 +8,21 @@
       "label_zh": "已分析",
       "label_en": "Documented",
       "color": "#4CAF50",
-      "criteria": "有 .md 分析文件且檔案確實存在於磁碟",
+      "criteria": "有計算器 + 有 .md 分析文件",
+      "badge_style": "bold"
+    },
+    "implemented": {
+      "label_zh": "可計算",
+      "label_en": "Implemented",
+      "color": "#FF9800",
+      "criteria": "有計算器可跑分析，但尚無 .md 技術文件",
       "badge_style": "bold"
     },
     "cataloged": {
       "label_zh": "已建檔",
       "label_en": "Cataloged",
       "color": "#2196F3",
-      "criteria": "有名稱 (name_zh 或 name_en)，尚無 .md 分析文件",
+      "criteria": "有名稱描述，但無計算器",
       "badge_style": "normal"
     },
     "placeholder": {
@@ -28,16 +35,16 @@
   },
 
   "status_rules": {
-    "principle": "狀態反映使用者在此 App 能看到什麼，不反映 VBA 端實作狀態",
+    "principle": "狀態反映使用者在此 App 能做什麼：能算 > 能讀 > 能看名字 > 空殼",
     "determination_logic": [
-      "1. doc_file 存在且磁碟有對應 .md → documented",
-      "2. 磁碟有符合命名慣例的 .md 但 catalog 未登錄 → 自動補 doc_file → documented",
+      "1. 有計算器 + 有 .md → documented",
+      "2. 有計算器，無 .md → implemented",
       "3. 有 name_zh 或 name_en → cataloged",
       "4. 其餘 → placeholder"
     ],
     "integrity_checks": [
       "doc_file 指向不存在的檔案 → 清空 doc_file + 降級",
-      "status 只允許三種值，其他一律重新判定",
+      "status 只允許四種值: documented / implemented / cataloged / placeholder",
       "type_id 和 category 為必要欄位"
     ]
   },

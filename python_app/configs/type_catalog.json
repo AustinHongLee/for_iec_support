@@ -20,7 +20,7 @@
       "description": "Type 01 是最常見的管線支撐型式。上段管材質跟隨主管線（如 SUS304），下段管固定使用 A53Gr.B 黑鐵管。上段管長度由 L（查表，基於 Long Radius Elbow）+ 100mm 決定，下段管長度為 H×100 - 100mm。底板由第三段字母代碼（A~T）決定，對應 M-42 圖面。H ≤ 1500mm，支撐到地面或鋼板 (TO GRADE OR PLATE)。",
       "calc_logic": "上段管長 = L + 100mm（Elbow 查表）或 100 + M（Tee 從 ASME B16.9 查表）\n下段管長 = H×100 - 100mm\n上段材質 = 跟隨主管線\n下段材質 = A53Gr.B（固定）\n底板 = M-42 依字母代碼",
       "designation": "01-{A}B-{H}{M42字母}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~24\""
     },
     {
@@ -62,7 +62,7 @@
       "description": "適用於2\"及以下小管徑管線的彎頭支撐。垂直角鐵(H高度現場決定) + 水平角鐵(130mm) + U-bolt夾管 + M42底板組合。",
       "calc_logic": "角鐵L75×75×9兩支(垂直H+水平130mm) + U-bolt(1SET/1kg) + M42底板(用角鐵尺寸查表)",
       "designation": "03-{pipe_size}-{H}{M42_letter}  例: 03-1B-05N",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "≤2\""
     },
     {
@@ -104,7 +104,7 @@
       "description": "適用於2\"及以下管線的立柱式上托支撐。角鋼Member M(L50/L65/L75)作垂直柱+水平托板(130mm)，U-bolt束制管線(不含供貨,見D-68)。H現場裁切,最大1500mm。需搭配M-42下部構件,僅允許D/L/P/R。",
       "calc_logic": "角鐵兩支(垂直H+水平130mm，型鋼由編碼指定) + M42底板(僅D/L/P/R，用型鋼尺寸查表)。U-bolt不計入(NOT FURNISHED)。",
       "designation": "05-{member}-{H}{M42_letter}  例: 05-L50-05L",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "≤2\""
     },
     {
@@ -132,7 +132,7 @@
       "description": "雙管平行坐在橫向托板上的立柱支撐。Member C(L50/L65/L75)垂直+水平段。H/L現場裁切，H≤1500mm，L≤1000mm。A/B可不對稱。底部用M-37 Lug Plate螺栓固定(不列入材料)。無U-bolt、無M-42。",
       "calc_logic": "角鐵兩支(垂直H+水平L，型鋼由編碼指定)。M-37 Lug Plate不列入材料。",
       "designation": "06-{member}-{HL}-{AB}  例: 06-L50-0510-0401",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -160,7 +160,7 @@
       "description": "有滑動面的彎頭支撐，允許管線熱位移。Pipe B(dummy)=L+100，Pipe C(支撐柱)=H-100-板厚。H現場裁切(2000~3500mm)。M42僅允許J型。特殊材質同主管。",
       "calc_logic": "PipeB(L+100,同主管材質) + PipeC(H-100-plateF厚-M42板厚,黑鐵) + PlateE + PlateF + M42(J,用PipeC尺寸查)",
       "designation": "07-{line_size}-{H}{M42_letter}  例: 07-2B-20J",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~12\""
     },
     {
@@ -188,7 +188,7 @@
       "description": "立柱式托板支撐，管線坐在上板可滑動，旁邊Stopper限制最大位移。Channel N(C100/C125)橫向支撐，Pipe A立柱(黑鐵)。H/L現場裁切，H≤1500mm，L≤1000mm。M42僅G/J。",
       "calc_logic": "PipeA(H-6-channel高/2-M42板厚,黑鐵) + ChannelN(L) + M42(G/J,用pipe size查) + Plate_STOPPER(K×M×6) + Plate_TOP(B×B×6)",
       "designation": "08-{pipe}-{LH}{M42}  例: 08-2B-1005G",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~4\""
     },
     {
@@ -216,7 +216,7 @@
       "description": "Type 09 使用 2\" dummy pipe 焊在主管上作為支撐腿，底端焊接螺帽，再以 1-5/8\" 全牙螺桿穿過螺帽調整高度，螺桿底部壓在 M-42 底板上。適用 2\"~4\" 管徑，H≤1500mm。",
       "calc_logic": "Main Pipe(dummy) = L+100mm, upper_material\nSupport Pipe = H-100mm, A53Gr.B\nM42底板(用2\"查表), 僅允許 B/H\nMachine Bolt: 1-5/8\"×150L, 1SET=20kg",
       "designation": "09-{A}B-{H}{M42字母}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~4\""
     },
     {
@@ -244,7 +244,7 @@
       "description": "Type 10 以 supporting pipe B 承接主線，下方以 Plate F (有鑽孔) + 4支 J bolt 做四點式高度與水平調整，再落在垂直支撐柱上。適用 1.5\"~44\" 管徑，H≤1500mm。NOTE 6: 禁用於溫度≤10°C或96≥400°C，壓力≥70Kg/cm²G。",
       "calc_logic": "Main Pipe(dummy) = L+100mm, upper_material\nSupport Pipe(垂直) = H-100mm, A53Gr.B\nPlate F: W×W×t (有鑽孔)\nAdj.Bolt(J): 4EA\nHex Nut: 4EA\nM42底板(用pipe_size_B查表)",
       "designation": "10-{A}B-{H}{M42字母}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "1.5\"~44\""
     },
     {
@@ -370,7 +370,7 @@
       "description": "Type 11 透過 1.5\" SCH.80 dummy pipe 將主管載重傳至 1-5/8\" 全牙螺桿，再經由彈簧(SPR12/SPR14)吸收位移，下方為 2\" SCH.40 支撐管柱。彈簧須現場預壓設定(preset in field)。",
       "calc_logic": "Upper Pipe(dummy) = L+100, 1.5\" SCH.80, upper_material\nSupport Pipe = H-100-(300-9)=H-391, 2\" SCH.40, A53Gr.B\nM42底板(用2\"查表), 僅 G/J\nM.B. 1-5/8\"×300L + HEX NUT×2\nWasher 92×9t×50 ×2\nSpring SPR12/SPR14 ×2",
       "designation": "11-{A}B-{H}{M42字母}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~10\""
     },
     {
@@ -566,7 +566,7 @@
       "description": "以 supporting pipe B 承接主管，再透過 Plate P + 6t Cover Plate 組焊固定的剛性支撐。Designation 依板材材料附加 (A)/(S) 符號。M42 底座類型 A/B/E/G 時 H 從地坪最低點起算。",
       "calc_logic": "查表取 pipe_size_b/pipe_sch/plate 尺寸 → Support Pipe(H-100, A53Gr.B) + Plate P(材料依尾碼) + Cover Plate(75×75×6t) + M42",
       "designation": "12-{A}-{H}{M42}  或  12-{A}-{H}{M42}(A)/(S)  例: 12-6B-05B, 12-6B-05B(A)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2~16"
     },
     {
@@ -636,7 +636,7 @@
       "description": "通常用於合金鋼/不鏽鋼管線（不允許焊接主管）。Pipe Clamp 夾持主管，中間墊非石棉墨片隔熱防磨，支撐管透過 Plate P + Cover Plate 組焊固定。MAX TEMP 750°F。",
       "calc_logic": "查表取 pipe_size_b/pipe_sch/plate 尺寸 → Pipe Clamp(M-4) + Non-Asbestos Sheet(M-47) + Support Pipe(H-100) + Plate P + Cover Plate + M42",
       "designation": "13-{A}-{H}{M42}  例: 13-6B-05B",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2~16"
     },
     {
@@ -664,7 +664,7 @@
       "description": "重型滑動支撐，用結構鋼 MEMBER N 作為立柱，配合 Wing Plate、Stopper、Base Plate 和 Anchor Bolt。無 M42。Pipe 長度 = H - 2F - channelHeight。",
       "calc_logic": "查表取各部件尺寸 → Pipe(H-2F-CH) + Channel(L) + Wing PL + Stopper PL + Base PL + Top PL + EXP.BOLT",
       "designation": "14-{A}-{LL}{HH}  例: 14-2B-1005 (L=1000, H=500)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2~12"
     },
     {
@@ -692,7 +692,7 @@
       "description": "與 TYPE-14 結構相同但底部直接落在既有鋼構上。無 foundation、無 anchor bolt。Base Plate = D×D×F(無鑽孔)。其餘構件與 TYPE-14 相同。",
       "calc_logic": "查表取各部件尺寸 → Pipe(H-2F-CH) + Channel(L) + Wing PL + Stopper PL + Base PL(D×D) + Top PL",
       "designation": "15-{A}-{LL}{HH}  例: 15-2B-1005 (L=1000, H=500)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2~12"
     },
     {
@@ -720,7 +720,7 @@
       "description": "",
       "calc_logic": "",
       "designation": "",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -776,7 +776,7 @@
       "description": "以 L-angle 或 cut-from H-beam 作為斜撐，焊接於主管與支撐柱間形成三角穩定結構。1~6吋用角鋼(L40/L50/L75)，8~12吋用 CUT FROM H194X150X6X9。L 為現場裁切。",
       "calc_logic": "查表取 member 型鋼規格 + 長度 L → 計算型鋼重量",
       "designation": "19-{A}B (兩段式，無 H/L)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "1~12"
     },
     {
@@ -804,7 +804,7 @@
       "description": "MEMBER M (Angle/Channel) + slot hole + washer，U-bolt NOT FURNISHED。FIG.A/B 兩種布置。H 現場裁切。",
       "calc_logic": "1 component: Member M (Angle or Channel) with length H. Member options: L50(H≤1500), L65(H≤1500), L75(H≤2000), C100(H≤3000).",
       "designation": "20-{M}-{HH}{Fig}  M=型鋼代碼, HH=H/100mm, Fig=A/B",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "2\"~12\" (Z table)"
     },
     {
@@ -832,7 +832,7 @@
       "description": "Member M (Angle) H段+L段組成懸臂支架。Fig.A=L300, Fig.B=L500, Fig.C=自定L。焊接於既有鋼構。",
       "calc_logic": "2 components: Member M (H vertical) + Member M (L horizontal). Members: L50(H≤1000), L65(H≤1500), L75(H≤2000).",
       "designation": "21-{M}-{HH}{Fig} or 21-{M}-{HH}C-{LL}  M=型鋼, HH=H/100, Fig=A/B/C, LL=L/100(Fig.C only)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -860,7 +860,7 @@
       "description": "Member M (Angle) H段+L段 + M42(L/P only)。Fig.A=L300, Fig.B=L500, Fig.C=自L。焊接於 base plate，接地面/基礎。",
       "calc_logic": "2+M42 components: Member(H) + Member(L) + M42 lower. Members: L50(H≤1000), L65(H≤1000), L75(H≤1500).",
       "designation": "22-{M}-{HH}{Fig}{M42} or 22-{M}-{HH}C{M42}-{LL}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -888,7 +888,7 @@
       "description": "Member M (Angle/Channel/H Beam) H段+L段。Fig.A=L300, Fig.B=L500, Fig.C=自訂L。L50~H150 共 8 種型鋼。",
       "calc_logic": "2 components: Member(H) + Member(L). L50(H≤500), L65(H≤1500), others(H≤2000). H150 uses 7mm.",
       "designation": "23-{M}-{HH}{Fig} or 23-{M}-{HH}{Fig}-{LL}",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -916,7 +916,7 @@
       "description": "Member M(L50/L75)角鋼貼壁, pipe center到牆面偏距100mm, H為唯一可變尺寸。U-bolt(D-68)不計入BOM。無M-42底板。",
       "calc_logic": "角鋼×1, Total=H+100(偏距)",
       "designation": "24-L50-05  第二段=型鋼(L50/L75), 第三段=HH(×100mm)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(H≤1000), L75(H≤1500)"
     },
     {
@@ -944,7 +944,7 @@
       "description": "FIG-A簡易懸臂; FIG-B附U-bolt/Down Stopper(不含供貨); FIG-C附LUG PLATE TYPE-C(M-34查表)+K Bolt×2。第四段可選L1L2修改尺寸(供建模)。",
       "calc_logic": "角鋼×1, Total=H+L; FIG-C追加Lug Plate(M-34查表)+K Bolt×2",
       "designation": "25-L50-0505A  第二段=型鋼, 第三段=LL+HH+Fig(A/B/C), 第四段(選填)=L1L2",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L≤1000/H≤500), L65(L≤1000/H≤500), L75(L≤1000/H≤2000)"
     },
     {
@@ -972,7 +972,7 @@
       "description": "框架結構: H段×2(上下平行)+L段×1, 全6mm角焊。FIG-A基本框架、FIG-B附U-bolt/Down Stopper、FIG-C附Lug Plate(M-34)+K Bolt。與Type 25差異在於多一支H段形成框架。",
       "calc_logic": "型鋼: H×2 + L; FIG-C追加 Lug Plate(M-34查表) + K Bolt×2",
       "designation": "26-L50-1005A  第二段=型鋼代碼, 第三段=LL(L×100)+HH(H×100)+Fig(A/B/C)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L/H≤1000), L65(L/H≤1000), L75(L≤1000/H≤2500), C125(L/H≤1500)"
     },
     {
@@ -1000,7 +1000,7 @@
       "description": "角鐵版(L50/L75/L100)簡化; H150版含頂板(6t)、側板(6t×3)、下翼板(9t×2)。第四段可選L1L2修改左右分配。",
       "calc_logic": "角鐵: 主件(H−15+L) + M-42; H150: 主件 + top plate + side plate×3 + wing plate×2 + M-42",
       "designation": "27-L75-0505L-0401  第二段=型鋼, 第三段=LL+HH+M42Letter, 第四段(選填)=L1L2",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L≤300/H≤500), L75(L≤500/H≤500), L100(L≤700/H≤1000), H150(L≤600/H≤2500)"
     },
     {
@@ -1014,7 +1014,7 @@
       "description": "C125/C150用槽鋼(水平管); L50/L75用角鐵(垂直管+U-bolt側掛)。U-bolt(D-68)不含在BOM內。",
       "calc_logic": "型鋼 Total=2H+L(一體折/焊); M-42底板×1 set",
       "designation": "28-L50-1005L  第二段=型鋼, 第三段=LL+HH+M42Letter",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L≤1000/H≤500), L75(L≤1000/H≤1500), C125(L/H≤1500), C150(L/H≤1500)"
     },
     {
@@ -1028,7 +1028,7 @@
       "description": "FIG-A: 直接接EXISTING STEEL, Total=H+L; FIG-B: 底部15mm板厚偏移, Total=(H−15)+L。第四段可選L1L2修改左右分配。",
       "calc_logic": "FIG-A: H+L; FIG-B: (H−15)+L",
       "designation": "30-L75-0505A-0401  第二段=型鋼, 第三段=LL+HH+Fig(A/B), 第四段(選填)=L1L2",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L≤300/H≤600), L75(L≤700/H≤1000), C150(L≤1000/H≤2000)"
     },
     {
@@ -1057,7 +1057,7 @@
       "description": "上部焊接EXISTING STEEL, 管線在框內。與Type 31鏡像: 31=由下往上撐, 32=從上往下吊。U型框(左腿+底梁+右腿)一體折/焊。",
       "calc_logic": "① H方向: H×2(合併一筆, steel_qty=2); ② L方向: L(一筆) → 2筆3根下料",
       "designation": "32-L50-1005  第二段=型鋼, 第三段=LLHH(4位純數字)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L/H≤1000), L75(L≤1000/H≤1500), C125(L/H≤1500), C150(L/H≤1500), H250(L/H≤1500)"
     },
     {
@@ -1071,7 +1071,7 @@
       "description": "管在下梁上(框撐管)。與Type 31差異: 31=雙柱H×2+上梁L, 33=單柱H+下梁L。無螺栓, 全焊接。",
       "calc_logic": "① H方向(立柱): H; ② L方向(下梁): L → 各1筆",
       "designation": "33-L50-1005  第二段=型鋼, 第三段=LLHH(4位純數字)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L/H≤1000), L75(L≤1000/H≤1500), C125(L/H≤1500), C150(L/H≤1500), H250(L/H≤1500)"
     },
     {
@@ -1085,7 +1085,7 @@
       "description": "與Type 33差異: 33=管在下梁(框撐管), 34=管在上梁(梁撐管)。無螺栓, 全焊接。",
       "calc_logic": "① H方向(立柱): H; ② L方向(上梁): L → 各1筆",
       "designation": "34-L50-1005  第二段=型鋼, 第三段=LLHH(4位純數字)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(L/H≤1000), L75(L≤1000/H≤1500), C125(L/H≤1500), C150(L/H≤1500), H250(L/H≤1500)"
     },
     {
@@ -1099,7 +1099,7 @@
       "description": "FIG-A: 單條qty=1; FIG-B: 雙條(間距50mm)qty=2。H代表長度(非高度)。H150用7mm規格。NOTE 2: L50/C150僅FIG-A。",
       "calc_logic": "FIG-A: 型鋼×1, Total=H; FIG-B: 型鋼×2(steel_qty=2), 每根=H",
       "designation": "35-C125-05A  第二段=型鋼, 第三段=HH(×100)+末位字母(A/B)",
-      "status": "cataloged",
+      "status": "implemented",
       "line_size_range": "L50(A≤600), L75(A≤800/B≤900), C100(A≤1400/B≤900), C125(A≤1400/B≤900), C150(A≤1400,A only), H100(A≤1400), H150(A≤1400)"
     },
     {
@@ -1374,59 +1374,62 @@
     },
     {
       "type_id": "57",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
+      "name_en": "U-Bolt on Existing Steel",
+      "name_zh": "U型螺栓鋼構直接固定支撐",
+      "drawing_no": "D-68",
       "category": "support",
       "pdf_file": "57.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "brief": "以 U-Bolt 直接固定於既有鋼構，最低成本基本支撐。FIG-A: SLIDE, FIG-B: FIXED。",
+      "description": "TYPE-57 不是工程化支撐系統，而是使用 U-bolt 直接夾持於既有鋼構的最低成本安裝方案。僅適用碳鋼管、非保溫管、非高溫管、非關鍵管線。構件僅 U-BOLT (ref M-26) + ROD，無底板、無 Shoe、無 Clamp。",
+      "calc_logic": "1. LINE SIZE → 查表取 ROD 尺寸 + U-BOLT 規格\n2. BOM: U-BOLT (ref M-26, 1 SET) + ROD (1 SET)\n3. 無幾何計算，所有尺寸為配置尺寸",
+      "designation": "57-{line_size}B-{mode(A/B)}",
+      "status": "implemented",
+      "line_size_range": "1/4\"~30\""
     },
     {
       "type_id": "58",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
+      "name_en": "U-Bolt Plate Saddle",
+      "name_zh": "U型螺栓板鞍座",
+      "drawing_no": "D-69",
       "category": "support",
       "pdf_file": "58.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "doc_file": "type_58.md",
+      "brief": "U-bolt plate saddle on steel plate or shape steel",
+      "description": "FIG-A: 鋼板上安裝; FIG-B: 型鋼上安裝",
+      "calc_logic": "BOM: 1 plate + 1 U-bolt set (M-26)",
+      "designation": "58-{size}B-{FIG}",
+      "status": "documented",
+      "line_size_range": "1/4~30"
     },
     {
       "type_id": "59",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
+      "name_en": "Lug Plate Support",
+      "name_zh": "吊耳板支撐",
+      "drawing_no": "D-70",
       "category": "support",
       "pdf_file": "59.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "doc_file": "type_59.md",
+      "brief": "Lug plate support for shoe or bare pipe",
+      "description": "FIG-A: 保溫管配D-63 shoe; FIG-B: 裸管配D-68 U-bolt",
+      "calc_logic": "BOM: 2 lug plates + shoe/U-bolt ref",
+      "designation": "59-{size}B-{FIG}{mat?}",
+      "status": "documented",
+      "line_size_range": "2-1/2 & smaller, 3~14"
     },
     {
       "type_id": "60",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
+      "name_en": "Large Bore Shoe Side Support",
+      "name_zh": "大口徑鞍座側向支撐",
+      "drawing_no": "D-71",
       "category": "support",
       "pdf_file": "60.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "doc_file": "type_60.md",
+      "brief": "Side support plates for large bore pipe shoe",
+      "description": "FIG-A: 保溫管; FIG-B: 裸管 (含底板)",
+      "calc_logic": "BOM: 2 side plates + bottom plate(FIG-B) + shoe ref",
+      "designation": "60-{size}B-{FIG}",
+      "status": "documented",
+      "line_size_range": "16~42"
     },
     {
       "type_id": "61",
@@ -1459,31 +1462,33 @@
     },
     {
       "type_id": "64",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
-      "category": "support",
+      "name_en": "Pipe-to-Pipe Rod Hanger",
+      "name_zh": "管對管吊桿",
+      "drawing_no": "D-78",
+      "category": "hanger",
       "pdf_file": "64.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "doc_file": "type_64.md",
+      "brief": "Rod hanger connecting supported pipe to supporting pipe",
+      "description": "FIG-A~D: 不同 clamp 組合 (M-4/M-6)",
+      "calc_logic": "BOM: 2 rods(M-22) + 2 eye nuts(M-25) + upper/lower clamp",
+      "designation": "64-{E}-{F}-{HH}{FIG}",
+      "status": "documented",
+      "line_size_range": "1/2~12"
     },
     {
       "type_id": "65",
-      "name_en": "",
-      "name_zh": "",
-      "drawing_no": "",
-      "category": "support",
+      "name_en": "Trapeze Hanger",
+      "name_zh": "梯形吊架",
+      "drawing_no": "D-79",
+      "category": "hanger",
       "pdf_file": "65.pdf",
-      "brief": "",
-      "description": "",
-      "calc_logic": "",
-      "designation": "",
-      "status": "placeholder",
-      "line_size_range": ""
+      "doc_file": "type_65.md",
+      "brief": "Trapeze hanger with cross member",
+      "description": "Cross member + 2 welded eye rods + 2 angle brackets; D>=12加 stiffener",
+      "calc_logic": "BOM: 1 member + 2 rods(M-23) + 2 brackets(M-28) + stiffener",
+      "designation": "65-{D}B-{LLHH}",
+      "status": "documented",
+      "line_size_range": "2~24"
     },
     {
       "type_id": "66",
@@ -1680,7 +1685,7 @@
       "description": "",
       "calc_logic": "",
       "designation": "",
-      "status": "placeholder",
+      "status": "implemented",
       "line_size_range": ""
     },
     {
@@ -2045,7 +2050,7 @@
       "description": "M35_TABLE: LGP-D-1~D-9, 由member反查(L50→D-1, L65→D-2, L75→D-3, C100→D-4, C125→D-5, C150→D-6, C180→D-7, C200→D-8, C250→D-9)。板角度45°, 將斜撐幾何轉換成可鎖螺栓的平面接口。欄位: A(板寬), B(板高), C(貼合寬), D(孔距/角鋼), E(邊距), F/G/H(孔位), J(孔徑), K(bolt規格), T(板厚9~16mm)。Material same as connected metal。",
       "calc_logic": "get_m35_by_member(code) → dict with A, B, C, D, E, F, G, H, J, K, T",
       "designation": "LGP-D-{n}",
-      "status": "documented",
+      "status": "cataloged",
       "line_size_range": "L50~C250 (9種)"
     },
     {
@@ -2060,7 +2065,7 @@
       "description": "M36_TABLE: LGP-E-1~E-9, 由member反查(L50→E-1, L65→E-2, L75→E-3, C100→E-4, C125→E-5, C150→E-6, C180→E-7, C200→E-8, C250→E-9)。板角度60°, 含0.577T=tan(30°)×T幾何補償, 將30°斜撐角度精準轉換為bolt平面。欄位: A(板寬), B(板高), C(貼合寬), D(孔距/角鋼), E(邊距), F/G/H(孔位), J(孔徑), K(bolt規格), T(板厚9~16mm)。Material same as connected metal。",
       "calc_logic": "get_m36_by_member(code) → dict with A, B, C, D, E, F, G, H, J, K, T",
       "designation": "LGP-E-{n}",
-      "status": "documented",
+      "status": "cataloged",
       "line_size_range": "L50~C250 (9種)"
     },
     {
@@ -2131,7 +2136,7 @@
       "description": "M45_TABLE: EB-1/4~EB-7/8, 由螺栓直徑查表。欄位: D(直徑), L(總長), Thread Length(螺紋長), Drill Size(R.C.鞑孔尺寸), Tensile(kg), Shear(kg)。設計基準: R.C.強度210kg/cm², 安全係數5。僅用於small pipe supports。",
       "calc_logic": "get_m45_by_dia(dia_inch) → dict with D, L, thread_len, drill_size, tensile_kg, shear_kg",
       "designation": "EB-{D}",
-      "status": "documented",
+      "status": "cataloged",
       "line_size_range": "1/4\"~7/8\" (6種)"
     },
     {

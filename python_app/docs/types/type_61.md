@@ -1,6 +1,6 @@
 # Type 61 — Trunnion 支座設計 (Trunnion Design for Pipe Support)
 
-> **圖號**: 61 &nbsp;|&nbsp; **分類**: 支撐型式 (接口零件) &nbsp;|&nbsp; **狀態**: 🔲 參考
+> **圖號**: 61 &nbsp;|&nbsp; **分類**: 支撐型式 (接口零件) &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-72 (1/3), D-73 (2/3), D-74 (3/3)
 > **日期**: 12/12/19
 

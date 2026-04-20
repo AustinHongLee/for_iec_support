@@ -25,7 +25,16 @@ def get_analysis_setting(key: str, default=None):
 
 
 def _register_types():
-    from .types import type_01, type_03, type_05, type_06, type_07, type_08, type_09, type_10, type_11, type_12, type_13, type_14, type_15, type_16, type_19, type_20, type_21, type_22, type_23, type_24, type_25, type_26, type_27, type_28, type_30, type_31, type_32, type_33, type_34, type_35, type_36, type_37, type_52
+    from .types import (type_01, type_03, type_05, type_06, type_07, type_08,
+                         type_09, type_10, type_11, type_12, type_13, type_14,
+                         type_15, type_16, type_19, type_20, type_21, type_22,
+                         type_23, type_24, type_25, type_26, type_27, type_28,
+                         type_30, type_31, type_32, type_33, type_34, type_35,
+                         type_36, type_37, type_39,
+                         type_41, type_42, type_43, type_44, type_45,
+                         type_46, type_47, type_48, type_49, type_51, type_56, type_61,
+                         type_52, type_57,
+                         type_58, type_59, type_60, type_64, type_65)
 
     TYPE_HANDLERS.update({
         "01":  type_01.calculate,
@@ -61,6 +70,19 @@ def _register_types():
         "35":  type_35.calculate,
         "36":  type_36.calculate,
         "37":  type_37.calculate,
+        "39":  type_39.calculate,
+        "41":  type_41.calculate,
+        "42":  type_42.calculate,
+        "43":  type_43.calculate,
+        "44":  type_44.calculate,
+        "45":  type_45.calculate,
+        "46":  type_46.calculate,
+        "47":  type_47.calculate,
+        "48":  type_48.calculate,
+        "49":  type_49.calculate,
+        "51":  type_51.calculate,
+        "56":  type_56.calculate,
+        "61":  type_61.calculate,
         "52":  type_52.calculate,
         "53":  type_52.calculate,
         "54":  type_52.calculate,
@@ -68,6 +90,12 @@ def _register_types():
         "66":  type_52.calculate,
         "67":  type_52.calculate,
         "85":  type_52.calculate,
+        "57":  type_57.calculate,
+        "58":  type_58.calculate,
+        "59":  type_59.calculate,
+        "60":  type_60.calculate,
+        "64":  type_64.calculate,
+        "65":  type_65.calculate,
     })
 
 

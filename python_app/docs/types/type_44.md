@@ -1,6 +1,6 @@
 # Type 44 — 曲面設備直接斜撐支撐 (Vessel Direct Inclined Support)
 
-> **圖號**: 44 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 參考
+> **圖號**: 44 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-53 (1/1)
 > **日期**: 12/12/19
 

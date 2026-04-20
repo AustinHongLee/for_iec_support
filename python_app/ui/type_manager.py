@@ -35,6 +35,7 @@ _DOCS_DIR = os.path.join(_APP_DIR, "docs", "types")
 # 狀態對應的中文與顏色
 STATUS_MAP = {
     "documented":  ("已分析", "#4CAF50"),
+    "implemented": ("可計算", "#FF9800"),
     "cataloged":   ("已建檔", "#2196F3"),
     "placeholder": ("預留",   "#9E9E9E"),
 }
@@ -61,7 +62,15 @@ def load_catalog() -> list[dict]:
         return []
     with open(_CATALOG_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("types", [])
+    items = data.get("types", [])
+    for item in items:
+        inferred_doc = item.get("doc_file") or f"type_{item.get('type_id', '').lower()}.md"
+        doc_path = os.path.join(_DOCS_DIR, inferred_doc)
+        if os.path.exists(doc_path):
+            item["doc_file"] = inferred_doc
+            if item.get("status") == "implemented":
+                item["status"] = "documented"
+    return items
 
 
 # ─── Markdown → HTML 渲染 ─────────────────────────
@@ -223,6 +232,7 @@ class TypeManagerWidget(QWidget):
         self.filter_combo.addItem("全部", "")
         for cat_id in CATEGORY_ORDER:
             self.filter_combo.addItem(CATEGORY_ZH.get(cat_id, cat_id), cat_id)
+        self.filter_combo.addItem("可計算 + 已分析", "__runnable__")
         self.filter_combo.addItem("僅已分析", "__documented__")
         self.filter_combo.currentIndexChanged.connect(self._on_search)
         top_bar.addWidget(self.filter_combo)
@@ -303,6 +313,7 @@ class TypeManagerWidget(QWidget):
         """底部統計列"""
         total = len(self._catalog)
         documented = sum(1 for t in self._catalog if t.get("status") == "documented")
+        implemented = sum(1 for t in self._catalog if t.get("status") == "implemented")
         cataloged = sum(1 for t in self._catalog if t.get("status") == "cataloged")
         placeholder = sum(1 for t in self._catalog if t.get("status") == "placeholder")
 
@@ -319,6 +330,7 @@ class TypeManagerWidget(QWidget):
         pairs = [
             (f"共 {total} 項", "#333"),
             (f"已分析: {documented}", "#4CAF50"),
+            (f"可計算: {implemented}", "#FF9800"),
             (f"已建檔: {cataloged}", "#2196F3"),
             (f"預留: {placeholder}", "#9E9E9E"),
         ]
@@ -616,8 +628,8 @@ class TypeManagerWidget(QWidget):
             items.sort(key=lambda t: _type_sort_key(t["type_id"]))
             cat_node = QTreeWidgetItem(self.tree)
             cat_label = CATEGORY_ZH.get(cat_id, cat_id)
-            doc_count = sum(1 for t in items if t.get("status") == "documented")
-            cat_node.setText(0, f"{cat_label}  ({doc_count}/{len(items)})")
+            run_count = sum(1 for t in items if t.get("status") in ("documented", "implemented"))
+            cat_node.setText(0, f"{cat_label}  ({run_count}/{len(items)})")
             cat_node.setFont(0, QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold))
             cat_node.setForeground(0, QColor("#424242"))
             cat_node.setExpanded(True)
@@ -644,8 +656,12 @@ class TypeManagerWidget(QWidget):
                 if icon:
                     child.setIcon(0, icon)
 
-                # 已分析的粗體 + 預留的灰色
+                # 已分析/可計算 粗體 + 預留灰色
                 if t.get("status") == "documented":
+                    bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
+                    child.setFont(0, bold_f)
+                    child.setFont(1, bold_f)
+                elif t.get("status") == "implemented":
                     bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
                     child.setFont(0, bold_f)
                     child.setFont(1, bold_f)
@@ -683,7 +699,10 @@ class TypeManagerWidget(QWidget):
         self._filtered = []
         for t in self._catalog:
             # 分類篩選
-            if cat_filter == "__documented__":
+            if cat_filter == "__runnable__":
+                if t.get("status") not in ("documented", "implemented"):
+                    continue
+            elif cat_filter == "__documented__":
                 if t.get("status") != "documented":
                     continue
             elif cat_filter and t.get("category") != cat_filter:

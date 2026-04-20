@@ -1,6 +1,6 @@
 # Type 42 — Trunnion 曲面設備斜撐支撐 (Trunnion Vessel Braced Support)
 
-> **圖號**: 42 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 計畫中
+> **圖號**: 42 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-50 &nbsp;|&nbsp; **日期**: 12/12/19
 
 透過 Trunnion（短管支座）將管線支撐轉嫁到 Vessel 的參數化斜撐系統。

@@ -1,6 +1,6 @@
 # Type 41 — 牆面錨定支撐 (Wall-Mounted Anchor Support)
 
-> **圖號**: 41 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: 🔲 計畫中
+> **圖號**: 41 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-49 &nbsp;|&nbsp; **日期**: 12/12/19
 
 用膨脹螺栓 (Expansion Bolt, M-45) 鎖在混凝土上的懸臂/斜撐支撐。
