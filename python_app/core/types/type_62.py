@@ -17,14 +17,18 @@ import re
 
 from ..bolt import add_custom_entry
 from ..component_rules import (
-    DEFAULT_STRUCTURAL_MATERIAL,
     component_or_estimated_clamp_weight,
     estimate_eye_nut_weight,
     estimate_heavy_hex_nut_weight,
     estimate_m28_weight,
     estimate_missing_component_weight,
     estimate_rod_weight,
-    resolve_material,
+)
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    ServiceClass,
+    resolve_hardware_material,
 )
 from ..models import AnalysisResult
 from ..parser import extract_parts, get_lookup_value, get_part
@@ -57,6 +61,46 @@ _CLAMP_BUILDERS = {
 }
 
 
+def _service_from_overrides(overrides: dict | None) -> ServiceClass:
+    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
+    if isinstance(value, ServiceClass):
+        return value
+    if value:
+        return ServiceClass(str(value).strip().lower().replace("-", "_"))
+    return ServiceClass.AMBIENT
+
+
+def _material_overrides_from_dict(overrides: dict | None) -> HardwareMaterialOverrides | None:
+    if not overrides:
+        return None
+    existing = overrides.get("hardware_material_overrides")
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind = {}
+    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
+        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
+        per_kind[kind] = material
+
+    all_hardware = (
+        overrides.get("hardware_material")
+        or overrides.get("material")
+        or overrides.get("upper_material")
+    )
+    if not per_kind and not all_hardware:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
+
+
+def _material(
+    kind: HardwareKind,
+    *,
+    service: ServiceClass,
+    overrides: HardwareMaterialOverrides | None,
+) -> str:
+    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+
+
 def _parse_height_and_upper_fig(part4: str):
     token = str(part4).strip().replace(" ", "").upper()
     match = re.fullmatch(r"(?P<h1>\d{2})(?:~(?P<h2>\d{2}))?(?P<fig>[A-Z])", token)
@@ -82,8 +126,8 @@ def _add_estimated_component(
     fig: str,
     line_size: float | None,
     rod_size: str,
+    material: str,
     category: str = "螺栓類",
-    material: str = DEFAULT_STRUCTURAL_MATERIAL,
 ):
     unit_weight = estimate_missing_component_weight(component_id, line_size=line_size, rod_size=rod_size)
     add_custom_entry(
@@ -189,6 +233,7 @@ def _add_upper_part(
     has_turnbuckle: bool,
     *,
     material: str,
+    eye_nut_material: str,
 ):
     row = get_type62_upper_part(upper_fig)
     component_id = row["component_id"]
@@ -223,7 +268,7 @@ def _add_upper_part(
             rod_size,
             left_hand=True,
             remark="NOTE 4: FIG-D without turnbuckle requires left-hand thread",
-            material=material,
+            material=eye_nut_material,
         )
         result.warnings.append(
             "NOTE 4 applied: FIG-D without turnbuckle uses left-hand threaded weldless eye nut"
@@ -236,7 +281,11 @@ def _add_lower_part(
     line_size: float,
     rod_size: str,
     *,
-    material: str,
+    clamp_material: str,
+    eye_nut_material: str,
+    hex_nut_material: str,
+    clevis_material: str,
+    lug_material: str,
 ):
     row = get_type62_lower_part(lower_fig)
     component_id = row["component_id"]
@@ -248,7 +297,7 @@ def _add_lower_part(
             result,
             "LOWER PIPE CLAMP",
             item["designation"] if item else f"{component_id}, FIG-{lower_fig}, {line_size:g}\"",
-            material,
+            clamp_material,
             1,
             component_or_estimated_clamp_weight(item, line_size, component_id=component_id),
             "SET",
@@ -256,8 +305,8 @@ def _add_lower_part(
         )
         if not item or not item.get("weight_ready"):
             result.warnings.append(f"{component_id} lower clamp 重量使用 core.component_rules 集中估算")
-        _add_eye_nut(result, rod_size, left_hand=False, remark="lower clamp connector, SEE M-25", material=material)
-        _add_heavy_hex_nuts(result, rod_size, material=material)
+        _add_eye_nut(result, rod_size, left_hand=False, remark="lower clamp connector, SEE M-25", material=eye_nut_material)
+        _add_heavy_hex_nuts(result, rod_size, material=hex_nut_material)
         return
 
     if lower_fig in ("L", "M", "N"):
@@ -268,10 +317,10 @@ def _add_lower_part(
             fig=lower_fig,
             line_size=line_size,
             rod_size=rod_size,
-            material=material,
+            material=clamp_material,
         )
-        _add_eye_nut(result, rod_size, left_hand=False, remark="lower clamp connector, SEE M-25", material=material)
-        _add_heavy_hex_nuts(result, rod_size, material=material)
+        _add_eye_nut(result, rod_size, left_hand=False, remark="lower clamp connector, SEE M-25", material=eye_nut_material)
+        _add_heavy_hex_nuts(result, rod_size, material=hex_nut_material)
         return
 
     if lower_fig == "Q":
@@ -280,7 +329,7 @@ def _add_lower_part(
             result,
             "FORGED STEEL CLEVIS",
             clevis["designation"] if clevis else f"M-24, {rod_size}",
-            material,
+            clevis_material,
             1,
             clevis["unit_weight_kg"] if clevis else estimate_rod_weight(rod_size, 150, min_weight=0.25),
             "PC",
@@ -296,7 +345,7 @@ def _add_lower_part(
             line_size=line_size,
             rod_size=rod_size,
             category="鋼板類",
-            material=material,
+            material=lug_material,
         )
         result.warnings.append("FIG-Q welding size: see M-28 per Type 62 NOTE 2")
         return
@@ -311,7 +360,7 @@ def _add_lower_part(
             fig=lower_fig,
             line_size=line_size,
             rod_size=rod_size,
-            material=material,
+            material=clevis_material,
         )
         return
 
@@ -320,7 +369,16 @@ def _add_lower_part(
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
-    material = resolve_material(overrides=overrides, default=DEFAULT_STRUCTURAL_MATERIAL)
+    service = _service_from_overrides(overrides)
+    material_overrides = _material_overrides_from_dict(overrides)
+    rod_material = _material(HardwareKind.THREADED_ROD, service=service, overrides=material_overrides)
+    upper_material = _material(HardwareKind.BEAM_ATTACHMENT, service=service, overrides=material_overrides)
+    turnbuckle_material = _material(HardwareKind.TURNBUCKLE, service=service, overrides=material_overrides)
+    clamp_material = _material(HardwareKind.CLAMP_BODY, service=service, overrides=material_overrides)
+    eye_nut_material = _material(HardwareKind.WELDLESS_EYE_NUT, service=service, overrides=material_overrides)
+    hex_nut_material = _material(HardwareKind.HEAVY_HEX_NUT, service=service, overrides=material_overrides)
+    clevis_material = _material(HardwareKind.CLEVIS, service=service, overrides=material_overrides)
+    lug_material = _material(HardwareKind.PLATE_LUG, service=service, overrides=material_overrides)
 
     part2 = get_part(fullstring, 2)
     part3 = get_part(fullstring, 3)
@@ -369,25 +427,30 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         height_max,
         height_is_range=parsed_h["is_range"],
         left_hand=has_turnbuckle,
-        material=material,
+        material=rod_material,
     )
     _add_upper_part(
         result,
         upper_fig,
         rod_size,
         has_turnbuckle,
-        material=material,
+        material=upper_material,
+        eye_nut_material=eye_nut_material,
     )
 
     if has_turnbuckle:
-        _add_turnbuckle(result, rod_size, material=material)
+        _add_turnbuckle(result, rod_size, material=turnbuckle_material)
 
     _add_lower_part(
         result,
         lower_fig,
         line_size,
         rod_size,
-        material=material,
+        clamp_material=clamp_material,
+        eye_nut_material=eye_nut_material,
+        hex_nut_material=hex_nut_material,
+        clevis_material=clevis_material,
+        lug_material=lug_material,
     )
 
     if height_max > 2000 and not has_turnbuckle:

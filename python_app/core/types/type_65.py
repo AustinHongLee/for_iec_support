@@ -12,9 +12,55 @@ from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..bolt import add_custom_entry
 from ..component_rules import estimate_m28_weight, estimate_rod_weight
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    ServiceClass,
+    resolve_hardware_material,
+)
 from data.type65_table import get_type65_data, snap_l_bucket
 from data.m23_table import build_m23_item
 from data.m28_table import get_m28_by_rod_size
+
+
+def _service_from_overrides(overrides: dict | None) -> ServiceClass:
+    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
+    if isinstance(value, ServiceClass):
+        return value
+    if value:
+        return ServiceClass(str(value).strip().lower().replace("-", "_"))
+    return ServiceClass.AMBIENT
+
+
+def _material_overrides_from_dict(overrides: dict | None) -> HardwareMaterialOverrides | None:
+    if not overrides:
+        return None
+    existing = overrides.get("hardware_material_overrides")
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind = {}
+    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
+        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
+        per_kind[kind] = material
+
+    all_hardware = (
+        overrides.get("hardware_material")
+        or overrides.get("material")
+        or overrides.get("upper_material")
+    )
+    if not per_kind and not all_hardware:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
+
+
+def _material(
+    kind: HardwareKind,
+    *,
+    service: ServiceClass,
+    overrides: HardwareMaterialOverrides | None,
+) -> str:
+    return resolve_hardware_material(kind, service=service, overrides=overrides).name
 
 
 def _parse_member_spec(member_str: str):
@@ -60,8 +106,14 @@ def _build_inference_remark(item: dict | None) -> str:
     return item.get("inference_notes", "row inferred from neighboring sizes")
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    service = _service_from_overrides(overrides)
+    material_overrides = _material_overrides_from_dict(overrides)
+    strut_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
+    rod_material = _material(HardwareKind.THREADED_ROD, service=service, overrides=material_overrides)
+    bracket_material = _material(HardwareKind.BEAM_ATTACHMENT, service=service, overrides=material_overrides)
+    stiffener_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
 
     # ── 解析: 65-{D}B-{LLHH} ──
     part2 = get_part(fullstring, 2)  # {D}B
@@ -111,18 +163,16 @@ def calculate(fullstring: str) -> AnalysisResult:
     if l_mm != l_bucket:
         result.warnings.append(f"L={l_mm}mm 取至標準 bucket {l_bucket}mm")
 
-    material = "A36/SS400"
-
     # ① Cross Member ×1 (依 L bucket)
     sec_type, sec_dim = _parse_member_spec(member_spec)
-    add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, material)
+    add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, strut_material)
 
     # ② Welded Eye Rod ×2 (M-23), 長度 ≈ H
     rod_item = build_m23_item(rod_size, h_mm)
     add_custom_entry(
         result, "WELDED EYE ROD",
         rod_item["designation"] if rod_item else f"M-23, {rod_size}, L={h_mm}mm",
-        material, 2, rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm), "PC",
+        rod_material, 2, rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm), "PC",
         remark=_build_inference_remark(rod_item),
     )
     if not rod_item:
@@ -133,7 +183,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     add_custom_entry(
         result, "ANGLE BRACKET",
         bracket_item["type"] if bracket_item else f"M-28, {rod_size}",
-        material, 2, bracket_item["unit_weight_kg"] if bracket_item else estimate_m28_weight(rod_size), "SET",
+        bracket_material, 2, bracket_item["unit_weight_kg"] if bracket_item else estimate_m28_weight(rod_size), "SET",
         remark=_build_inference_remark(bracket_item),
     )
     if not bracket_item:
@@ -147,7 +197,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         add_custom_entry(
             result, "STIFFENER",
             stiffener_desc,
-            material, 1, stiffener_wt, "SET"
+            stiffener_material, 1, stiffener_wt, "SET"
         )
         result.warnings.append(f'12" & larger: Stiffener ({stiffener_desc}) 重量為幾何估算值')
 
