@@ -10,14 +10,14 @@ Heavy duty structural sliding support with stopper
 無 M42 — 自帶 Base Plate + Anchor Bolt (foundation by civil)
 
 構件 (VBA 對照):
-  1. Supporting Pipe A (垂直柱): length = H - 2×F - channelHeight, pipe_sch, SUS304
+  1. Supporting Pipe A (垂直柱): length = H - 2×F - channelHeight, pipe_sch, material by resolver
      ※ 長度 ≤ 0 時跳過
-  2. Channel (MEMBER "N"): length = L, A36/SS400
-  3. Wing Plate: Q × P × F, A36/SS400
-  4. Stopper Plate: M × K × 6t, A36/SS400
-  5. Base Plate: C × C × F (有4孔 ØE), A36/SS400
-  6. Top Plate (B SQ): B × B × F, A36/SS400
-  7. EXP.BOLT (Anchor Bolt): J size, 4 EA, SUS304
+  2. Channel (MEMBER "N"): length = L, material by resolver
+  3. Wing Plate: Q × P × F, material by resolver
+  4. Stopper Plate: M × K × 6t, material by resolver
+  5. Base Plate: C × C × F (有4孔 ØE), material by resolver
+  6. Top Plate (B SQ): B × B × F, material by resolver
+  7. EXP.BOLT (Anchor Bolt): J size, 4 EA, material by resolver
 
 VBA 對照: A1_Type_Calculator_.bas Sub Type_14 (line 514-659)
 """
@@ -26,15 +26,70 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
-from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    ServiceClass,
+    resolve_hardware_material,
+)
 from data.type14_table import get_type14_data, get_type14_h_max
 
 _STOPPER_T = 6  # mm
 
 
+def _service_from_overrides(overrides: dict | None) -> ServiceClass:
+    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
+    if isinstance(value, ServiceClass):
+        return value
+    if value:
+        return ServiceClass(str(value).strip().lower().replace("-", "_"))
+    return ServiceClass.AMBIENT
+
+
+def _material_overrides_from_dict(
+    overrides: dict | None,
+    *,
+    legacy_kinds: set[HardwareKind],
+) -> HardwareMaterialOverrides | None:
+    if not overrides:
+        return None
+    existing = overrides.get("hardware_material_overrides")
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind = {}
+    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
+        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
+        per_kind[kind] = material
+
+    legacy_material = overrides.get("material") or overrides.get("upper_material")
+    if legacy_material:
+        for kind in legacy_kinds:
+            per_kind.setdefault(kind, legacy_material)
+
+    all_hardware = overrides.get("hardware_material")
+    if not per_kind and not all_hardware:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
+
+
+def _material(
+    kind: HardwareKind,
+    *,
+    service: ServiceClass,
+    overrides: HardwareMaterialOverrides | None,
+) -> str:
+    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+
+
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
     overrides = overrides or {}
+    service = _service_from_overrides(overrides)
+    material_overrides = _material_overrides_from_dict(
+        overrides,
+        legacy_kinds={HardwareKind.UPPER_BRACKET, HardwareKind.ANCHOR_BOLT},
+    )
 
     # ── 第二段: pipe size A ──
     part2 = get_part(fullstring, 2)
@@ -63,7 +118,10 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     member_spec = data["member"]                         # e.g. "C100X50X5"
     channel_height = int(member_spec[1:4])               # "C100..." → 100
     channel_dim = member_spec[1:].replace("X", "*")      # "100*50*5"
-    pipe_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
+    support_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
+    steel_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    anchor_material = _material(HardwareKind.ANCHOR_BOLT, service=service, overrides=material_overrides)
 
     # ── warnings: L/H 上限 ──
     h_max = get_type14_h_max(int(line_size), l_val)
@@ -76,10 +134,10 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # VBA: Main_Pipe_Length = H - F(top) - channelHeight - F(base)
     pipe_length = h_val - 2 * F - channel_height
     if pipe_length > 0:
-        add_pipe_entry(result, line_size, pipe_sch, pipe_length, pipe_material)
+        add_pipe_entry(result, line_size, pipe_sch, pipe_length, support_material)
 
     # ── 2. Channel (MEMBER "N") ──
-    add_steel_section_entry(result, "Channel", channel_dim, l_val)
+    add_steel_section_entry(result, "Channel", channel_dim, l_val, material=steel_material)
 
     # ── 3. Wing Plate: Q × P × F ──
     add_plate_entry(
@@ -88,6 +146,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=data["P"],
         plate_thickness=F,
         plate_name="Plate_WING",
+        material=plate_material,
     )
 
     # ── 4. Stopper Plate: M × K × 6t ──
@@ -97,6 +156,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=data["K"],
         plate_thickness=_STOPPER_T,
         plate_name="Plate_STOPPER",
+        material=plate_material,
     )
 
     # ── 5. Base Plate: C × C × F (有4孔 ØE) ──
@@ -111,6 +171,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         bolt_y=data["D"],
         bolt_hole=data["E"],
         bolt_size=data["J"],
+        material=plate_material,
     )
 
     # ── 6. Top Plate (B SQ): B × B × F ──
@@ -120,10 +181,11 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=data["B"],
         plate_thickness=F,
         plate_name="Plate_TOP",
+        material=plate_material,
     )
 
     # ── 7. EXP.BOLT (Anchor Bolt): J size, 4 EA ──
-    _add_anchor_bolt_entry(result, data["J"], material=pipe_material)
+    _add_anchor_bolt_entry(result, data["J"], material=anchor_material)
 
     return result
 

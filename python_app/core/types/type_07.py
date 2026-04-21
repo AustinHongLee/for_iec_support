@@ -6,11 +6,11 @@ Type 07 計算器 - 滑動彎頭支撐
 - 第三段: H(數字×100mm) + M42代碼(字母, 應為J)
 
 PDF 限制: 2000 < H < 3500, M42 僅允許 J
-Note 1: alloy/stainless → 材質同主管
+Note 1: alloy/stainless → material is resolved through hardware material policy
 
 構件:
-  1. Pipe B (dummy): L+100mm, 材質同主管 (upper_material)
-  2. Pipe C (支撐柱): H - 100 - plate_F厚 - M42板厚, 黑鐵 A53Gr.B
+  1. Pipe B (dummy): L+100mm, material by resolver
+  2. Pipe C (支撐柱): H - 100 - plate_F厚 - M42板厚, material by resolver
   3. Plate E (底板)
   4. Plate F (滑動板)
   5. M42 底板 (用 Pipe C 尺寸查表)
@@ -20,7 +20,12 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
-from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    ServiceClass,
+    resolve_hardware_material,
+)
 from data.type07_table import get_type07_data
 from data.m42_table import get_m42_data
 
@@ -29,9 +34,59 @@ _MAX_H = 3500
 _ALLOWED_M42_LETTERS = {"J"}
 
 
+def _service_from_overrides(overrides: dict | None) -> ServiceClass:
+    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
+    if isinstance(value, ServiceClass):
+        return value
+    if value:
+        return ServiceClass(str(value).strip().lower().replace("-", "_"))
+    return ServiceClass.AMBIENT
+
+
+def _material_overrides_from_dict(
+    overrides: dict | None,
+    *,
+    legacy_kinds: set[HardwareKind],
+) -> HardwareMaterialOverrides | None:
+    if not overrides:
+        return None
+    existing = overrides.get("hardware_material_overrides")
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind = {}
+    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
+        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
+        per_kind[kind] = material
+
+    legacy_material = overrides.get("material") or overrides.get("upper_material")
+    if legacy_material:
+        for kind in legacy_kinds:
+            per_kind.setdefault(kind, legacy_material)
+
+    all_hardware = overrides.get("hardware_material")
+    if not per_kind and not all_hardware:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
+
+
+def _material(
+    kind: HardwareKind,
+    *,
+    service: ServiceClass,
+    overrides: HardwareMaterialOverrides | None,
+) -> str:
+    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+
+
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
     overrides = overrides or {}
+    service = _service_from_overrides(overrides)
+    material_overrides = _material_overrides_from_dict(
+        overrides,
+        legacy_kinds={HardwareKind.UPPER_BRACKET},
+    )
 
     # 第二段: line size
     part2 = get_part(fullstring, 2)
@@ -71,8 +126,9 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     m42_data = get_m42_data(pipe_c_val)
     m42_plate_thickness = m42_data["plate_thickness"]
 
-    # 材質
-    upper_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
+    upper_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
+    support_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
 
     # 1. Pipe B (dummy): L + 100
     pipe_b_length = L + 100
@@ -80,13 +136,13 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # 2. Pipe C (支撐柱): H - 100 - plate_F厚 - M42板厚
     pipe_c_length = h - 100 - plate_f[2] - m42_plate_thickness
-    add_pipe_entry(result, pipe_c_size, pipe_c_sch, pipe_c_length, "A53Gr.B")
+    add_pipe_entry(result, pipe_c_size, pipe_c_sch, pipe_c_length, support_material)
 
     # 3. Plate E (底板)
-    add_plate_entry(result, plate_e[0], plate_e[1], plate_e[2], "Plate_E")
+    add_plate_entry(result, plate_e[0], plate_e[1], plate_e[2], "Plate_E", material=plate_material)
 
     # 4. Plate F (滑動板)
-    add_plate_entry(result, plate_f[0], plate_f[1], plate_f[2], "Plate_F")
+    add_plate_entry(result, plate_f[0], plate_f[1], plate_f[2], "Plate_F", material=plate_material)
 
     # 5. M42 底板 (用 Pipe C 尺寸查)
     perform_action_by_letter(result, letter, pipe_c_val)
