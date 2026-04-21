@@ -23,9 +23,11 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
+from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
 from data.type10_table import get_type10_data
 
 _MAX_H = 1500
+_ALLOWED_M42_LETTERS = {"A", "B", "E", "G"}
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
@@ -51,8 +53,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     h_val = int(part3[:-1]) * 100
 
     # 取得上層材質
-    from ..calculator import get_analysis_setting
-    upper_material = overrides.get("upper_material") or get_analysis_setting("upper_material") or "SUS304"
+    upper_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
 
     pipe_size_b = data["pipe_size_b"]
     pipe_sch = data["pipe_sch"]
@@ -66,6 +67,10 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── warnings ──
     if h_val > _MAX_H:
         result.warnings.append(f"H={h_val}mm 超過建議上限 {_MAX_H}mm（照算）")
+    if letter.upper() not in _ALLOWED_M42_LETTERS:
+        result.warnings.append(
+            f"M42 字母 '{letter}' 不在 Type 10 允許範圍 {sorted(_ALLOWED_M42_LETTERS)}（照算）"
+        )
 
     # ── 1. Main Pipe (dummy, 水平) ──
     main_pipe_length = l_val + 100

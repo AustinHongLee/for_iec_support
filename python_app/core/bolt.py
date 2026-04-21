@@ -38,7 +38,7 @@ def add_bolt_entry(result: AnalysisResult, pipe_size, quantity: int):
 
 def add_custom_entry(result: AnalysisResult, name: str, spec: str,
                      material: str, quantity: int, unit_weight: float,
-                     unit: str = "SET"):
+                     unit: str = "SET", remark: str = "", category: str = "螺栓類"):
     """新增自訂項目 (Machine Bolt, Washer, Spring 等)"""
     entry = AnalysisEntry()
     entry.name = name
@@ -51,6 +51,7 @@ def add_custom_entry(result: AnalysisResult, name: str, spec: str,
     entry.factor = 1
     entry.qty_subtotal = entry.factor * quantity
     entry.weight_output = round(entry.factor * entry.total_weight, 2)
-    entry.category = "螺栓類"
+    entry.category = category
+    entry.remark = remark
 
     result.add_entry(entry)

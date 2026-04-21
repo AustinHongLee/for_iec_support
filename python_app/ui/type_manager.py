@@ -32,11 +32,37 @@ _ICON_DIR = os.path.join(_APP_DIR, "assets", "Type_icon")
 _PREVIEW_DIR = os.path.join(_APP_DIR, "assets", "previews")
 _DOCS_DIR = os.path.join(_APP_DIR, "docs", "types")
 
+try:
+    from data.component_table_registry import (
+        EXISTING_COMPONENT_TABLES,
+        METADATA_ONLY_COMPONENT_TABLES,
+        PARTIAL_LOOKUP_COMPONENT_TABLES,
+        get_component_table_coverage,
+    )
+except Exception:
+    EXISTING_COMPONENT_TABLES = {}
+    METADATA_ONLY_COMPONENT_TABLES = set()
+    PARTIAL_LOOKUP_COMPONENT_TABLES = set()
+
+    def get_component_table_coverage() -> dict:
+        return {
+            "implemented": 0,
+            "missing": 0,
+            "total": 0,
+            "metadata_only": 0,
+            "partial_lookup": 0,
+            "lookup_ready": 0,
+            "coverage_ratio": 0.0,
+        }
+
 # 狀態對應的中文與顏色
 STATUS_MAP = {
     "documented":  ("已分析", "#4CAF50"),
     "implemented": ("可計算", "#FF9800"),
     "cataloged":   ("已建檔", "#2196F3"),
+    "lookup_ready": ("可查表", "#2E7D32"),
+    "partial_lookup": ("部分查表", "#F57C00"),
+    "metadata_only": ("待轉錄", "#795548"),
     "placeholder": ("預留",   "#9E9E9E"),
 }
 
@@ -64,13 +90,64 @@ def load_catalog() -> list[dict]:
         data = json.load(f)
     items = data.get("types", [])
     for item in items:
-        inferred_doc = item.get("doc_file") or f"type_{item.get('type_id', '').lower()}.md"
-        doc_path = os.path.join(_DOCS_DIR, inferred_doc)
-        if os.path.exists(doc_path):
-            item["doc_file"] = inferred_doc
-            if item.get("status") == "implemented":
-                item["status"] = "documented"
+        type_id = item.get("type_id", "")
+        doc_candidates = []
+        if item.get("doc_file"):
+            doc_candidates.append(item["doc_file"])
+        if type_id.startswith(("M-", "N-")):
+            doc_candidates.append(type_id.lower().replace("-", "_") + ".md")
+        doc_candidates.append(f"type_{type_id.lower()}.md")
+
+        for inferred_doc in doc_candidates:
+            doc_path = os.path.join(_DOCS_DIR, inferred_doc)
+            if os.path.exists(doc_path):
+                item["doc_file"] = inferred_doc
+                if item.get("status") == "implemented":
+                    item["status"] = "documented"
+                break
+
+        if item.get("category") in ("component", "component_cold"):
+            component_id = type_id
+            table_file = EXISTING_COMPONENT_TABLES.get(component_id)
+            item["component_table_file"] = table_file or ""
+            item["component_table_status"] = _component_table_status(component_id)
+            item["component_table_status_zh"] = _component_table_status_zh(component_id)
+            item["lookup_ready"] = item["component_table_status"] == "lookup_ready"
     return items
+
+
+def _component_table_status(component_id: str) -> str:
+    if component_id in METADATA_ONLY_COMPONENT_TABLES:
+        return "metadata_only"
+    if component_id in PARTIAL_LOOKUP_COMPONENT_TABLES:
+        return "partial_lookup"
+    if component_id in EXISTING_COMPONENT_TABLES:
+        return "lookup_ready"
+    return "missing"
+
+
+def _component_table_status_zh(component_id: str) -> str:
+    status = _component_table_status(component_id)
+    return {
+        "lookup_ready": "可查表",
+        "partial_lookup": "部分欄位可查，待完整轉錄",
+        "metadata_only": "已建 module，待 PDF 轉錄",
+        "missing": "未建 component module",
+    }.get(status, "未知")
+
+
+def _display_status_key(item: dict) -> str:
+    if item.get("category") in ("component", "component_cold"):
+        component_status = item.get("component_table_status") or _component_table_status(
+            item.get("type_id", "")
+        )
+        if component_status in ("lookup_ready", "partial_lookup", "metadata_only"):
+            return component_status
+    return item.get("status", "placeholder")
+
+
+def _display_status(item: dict) -> tuple[str, str]:
+    return STATUS_MAP.get(_display_status_key(item), ("未知", "#999"))
 
 
 # ─── Markdown → HTML 渲染 ─────────────────────────
@@ -316,6 +393,7 @@ class TypeManagerWidget(QWidget):
         implemented = sum(1 for t in self._catalog if t.get("status") == "implemented")
         cataloged = sum(1 for t in self._catalog if t.get("status") == "cataloged")
         placeholder = sum(1 for t in self._catalog if t.get("status") == "placeholder")
+        coverage = get_component_table_coverage()
 
         stat_frame = QFrame()
         stat_frame.setFixedHeight(24)
@@ -333,6 +411,9 @@ class TypeManagerWidget(QWidget):
             (f"可計算: {implemented}", "#FF9800"),
             (f"已建檔: {cataloged}", "#2196F3"),
             (f"預留: {placeholder}", "#9E9E9E"),
+            (f"M/N可查表: {coverage['lookup_ready']}", "#2E7D32"),
+            (f"M/N部分查表: {coverage.get('partial_lookup', 0)}", "#F57C00"),
+            (f"M/N待轉錄: {coverage['metadata_only']}", "#795548"),
         ]
         for text, color in pairs:
             lbl = QLabel(text)
@@ -628,7 +709,10 @@ class TypeManagerWidget(QWidget):
             items.sort(key=lambda t: _type_sort_key(t["type_id"]))
             cat_node = QTreeWidgetItem(self.tree)
             cat_label = CATEGORY_ZH.get(cat_id, cat_id)
-            run_count = sum(1 for t in items if t.get("status") in ("documented", "implemented"))
+            if cat_id in ("component", "component_cold"):
+                run_count = sum(1 for t in items if _display_status_key(t) == "lookup_ready")
+            else:
+                run_count = sum(1 for t in items if t.get("status") in ("documented", "implemented"))
             cat_node.setText(0, f"{cat_label}  ({run_count}/{len(items)})")
             cat_node.setFont(0, QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold))
             cat_node.setForeground(0, QColor("#424242"))
@@ -643,9 +727,7 @@ class TypeManagerWidget(QWidget):
                     t.get("name_zh") or t.get("name_en") or ""
                 )
                 child.setText(1, display_name)
-                status_zh, status_color = STATUS_MAP.get(
-                    t.get("status", "placeholder"), ("未知", "#999")
-                )
+                status_zh, status_color = _display_status(t)
                 child.setText(2, status_zh)
                 # 儲存顏色供 StatusBadgeDelegate 使用
                 child.setData(2, Qt.ItemDataRole.UserRole + 1, status_color)
@@ -662,6 +744,10 @@ class TypeManagerWidget(QWidget):
                     child.setFont(0, bold_f)
                     child.setFont(1, bold_f)
                 elif t.get("status") == "implemented":
+                    bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
+                    child.setFont(0, bold_f)
+                    child.setFont(1, bold_f)
+                elif _display_status_key(t) == "lookup_ready":
                     bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
                     child.setFont(0, bold_f)
                     child.setFont(1, bold_f)
@@ -748,8 +834,7 @@ class TypeManagerWidget(QWidget):
         self.lbl_name_zh.setVisible(bool(name_zh))
 
         # 狀態 badge
-        status = t.get("status", "planned")
-        status_zh, status_color = STATUS_MAP.get(status, ("未知", "#999"))
+        status_zh, status_color = _display_status(t)
         self.lbl_status_badge.setText(f"  {status_zh}  ")
         self.lbl_status_badge.setStyleSheet(
             f"background: {status_color}; color: white; border-radius: 4px; "
@@ -760,7 +845,15 @@ class TypeManagerWidget(QWidget):
         dno = t.get("drawing_no", "")
         self.lbl_drawing.setText(f"圖號: {dno}" if dno else "")
         rng = t.get("line_size_range", "")
-        self.lbl_range.setText(f"適用範圍: {rng}" if rng else "")
+        if t.get("category") in ("component", "component_cold"):
+            table_status = t.get("component_table_status_zh", "")
+            table_file = t.get("component_table_file", "")
+            table_bits = [bit for bit in (table_status, table_file) if bit]
+            if rng:
+                table_bits.append(f"範圍: {rng}")
+            self.lbl_range.setText(" / ".join(table_bits))
+        else:
+            self.lbl_range.setText(f"適用範圍: {rng}" if rng else "")
 
         # PDF 按鈕
         pdf_file = t.get("pdf_file", "")
@@ -788,6 +881,14 @@ class TypeManagerWidget(QWidget):
 
             # 簡述
             brief = t.get("brief", "（無簡述）")
+            if t.get("category") in ("component", "component_cold"):
+                component_note = (
+                    f"<br><strong>Component table:</strong> "
+                    f"{t.get('component_table_status_zh', '未知')}"
+                )
+                if t.get("component_table_file"):
+                    component_note += f" ({t['component_table_file']})"
+                brief = (brief or "（無簡述）") + component_note
             self.lbl_brief.setHtml(
                 f'<p style="font-size:10.5pt; color:#333; line-height:1.6;">{brief}</p>'
             )

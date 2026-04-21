@@ -9,6 +9,7 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
+from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
 from data.pipe_table import get_pipe_details
 
 
@@ -29,8 +30,9 @@ TYPE16_MAP = {
 }
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    overrides = overrides or {}
 
     # 解析
     part2 = get_part(fullstring, 2)
@@ -42,6 +44,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         return result
 
     support_pipe_size, pipe_thickness, plate_size = TYPE16_MAP[pipe_size]
+    upper_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
 
     # 計算管道細節
     pipe_details = get_pipe_details(pipe_size, "10S")
@@ -50,7 +53,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     main_pipe_length = round(
         (pipe_size * 1.5 * 25.4) + (pipe_details["od_mm"] / 2) + 100
     )
-    add_pipe_entry(result, support_pipe_size, pipe_thickness, main_pipe_length, "SUS304")
+    add_pipe_entry(result, support_pipe_size, pipe_thickness, main_pipe_length, upper_material)
 
     # 支管長度
     support_pipe_length = round(

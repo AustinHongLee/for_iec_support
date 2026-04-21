@@ -52,15 +52,30 @@ def calculate(fullstring: str) -> AnalysisResult:
     mat_info = get_type59_material(mat_symbol)
     material = mat_info["material"] if mat_info else "A283 Gr.C"
 
-    # ① Lug Plate ×2 (A×B×T)
+    # 板厚：不鏽鋼使用 S_T（圖紙 D-70 "FOR STAINLESS STEEL ONLY" 欄）
+    # large (10"~14") 該欄為 "–"（無定義），發警告並沿用 T=12
+    thickness = dims["T"]
+    s_t = dims.get("S_T")
+    if mat_symbol == "(S)":
+        if s_t is not None:
+            thickness = s_t
+        else:
+            result.warnings.append(
+                f"Type 59 大管徑 (10\"~14\") 無不鏽鋼板厚定義 (D-70 TABLE A SS欄為 \"—\")，沿用 T={dims['T']}mm"
+            )
+
+    # 板片數量：D=None → 1片（小/中管徑）；D≠None → 2片（大管徑）
+    plate_qty = dims["plate_qty"]
+
+    # ① Lug Plate ×plate_qty (A×B×thickness)
     add_plate_entry(
         result,
         dims["A"],
         dims["B"],
-        dims["T"],
+        thickness,
         "LUG PLATE",
         material,
-        2,
+        plate_qty,
     )
 
     # ② 中間件 (依 FIG)

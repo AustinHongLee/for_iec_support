@@ -20,7 +20,7 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
-from ..calculator import get_analysis_setting
+from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
 from data.type07_table import get_type07_data
 from data.m42_table import get_m42_data
 
@@ -29,8 +29,9 @@ _MAX_H = 3500
 _ALLOWED_M42_LETTERS = {"J"}
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    overrides = overrides or {}
 
     # 第二段: line size
     part2 = get_part(fullstring, 2)
@@ -71,7 +72,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     m42_plate_thickness = m42_data["plate_thickness"]
 
     # 材質
-    upper_material = get_analysis_setting("upper_material", "SUS304")
+    upper_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
 
     # 1. Pipe B (dummy): L + 100
     pipe_b_length = L + 100

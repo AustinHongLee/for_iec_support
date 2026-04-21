@@ -30,6 +30,7 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
+from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
 from data.type15_table import get_type15_data, get_type15_h_max
 
 _STOPPER_T = 6  # mm
@@ -65,6 +66,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     member_spec = data["member"]                         # e.g. "C100X50X5"
     channel_height = int(member_spec[1:4])               # "C100..." → 100
     channel_dim = member_spec[1:].replace("X", "*")      # "100*50*5"
+    pipe_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
 
     # ── warnings: L/H 上限 ──
     h_max = get_type15_h_max(int(line_size), l_val)
@@ -76,7 +78,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 1. Supporting Pipe A (垂直柱) ──
     pipe_length = h_val - 2 * F - channel_height
     if pipe_length > 0:
-        add_pipe_entry(result, line_size, data["pipe_sch"], pipe_length, "SUS304")
+        add_pipe_entry(result, line_size, data["pipe_sch"], pipe_length, pipe_material)
 
     # ── 2. Channel (MEMBER "N") ──
     add_steel_section_entry(result, "Channel", channel_dim, l_val)

@@ -5,6 +5,8 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from .truth import default_unknown_meta
+
 
 @dataclass
 class AnalysisEntry:
@@ -35,6 +37,8 @@ class AnalysisResult:
     entries: List[AnalysisEntry] = field(default_factory=list)
     error: str = ""                     # 錯誤訊息 (若有)
     warnings: List[str] = field(default_factory=list)  # 警告 (仍計算但需注意)
+    meta: dict = field(default_factory=default_unknown_meta)  # 中文化可信度摘要
+    evidence: List[dict] = field(default_factory=list)        # 欄位級來源與信心
 
     def add_entry(self, entry: AnalysisEntry):
         """新增一筆明細，自動編號"""

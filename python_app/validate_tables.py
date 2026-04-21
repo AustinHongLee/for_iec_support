@@ -14,10 +14,51 @@ try:
         f"{coverage['implemented']}/{coverage['total']} "
         f"({coverage['coverage_ratio']:.1%})"
     )
+    print("lookup-ready components:", coverage["lookup_ready"])
+    print("partial-lookup components:", coverage.get("partial_lookup", 0))
+    print("metadata-only components:", coverage["metadata_only"])
     print("implemented components:", ", ".join(sorted(EXISTING_COMPONENT_TABLES)))
     print("missing components:", ", ".join(MISSING_COMPONENT_TABLES))
 except Exception as e:
     print(f"X component registry ERROR: {e}")
+
+# Test full M/N metadata baseline
+try:
+    import importlib
+    from data.component_table_registry import (
+        EXISTING_COMPONENT_TABLES,
+        METADATA_ONLY_COMPONENT_TABLES,
+        MISSING_COMPONENT_TABLES,
+        get_component_table_coverage,
+    )
+
+    coverage = get_component_table_coverage()
+    assert coverage["implemented"] == 71, f"expected 71 component modules: {coverage}"
+    assert coverage["missing"] == 0, f"expected no missing component modules: {coverage}"
+    assert coverage["lookup_ready"] == 19, f"lookup-ready count changed unexpectedly: {coverage}"
+    assert coverage["partial_lookup"] == 3, f"partial-lookup count changed unexpectedly: {coverage}"
+    assert coverage["metadata_only"] == 49, f"metadata-only count failed: {coverage}"
+    assert not MISSING_COMPONENT_TABLES, f"missing list should be empty: {MISSING_COMPONENT_TABLES}"
+
+    for component_id, module_file in EXISTING_COMPONENT_TABLES.items():
+        module_name = module_file[:-3]
+        module = importlib.import_module(f"data.{module_name}")
+        getter_name = f"get_{component_id.lower().replace('-', '').replace(' ', '').replace('/', '').replace('.', '')}_component"
+        if component_id == "N-12A":
+            getter_name = "get_n12a_component"
+        if component_id == "N27-PU BLOCK":
+            getter_name = "get_n27_pu_block_component"
+        getter = getattr(module, getter_name, None)
+        if getter is None:
+            continue
+        component = getter()
+        assert component["component_id"] == component_id, f"{component_id} getter returned {component}"
+        if component_id in METADATA_ONLY_COMPONENT_TABLES:
+            assert component["table_kind"] == "metadata_only" and not component["lookup_ready"], f"{component_id} metadata failed: {component}"
+
+    print("v full M/N component metadata baseline OK")
+except Exception as e:
+    print(f"X full M/N component metadata baseline ERROR: {e}")
 
 # Test m45_table
 try:
@@ -29,11 +70,140 @@ try:
 except Exception as e:
     print(f"X m45_table ERROR: {e}")
 
+# Test m4_table
+try:
+    from data.m4_table import get_m4_by_line_size
+    r_m4 = get_m4_by_line_size('2"')
+    assert (
+        r_m4 is not None
+        and r_m4["designation"] == "PCL-A-2B"
+        and r_m4["B"] == 54
+        and r_m4["F"] == '1/2"'
+        and r_m4["source_component"] == "M-4"
+        and r_m4["source_transcribed"]
+        and r_m4["set_weight_kg"] > 0
+    ), f"m4 failed: {r_m4}"
+    print("v m4_table OK")
+except Exception as e:
+    print(f"X m4_table ERROR: {e}")
+
+# Test m6_table
+try:
+    from data.m6_table import get_m6_by_line_size
+    r_m6 = get_m6_by_line_size("4")
+    r_m6_2_5 = get_m6_by_line_size('2 1/2"')
+    assert r_m6 is not None and r_m6["type_label"] == "TYPE-C" and r_m6["designation"] == "PCL-C-4B" and not r_m6["lookup_ready"] and r_m6["partial_lookup_ready"] and r_m6["set_weight_kg"] is None, f"m6 failed: {r_m6}"
+    assert r_m6_2_5 is not None and r_m6_2_5["designation"] == "PCL-C-2 1/2B", f"m6 2 1/2 failed: {r_m6_2_5}"
+    print("v m6_table OK")
+except Exception as e:
+    print(f"X m6_table ERROR: {e}")
+
+# Test m5/m7 PDF designation coverage
+try:
+    from data.m5_table import get_m5_by_line_size
+    from data.m7_table import get_m7_by_line_size
+    r_m5_12 = get_m5_by_line_size('12"')
+    r_m7_8 = get_m7_by_line_size('8"')
+    r_m7_28 = get_m7_by_line_size('28"')
+    r_m7_2 = get_m7_by_line_size('2"')
+    assert r_m5_12 is not None and r_m5_12["designation"] == "PCL-B-12B" and r_m5_12["rod_size_a"] == '1 1/2"' and r_m5_12["load_650f_kg"] == 3930 and r_m5_12["source_component"] == "M-5" and not r_m5_12["lookup_ready"] and r_m5_12["set_weight_kg"] is None, f"m5 12 failed: {r_m5_12}"
+    assert r_m7_8 is not None and r_m7_8["designation"] == "PCL-D-8B" and r_m7_8["rod_size_a"] == '1 1/8"' and r_m7_8["load_650f_kg"] == 2175 and r_m7_8["source_component"] == "M-7", f"m7 8 failed: {r_m7_8}"
+    assert r_m7_28 is not None and r_m7_28["load_750f_kg"] is None and r_m7_28["load_750f_status"] == "source_blank_or_not_applicable", f"m7 28 load750 failed: {r_m7_28}"
+    assert r_m7_2 is None, f"m7 2 should be None (not in PDF): {r_m7_2}"
+    print("v m5/m7 PDF designation coverage OK")
+except Exception as e:
+    print(f"X m5/m7 PDF designation coverage ERROR: {e}")
+
+# Test m21_table
+try:
+    from data.m21_table import get_m21_by_dia
+    r_m21 = get_m21_by_dia('1 1/4"')
+    assert r_m21 is not None and r_m21["take_up_mm"] == 180 and r_m21["unit_weight_kg"] > 0, f"m21 failed: {r_m21}"
+    print("v m21_table OK")
+except Exception as e:
+    print(f"X m21_table ERROR: {e}")
+
+# Test m24_table
+try:
+    from data.m24_table import get_m24_by_dia
+    r_m24 = get_m24_by_dia('7/8"')
+    assert r_m24 is not None and r_m24["pin_dia_b"] == '1"' and r_m24["unit_weight_kg"] > 0, f"m24 failed: {r_m24}"
+    print("v m24_table OK")
+except Exception as e:
+    print(f"X m24_table ERROR: {e}")
+
+# Test Type 11 table-backed hardware
+try:
+    from data.type11_table import get_type11_hardware_item, build_type11_spring_item
+    from core.calculator import analyze_single
+    rod11 = get_type11_hardware_item("threaded_rod")
+    washer11 = get_type11_hardware_item("washer")
+    spring11 = build_type11_spring_item("SPR14")
+    type11_result = analyze_single("11-6B-08J")
+    type11_spring_entry = next((entry for entry in type11_result.entries if entry.name == "SPRING"), None)
+    type11_washer_entry = next((entry for entry in type11_result.entries if entry.name == "WASHER"), None)
+    assert rod11 is not None and rod11["spec"] == '1-5/8"*300L' and rod11["length_mm"] == 300, f"type11 rod failed: {rod11}"
+    assert washer11 is not None and washer11["category"] == "鋼板類" and washer11["unit_weight_kg"] == 1.0, f"type11 washer failed: {washer11}"
+    assert spring11 is not None and spring11["spec"] == "SPR14 (14W×46ID)" and spring11["spring_k_kg_per_mm"] == 42, f"type11 spring failed: {spring11}"
+    assert not type11_result.error and type11_spring_entry and type11_spring_entry.category == "彈簧類", f"type11 calculator spring failed: {type11_result}"
+    assert type11_washer_entry and type11_washer_entry.category == "鋼板類", f"type11 calculator washer failed: {type11_result}"
+    print("v type11 hardware table OK")
+except Exception as e:
+    print(f"X type11 hardware table ERROR: {e}")
+
+# Test m47_table
+try:
+    from data.m47_table import build_m47_item, get_m47_dimensions
+    r_m47 = build_m47_item('10"')
+    dims_m47 = get_m47_dimensions("24")
+    assert r_m47 is not None and r_m47["width_mm"] == 80 and r_m47["length_mm"] == 858 and r_m47["unit_weight_kg"] > 0, f"m47 failed: {r_m47}"
+    assert dims_m47 == (90, 1915), f"m47 dims failed: {dims_m47}"
+    print("v m47_table OK")
+except Exception as e:
+    print(f"X m47_table ERROR: {e}")
+
+# Test AI-visual transcribed component tables and remaining metadata-only tables
+try:
+    from data.m52_table import get_m52_by_line_size, get_m52_component, get_m52_spring_data
+    from data.m53_table import get_m53_by_line_size, get_m53_component
+    from data.m54_table import build_m54_item, get_m54_by_line_size, get_m54_component
+    from data.m55_table import build_m55_item, get_m55_by_line_size, get_m55_component
+    from data.n1_table import get_n1_component
+    r_m52 = get_m52_component()
+    r_m52_24 = get_m52_by_line_size('24"')
+    r_m52_spring = get_m52_spring_data('24"')
+    r_m53 = get_m53_component()
+    r_m53_24 = get_m53_by_line_size('24"')
+    r_m54 = get_m54_component()
+    r_m54_2 = get_m54_by_line_size('2"', fig_no=2)
+    r_m54_fig3 = get_m54_by_line_size('2"', fig_no=3)
+    r_m54_item = build_m54_item('2"', fig_no=2)
+    r_m55 = get_m55_component()
+    r_m55_8 = get_m55_by_line_size('8"')
+    r_m55_item = build_m55_item('8"')
+    r_n1 = get_n1_component()
+    assert r_m52["table_kind"] == "dimensional_lookup" and r_m52["lookup_ready"] and not r_m52["weight_ready"], f"m52 lookup summary failed: {r_m52}"
+    assert r_m52_24 is not None and r_m52_24["designation"] == "SPRW-24B" and r_m52_24["dimensions_mm"]["H"] == 610 and r_m52_24["thread_size_j"] == '1"', f"m52 24 failed: {r_m52_24}"
+    assert r_m52_spring is not None and r_m52_spring["wire_dia_mm"] == 10 and r_m52_spring["spring_constant_kg_per_mm"] == 45, f"m52 spring failed: {r_m52_spring}"
+    assert r_m53["table_kind"] == "dimensional_lookup" and r_m53["lookup_ready"] and not r_m53["weight_ready"], f"m53 lookup summary failed: {r_m53}"
+    assert r_m53_24 is not None and r_m53_24["designation"] == "PUBS2-24B" and r_m53_24["dimensions_mm"]["A"] == 838 and r_m53_24["bar_size"] == "150x12", f"m53 24 failed: {r_m53_24}"
+    assert r_m54["table_kind"] == "dimensional_lookup" and r_m54["lookup_ready"] and r_m54["weight_ready"], f"m54 lookup summary failed: {r_m54}"
+    assert r_m54_2 is not None and r_m54_2["designation"] == "PUBS3-2B-2" and r_m54_2["dimensions_mm"]["A"] == 63.6 and r_m54_2["dimensions_mm"]["B"] == 150 and r_m54_2["unit_weight_kg"] == 0.34, f"m54 2 failed: {r_m54_2}"
+    assert r_m54_item is not None and r_m54_item["spec"].startswith("PUBS3-2B-2") and r_m54_item["category"] == "鋼板類", f"m54 item failed: {r_m54_item}"
+    assert r_m54_fig3 is None, f"m54 unsupported fig should be None: {r_m54_fig3}"
+    assert r_m55["table_kind"] == "dimensional_lookup" and r_m55["lookup_ready"] and not r_m55["weight_ready"], f"m55 lookup summary failed: {r_m55}"
+    assert r_m55_8 is not None and r_m55_8["designation"] == "PUBD1-8B" and r_m55_8["dimensions_mm"]["B"] == 410 and r_m55_8["unit_weight_kg"] == 3.62, f"m55 8 failed: {r_m55_8}"
+    assert r_m55_item is not None and r_m55_item["spec"].startswith("PUBD1-8B") and r_m55_item["category"] == "鋼板類", f"m55 item failed: {r_m55_item}"
+    assert r_n1["component_id"] == "N-1" and r_n1["table_kind"] == "metadata_only", f"n1 metadata failed: {r_n1}"
+    print("v m52/m53/m54/m55 visual lookup + metadata-only component tables OK")
+except Exception as e:
+    print(f"X m52/m53/m54/m55 visual lookup + metadata-only component tables ERROR: {e}")
+
 # Test m22_table
 try:
     from data.m22_table import build_m22_item
     r12 = build_m22_item('3/4"', 600, left_hand=True)
-    assert r12 is not None and r12["designation"] == "MTRL-3/4-600" and r12["thread_length_c"] == 152, f"m22 failed: {r12}"
+    assert r12 is not None and r12["designation"] == "MTRL-3/4-600" and r12["thread_length_c"] == 152 and r12["unit_weight_kg"] > 0, f"m22 failed: {r12}"
     print("v m22_table OK")
 except Exception as e:
     print(f"X m22_table ERROR: {e}")
@@ -44,7 +214,9 @@ try:
     r13 = get_m23_by_dia('1 1/2"')
     r13_item = build_m23_item('1 1/2"', 900, left_hand=True)
     assert r13 is not None and r13["recommended_bolt_dia_b"] == '1 5/8"' and r13["thread_length_d"] == 152, f"m23 failed: {r13}"
-    assert r13_item is not None and r13_item["designation"] == "WERL-1 1/2-900", f"m23 build failed: {r13_item}"
+    assert r13_item is not None and r13_item["designation"] == "WERL-1 1/2-900" and r13_item["unit_weight_kg"] > 0, f"m23 build failed: {r13_item}"
+    r13_inferred = get_m23_by_dia('1 1/8"')
+    assert r13_inferred is None, f"m23 1 1/8 should be None (not in PDF): {r13_inferred}"
     print("v m23_table OK")
 except Exception as e:
     print(f"X m23_table ERROR: {e}")
@@ -53,7 +225,7 @@ except Exception as e:
 try:
     from data.m25_table import build_m25_item
     r14 = build_m25_item('7/8"', left_hand=True)
-    assert r14 is not None and r14["designation"] == "WENL-7/8" and r14["G"] == 25, f"m25 failed: {r14}"
+    assert r14 is not None and r14["designation"] == "WENL-7/8" and r14["G"] == 25 and r14["unit_weight_kg"] > 0, f"m25 failed: {r14}"
     print("v m25_table OK")
 except Exception as e:
     print(f"X m25_table ERROR: {e}")
@@ -71,10 +243,32 @@ except Exception as e:
 try:
     from data.m28_table import get_m28_takeoff
     r16 = get_m28_takeoff('1 1/2"', fig=2)
-    assert r16 == 102, f"m28 failed: {r16}"
+    from data.m28_table import get_m28_by_rod_size
+    r16_item = get_m28_by_rod_size('1-1/2"')
+    r16_inferred = get_m28_by_rod_size('1 1/8"')
+    assert r16 == 102 and r16_item is not None and r16_item["unit_weight_kg"] > 0, f"m28 failed: {r16}/{r16_item}"
+    assert r16_inferred is None, f"m28 1 1/8 should be None (not in PDF): {r16_inferred}"
     print("v m28_table OK")
 except Exception as e:
     print(f"X m28_table ERROR: {e}")
+
+# Test centralized component fallback rules
+try:
+    from core.component_rules import (
+        estimate_clamp_weight,
+        estimate_eye_nut_weight,
+        estimate_m28_weight,
+        estimate_rod_weight,
+        resolve_material,
+    )
+    assert estimate_clamp_weight('4"', component_id="M-6") == 2.3, "M-6 clamp estimate should use centralized multiplier"
+    assert estimate_rod_weight('5/8"', 3000) > 0, "rod estimate failed"
+    assert estimate_eye_nut_weight('5/8"') >= 0.15, "eye nut estimate failed"
+    assert estimate_m28_weight('1 1/8"') >= 0.3, "M-28 estimate failed"
+    assert resolve_material(overrides={"material": "SUS316"}, default="A36/SS400") == "SUS316", "material override failed"
+    print("v component_rules fallback layer OK")
+except Exception as e:
+    print(f"X component_rules fallback layer ERROR: {e}")
 
 # Test type41_table
 try:
@@ -157,5 +351,138 @@ try:
 except Exception as e:
     print(f"X type56_table ERROR: {e}")
 
-print("\n=== VALIDATION COMPLETE ===")
+# Test type62 hanger combination table/calculator
+try:
+    from core.calculator import analyze_single
+    from data.type62_table import get_type62_lower_part, validate_type62_lower_pipe_size
 
+    fig_j = get_type62_lower_part("J")
+    fig_n_ok, _ = validate_type62_lower_pipe_size("N", '12"')
+    fig_n_bad, _ = validate_type62_lower_pipe_size("N", '4"')
+    r62 = analyze_single("62-4B-5/8-05~30D-J(T)")
+    r62_simple = analyze_single("62-2B-3/8-05C-G")
+    r62_fig_e = analyze_single("62-4B-5/8-05C-E")
+    r62_bad = analyze_single("62-4B-5/8-05C-N")
+    r62_names = [entry.name for entry in r62.entries]
+    r62_fig_e_names = [entry.name for entry in r62_fig_e.entries]
+    assert fig_j is not None and fig_j["component_id"] == "M-6" and fig_j["max_insulation_thk_in"] == 4, f"type62 fig J failed: {fig_j}"
+    assert fig_n_ok and not fig_n_bad, "type62 lower range validation failed"
+    assert not r62.error and "TURNBUCKLE" in r62_names and "LOWER PIPE CLAMP" in r62_names, f"type62 calculator failed: {r62}"
+    assert r62.entries[0].spec == "MTRL-5/8-3000", f"type62 rod length failed: {r62.entries[0]}"
+    assert not r62_simple.error and not any(entry.name == "TURNBUCKLE" for entry in r62_simple.entries), f"type62 simple failed: {r62_simple}"
+    assert not r62_fig_e.error and "ADJUSTABLE CLEVIS" in r62_fig_e_names, f"type62 fig E failed: {r62_fig_e}"
+    assert "WELDLESS EYE NUT" not in r62_fig_e_names and "HEAVY HEX. NUT" not in r62_fig_e_names, f"type62 fig E should not add nut callouts: {r62_fig_e.entries}"
+    assert r62_bad.error and "FIG-N" in r62_bad.error, f"type62 invalid range failed: {r62_bad}"
+    r62_material = analyze_single("62-2B-3/8-05C-G", {"material": "SUS304"})
+    assert not r62_material.error and r62_material.entries[0].material == "SUS304", f"type62 material override failed: {r62_material.entries}"
+    print("v type62 hanger combination OK")
+except Exception as e:
+    print(f"X type62 hanger combination ERROR: {e}")
+
+# Test consistency refactor smokes
+try:
+    from core.calculator import analyze_single
+
+    r10_invalid_letter = analyze_single("10-2B-05H")
+    r07_override = analyze_single("07-2B-20J", {"upper_material": "SUS316"})
+    r14_override = analyze_single("14-2B-1005", {"upper_material": "SUS316"})
+    r16_override = analyze_single("16-2B-05", {"upper_material": "SUS316"})
+    assert any("Type 10 允許範圍" in warning for warning in r10_invalid_letter.warnings), f"type10 M42 warning failed: {r10_invalid_letter.warnings}"
+    assert not r07_override.error and r07_override.entries[0].material == "SUS316", f"type07 material override failed: {r07_override.entries}"
+    assert not r14_override.error and r14_override.entries[0].material == "SUS316", f"type14 material override failed: {r14_override.entries}"
+    assert not r16_override.error and r16_override.entries[0].material == "SUS316", f"type16 material override failed: {r16_override.entries}"
+    print("v system consistency refactor smokes OK")
+except Exception as e:
+    print(f"X system consistency refactor smokes ERROR: {e}")
+
+# Test type72 strap support table/calculator
+try:
+    from core.calculator import analyze_single
+    from data.type72_table import get_type72_data
+
+    r72_table = get_type72_data('2"')
+    r72 = analyze_single("72-2B")
+    r72_bad = analyze_single("72-6B")
+    r72_names = [entry.name for entry in r72.entries]
+    assert r72_table is not None and r72_table["A"] == 63.6 and r72_table["B"] == 150 and r72_table["T"] == 6, f"type72 table failed: {r72_table}"
+    assert not r72.error and r72_names == ["STRAP", "EXP. BOLT"], f"type72 calculator failed: {r72}"
+    assert r72.entries[0].spec.startswith("PUBS3-2B-2") and r72.entries[0].unit_weight == 0.34 and r72.entries[1].spec == "EB-3/8", f"type72 entries failed: {r72.entries}"
+    assert "weight estimated at 1.0 kg/SET" in r72.entries[1].remark, f"type72 EB remark failed: {r72.entries[1].remark}"
+    assert not any("M-54" in warning for warning in r72.warnings), f"type72 should not warn for M-54 lookup: {r72.warnings}"
+    assert r72_bad.error and "3/4" in r72_bad.error, f"type72 invalid range failed: {r72_bad}"
+    print("v type72 strap support OK")
+except Exception as e:
+    print(f"X type72 strap support ERROR: {e}")
+
+# Test type73/type76/type77/type78/type79 support calculators
+try:
+    from core.calculator import analyze_single
+    from data.type73_table import get_type73_bolt_count, get_type73_data, get_type73_spring_data
+    from data.type76_table import get_type76_data
+    from data.type77_table import get_type77_data
+    from data.type79_table import get_type79_data
+
+    r73_table = get_type73_data('6"')
+    r73_spring = get_type73_spring_data("SPR04")
+    r73 = analyze_single("73-6B-G")
+    r73_bad = analyze_single("73-30B-G")
+    r76_table = get_type76_data('30"')
+    r76 = analyze_single("76-30B")
+    r77_table = get_type77_data('40"')
+    r77 = analyze_single("77-40B-(A)")
+    r78 = analyze_single("78-2B(A)")
+    r79_table = get_type79_data('8"')
+    r79 = analyze_single("79-8B(A)")
+    r79_bad = analyze_single("79-4B")
+
+    assert r73_table is not None and r73_table["A"] == 396 and r73_table["spring_mark"] == "SPR04" and get_type73_bolt_count('6"') == 4, f"type73 table failed: {r73_table}"
+    assert r73_spring is not None and r73_spring["spring_constant_kg_per_mm"] == 2.9 and r73_spring["unit_weight_kg"] > 0, f"type73 spring failed: {r73_spring}"
+    assert not r73.error and [entry.name for entry in r73.entries][:4] == ["STRAP", "SPRING COIL", "STUD BOLT", "WASHER"], f"type73 calculator failed: {r73}"
+    assert r73_bad.error and '1"' in r73_bad.error, f"type73 invalid range failed: {r73_bad}"
+    assert r76_table is not None and r76_table["pad_angle_deg"] == 120 and r76_table["pad_length_mm"] == 400, f"type76 table failed: {r76_table}"
+    assert not r76.error and r76.entries[0].name == "PIPE PAD" and r76.entries[0].unit_weight == 30.07, f"type76 calculator failed: {r76.entries}"
+    assert r77_table is not None and r77_table["A"] == 300 and r77_table["T"] == 16 and r77_table["unit_weight_kg"] > 0, f"type77 table failed: {r77_table}"
+    assert not r77.error and r77.entries[0].name == "SADDLE" and any("D-80A" in warning for warning in r77.warnings), f"type77 calculator failed: {r77}"
+    assert not r78.error and r78.entries[0].spec.startswith("PUBS3-2B-1") and r78.entries[0].unit_weight == 0.35, f"type78 calculator failed: {r78.entries}"
+    assert r79_table is not None and r79_table["B"] == 410 and r79_table["unit_weight_kg"] == 3.62, f"type79 table failed: {r79_table}"
+    assert not r79.error and r79.entries[0].name == "U-BAND" and r79.entries[0].spec.startswith("PUBD1-8B") and any("M-55 table 已接線" in warning for warning in r79.warnings), f"type79 calculator failed: {r79}"
+    assert r79_bad.error and '5"' in r79_bad.error, f"type79 invalid range failed: {r79_bad}"
+    print("v type73/type76/type77/type78/type79 support calculators OK")
+except Exception as e:
+    print(f"X type73/type76/type77/type78/type79 support calculators ERROR: {e}")
+
+# Test localized truth/evidence contract
+try:
+    from core.calculator import analyze_single
+    from core.truth import TRUTH_ESTIMATED, TRUTH_UNKNOWN, need_escalation
+
+    r72_truth = analyze_single("72-2B")
+    r76_truth = analyze_single("76-30B")
+    r78_truth = analyze_single("78-2B(A)")
+    r79_truth = analyze_single("79-8B(A)")
+    r_unknown_truth = analyze_single("80-1B")
+
+    assert r72_truth.meta["truth_level"] == TRUTH_ESTIMATED and r72_truth.meta["requires_review"], f"type72 truth failed: {r72_truth.meta}"
+    assert r76_truth.meta["truth_level"] == TRUTH_ESTIMATED and "PDF 視覺判讀" in r76_truth.meta["source_labels"], f"type76 truth failed: {r76_truth.meta}"
+    assert r78_truth.meta["truth_level"] == TRUTH_ESTIMATED and r78_truth.evidence[0]["field"] == "strap_fig", f"type78 evidence failed: {r78_truth.meta}/{r78_truth.evidence}"
+    assert r79_truth.meta["truth_level"] == TRUTH_ESTIMATED and r79_truth.meta["requires_review"], f"type79 truth failed: {r79_truth.meta}"
+    assert not any(e["basis"] == "missing_table" for e in r79_truth.evidence), f"type79 should no longer include missing-table evidence: {r79_truth.evidence}"
+    assert need_escalation(r79_truth.meta, r79_truth.meta["invariant_errors"]), f"type79 escalation failed: {r79_truth.meta}"
+    assert r_unknown_truth.meta["truth_level"] == TRUTH_UNKNOWN and r_unknown_truth.meta["requires_review"], f"unknown truth failed: {r_unknown_truth.meta}"
+    print("v localized truth/evidence contract OK")
+except Exception as e:
+    print(f"X localized truth/evidence contract ERROR: {e}")
+
+# Test type64/type65 normalization helpers
+try:
+    from data.type64_table import get_type64_rod
+    from data.type65_table import get_type65_data
+    r64 = get_type64_rod("1-1/4")
+    r65 = get_type65_data("2-1/2")
+    assert r64 is not None and r64["g"] == '1/2"', f"type64 normalize failed: {r64}"
+    assert r65 is not None and r65["rod_size"] == '3/8"', f"type65 normalize failed: {r65}"
+    print("v type64/type65 normalization OK")
+except Exception as e:
+    print(f"X type64/type65 normalization ERROR: {e}")
+
+print("\n=== VALIDATION COMPLETE ===")

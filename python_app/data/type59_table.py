@@ -9,11 +9,14 @@ FIG-B: bare pipe (配 D-68 U-bolt)
 TABLE A 材料符號: CS=NONE, AS=(A), SS=(S), A516-60=(R)
 """
 
-# 三組尺寸 (A, B, C, D, T) mm
+# 三組尺寸 (A, B, C, D, T, S_T, plate_qty) mm
+# S_T = 不鏽鋼專用板厚（對應圖紙 D-70 TABLE A "FOR STAINLESS STEEL ONLY" 欄）
+#   small=6, medium=9；large="-" (圖紙無定義) 以 None 表示 → 計算器應給警告
+# plate_qty: D=None → 1片；D=120 → 2片（依 VBA D=0 then 1 else 2 邏輯）
 TYPE59_DIMS = {
-    "small":  {"A": 80,  "B": 55,  "C": 15, "D": None, "T": 9},   # 2-1/2" & smaller
-    "medium": {"A": 150, "B": 100, "C": 50, "D": None, "T": 12},  # 3"~8"
-    "large":  {"A": 150, "B": 130, "C": 50, "D": 120,  "T": 12},  # 10"~14"
+    "small":  {"A": 80,  "B": 55,  "C": 15, "D": None, "T": 9,  "S_T": 6,    "plate_qty": 1},  # 2-1/2" & smaller
+    "medium": {"A": 150, "B": 100, "C": 50, "D": None, "T": 12, "S_T": 9,    "plate_qty": 1},  # 3"~8"
+    "large":  {"A": 150, "B": 130, "C": 50, "D": 120,  "T": 12, "S_T": None, "plate_qty": 2},  # 10"~14"  (SS欄為"–"，無定義)
 }
 
 # 材料符號對應

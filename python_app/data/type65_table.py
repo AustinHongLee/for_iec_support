@@ -8,6 +8,7 @@ H = HH × 100 mm
 D (line size) → rod size A, member M (by L bucket), weld Y
 12" & larger → 加 stiffener
 """
+from .component_size_utils import normalize_fractional_size
 
 TYPE65_TABLE = {
     "2":  {
@@ -18,7 +19,7 @@ TYPE65_TABLE = {
         },
         "weld_y": 6,
     },
-    "2-1/2": {
+    "2 1/2": {
         "rod_size": '3/8"',
         "member_by_l": {
             500: "L65*65*6", 1000: "L65*65*6", 1500: "L75*75*9",
@@ -91,7 +92,7 @@ TYPE65_TABLE = {
         "weld_y": 9,
     },
     "16": {
-        "rod_size": '1-1/8"',
+        "rod_size": '1 1/8"',
         "member_by_l": {
             500: "C125*65*6", 1000: "C150*75*9", 1500: "C200*80*7.5",
             2000: "C200*80*7.5", 2500: "C200*80*7.5",
@@ -99,7 +100,7 @@ TYPE65_TABLE = {
         "weld_y": 9,
     },
     "18": {
-        "rod_size": '1-1/4"',
+        "rod_size": '1 1/4"',
         "member_by_l": {
             500: "C150*75*9", 1000: "C150*75*9", 1500: "C200*80*7.5",
             2000: "C200*80*7.5", 2500: "C200*80*7.5",
@@ -107,7 +108,7 @@ TYPE65_TABLE = {
         "weld_y": 9,
     },
     "20": {
-        "rod_size": '1-1/4"',
+        "rod_size": '1 1/4"',
         "member_by_l": {
             500: "C150*75*9", 1000: "C200*80*7.5", 1500: "C200*80*7.5",
             2000: "C200*80*7.5", 2500: "C200*80*7.5",
@@ -115,7 +116,7 @@ TYPE65_TABLE = {
         "weld_y": 9,
     },
     "24": {
-        "rod_size": '1-1/2"',
+        "rod_size": '1 1/2"',
         "member_by_l": {
             500: "C200*80*7.5", 1000: "C200*80*7.5", 1500: "C200*80*7.5",
             2000: "C200*80*7.5", 2500: "C200*80*7.5",
@@ -124,26 +125,14 @@ TYPE65_TABLE = {
     },
 }
 
-# Rod weight per meter (kg/m) for welded eye rod
-ROD_WEIGHT_PER_M = {
-    '3/8"':  0.56,
-    '1/2"':  0.99,
-    '5/8"':  1.55,
-    '3/4"':  2.23,
-    '7/8"':  3.04,
-    '1"':    3.97,
-    '1-1/8"': 5.02,
-    '1-1/4"': 6.21,
-    '1-1/2"': 8.90,
-}
-
 # 標準 L bucket 值
 L_BUCKETS = [500, 1000, 1500, 2000, 2500]
 
 
 def get_type65_data(line_size: str) -> dict | None:
     """依管徑查 Type 65 資料"""
-    return TYPE65_TABLE.get(line_size)
+    key = normalize_fractional_size(line_size).replace('"', "")
+    return TYPE65_TABLE.get(key)
 
 
 def snap_l_bucket(l_mm: int) -> int | None:

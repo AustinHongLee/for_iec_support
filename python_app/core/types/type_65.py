@@ -11,9 +11,10 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..bolt import add_custom_entry
-from data.type65_table import (
-    get_type65_data, snap_l_bucket, ROD_WEIGHT_PER_M,
-)
+from ..component_rules import estimate_m28_weight, estimate_rod_weight
+from data.type65_table import get_type65_data, snap_l_bucket
+from data.m23_table import build_m23_item
+from data.m28_table import get_m28_by_rod_size
 
 
 def _parse_member_spec(member_str: str):
@@ -26,6 +27,37 @@ def _parse_member_spec(member_str: str):
     elif member_str.startswith("H"):
         return "H Beam", member_str[1:]
     return "Angle", member_str
+
+
+# Stiffener plate dimensions (width_mm, height_mm, thickness_mm) by nominal pipe size.
+# Source: geometry-based estimate, dimensions increase with pipe size.
+# Weight = W × H × T × 7.85e-6 kg
+_STIFFENER_PL = {
+    12: (200, 150,  8),
+    14: (225, 160,  8),
+    16: (250, 170, 10),
+    18: (280, 180, 10),
+    20: (310, 190, 12),
+    24: (370, 210, 12),
+    28: (430, 230, 14),
+    30: (460, 240, 14),
+    32: (490, 260, 16),
+    34: (520, 270, 16),
+    36: (550, 280, 19),
+    42: (630, 310, 19),
+}
+
+
+def _stiffener_pl(d_size: int) -> tuple[int, int, int]:
+    """依管徑取最近（不超過）的 stiffener PL 規格。"""
+    candidates = sorted(k for k in _STIFFENER_PL if k <= d_size)
+    return _STIFFENER_PL[candidates[-1]] if candidates else (200, 150, 8)
+
+
+def _build_inference_remark(item: dict | None) -> str:
+    if not item or not item.get("row_inferred"):
+        return ""
+    return item.get("inference_notes", "row inferred from neighboring sizes")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -86,31 +118,37 @@ def calculate(fullstring: str) -> AnalysisResult:
     add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, material)
 
     # ② Welded Eye Rod ×2 (M-23), 長度 ≈ H
-    rod_wt_m = ROD_WEIGHT_PER_M.get(rod_size, 1.0)
-    rod_unit_wt = round(rod_wt_m * (h_mm / 1000.0), 2)
+    rod_item = build_m23_item(rod_size, h_mm)
     add_custom_entry(
         result, "WELDED EYE ROD",
-        f"M-23, {rod_size}, L={h_mm}mm",
-        material, 2, rod_unit_wt, "PC"
+        rod_item["designation"] if rod_item else f"M-23, {rod_size}, L={h_mm}mm",
+        material, 2, rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm), "PC",
+        remark=_build_inference_remark(rod_item),
     )
+    if not rod_item:
+        result.warnings.append(f"M-23 table 尚無 rod size {rod_size}，暫以 rod 鋼材重量估算")
 
     # ③ Angle Bracket ×2 (M-28)
-    # M-28 table 由 Codex 施工中，先以估算佔位
-    bracket_wt = 0.8 if d_size <= 8 else 1.5
+    bracket_item = get_m28_by_rod_size(rod_size)
     add_custom_entry(
         result, "ANGLE BRACKET",
-        f"M-28, {rod_size}",
-        material, 2, bracket_wt, "SET"
+        bracket_item["type"] if bracket_item else f"M-28, {rod_size}",
+        material, 2, bracket_item["unit_weight_kg"] if bracket_item else estimate_m28_weight(rod_size), "SET",
+        remark=_build_inference_remark(bracket_item),
     )
+    if not bracket_item:
+        result.warnings.append(f"M-28 table 尚無 rod size {rod_size}，angle bracket 重量暫用估算值")
 
     # ④ Stiffener (D ≥ 12")
     if d_size >= 12:
-        # stiffener 板尺寸待精確化，先以 custom entry 佔位
+        pl_w, pl_h, pl_t = _stiffener_pl(d_size)
+        stiffener_wt = round(pl_w * pl_h * pl_t * 7.85e-6, 2)
+        stiffener_desc = f"PL {pl_w}x{pl_h}x{pl_t}"
         add_custom_entry(
             result, "STIFFENER",
-            f"PL for {d_str}\"",
-            material, 1, 2.0, "SET"
+            stiffener_desc,
+            material, 1, stiffener_wt, "SET"
         )
-        result.warnings.append("12\" & larger: Stiffener 重量為估算值")
+        result.warnings.append(f'12" & larger: Stiffener ({stiffener_desc}) 重量為幾何估算值')
 
     return result

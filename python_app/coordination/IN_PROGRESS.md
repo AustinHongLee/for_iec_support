@@ -14,5 +14,229 @@
 
 ## Completed (moved to WORKLOG)
 
+- ~~2026-04-21 15:35 | Codex | system refactor rules layer P1/P2~~ → done, see WORKLOG
+  - `core/component_rules.py`
+  - `core/types/type_07.py`
+  - `core/types/type_10.py`
+  - `core/types/type_13.py`
+  - `core/types/type_14.py`
+  - `core/types/type_15.py`
+  - `core/types/type_16.py`
+  - `core/types/type_62.py`
+  - `core/types/type_64.py`
+  - `core/types/type_65.py`
+  - `data/component_table_registry.py`
+  - `data/m_clamp_common.py`
+  - `data/m4_table.py`
+  - `data/m5_table.py`
+  - `data/m6_table.py`
+  - `data/m7_table.py`
+  - `ui/type_manager.py`
+  - `validate_tables.py`
+  - `configs/type_catalog.json`
+  - `docs/COMPONENT_TABLE_STATUS.md`
+  - `docs/PROJECT_LOGIC_TREE.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 15:16 | Codex | clamp family table-source split~~ → done, see WORKLOG
+  - `data/m4_table.py`
+  - `data/m5_table.py`
+  - `data/m6_table.py`
+  - `data/m7_table.py`
+  - `data/m_clamp_common.py`
+  - `core/types/type_62.py`
+  - `validate_tables.py`
+  - `configs/type_catalog.json`
+  - `docs/COMPONENT_TABLE_STATUS.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 15:10 | Codex | component table maintenance rule~~ → done, see WORKLOG
+  - `coordination/SOURCE_OF_TRUTH.md`
+  - `docs/COMPONENT_TABLE_STATUS.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 15:05 | Codex | M-55 dimensional lookup + Type 79 hookup~~ → done, see WORKLOG
+  - `data/m55_table.py`
+  - `data/component_table_registry.py`
+  - `core/types/type_79.py`
+  - `data/type79_table.py`
+  - `configs/type_catalog.json`
+  - `docs/types/type_79.md`
+  - `validate_tables.py`
+  - `docs/COMPONENT_TABLE_STATUS.md`
+  - `docs/PROJECT_LOGIC_TREE.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 14:45 | Codex | component table UI status + markdown overview~~ → done, see WORKLOG
+  - `ui/type_manager.py`
+  - `docs/COMPONENT_TABLE_STATUS.md`
+  - `data/n27_pu_block_table.py`
+  - `data/component_table_registry.py`
+  - `validate_tables.py`
+  - `docs/PROJECT_LOGIC_TREE.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 14:25 | Codex | M/N component table full metadata baseline~~ → done, see WORKLOG
+  - `data/component_table_registry.py`
+  - `data/m1_table.py`, `data/m3_table.py`, `data/m8_table.py`, `data/m9_table.py`, `data/m10_table.py`
+  - `data/m11_table.py`, `data/m12_table.py`, `data/m13_table.py`, `data/m27_table.py`, `data/m29_table.py`
+  - `data/m30_table.py`, `data/m31_table.py`, `data/m32_table.py`, `data/m33_table.py`, `data/m41_table.py`
+  - `data/m55_table.py`, `data/m56_table.py`, `data/m57_table.py`, `data/m58_table.py`, `data/m59_table.py`, `data/m60_table.py`
+  - `data/n10_table.py`, `data/n11_table.py`, `data/n12_table.py`, `data/n12a_table.py`, `data/n13_table.py`, `data/n14_table.py`
+  - `data/n15_table.py`, `data/n16_table.py`, `data/n19_table.py`, `data/n20_table.py`, `data/n21_table.py`, `data/n22_table.py`, `data/n23_table.py`, `data/n24_table.py`, `data/n25_table.py`, `data/n26_table.py`, `data/n28_table.py`
+  - `validate_tables.py`
+  - `docs/PROJECT_LOGIC_TREE.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 14:05 | Codex | project logic tree documentation~~ → done, see WORKLOG
+  - `docs/PROJECT_LOGIC_TREE.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 13:25 | Codex | 中文化 truth/evidence contract bootstrap~~ → done, see WORKLOG
+  - `core/models.py`
+  - `core/truth.py`
+  - `core/calculator.py`
+  - `core/types/type_72.py`
+  - `core/types/type_73.py`
+  - `core/types/type_76.py`
+  - `core/types/type_77.py`
+  - `core/types/type_78.py`
+  - `core/types/type_79.py`
+  - `data/type77_table.py`
+  - `validate_tables.py`
+  - `configs/type_catalog.json`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 13:05 | Codex | Type 73/76/77/78/79 calculators + docs~~ → done, see WORKLOG
+  - `data/type73_table.py`
+  - `data/type76_table.py`
+  - `data/type77_table.py`
+  - `data/type79_table.py`
+  - `data/type72_table.py`
+  - `core/types/type_73.py`
+  - `core/types/type_76.py`
+  - `core/types/type_77.py`
+  - `core/types/type_78.py`
+  - `core/types/type_79.py`
+  - `core/calculator.py`
+  - `configs/type_catalog.json`
+  - `docs/types/type_73.md`
+  - `docs/types/type_76.md`
+  - `docs/types/type_77.md`
+  - `docs/types/type_78.md`
+  - `docs/types/type_79.md`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 13:00 | Codex | M-54 component doc follow-up~~ → done, see WORKLOG
+  - `docs/types/m_54.md`
+  - `configs/type_catalog.json`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 12:49 | Codex | M-54 strap component table + Type 72 hookup~~ → done, see WORKLOG
+  - `data/m54_table.py`
+  - `data/component_table_registry.py`
+  - `core/types/type_72.py`
+  - `configs/type_catalog.json`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
 - ~~2026-04-20 ~20:00 | Claude | Type 58/59/60/64/65 calculator~~ → done, see WORKLOG
   - `configs/type_catalog.json`
+- ~~2026-04-21 08:48 | Codex | component table 高優先級第一波 (`M-4/M-5/M-6/M-7/M-21/M-24`)~~ → done, see WORKLOG
+  - `data/component_table_registry.py`
+  - `core/types/type_13.py`
+  - `core/types/type_64.py`
+  - `core/types/type_65.py`
+- ~~2026-04-21 08:52 | Codex | 整理 Claude 審核交接規範~~ → done, see WORKLOG
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/SOURCE_OF_TRUTH.md`
+- ~~2026-04-21 09:03 | Codex | component table 第二波 + catalog 對齊 + reviewer handoff~~ → done, see WORKLOG
+  - `data/m47_table.py`
+  - `data/m52_table.py`
+  - `data/m53_table.py`
+  - `data/n1_table.py`
+  - `data/n9_table.py`
+  - `core/types/type_13.py`
+  - `configs/type_catalog.json`
+- ~~2026-04-21 10:00 | Codex | Claude backlog 收斂（1 1/8 rod + clamp remark + helper cleanup）~~ → done, see WORKLOG
+  - `data/m23_table.py`
+  - `data/m28_table.py`
+  - `data/type64_table.py`
+  - `data/type65_table.py`
+  - `core/bolt.py`
+  - `core/types/type_64.py`
+  - `core/types/type_65.py`
+- ~~2026-04-21 10:19 | Codex | coordination review-order cleanup~~ → done, see WORKLOG
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 10:27 | Codex | coordination audit cleanup~~ → done, see WORKLOG
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 11:25 | Codex | Claude residual-risk cleanup follow-up~~ → done, see WORKLOG
+  - `data/m23_table.py`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 11:32 | Codex | Type 11 table lookup refactor + M-52/M-53 feasibility note~~ → done, see WORKLOG
+  - `data/type11_table.py`
+  - `core/types/type_11.py`
+  - `core/bolt.py`
+  - `data/m52_table.py`
+  - `data/m53_table.py`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 11:46 | Codex | M-52/M-53 AI visual transcription to lookup tables~~ → done, see WORKLOG
+  - `data/m52_table.py`
+  - `data/m53_table.py`
+  - `data/component_table_registry.py`
+  - `configs/type_catalog.json`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 11:53 | Codex | sync Claude 14:30 review into WORKLOG~~ → done, see WORKLOG
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 12:07 | Codex | Type 62 hanger calculator + docs~~ → done, see WORKLOG
+  - `data/type62_table.py`
+  - `core/types/type_62.py`
+  - `core/calculator.py`
+  - `docs/types/type_62.md`
+  - `configs/type_catalog.json`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 12:27 | Codex | Type 62 Claude low-risk follow-up~~ → done, see WORKLOG
+  - `core/types/type_62.py`
+  - `docs/types/type_62.md`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`
+- ~~2026-04-21 12:37 | Codex | Type 72 strap support calculator + docs~~ → done, see WORKLOG
+  - `data/type72_table.py`
+  - `core/types/type_72.py`
+  - `core/calculator.py`
+  - `docs/types/type_72.md`
+  - `configs/type_catalog.json`
+  - `validate_tables.py`
+  - `coordination/REVIEW_HANDOFF.md`
+  - `coordination/WORKLOG.md`
+  - `coordination/IN_PROGRESS.md`

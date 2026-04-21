@@ -5,6 +5,7 @@
 from typing import List, Optional, Dict
 from .models import AnalysisResult
 from .parser import get_type_code
+from .truth import apply_truth_contract
 
 
 # 已實作的 Type 對照表
@@ -32,7 +33,8 @@ def _register_types():
                          type_30, type_31, type_32, type_33, type_34, type_35,
                          type_36, type_37, type_39,
                          type_41, type_42, type_43, type_44, type_45,
-                         type_46, type_47, type_48, type_49, type_51, type_56, type_61,
+                         type_46, type_47, type_48, type_49, type_51, type_56, type_61, type_62,
+                         type_72, type_73, type_76, type_77, type_78, type_79,
                          type_52, type_57,
                          type_58, type_59, type_60, type_64, type_65)
 
@@ -83,6 +85,13 @@ def _register_types():
         "51":  type_51.calculate,
         "56":  type_56.calculate,
         "61":  type_61.calculate,
+        "62":  type_62.calculate,
+        "72":  type_72.calculate,
+        "73":  type_73.calculate,
+        "76":  type_76.calculate,
+        "77":  type_77.calculate,
+        "78":  type_78.calculate,
+        "79":  type_79.calculate,
         "52":  type_52.calculate,
         "53":  type_52.calculate,
         "54":  type_52.calculate,
@@ -123,6 +132,11 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
     if not handler:
         result = AnalysisResult(fullstring=fullstring)
         result.error = f"Type {type_code} 尚未實作"
+        apply_truth_contract(
+            result,
+            type_id=type_code,
+            review_reasons=["Type 尚未實作，無可信度 evidence"],
+        )
         return result
 
     try:
@@ -150,10 +164,22 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
         if "overrides" in sig.parameters:
             kwargs["overrides"] = overrides
 
-        return handler(fullstring, **kwargs)
+        result = handler(fullstring, **kwargs)
+        if not result.meta.get("type_id"):
+            apply_truth_contract(
+                result,
+                type_id=type_code,
+                review_reasons=["此 Type 尚未補齊中文化 evidence；預設需審核"],
+            )
+        return result
     except Exception as e:
         result = AnalysisResult(fullstring=fullstring)
         result.error = f"計算錯誤: {str(e)}"
+        apply_truth_contract(
+            result,
+            type_id=type_code,
+            review_reasons=["calculator runtime error，無可信度 evidence"],
+        )
         return result
 
 

@@ -26,6 +26,7 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
+from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
 from data.type14_table import get_type14_data, get_type14_h_max
 
 _STOPPER_T = 6  # mm
@@ -62,6 +63,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     member_spec = data["member"]                         # e.g. "C100X50X5"
     channel_height = int(member_spec[1:4])               # "C100..." → 100
     channel_dim = member_spec[1:].replace("X", "*")      # "100*50*5"
+    pipe_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
 
     # ── warnings: L/H 上限 ──
     h_max = get_type14_h_max(int(line_size), l_val)
@@ -74,7 +76,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # VBA: Main_Pipe_Length = H - F(top) - channelHeight - F(base)
     pipe_length = h_val - 2 * F - channel_height
     if pipe_length > 0:
-        add_pipe_entry(result, line_size, pipe_sch, pipe_length, "SUS304")
+        add_pipe_entry(result, line_size, pipe_sch, pipe_length, pipe_material)
 
     # ── 2. Channel (MEMBER "N") ──
     add_steel_section_entry(result, "Channel", channel_dim, l_val)
@@ -121,12 +123,12 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     )
 
     # ── 7. EXP.BOLT (Anchor Bolt): J size, 4 EA ──
-    _add_anchor_bolt_entry(result, data["J"])
+    _add_anchor_bolt_entry(result, data["J"], material=pipe_material)
 
     return result
 
 
-def _add_anchor_bolt_entry(result: AnalysisResult, bolt_size: str):
+def _add_anchor_bolt_entry(result: AnalysisResult, bolt_size: str, *, material: str):
     """Anchor Bolt (EXP.BOLT): 4 EA
     bolt_size: '5/8"', '3/4"', '1"'
     """
@@ -134,7 +136,7 @@ def _add_anchor_bolt_entry(result: AnalysisResult, bolt_size: str):
     entry = AnalysisEntry()
     entry.name = "EXP.BOLT"
     entry.spec = bolt_size
-    entry.material = "SUS304"
+    entry.material = material
     entry.quantity = 4
     entry.unit_weight = 1
     entry.total_weight = 4
