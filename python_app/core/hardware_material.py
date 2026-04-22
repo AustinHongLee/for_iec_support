@@ -1,7 +1,8 @@
-"""Hardware material resolution contract scaffold.
+"""Hardware material resolution contract.
 
-Phase 0B only defines the interface and default lookup behavior. Existing Type
-calculators must not import this module until the material migration phase.
+Type calculators resolve hardware material through explicit ``HardwareKind``
+and ``ServiceClass``. Process-pipe material must not be used as a hardware
+fallback.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ class HardwareKind(str, Enum):
     U_BOLT = "u_bolt"
     CLEVIS = "clevis"
     TURNBUCKLE = "turnbuckle"
-    UPPER_BRACKET = "upper_bracket"
+    UPPER_BRACKET = "upper_bracket"  # Compatibility-only; new Type mappings use narrower kinds.
     SUPPORT_PIPE = "support_pipe"
     SUPPORT_PLATE = "support_plate"
     PLATE_LUG = "plate_lug"
@@ -69,10 +70,8 @@ class HardwareMaterialOverrides:
 
 @dataclass(frozen=True)
 class HardwareMaterialContext:
-    """Parsed override context for future Type migration.
+    """Parsed override context for migrated Type calculators.
 
-    Phase 1D-1 only centralizes parsing. Existing Type calculators continue to
-    use their local parsing until follow-up phases opt in.
     ``parse_hardware_material_context`` always returns a concrete
     ``material_overrides`` object so callers can read fixed fields directly.
     """
@@ -222,9 +221,8 @@ def resolve_hardware_material(
 ) -> MaterialSpec:
     """Resolve hardware material without consulting pipe material.
 
-    This scaffold resolver is intentionally isolated from existing Type
-    calculators. It provides the future interface while preserving current
-    runtime behavior until the migration phases opt in.
+    The resolver is intentionally isolated from process-pipe material. Callers
+    must pass explicit hardware overrides when they need non-default material.
     """
 
     if overrides:

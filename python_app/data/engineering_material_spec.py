@@ -1,8 +1,4 @@
-"""Default hardware material specification scaffold.
-
-This table is inert in Phase 0B. It is not imported by existing Type
-calculators and should be treated as review-required until the migration phase.
-"""
+"""Default hardware material specification."""
 
 from __future__ import annotations
 
@@ -42,6 +38,8 @@ DEFAULT_HARDWARE_MATERIAL: dict[HardwareKind, dict[ServiceClass | str, str]] = {
         "*": "A36 / SS400",
     },
     HardwareKind.UPPER_BRACKET: {
+        # Compatibility-only default for legacy override parsing. New Type
+        # mappings should use narrower kinds such as SUPPORT_PIPE/SUPPORT_PLATE.
         ServiceClass.HIGH_TEMP: "SA-240",
         "*": "A36 / SS400",
     },

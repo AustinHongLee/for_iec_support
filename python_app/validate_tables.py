@@ -941,6 +941,67 @@ try:
 except Exception as e:
     print(f"X phase 1D-2C override consistency ERROR: {e}")
 
+# Phase 1D-6 material-system lock-in checks
+try:
+    import re
+    from pathlib import Path
+
+    type_root = Path("core/types")
+    migrated_type_files = [
+        type_root / "type_07.py",
+        type_root / "type_10.py",
+        type_root / "type_14.py",
+        type_root / "type_15.py",
+        type_root / "type_16.py",
+        type_root / "type_62.py",
+        type_root / "type_64.py",
+        type_root / "type_65.py",
+    ]
+    legacy_override_tokens = (
+        "_material_" "overrides_from_dict",
+        "_service_" "from_overrides",
+        "resolve_" "material",
+        "DEFAULT_UPPER_" "MATERIAL",
+        "DEFAULT_STRUCTURAL_" "MATERIAL",
+    )
+    direct_material_patterns = (
+        re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*material[A-Za-z0-9_]*\s*=\s*['\"]"),
+        re.compile(r"\.material\s*=\s*['\"]"),
+        re.compile(r"\bmaterial\s*=\s*['\"]"),
+    )
+
+    def _source_hits(paths, predicate):
+        hits = []
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            for line_no, line in enumerate(text.splitlines(), start=1):
+                if predicate(line):
+                    hits.append(f"{path}:{line_no}: {line.strip()}")
+        return hits
+
+    all_type_files = sorted(type_root.glob("type_*.py"))
+    upper_bracket_hits = _source_hits(
+        all_type_files,
+        lambda line: "UPPER_BRACKET" in line,
+    )
+    assert not upper_bracket_hits, "UPPER_BRACKET Type mapping usage must stay 0: " + "; ".join(upper_bracket_hits)
+
+    legacy_override_hits = _source_hits(
+        all_type_files,
+        lambda line: any(token in line for token in legacy_override_tokens),
+    )
+    assert not legacy_override_hits, "legacy material override path found: " + "; ".join(legacy_override_hits)
+
+    direct_material_hits = _source_hits(
+        migrated_type_files,
+        lambda line: any(pattern.search(line) for pattern in direct_material_patterns),
+    )
+    assert not direct_material_hits, "migrated Types must not assign literal material: " + "; ".join(direct_material_hits)
+
+    print("v phase 1D-6 material-system lock-in OK")
+except Exception as e:
+    print(f"X phase 1D-6 material-system lock-in ERROR: {e}")
+
 # Test type72 strap support table/calculator
 try:
     from core.calculator import analyze_single
