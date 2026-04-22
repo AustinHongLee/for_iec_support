@@ -14,11 +14,28 @@ from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.type45_table import get_type45_q, get_type45_member, get_type45_brace, TYPE45_BRACE_H_MIN
 from data.m34_table import get_m34_by_member
 from data.m35_table import get_m35_by_member
 from data.m36_table import get_m36_by_member
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_PLATE_LUG_MATERIAL = _material_spec(HardwareKind.PLATE_LUG, "A36/SS400")
+_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -65,14 +82,19 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     # ① Channel 主柱 — length = H + A
     main_len = h_mm + t45_member["A"]
-    add_steel_section_entry(result, section_type, section_dim, main_len)
+    add_steel_section_entry(
+        result, section_type, section_dim, main_len, material=_STRUCTURAL_MATERIAL
+    )
     result.entries[-1].remark = f"主柱, H={h_mm}+A={t45_member['A']}={main_len}mm"
 
     # ② L50 斜撐 (條件: H > 1140)
     if h_mm > TYPE45_BRACE_H_MIN:
         brace = get_type45_brace(fig_type)
         if brace:
-            add_steel_section_entry(result, "Angle", "50*50*6", brace["length"])
+            add_steel_section_entry(
+                result, "Angle", "50*50*6", brace["length"],
+                material=_STRUCTURAL_MATERIAL,
+            )
             result.entries[-1].remark = (
                 f"斜撐 FIG-{fig_type}(θ={theta}°), "
                 f"L={brace['length']}mm, H>{TYPE45_BRACE_H_MIN}"
@@ -83,7 +105,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     if m34:
         add_plate_entry(result, plate_a=m34["A"], plate_b=m34["B"],
                         plate_thickness=m34["T"], plate_name="LUG PLATE TYPE-C",
-                        plate_qty=1)
+                        material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"Detail Z(管線端), {m34['type']}"
 
     # ④ LUG PLATE TYPE-D/E (M-35/36, Detail Y — Vessel端)
@@ -96,18 +118,19 @@ def calculate(fullstring: str) -> AnalysisResult:
     if m_dy:
         add_plate_entry(result, plate_a=m_dy["A"], plate_b=m_dy["B"],
                         plate_thickness=m_dy["T"],
-                        plate_name=f"LUG PLATE {dy_label}", plate_qty=1)
+                        plate_name=f"LUG PLATE {dy_label}",
+                        material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"Detail Y(Vessel端), {dy_label}"
 
     # ⑤ K BOLT
     # Detail Z: 3/4"×50 (Ø22), Detail Y: 5/8"×40 (Ø19)
     add_custom_entry(result, name="K BOLT", spec='3/4"x50',
-                     material="SUS304", quantity=1,
+                     material=_ANCHOR_BOLT_MATERIAL, quantity=1,
                      unit_weight=0.8, unit="SET")
     result.entries[-1].remark = "Detail Z(管線端), Ø22"
 
     add_custom_entry(result, name="K BOLT", spec='5/8"x40',
-                     material="SUS304", quantity=1,
+                     material=_ANCHOR_BOLT_MATERIAL, quantity=1,
                      unit_weight=0.5, unit="SET")
     result.entries[-1].remark = "Detail Y(Vessel端), Ø19"
 

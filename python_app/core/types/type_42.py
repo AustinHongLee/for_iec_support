@@ -13,8 +13,26 @@ from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.type42_table import get_type42_member, get_type42_pipe
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -74,28 +92,32 @@ def calculate(fullstring: str) -> AnalysisResult:
     trunnion = pipe_data["trunnion"]
 
     # ① 主梁 — length = H
-    add_steel_section_entry(result, section_type, section_dim, h_mm)
+    add_steel_section_entry(
+        result, section_type, section_dim, h_mm, material=_STRUCTURAL_MATERIAL
+    )
     result.entries[-1].remark = f"主梁 (立柱), H={h_mm}mm"
 
     # ② 斜撐 — length = G
-    add_steel_section_entry(result, section_type, section_dim, g_val)
+    add_steel_section_entry(
+        result, section_type, section_dim, g_val, material=_STRUCTURAL_MATERIAL
+    )
     result.entries[-1].remark = f"斜撐 FIG-{fig_type}(θ={theta}°), G={g_val}mm"
 
     # ③ Trunnion (管件, 以 custom entry 處理)
     add_custom_entry(result, name="TRUNNION", spec=trunnion,
-                     material="A53Gr.B", quantity=1,
+                     material=_SUPPORT_PIPE_MATERIAL, quantity=1,
                      unit_weight=2.0, unit="SET")
     result.entries[-1].remark = f"Trunnion {trunnion}, E={E}mm, 需 D-72/73/74 校核"
 
     # ④ C/S Shim
     add_plate_entry(result, plate_a=member_data["C"], plate_b=member_data["D"],
                     plate_thickness=6, plate_name="C/S SHIM",
-                    material="A36/SS400", plate_qty=1)
+                    material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
     result.entries[-1].remark = "現場微調用"
 
     # ⑤ M.B. (3/4"×50)
     add_custom_entry(result, name="M.BOLT", spec='3/4"x50',
-                     material="SUS304", quantity=2,
+                     material=_ANCHOR_BOLT_MATERIAL, quantity=2,
                      unit_weight=0.8, unit="SET")
     result.entries[-1].remark = "Ø22 孔固定"
 
