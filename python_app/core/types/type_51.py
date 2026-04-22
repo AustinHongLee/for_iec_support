@@ -17,8 +17,24 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.type51_table import get_type51_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -43,7 +59,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         # ≤3": Flat Bar
         add_plate_entry(result, plate_a=h_val, plate_b=50,
                         plate_thickness=9, plate_name="FLAT BAR",
-                        material="A36/SS400", plate_qty=2)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"鞍座, {h_val}x50x9, 全焊接(6V), ×2"
     elif member is not None:
         # 4"+: 角鐵或槽鋼
@@ -55,14 +71,16 @@ def calculate(fullstring: str) -> AnalysisResult:
                 # 中管 (4"~24"): Member ×2, length = member 標準切割
                 # 長度由梁寬決定, 此處以 200mm 估算
                 add_steel_section_entry(result, section_type, section_dim,
-                                        200, steel_qty=2)
+                                        200, steel_qty=2,
+                                        material=_STRUCTURAL_MATERIAL)
                 result.entries[-1].remark = (
                     f"Member M, ×2, H={h_val}mm, 長度≤梁寬(NOTE 2)"
                 )
             else:
                 # 大管 (26"~42"): Member + 80° 鞍座
                 add_steel_section_entry(result, section_type, section_dim,
-                                        300, steel_qty=2)
+                                        300, steel_qty=2,
+                                        material=_STRUCTURAL_MATERIAL)
                 result.entries[-1].remark = (
                     f"Member M, ×2, 含80°鞍座, 長度≤梁寬"
                 )

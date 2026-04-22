@@ -21,8 +21,23 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type56_table import get_type56_data
 from data.pipe_table import get_pipe_od
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -46,7 +61,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         # 小管: PL 100×100×6
         add_plate_entry(result, plate_a=100, plate_b=100,
                         plate_thickness=6, plate_name="PLATE",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"管線檔止, PL 100×100×6, R={R}mm"
 
     elif line_size <= 4:
@@ -55,7 +70,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         B = data["B"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=6, plate_name="MEMBER C",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"FAB FROM 6t PLATE, {A}x{B}x6, R={R}mm"
 
     elif line_size <= 14:
@@ -66,7 +81,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         D = data["D"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=12, plate_name="MEMBER C",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"{C_desc}, A={A}, B={B}, D={D}, R={R}mm"
 
     elif line_size <= 24:
@@ -77,13 +92,13 @@ def calculate(fullstring: str) -> AnalysisResult:
         D = data["D"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=E, plate_name="MEMBER C",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"FAB FROM {E}t PLATE, A={A}, D={D}, R={R}mm"
 
         # 側板 ×2
         add_plate_entry(result, plate_a=D, plate_b=B,
                         plate_thickness=E, plate_name="SIDE PLATE",
-                        material="A36/SS400", plate_qty=2)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2"
 
     else:
@@ -95,18 +110,18 @@ def calculate(fullstring: str) -> AnalysisResult:
         E = data["E"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=E, plate_name="MEMBER C",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"主承載框, A={A}, B={B}, C={C}, R={R}mm"
 
         add_plate_entry(result, plate_a=D, plate_b=B,
                         plate_thickness=E, plate_name="SIDE PLATE",
-                        material="A36/SS400", plate_qty=2)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2"
 
         # 120° 鞍座
         add_plate_entry(result, plate_a=C, plate_b=C,
                         plate_thickness=E, plate_name="SADDLE (120°)",
-                        material="A36/SS400", plate_qty=1)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"120° 鞍座, 含 D-91 REIN. PAD"
 
         result.warnings.append(
