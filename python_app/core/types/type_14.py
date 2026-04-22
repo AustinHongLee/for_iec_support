@@ -50,7 +50,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     material_context = parse_hardware_material_context(
         overrides,
         legacy_material_keys=("material", "upper_material"),
-        legacy_material_kinds=(HardwareKind.UPPER_BRACKET, HardwareKind.ANCHOR_BOLT),
+        legacy_material_kinds=(HardwareKind.SUPPORT_PIPE, HardwareKind.ANCHOR_BOLT),
     )
     service = material_context.service
     material_overrides = material_context.material_overrides
@@ -82,9 +82,9 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     member_spec = data["member"]                         # e.g. "C100X50X5"
     channel_height = int(member_spec[1:4])               # "C100..." → 100
     channel_dim = member_spec[1:].replace("X", "*")      # "100*50*5"
-    support_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
+    support_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
     steel_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
-    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.SUPPORT_PLATE, service=service, overrides=material_overrides)
     anchor_material = _material(HardwareKind.ANCHOR_BOLT, service=service, overrides=material_overrides)
 
     # ── warnings: L/H 上限 ──

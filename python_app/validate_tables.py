@@ -474,7 +474,7 @@ try:
             "quantities": (1, 1, 4, 1, 1, 1),
             "upper_override": (
                 "SUS316",
-                "A36 / SS400",
+                "SUS316",
                 "SUS304",
                 "A36 / SS400",
                 "A36 / SS400",
@@ -512,7 +512,7 @@ try:
             "weights": (0.93, 2.16, 3.2, 0.6, 2.04, 1.59),
             "quantities": (1, 1, 4, 4, 1, 1),
             "upper_override": (
-                "A36 / SS400",
+                "SUS316",
                 "SUS316",
                 "A36 / SS400",
                 "A194 2H",
@@ -625,7 +625,7 @@ try:
             "materials": ("A36 / SS400", "A36 / SS400", "A36 / SS400"),
             "weights": (1.11, 3.62, 0.23),
             "quantities": (1, 1, 1),
-            "upper_override": ("A36 / SS400", "SUS316", "A36 / SS400"),
+            "upper_override": ("SUS316", "SUS316", "A36 / SS400"),
             "all_hardware": ("INCONEL", "INCONEL", "INCONEL"),
             "cryo": ("A36 / SS400", "A36 / SS400", "A36 / SS400"),
         },
@@ -758,32 +758,29 @@ try:
 
     _MIGRATED_TYPE_KIND_COUNTS = {
         "07-2B-20J": {
-            HardwareKind.UPPER_BRACKET: 1,
-            HardwareKind.STRUCTURAL_STRUT: 1,
-            HardwareKind.GUSSET_PLATE: 2,
+            HardwareKind.SUPPORT_PIPE: 2,
+            HardwareKind.SUPPORT_PLATE: 2,
         },
         "10-2B-05A": {
-            HardwareKind.UPPER_BRACKET: 1,
-            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.SUPPORT_PIPE: 2,
             HardwareKind.ANCHOR_BOLT: 1,
             HardwareKind.HEAVY_HEX_NUT: 1,
-            HardwareKind.GUSSET_PLATE: 1,
+            HardwareKind.SUPPORT_PLATE: 1,
         },
         "14-2B-1005": {
             HardwareKind.STRUCTURAL_STRUT: 1,
-            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.SUPPORT_PIPE: 1,
             HardwareKind.ANCHOR_BOLT: 1,
-            HardwareKind.GUSSET_PLATE: 4,
+            HardwareKind.SUPPORT_PLATE: 4,
         },
         "15-2B-1005": {
             HardwareKind.STRUCTURAL_STRUT: 1,
-            HardwareKind.UPPER_BRACKET: 1,
-            HardwareKind.GUSSET_PLATE: 4,
+            HardwareKind.SUPPORT_PIPE: 1,
+            HardwareKind.SUPPORT_PLATE: 4,
         },
         "16-2B-05": {
-            HardwareKind.STRUCTURAL_STRUT: 1,
-            HardwareKind.UPPER_BRACKET: 1,
-            HardwareKind.GUSSET_PLATE: 1,
+            HardwareKind.SUPPORT_PIPE: 2,
+            HardwareKind.SUPPORT_PLATE: 1,
         },
         "62-4B-5/8-05~30D-J(T)": {
             HardwareKind.HEAVY_HEX_NUT: 1,
@@ -815,11 +812,11 @@ try:
         "65-6B-1505": Counter(),
     }
     _LEGACY_SCOPES = {
-        "07-2B-20J": {HardwareKind.UPPER_BRACKET},
-        "10-2B-05A": {HardwareKind.UPPER_BRACKET},
-        "14-2B-1005": {HardwareKind.UPPER_BRACKET, HardwareKind.ANCHOR_BOLT},
-        "15-2B-1005": {HardwareKind.UPPER_BRACKET},
-        "16-2B-05": {HardwareKind.UPPER_BRACKET},
+        "07-2B-20J": {HardwareKind.SUPPORT_PIPE},
+        "10-2B-05A": {HardwareKind.SUPPORT_PIPE},
+        "14-2B-1005": {HardwareKind.SUPPORT_PIPE, HardwareKind.ANCHOR_BOLT},
+        "15-2B-1005": {HardwareKind.SUPPORT_PIPE},
+        "16-2B-05": {HardwareKind.SUPPORT_PIPE},
     }
     _LEGACY_GLOBAL_CASES = {
         "62-4B-5/8-05~30D-J(T)",
@@ -830,6 +827,8 @@ try:
         "threaded_rod": "ROD_KIND",
         "heavy_hex_nut": "NUT_KIND",
         "upper_bracket": "UPPER_KIND",
+        "support_pipe": "SUPPORT_PIPE_KIND",
+        "support_plate": "SUPPORT_PLATE_KIND",
         "anchor_bolt": "ANCHOR_KIND",
         "gusset_plate": "PLATE_KIND",
         "structural_strut": "STRUT_KIND",
@@ -844,6 +843,8 @@ try:
         HardwareKind.THREADED_ROD: "ROD_KIND",
         HardwareKind.HEAVY_HEX_NUT: "NUT_KIND",
         HardwareKind.UPPER_BRACKET: "UPPER_KIND",
+        HardwareKind.SUPPORT_PIPE: "SUPPORT_PIPE_KIND",
+        HardwareKind.SUPPORT_PLATE: "SUPPORT_PLATE_KIND",
         HardwareKind.ANCHOR_BOLT: "ANCHOR_KIND",
         HardwareKind.GUSSET_PLATE: "PLATE_KIND",
         HardwareKind.STRUCTURAL_STRUT: "STRUT_KIND",
@@ -856,9 +857,9 @@ try:
     }
     _PARTIAL_PER_KIND_EXPECTED = {
         HardwareKind.THREADED_ROD: "ROD_KIND",
-        HardwareKind.UPPER_BRACKET: "UPPER_KIND",
+        HardwareKind.SUPPORT_PIPE: "SUPPORT_PIPE_KIND",
+        HardwareKind.SUPPORT_PLATE: "SUPPORT_PLATE_KIND",
         HardwareKind.CLAMP_BODY: "CLAMP_KIND",
-        HardwareKind.GUSSET_PLATE: "PLATE_KIND",
     }
     _PARTIAL_PER_KIND_OVERRIDE = {
         kind.value: material

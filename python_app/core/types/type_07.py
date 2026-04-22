@@ -47,7 +47,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     material_context = parse_hardware_material_context(
         overrides,
         legacy_material_keys=("material", "upper_material"),
-        legacy_material_kinds=(HardwareKind.UPPER_BRACKET,),
+        legacy_material_kinds=(HardwareKind.SUPPORT_PIPE,),
     )
     service = material_context.service
     material_overrides = material_context.material_overrides
@@ -90,9 +90,9 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     m42_data = get_m42_data(pipe_c_val)
     m42_plate_thickness = m42_data["plate_thickness"]
 
-    upper_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
-    support_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
-    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    upper_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
+    support_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.SUPPORT_PLATE, service=service, overrides=material_overrides)
 
     # 1. Pipe B (dummy): L + 100
     pipe_b_length = L + 100

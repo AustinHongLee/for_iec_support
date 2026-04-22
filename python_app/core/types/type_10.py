@@ -48,7 +48,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     material_context = parse_hardware_material_context(
         overrides,
         legacy_material_keys=("material", "upper_material"),
-        legacy_material_kinds=(HardwareKind.UPPER_BRACKET,),
+        legacy_material_kinds=(HardwareKind.SUPPORT_PIPE,),
     )
     service = material_context.service
     material_overrides = material_context.material_overrides
@@ -71,9 +71,9 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     letter = part3[-1]
     h_val = int(part3[:-1]) * 100
 
-    upper_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
-    support_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
-    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    upper_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
+    support_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.SUPPORT_PLATE, service=service, overrides=material_overrides)
     bolt_material = _material(HardwareKind.ANCHOR_BOLT, service=service, overrides=material_overrides)
     nut_material = _material(HardwareKind.HEAVY_HEX_NUT, service=service, overrides=material_overrides)
 
