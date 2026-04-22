@@ -20,8 +20,26 @@ from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
 from ..m42 import perform_action_by_letter
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type08_table import get_type08_data
 from data.m42_table import get_m42_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+
 
 _MAX_H = 1500
 _MAX_L = 1000
@@ -75,19 +93,22 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 1. Pipe A (支撐柱): H - 6(top plate厚) - channel高/2 - M42板厚
     top_plate_t = 6
     pipe_length = h_val - top_plate_t - channel_height / 2 - m42_plate_thickness
-    add_pipe_entry(result, str(pipe_size), pipe_sch, pipe_length, "A53Gr.B")
+    add_pipe_entry(result, str(pipe_size), pipe_sch, pipe_length, _SUPPORT_PIPE_MATERIAL)
 
     # 2. Channel N: 長度 = L
     channel_dim = member_n[1:]  # C100*50*5 -> 100*50*5
-    add_steel_section_entry(result, "Channel", channel_dim, l_val)
+    add_steel_section_entry(
+        result, "Channel", channel_dim, l_val,
+        material=_STRUCTURAL_MATERIAL,
+    )
 
     # 3. M42 底板 (用 pipe size 查表)
     perform_action_by_letter(result, letter, pipe_size)
 
     # 4. Plate(STOPPER): K × M × 6mm
-    add_plate_entry(result, k, m, 6, "Plate_STOPPER")
+    add_plate_entry(result, k, m, 6, "Plate_STOPPER", material=_SUPPORT_PLATE_MATERIAL)
 
     # 5. Plate(TOP): B × B × 6mm
-    add_plate_entry(result, b, b, 6, "Plate_TOP")
+    add_plate_entry(result, b, b, 6, "Plate_TOP", material=_SUPPORT_PLATE_MATERIAL)
 
     return result

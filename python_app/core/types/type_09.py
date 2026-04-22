@@ -18,7 +18,26 @@ from ..models import AnalysisResult, AnalysisEntry
 from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..m42 import perform_action_by_letter
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    MaterialSpec,
+    resolve_hardware_material,
+)
 from data.type09_table import get_type09_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_THREADED_ROD_MATERIAL = _material_spec(HardwareKind.THREADED_ROD, "A307Gr.B(HDG)")
+_HEX_NUT_MATERIAL = _material_spec(HardwareKind.HEAVY_HEX_NUT, "A307Gr.B(HDG)")
+
 
 _MAX_H = 1500
 _ALLOWED_M42_LETTERS = {"B", "H"}
@@ -46,6 +65,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # 取得上層材質
     from ..calculator import get_analysis_setting
     upper_material = overrides.get("upper_material") or get_analysis_setting("upper_material") or "SUS304"
+    upper_material_spec = _material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
 
     support_pipe = data["support_pipe"]  # 都是 2"
     pipe_sch = data["pipe_sch"]
@@ -63,31 +83,32 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # ── 1. Main Pipe (dummy) ──
     main_pipe_length = l_val + 100
-    add_pipe_entry(result, support_pipe, pipe_sch, main_pipe_length, upper_material)
+    add_pipe_entry(result, support_pipe, pipe_sch, main_pipe_length, upper_material_spec)
 
     # ── 2. Support Pipe ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        add_pipe_entry(result, support_pipe, pipe_sch, support_pipe_length, "A53Gr.B")
+        add_pipe_entry(result, support_pipe, pipe_sch, support_pipe_length, _SUPPORT_PIPE_MATERIAL)
 
     # ── 3. M42 底板 (用 support pipe size = 2") ──
     perform_action_by_letter(result, letter, support_pipe)
 
     # ── 4. M.B. (全牙螺桿) ──
-    _add_threaded_rod_entry(result)
+    _add_threaded_rod_entry(result, _THREADED_ROD_MATERIAL)
 
     # ── 5. Hex Nut (六角螺帽) ×2 ──
-    _add_hex_nut_entry(result)
+    _add_hex_nut_entry(result, _HEX_NUT_MATERIAL)
 
     return result
 
 
-def _add_threaded_rod_entry(result: AnalysisResult):
+def _add_threaded_rod_entry(result: AnalysisResult, material: MaterialSpec):
     """全牙螺桿: 1-5/8"×150L (FULL THREADED), A307Gr.B(HDG), 1 EA, ~1.6kg"""
     entry = AnalysisEntry()
     entry.name = "M.B.(FULL THREADED)"
     entry.spec = '1-5/8"*150L'
-    entry.material = "A307Gr.B(HDG)"
+    entry.material = material.name
+    entry.material_canonical_id = material.canonical_id
     entry.quantity = 1
     entry.unit_weight = 1.6
     entry.total_weight = 1.6
@@ -102,12 +123,13 @@ def _add_threaded_rod_entry(result: AnalysisResult):
     result.add_entry(entry)
 
 
-def _add_hex_nut_entry(result: AnalysisResult):
+def _add_hex_nut_entry(result: AnalysisResult, material: MaterialSpec):
     """六角螺帽: 1-5/8", A307Gr.B(HDG), 2 EA, ~0.4kg/顆"""
     entry = AnalysisEntry()
     entry.name = "HEX NUT"
     entry.spec = '1-5/8"'
-    entry.material = "A307Gr.B(HDG)"
+    entry.material = material.name
+    entry.material_canonical_id = material.canonical_id
     entry.quantity = 2
     entry.unit_weight = 0.4
     entry.total_weight = 0.8
