@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Mapping
+from typing import Iterable, Mapping
 
 
 class HardwareKind(str, Enum):
@@ -65,8 +65,128 @@ class HardwareMaterialOverrides:
     all_hardware: str | None = None
 
 
+@dataclass(frozen=True)
+class HardwareMaterialContext:
+    """Parsed override context for future Type migration.
+
+    Phase 1D-1 only centralizes parsing. Existing Type calculators continue to
+    use their local parsing until follow-up phases opt in.
+    """
+
+    service: ServiceClass = ServiceClass.AMBIENT
+    material_overrides: HardwareMaterialOverrides | None = None
+
+
 class MaterialResolutionError(ValueError):
     """Raised when no material can be resolved for a hardware kind."""
+
+
+def _first_present(overrides: Mapping[str, object], keys: Iterable[str]) -> object | None:
+    for key in keys:
+        value = overrides.get(key)
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def _coerce_service_class(value: object) -> ServiceClass:
+    if isinstance(value, ServiceClass):
+        return value
+    token = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    return ServiceClass(token)
+
+
+def _coerce_hardware_kind(value: object) -> HardwareKind:
+    if isinstance(value, HardwareKind):
+        return value
+    token = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    return HardwareKind(token)
+
+
+def parse_service_class(
+    overrides: Mapping[str, object] | None,
+    *,
+    keys: tuple[str, ...] = ("service", "service_class"),
+    default: ServiceClass = ServiceClass.AMBIENT,
+) -> ServiceClass:
+    """Parse service class from override dict without consulting pipe material."""
+
+    if not overrides:
+        return default
+    value = _first_present(overrides, keys)
+    if value is None:
+        return default
+    return _coerce_service_class(value)
+
+
+def parse_hardware_material_overrides(
+    overrides: Mapping[str, object] | None,
+    *,
+    existing_key: str = "hardware_material_overrides",
+    per_kind_key: str = "hardware_material_by_kind",
+    all_hardware_keys: tuple[str, ...] = ("hardware_material",),
+    legacy_material_keys: tuple[str, ...] = (),
+    legacy_material_kinds: Iterable[HardwareKind] = (),
+) -> HardwareMaterialOverrides | None:
+    """Parse hardware-only material overrides.
+
+    The parser intentionally ignores ``pipe_material``. Legacy material keys are
+    opt-in and must be scoped to explicit hardware kinds so future migrations
+    can preserve behavior without broad fallback.
+    """
+
+    if not overrides:
+        return None
+
+    existing = overrides.get(existing_key)
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind: dict[HardwareKind, str] = {}
+    raw_per_kind = overrides.get(per_kind_key) or {}
+    if not isinstance(raw_per_kind, Mapping):
+        raise TypeError(f"{per_kind_key} must be a mapping")
+
+    for key, material in raw_per_kind.items():
+        if material is None or material == "":
+            continue
+        per_kind[_coerce_hardware_kind(key)] = str(material)
+
+    legacy_material = _first_present(overrides, legacy_material_keys)
+    if legacy_material is not None:
+        for kind in legacy_material_kinds:
+            per_kind.setdefault(kind, str(legacy_material))
+
+    all_hardware = _first_present(overrides, all_hardware_keys)
+    all_hardware_str = str(all_hardware) if all_hardware is not None else None
+    if not per_kind and all_hardware_str is None:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware_str)
+
+
+def parse_hardware_material_context(
+    overrides: Mapping[str, object] | None,
+    *,
+    service_keys: tuple[str, ...] = ("service", "service_class"),
+    existing_key: str = "hardware_material_overrides",
+    per_kind_key: str = "hardware_material_by_kind",
+    all_hardware_keys: tuple[str, ...] = ("hardware_material",),
+    legacy_material_keys: tuple[str, ...] = (),
+    legacy_material_kinds: Iterable[HardwareKind] = (),
+) -> HardwareMaterialContext:
+    """Parse service and hardware material overrides as one future contract."""
+
+    return HardwareMaterialContext(
+        service=parse_service_class(overrides, keys=service_keys),
+        material_overrides=parse_hardware_material_overrides(
+            overrides,
+            existing_key=existing_key,
+            per_kind_key=per_kind_key,
+            all_hardware_keys=all_hardware_keys,
+            legacy_material_keys=legacy_material_keys,
+            legacy_material_kinds=legacy_material_kinds,
+        ),
+    )
 
 
 def resolve_hardware_material(
