@@ -22,7 +22,36 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..m42 import perform_action_by_letter
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type11_table import get_type11_data, get_type11_hardware_item, build_type11_spring_item
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+def _type11_item_material(item: dict):
+    material_name = item["material"]
+    item_name = item["name"]
+    if item_name == "M.B.(FULL THREADED)":
+        kind = HardwareKind.THREADED_ROD
+    elif item_name == "HEAVY HEX NUT":
+        kind = HardwareKind.HEAVY_HEX_NUT
+    elif item_name == "WASHER":
+        kind = HardwareKind.SUPPORT_PLATE
+    elif item_name == "SPRING":
+        kind = HardwareKind.SPRING_CAN
+    else:
+        kind = HardwareKind.SUPPORT_PLATE
+    return _material_spec(kind, material_name)
+
 
 _UPPER_PIPE_SIZE = 1.5
 _UPPER_PIPE_SCH = "SCH.80"
@@ -55,6 +84,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # 取得上層材質
     from ..calculator import get_analysis_setting
     upper_material = overrides.get("upper_material") or get_analysis_setting("upper_material") or "SUS304"
+    upper_material_spec = _material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
 
     l_val = data["L"]
 
@@ -68,13 +98,14 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # ── 1. Upper Pipe (dummy, 1.5" SCH.80) ──
     main_pipe_length = l_val + 100
-    add_pipe_entry(result, _UPPER_PIPE_SIZE, _UPPER_PIPE_SCH, main_pipe_length, upper_material)
+    add_pipe_entry(result, _UPPER_PIPE_SIZE, _UPPER_PIPE_SCH, main_pipe_length, upper_material_spec)
 
     # ── 2. Support Pipe (vertical, 2" SCH.40) ──
     # VBA: H*100 - 100 - (MB_LENGTH - plate_t)
     support_pipe_length = h_val - 100 - (_MB_LENGTH - _PLATE_T)
     if support_pipe_length > 0:
-        add_pipe_entry(result, _SUPPORT_PIPE_SIZE, _SUPPORT_PIPE_SCH, support_pipe_length, "A53Gr.B")
+        support_material = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+        add_pipe_entry(result, _SUPPORT_PIPE_SIZE, _SUPPORT_PIPE_SCH, support_pipe_length, support_material)
 
     # ── 3. M42 底板 (用 support pipe size = 2") ──
     perform_action_by_letter(result, letter, _SUPPORT_PIPE_SIZE)
@@ -122,7 +153,7 @@ def _add_type11_item(result: AnalysisResult, item: dict | None):
         result,
         item["name"],
         item["spec"],
-        item["material"],
+        _type11_item_material(item),
         item["quantity"],
         item["unit_weight_kg"],
         item["unit"],

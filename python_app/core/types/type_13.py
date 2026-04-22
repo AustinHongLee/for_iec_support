@@ -36,9 +36,28 @@ from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
 from ..component_rules import component_or_estimated_clamp_weight
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type13_table import get_type13_data
 from data.m47_table import build_m47_item
 from data.m4_table import build_m4_item
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_CLAMP_MATERIAL = _material_spec(HardwareKind.CLAMP_BODY, "A36/SS400")
+_M47_MATERIAL = _material_spec(HardwareKind.COLD_SHOE_INSULATION_CLAMP, "M-47")
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+
 
 _MAX_H = 1500
 _COVER_PLATE_SIZE = 75   # mm, square
@@ -93,7 +112,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 3. Supporting Pipe B (垂直柱) ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, "A53Gr.B")
+        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, _SUPPORT_PIPE_MATERIAL)
 
     # ── 4. Plate P (側板, 碳鋼) ──
     add_plate_entry(
@@ -102,7 +121,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=plate_wid,
         plate_thickness=plate_t,
         plate_name="Plate_P",
-        material="A36/SS400",
+        material=_SUPPORT_PLATE_MATERIAL,
     )
 
     # ── 5. Cover Plate (蓋板, 75×75×6t, 碳鋼) ──
@@ -112,7 +131,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=_COVER_PLATE_SIZE,
         plate_thickness=_COVER_PLATE_T,
         plate_name="COVER_PL",
-        material="A36/SS400",
+        material=_SUPPORT_PLATE_MATERIAL,
     )
 
     # ── 6. M42 底板 (用 pipe_size_b 查表) ──
@@ -132,7 +151,8 @@ def _add_pipe_clamp_entry(result: AnalysisResult, line_size: float):
     entry = AnalysisEntry()
     entry.name = "PIPE CLAMP"
     entry.spec = spec
-    entry.material = "A36/SS400"
+    entry.material = _CLAMP_MATERIAL.name
+    entry.material_canonical_id = _CLAMP_MATERIAL.canonical_id
     entry.quantity = 1
     entry.unit_weight = unit_w
     entry.total_weight = unit_w
@@ -170,7 +190,8 @@ def _add_non_asbestos_sheet_entry(result: AnalysisResult, line_size: float):
     entry = AnalysisEntry()
     entry.name = "NON-ASBESTOS"
     entry.spec = f"{w}×{l}×{thickness:g}t"
-    entry.material = "M-47"
+    entry.material = _M47_MATERIAL.name
+    entry.material_canonical_id = _M47_MATERIAL.canonical_id
     entry.quantity = 1
     entry.unit_weight = weight
     entry.total_weight = weight
