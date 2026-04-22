@@ -51,6 +51,7 @@ class MaterialSpec:
     """Resolved hardware material with provenance."""
 
     name: str
+    canonical_id: str
     source: str
     requires_review: bool = True
     notes: tuple[str, ...] = ()
@@ -82,6 +83,22 @@ class HardwareMaterialContext:
 
 class MaterialResolutionError(ValueError):
     """Raised when no material can be resolved for a hardware kind."""
+
+
+def _canonical_id_for_material(material_name: str, *, allow_unresolved: bool = False) -> str:
+    from core.material_identity import canonical_material_id, normalize_material_alias
+
+    canonical_id = canonical_material_id(material_name)
+    if canonical_id:
+        return canonical_id
+    if not allow_unresolved:
+        raise MaterialResolutionError(f"No canonical material identity for {material_name!r}")
+
+    token = normalize_material_alias(material_name)
+    token = token.replace(" / ", "_SLASH_")
+    token = "".join(char if char.isalnum() else "_" for char in token)
+    token = "_".join(part for part in token.split("_") if part)
+    return f"UNRESOLVED_{token or 'MATERIAL'}"
 
 
 def _first_present(overrides: Mapping[str, object], keys: Iterable[str]) -> object | None:
@@ -227,14 +244,18 @@ def resolve_hardware_material(
 
     if overrides:
         if kind in overrides.per_kind:
+            material = overrides.per_kind[kind]
             return MaterialSpec(
-                name=overrides.per_kind[kind],
+                name=material,
+                canonical_id=_canonical_id_for_material(material, allow_unresolved=True),
                 source=f"override.per_kind.{kind.value}",
                 requires_review=False,
             )
         if overrides.all_hardware:
+            material = overrides.all_hardware
             return MaterialSpec(
-                name=overrides.all_hardware,
+                name=material,
+                canonical_id=_canonical_id_for_material(material, allow_unresolved=True),
                 source="override.all_hardware",
                 requires_review=False,
             )
@@ -253,6 +274,7 @@ def resolve_hardware_material(
 
     return MaterialSpec(
         name=material,
+        canonical_id=_canonical_id_for_material(material),
         source="engineering_material_spec.DEFAULT_HARDWARE_MATERIAL",
         requires_review=True,
         notes=("Phase 0B scaffold default; review before production use.",),

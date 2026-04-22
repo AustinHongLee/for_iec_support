@@ -274,12 +274,29 @@ try:
     assert estimate_eye_nut_weight('5/8"') >= 0.15, "eye nut estimate failed"
     assert estimate_m28_weight('1 1/8"') >= 0.3, "M-28 estimate failed"
     override = HardwareMaterialOverrides(all_hardware="SUS316")
-    assert resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=override).name == "SUS316", "hardware material override failed"
-    assert resolve_hardware_material(HardwareKind.THREADED_ROD, service=ServiceClass.CRYO).name == "A320 L7", "hardware service material failed"
-    assert resolve_hardware_material(HardwareKind.SUPPORT_PIPE).name == "A36 / SS400", "support pipe default failed"
-    assert resolve_hardware_material(HardwareKind.SUPPORT_PIPE, service=ServiceClass.HIGH_TEMP).name == "SA-106 Gr.B", "support pipe high-temp default failed"
-    assert resolve_hardware_material(HardwareKind.SUPPORT_PLATE).name == "A36 / SS400", "support plate default failed"
-    assert resolve_hardware_material(HardwareKind.SUPPORT_PLATE, service=ServiceClass.HIGH_TEMP).name == "A36 / SS400", "support plate high-temp default failed"
+    override_spec = resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=override)
+    cryo_rod_spec = resolve_hardware_material(HardwareKind.THREADED_ROD, service=ServiceClass.CRYO)
+    support_pipe_spec = resolve_hardware_material(HardwareKind.SUPPORT_PIPE)
+    high_temp_pipe_spec = resolve_hardware_material(HardwareKind.SUPPORT_PIPE, service=ServiceClass.HIGH_TEMP)
+    support_plate_spec = resolve_hardware_material(HardwareKind.SUPPORT_PLATE)
+    high_temp_plate_spec = resolve_hardware_material(HardwareKind.SUPPORT_PLATE, service=ServiceClass.HIGH_TEMP)
+    unknown_override_spec = resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=HardwareMaterialOverrides(all_hardware="GLOBAL"))
+    assert override_spec.name == "SUS316" and override_spec.canonical_id == "JIS_SUS316", "hardware material override failed"
+    assert cryo_rod_spec.name == "A320 L7" and cryo_rod_spec.canonical_id == "ASTM_A320_L7", "hardware service material failed"
+    assert support_pipe_spec.name == "A36 / SS400" and support_pipe_spec.canonical_id == "ASTM_A36_OR_JIS_SS400", "support pipe default failed"
+    assert high_temp_pipe_spec.name == "SA-106 Gr.B" and high_temp_pipe_spec.canonical_id == "ASTM_SA_106_GR_B", "support pipe high-temp default failed"
+    assert support_plate_spec.name == "A36 / SS400" and support_plate_spec.canonical_id == "ASTM_A36_OR_JIS_SS400", "support plate default failed"
+    assert high_temp_plate_spec.name == "A36 / SS400" and high_temp_plate_spec.canonical_id == "ASTM_A36_OR_JIS_SS400", "support plate high-temp default failed"
+    assert unknown_override_spec.name == "GLOBAL" and unknown_override_spec.canonical_id == "UNRESOLVED_GLOBAL", "unknown override canonical fallback failed"
+    from core.material_identity import canonical_material_id
+    from data.engineering_material_spec import DEFAULT_HARDWARE_MATERIAL
+    for kind, per_service in DEFAULT_HARDWARE_MATERIAL.items():
+        for service_key, material_name in per_service.items():
+            service = ServiceClass.AMBIENT if service_key == "*" else service_key
+            spec = resolve_hardware_material(kind, service=service)
+            assert spec.name == material_name, f"{kind.value}/{service_key} material name changed: {spec}"
+            assert spec.canonical_id == canonical_material_id(material_name), f"{kind.value}/{service_key} canonical_id failed: {spec}"
+    print("v phase 2C MaterialSpec canonical_id OK")
     assert parse_service_class({"service_class": "high-temp"}) == ServiceClass.HIGH_TEMP, "service parser failed"
     empty_context = parse_hardware_material_context({})
     assert empty_context.service == ServiceClass.AMBIENT, "empty override service parser failed"
