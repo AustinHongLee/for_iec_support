@@ -276,6 +276,10 @@ try:
     override = HardwareMaterialOverrides(all_hardware="SUS316")
     assert resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=override).name == "SUS316", "hardware material override failed"
     assert resolve_hardware_material(HardwareKind.THREADED_ROD, service=ServiceClass.CRYO).name == "A320 L7", "hardware service material failed"
+    assert resolve_hardware_material(HardwareKind.SUPPORT_PIPE).name == "A36 / SS400", "support pipe default failed"
+    assert resolve_hardware_material(HardwareKind.SUPPORT_PIPE, service=ServiceClass.HIGH_TEMP).name == "SA-240", "support pipe high-temp default failed"
+    assert resolve_hardware_material(HardwareKind.SUPPORT_PLATE).name == "A36 / SS400", "support plate default failed"
+    assert resolve_hardware_material(HardwareKind.SUPPORT_PLATE, service=ServiceClass.HIGH_TEMP).name == "A36 / SS400", "support plate high-temp default failed"
     assert parse_service_class({"service_class": "high-temp"}) == ServiceClass.HIGH_TEMP, "service parser failed"
     empty_context = parse_hardware_material_context({})
     assert empty_context.service == ServiceClass.AMBIENT, "empty override service parser failed"

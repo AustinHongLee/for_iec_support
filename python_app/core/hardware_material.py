@@ -22,6 +22,8 @@ class HardwareKind(str, Enum):
     CLEVIS = "clevis"
     TURNBUCKLE = "turnbuckle"
     UPPER_BRACKET = "upper_bracket"
+    SUPPORT_PIPE = "support_pipe"
+    SUPPORT_PLATE = "support_plate"
     PLATE_LUG = "plate_lug"
     BEAM_ATTACHMENT = "beam_attachment"
     STRUCTURAL_STRUT = "structural_strut"

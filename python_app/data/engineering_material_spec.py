@@ -45,6 +45,13 @@ DEFAULT_HARDWARE_MATERIAL: dict[HardwareKind, dict[ServiceClass | str, str]] = {
         ServiceClass.HIGH_TEMP: "SA-240",
         "*": "A36 / SS400",
     },
+    HardwareKind.SUPPORT_PIPE: {
+        ServiceClass.HIGH_TEMP: "SA-240",
+        "*": "A36 / SS400",
+    },
+    HardwareKind.SUPPORT_PLATE: {
+        "*": "A36 / SS400",
+    },
     HardwareKind.PLATE_LUG: {
         "*": "A36 / SS400",
     },
