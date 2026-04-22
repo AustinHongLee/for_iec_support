@@ -15,7 +15,7 @@ Heavy duty structural sliding support, steel-structure mounted
   - P 值不同
 
 構件 (VBA 對照):
-  1. Supporting Pipe A (垂直柱): H - 2×F - channelHeight, pipe_sch, material by resolver
+  1. Supporting Pipe A (垂直柱): H - 2×F - channelHeight, pipe_sch, SUPPORT_PIPE material by resolver
      ※ 長度 ≤ 0 時跳過
   2. Channel (MEMBER "N"): length = L, material by resolver
   3. Wing Plate: Q × P × F, material by resolver
