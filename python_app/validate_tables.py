@@ -745,6 +745,197 @@ try:
 except Exception as e:
     print(f"X phase 1D-0 material/override snapshot baseline ERROR: {e}")
 
+# Phase 1D-2C override consistency across migrated material Types
+try:
+    from collections import Counter
+
+    from core.calculator import analyze_single
+    from core.hardware_material import HardwareKind, ServiceClass, resolve_hardware_material
+
+    _MIGRATED_TYPE_KIND_COUNTS = {
+        "07-2B-20J": {
+            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.GUSSET_PLATE: 2,
+        },
+        "10-2B-05A": {
+            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.ANCHOR_BOLT: 1,
+            HardwareKind.HEAVY_HEX_NUT: 1,
+            HardwareKind.GUSSET_PLATE: 1,
+        },
+        "14-2B-1005": {
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.ANCHOR_BOLT: 1,
+            HardwareKind.GUSSET_PLATE: 4,
+        },
+        "15-2B-1005": {
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.GUSSET_PLATE: 4,
+        },
+        "16-2B-05": {
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.UPPER_BRACKET: 1,
+            HardwareKind.GUSSET_PLATE: 1,
+        },
+        "62-4B-5/8-05~30D-J(T)": {
+            HardwareKind.HEAVY_HEX_NUT: 1,
+            HardwareKind.CLAMP_BODY: 1,
+            HardwareKind.THREADED_ROD: 1,
+            HardwareKind.TURNBUCKLE: 1,
+            HardwareKind.BEAM_ATTACHMENT: 1,
+            HardwareKind.WELDLESS_EYE_NUT: 1,
+        },
+        "64-2-8-05A": {
+            HardwareKind.CLAMP_BODY: 2,
+            HardwareKind.THREADED_ROD: 1,
+            HardwareKind.WELDLESS_EYE_NUT: 1,
+        },
+        "65-6B-1505": {
+            HardwareKind.STRUCTURAL_STRUT: 1,
+            HardwareKind.BEAM_ATTACHMENT: 1,
+            HardwareKind.THREADED_ROD: 1,
+        },
+    }
+    _UNMANAGED_MATERIAL_COUNTS = {
+        "07-2B-20J": Counter({"SUS304": 1, "A36/SS400": 1}),
+        "10-2B-05A": Counter({"A36/SS400": 1}),
+        "14-2B-1005": Counter(),
+        "15-2B-1005": Counter(),
+        "16-2B-05": Counter(),
+        "62-4B-5/8-05~30D-J(T)": Counter(),
+        "64-2-8-05A": Counter(),
+        "65-6B-1505": Counter(),
+    }
+    _LEGACY_SCOPES = {
+        "07-2B-20J": {HardwareKind.UPPER_BRACKET},
+        "10-2B-05A": {HardwareKind.UPPER_BRACKET},
+        "14-2B-1005": {HardwareKind.UPPER_BRACKET, HardwareKind.ANCHOR_BOLT},
+        "15-2B-1005": {HardwareKind.UPPER_BRACKET},
+        "16-2B-05": {HardwareKind.UPPER_BRACKET},
+    }
+    _LEGACY_GLOBAL_CASES = {
+        "62-4B-5/8-05~30D-J(T)",
+        "64-2-8-05A",
+        "65-6B-1505",
+    }
+    _FULL_PER_KIND_OVERRIDE = {
+        "threaded_rod": "ROD_KIND",
+        "heavy_hex_nut": "NUT_KIND",
+        "upper_bracket": "UPPER_KIND",
+        "anchor_bolt": "ANCHOR_KIND",
+        "gusset_plate": "PLATE_KIND",
+        "structural_strut": "STRUT_KIND",
+        "beam_attachment": "BEAM_KIND",
+        "clamp_body": "CLAMP_KIND",
+        "weldless_eye_nut": "EYE_KIND",
+        "turnbuckle": "TURN_KIND",
+        "clevis": "CLEVIS_KIND",
+        "plate_lug": "LUG_KIND",
+    }
+    _FULL_PER_KIND_EXPECTED = {
+        HardwareKind.THREADED_ROD: "ROD_KIND",
+        HardwareKind.HEAVY_HEX_NUT: "NUT_KIND",
+        HardwareKind.UPPER_BRACKET: "UPPER_KIND",
+        HardwareKind.ANCHOR_BOLT: "ANCHOR_KIND",
+        HardwareKind.GUSSET_PLATE: "PLATE_KIND",
+        HardwareKind.STRUCTURAL_STRUT: "STRUT_KIND",
+        HardwareKind.BEAM_ATTACHMENT: "BEAM_KIND",
+        HardwareKind.CLAMP_BODY: "CLAMP_KIND",
+        HardwareKind.WELDLESS_EYE_NUT: "EYE_KIND",
+        HardwareKind.TURNBUCKLE: "TURN_KIND",
+        HardwareKind.CLEVIS: "CLEVIS_KIND",
+        HardwareKind.PLATE_LUG: "LUG_KIND",
+    }
+    _PARTIAL_PER_KIND_EXPECTED = {
+        HardwareKind.THREADED_ROD: "ROD_KIND",
+        HardwareKind.UPPER_BRACKET: "UPPER_KIND",
+        HardwareKind.CLAMP_BODY: "CLAMP_KIND",
+        HardwareKind.GUSSET_PLATE: "PLATE_KIND",
+    }
+    _PARTIAL_PER_KIND_OVERRIDE = {
+        kind.value: material
+        for kind, material in _PARTIAL_PER_KIND_EXPECTED.items()
+    }
+
+    def _entry_material_counter(designation, overrides=None):
+        result = analyze_single(designation, overrides or {})
+        assert not result.error, f"{designation} override consistency error: {result.error}"
+        return Counter(entry.material for entry in result.entries)
+
+    def _default_material(kind, service):
+        return resolve_hardware_material(kind, service=service).name
+
+    def _expected_material_counter(
+        designation,
+        *,
+        service=ServiceClass.AMBIENT,
+        global_material=None,
+        per_kind=None,
+        legacy_material=None,
+    ):
+        per_kind = per_kind or {}
+        kind_counts = _MIGRATED_TYPE_KIND_COUNTS[designation]
+        expected = Counter(_UNMANAGED_MATERIAL_COUNTS[designation])
+        legacy_scope = _LEGACY_SCOPES.get(designation, set())
+        legacy_is_global = designation in _LEGACY_GLOBAL_CASES
+
+        for kind, count in kind_counts.items():
+            if kind in per_kind:
+                material = per_kind[kind]
+            elif global_material is not None:
+                material = global_material
+            elif legacy_material is not None and (legacy_is_global or kind in legacy_scope):
+                material = legacy_material
+            else:
+                material = _default_material(kind, service)
+            expected[material] += count
+        return expected
+
+    for designation in _MIGRATED_TYPE_KIND_COUNTS:
+        assert _entry_material_counter(designation, {"pipe_material": "A335 P11"}) == _expected_material_counter(designation), f"{designation} pipe_material polluted hardware"
+
+        assert _entry_material_counter(designation, {"hardware_material": "GLOBAL"}) == _expected_material_counter(designation, global_material="GLOBAL"), f"{designation} global hardware override failed"
+
+        assert _entry_material_counter(designation, {"hardware_material_by_kind": _FULL_PER_KIND_OVERRIDE}) == _expected_material_counter(designation, per_kind=_FULL_PER_KIND_EXPECTED), f"{designation} per-kind hardware override failed"
+
+        mixed_overrides = {
+            "hardware_material": "GLOBAL",
+            "hardware_material_by_kind": _PARTIAL_PER_KIND_OVERRIDE,
+        }
+        assert _entry_material_counter(designation, mixed_overrides) == _expected_material_counter(designation, global_material="GLOBAL", per_kind=_PARTIAL_PER_KIND_EXPECTED), f"{designation} per-kind should override global"
+
+        assert _entry_material_counter(designation, {"material": "LEGACY_M"}) == _expected_material_counter(designation, legacy_material="LEGACY_M"), f"{designation} legacy material conversion failed"
+
+        assert _entry_material_counter(designation, {"upper_material": "LEGACY_U"}) == _expected_material_counter(designation, legacy_material="LEGACY_U"), f"{designation} legacy upper_material conversion failed"
+
+        high_temp = {"service": "high_temp"}
+        assert _entry_material_counter(designation, high_temp) == _expected_material_counter(designation, service=ServiceClass.HIGH_TEMP), f"{designation} high-temp service defaults failed"
+
+        high_temp_with_per_kind = {
+            "service": "high_temp",
+            "hardware_material_by_kind": {"threaded_rod": "ROD_KIND"},
+        }
+        assert _entry_material_counter(designation, high_temp_with_per_kind) == _expected_material_counter(
+            designation,
+            service=ServiceClass.HIGH_TEMP,
+            per_kind={HardwareKind.THREADED_ROD: "ROD_KIND"},
+        ), f"{designation} service default broken by per-kind override"
+
+        high_temp_with_legacy = {"service": "high_temp", "upper_material": "LEGACY_U"}
+        assert _entry_material_counter(designation, high_temp_with_legacy) == _expected_material_counter(
+            designation,
+            service=ServiceClass.HIGH_TEMP,
+            legacy_material="LEGACY_U",
+        ), f"{designation} service default broken by legacy override"
+
+    print("v phase 1D-2C override consistency OK")
+except Exception as e:
+    print(f"X phase 1D-2C override consistency ERROR: {e}")
+
 # Test type72 strap support table/calculator
 try:
     from core.calculator import analyze_single
