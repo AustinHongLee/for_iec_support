@@ -17,8 +17,7 @@ from ..component_rules import (
 )
 from ..hardware_material import (
     HardwareKind,
-    HardwareMaterialOverrides,
-    ServiceClass,
+    parse_hardware_material_context,
     resolve_hardware_material,
 )
 from data.type64_table import get_type64_rod, get_type64_figure
@@ -28,42 +27,11 @@ from data.m4_table import build_m4_item
 from data.m6_table import build_m6_item
 
 
-def _service_from_overrides(overrides: dict | None) -> ServiceClass:
-    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
-    if isinstance(value, ServiceClass):
-        return value
-    if value:
-        return ServiceClass(str(value).strip().lower().replace("-", "_"))
-    return ServiceClass.AMBIENT
-
-
-def _material_overrides_from_dict(overrides: dict | None) -> HardwareMaterialOverrides | None:
-    if not overrides:
-        return None
-    existing = overrides.get("hardware_material_overrides")
-    if isinstance(existing, HardwareMaterialOverrides):
-        return existing
-
-    per_kind = {}
-    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
-        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
-        per_kind[kind] = material
-
-    all_hardware = (
-        overrides.get("hardware_material")
-        or overrides.get("material")
-        or overrides.get("upper_material")
-    )
-    if not per_kind and not all_hardware:
-        return None
-    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
-
-
 def _material(
     kind: HardwareKind,
     *,
-    service: ServiceClass,
-    overrides: HardwareMaterialOverrides | None,
+    service,
+    overrides,
 ) -> str:
     return resolve_hardware_material(kind, service=service, overrides=overrides).name
 
@@ -81,8 +49,12 @@ def _build_clamp_remark(source: str, clamp_item: dict | None) -> str:
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
-    service = _service_from_overrides(overrides)
-    material_overrides = _material_overrides_from_dict(overrides)
+    material_context = parse_hardware_material_context(
+        overrides,
+        all_hardware_keys=("hardware_material", "material", "upper_material"),
+    )
+    service = material_context.service
+    material_overrides = material_context.material_overrides
     rod_material = _material(HardwareKind.THREADED_ROD, service=service, overrides=material_overrides)
     eye_nut_material = _material(HardwareKind.WELDLESS_EYE_NUT, service=service, overrides=material_overrides)
     clamp_material = _material(HardwareKind.CLAMP_BODY, service=service, overrides=material_overrides)
