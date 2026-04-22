@@ -402,6 +402,82 @@ try:
 except Exception as e:
     print(f"X phase 2I pipe/plate MaterialSpec compatibility ERROR: {e}")
 
+# Phase 3A core helper MaterialSpec compatibility
+try:
+    from core.bolt import add_bolt_entry, add_custom_entry
+    from core.hardware_material import HardwareKind, ServiceClass, resolve_hardware_material
+    from core.m42 import perform_action_by_letter
+    from core.models import AnalysisResult
+    from core.steel import add_steel_section_entry
+
+    steel_spec = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT)
+    bolt_spec = resolve_hardware_material(HardwareKind.ANCHOR_BOLT)
+    nut_spec = resolve_hardware_material(HardwareKind.HEAVY_HEX_NUT)
+    cryo_bolt_spec = resolve_hardware_material(
+        HardwareKind.THREADED_ROD,
+        service=ServiceClass.CRYO,
+    )
+
+    steel_string = AnalysisResult(fullstring="phase3A-steel-string")
+    add_steel_section_entry(steel_string, "Angle", "40*40*5", 150, material="SUS304")
+    assert steel_string.entries[0].material == "SUS304", "steel string material changed"
+    assert not hasattr(steel_string.entries[0], "material_canonical_id"), "steel explicit string path should stay unmanaged"
+
+    steel_default = AnalysisResult(fullstring="phase3A-steel-default")
+    add_steel_section_entry(steel_default, "Angle", "40*40*5", 150)
+    assert steel_default.entries[0].material == "A36/SS400", "steel default material changed"
+    assert steel_default.entries[0].material_canonical_id == "ASTM_A36_OR_JIS_SS400", "steel default canonical id missing"
+
+    steel_spec_result = AnalysisResult(fullstring="phase3A-steel-spec")
+    add_steel_section_entry(steel_spec_result, "Angle", "40*40*5", 150, material=steel_spec)
+    assert steel_spec_result.entries[0].material == steel_spec.name, "steel MaterialSpec material changed"
+    assert steel_spec_result.entries[0].material_canonical_id == steel_spec.canonical_id, "steel MaterialSpec canonical id missing"
+
+    custom_string = AnalysisResult(fullstring="phase3A-custom-string")
+    add_custom_entry(custom_string, "CUSTOM", "C-1", "SUS304", 1, 0.1)
+    assert custom_string.entries[0].material == "SUS304", "custom string material changed"
+    assert not hasattr(custom_string.entries[0], "material_canonical_id"), "custom explicit string path should stay unmanaged"
+
+    custom_spec = AnalysisResult(fullstring="phase3A-custom-spec")
+    add_custom_entry(custom_spec, "CUSTOM", "C-2", nut_spec, 1, 0.1)
+    assert custom_spec.entries[0].material == nut_spec.name, "custom MaterialSpec material changed"
+    assert custom_spec.entries[0].material_canonical_id == nut_spec.canonical_id, "custom MaterialSpec canonical id missing"
+
+    bolt_default = AnalysisResult(fullstring="phase3A-bolt-default")
+    add_bolt_entry(bolt_default, 2, 4)
+    assert bolt_default.entries[0].material == "SUS304", "bolt default material changed"
+    assert bolt_default.entries[0].material_canonical_id == "JIS_SUS304", "bolt default canonical id missing"
+
+    bolt_string = AnalysisResult(fullstring="phase3A-bolt-string")
+    add_bolt_entry(bolt_string, 2, 4, material="SUS316")
+    assert bolt_string.entries[0].material == "SUS316", "bolt string material changed"
+    assert not hasattr(bolt_string.entries[0], "material_canonical_id"), "bolt explicit string path should stay unmanaged"
+
+    bolt_spec_result = AnalysisResult(fullstring="phase3A-bolt-spec")
+    add_bolt_entry(bolt_spec_result, 2, 4, material=cryo_bolt_spec)
+    assert bolt_spec_result.entries[0].material == cryo_bolt_spec.name, "bolt MaterialSpec material changed"
+    assert bolt_spec_result.entries[0].material_canonical_id == cryo_bolt_spec.canonical_id, "bolt MaterialSpec canonical id missing"
+
+    m42_result = AnalysisResult(fullstring="phase3A-m42-default")
+    perform_action_by_letter(m42_result, "E", "L50*50*6")
+    assert [entry.material for entry in m42_result.entries] == ["A36/SS400", "A36/SS400", "SUS304", "A36/SS400"], f"m42 default materials changed: {[entry.material for entry in m42_result.entries]}"
+    assert all(getattr(entry, "material_canonical_id", None) for entry in m42_result.entries), "m42 default canonical ids missing"
+
+    m42_override = AnalysisResult(fullstring="phase3A-m42-override")
+    perform_action_by_letter(
+        m42_override,
+        "B",
+        2,
+        plate_material=steel_spec,
+        bolt_material=bolt_spec,
+    )
+    assert [entry.material for entry in m42_override.entries] == [steel_spec.name, steel_spec.name, bolt_spec.name], "m42 MaterialSpec override materials changed"
+    assert [entry.material_canonical_id for entry in m42_override.entries] == [steel_spec.canonical_id, steel_spec.canonical_id, bolt_spec.canonical_id], "m42 MaterialSpec override canonical ids missing"
+
+    print("v phase 3A core helper MaterialSpec compatibility OK")
+except Exception as e:
+    print(f"X phase 3A core helper MaterialSpec compatibility ERROR: {e}")
+
 # Test type41_table
 try:
     from data.type41_table import get_type41_data
