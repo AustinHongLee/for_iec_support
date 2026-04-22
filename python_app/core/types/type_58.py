@@ -8,7 +8,23 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value, extract_parts
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type58_table import get_type58_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_U_BOLT_MATERIAL = _material_spec(HardwareKind.U_BOLT, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -36,8 +52,6 @@ def calculate(fullstring: str) -> AnalysisResult:
         result.error = f"管徑 {size_str}\" 不在 Type 58 查詢表中"
         return result
 
-    material = "A36/SS400"
-
     # ① Steel Plate (L×B×T)
     add_plate_entry(
         result,
@@ -45,7 +59,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         data["plate_b"],
         data["plate_t"],
         "STEEL PLATE",
-        material,
+        _SUPPORT_PLATE_MATERIAL,
         1,
     )
 
@@ -59,7 +73,10 @@ def calculate(fullstring: str) -> AnalysisResult:
         '1-1/4"': 2.9, '1-3/8"': 3.5, '1-1/2"': 4.2, '1-5/8"': 5.0,
     }
     uw = ubolt_weight_est.get(rod_size, 1.0)
-    add_custom_entry(result, "U-BOLT", f"M-26, {rod_size}", material, 1, uw, "SET")
+    add_custom_entry(
+        result, "U-BOLT", f"M-26, {rod_size}",
+        _U_BOLT_MATERIAL, 1, uw, "SET",
+    )
 
     # ── remark for FIG ──
     if fig == "B":

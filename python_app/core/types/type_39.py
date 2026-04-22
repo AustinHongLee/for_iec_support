@@ -38,11 +38,28 @@ from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.type39_table import get_type39_data, get_type39_formula
 from data.m34_table import get_m34_by_member
 from data.m35_table import get_m35_by_member
 from data.m36_table import get_m36_by_member
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_PLATE_LUG_MATERIAL = _material_spec(HardwareKind.PLATE_LUG, "A36/SS400")
+_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -143,7 +160,10 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ① 主梁 — length = H + L
     # ═══════════════════════════════════════════════════════
     beam_length = h_mm + l_mm
-    add_steel_section_entry(result, section_type, section_dim, beam_length)
+    add_steel_section_entry(
+        result, section_type, section_dim, beam_length,
+        material=_STRUCTURAL_MATERIAL,
+    )
     result.entries[-1].remark = (
         f"主梁, H={h_mm}+L={l_mm}={beam_length}"
     )
@@ -151,7 +171,10 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ═══════════════════════════════════════════════════════
     # ② 斜撐 — length = N (公式計算)
     # ═══════════════════════════════════════════════════════
-    add_steel_section_entry(result, section_type, section_dim, n_val)
+    add_steel_section_entry(
+        result, section_type, section_dim, n_val,
+        material=_STRUCTURAL_MATERIAL,
+    )
     result.entries[-1].remark = (
         f"斜撐 FIG-{fig_type}(θ={theta}°), S={s_val}, N={n_val}"
     )
@@ -166,6 +189,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_b=m34["B"],
         plate_thickness=m34["T"],
         plate_name="LUG PLATE TYPE-C",
+        material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
     )
     result.entries[-1].remark = (
@@ -182,6 +206,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_b=m_detail_z["B"],
         plate_thickness=m_detail_z["T"],
         plate_name=f"LUG PLATE {detail_z_label}",
+        material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
     )
     result.entries[-1].remark = (
@@ -196,7 +221,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         result,
         name="K BOLT",
         spec='3/4"x50',
-        material="SUS304",
+        material=_ANCHOR_BOLT_MATERIAL,
         quantity=2,
         unit_weight=0.8,
         unit="SET",
