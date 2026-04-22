@@ -1166,4 +1166,122 @@ try:
 except Exception as e:
     print(f"X type64/type65 normalization ERROR: {e}")
 
+# Phase 2L-A soft lock warnings for unmanaged material paths.
+#
+# This is intentionally warning-only.  It does not fail validation because the
+# remaining unmanaged material paths are known Phase 2 migration backlog.
+try:
+    from pathlib import Path
+
+    from core.calculator import analyze_single
+
+    _PHASE_2L_A_SAMPLES = [
+        ("01", "01-2B-05A"),
+        ("03", "03-1B-05N"),
+        ("05", "05-L50-05L"),
+        ("06", "06-L50-0510-0401"),
+        ("07", "07-2B-20J"),
+        ("08", "08-2B-1005G"),
+        ("09", "09-2B-05B"),
+        ("10", "10-2B-05A"),
+        ("11", "11-2B-06G"),
+        ("12", "12-6B-05B"),
+        ("13", "13-6B-05B"),
+        ("14", "14-2B-1005"),
+        ("15", "15-2B-1005"),
+        ("16", "16-2B-05"),
+        ("19", "19-2B"),
+        ("20", "20-L50-05A"),
+        ("21", "21-L50-05A"),
+        ("22", "22-L50-05AL"),
+        ("23", "23-L50-05A"),
+        ("24", "24-L50-05"),
+        ("25", "25-L50-0505A"),
+        ("26", "26-L50-1005A"),
+        ("27", "27-L75-0505L-0401"),
+        ("28", "28-L50-1005L"),
+        ("30", "30-L75-0505A-0401"),
+        ("31", "31-L50-1005"),
+        ("32", "32-L50-1005"),
+        ("33", "33-L50-1005"),
+        ("34", "34-L50-1005"),
+        ("35", "35-C125-05A"),
+        ("36", "36-C125-05"),
+        ("37", "37-C125-1200A"),
+        ("39", "39-C100-500 A"),
+        ("41", "41-1"),
+        ("42", "42-8B-C125-500 A"),
+        ("43", "43-8B-C125-500 A"),
+        ("44", "44-8B-C125-500 A"),
+        ("45", "45-8B-C125-500 A"),
+        ("46", "46-8B-C125-500 A"),
+        ("47", "47-8B-C125-500 A"),
+        ("48", "48-2"),
+        ("49", "49-8A"),
+        ("51", "51-2B"),
+        ("52", "52-2B(P)-A(A)-130-500"),
+        ("56", "56-2B"),
+        ("57", "57-2B-A"),
+        ("58", "58-4B-A"),
+        ("59", "59-6B-A"),
+        ("60", "60-20B-A"),
+        ("61", "61-4B-T1-05"),
+        ("62", "62-4B-5/8-05~30D-J(T)"),
+        ("64", "64-2-8-05A"),
+        ("65", "65-6B-1505"),
+        ("72", "72-2B"),
+        ("73", "73-6B-G"),
+        ("76", "76-30B"),
+        ("77", "77-40B-(A)"),
+        ("78", "78-2B(A)"),
+        ("79", "79-8B(A)"),
+    ]
+    _HELPER_DEFAULT_MARKERS = [
+        (Path("core/bolt.py"), 'entry.material = "SUS304"', "SUS304"),
+        (Path("core/plate.py"), 'material_name = "A36/SS400"', "A36/SS400"),
+        (Path("core/steel.py"), 'material = "A36/SS400"', "A36/SS400"),
+    ]
+
+    warning_count = 0
+    for file_path, marker, material in _HELPER_DEFAULT_MARKERS:
+        try:
+            for line_no, line in enumerate(file_path.read_text(encoding="utf-8").splitlines(), start=1):
+                if marker in line:
+                    warning_count += 1
+                    print(
+                        "WARN phase 2L-A helper default material | "
+                        f"file={file_path.as_posix()} | line={line_no} | material={material}"
+                    )
+        except Exception as helper_error:
+            warning_count += 1
+            print(
+                "WARN phase 2L-A helper scan error | "
+                f"file={file_path.as_posix()} | error={helper_error}"
+            )
+
+    for type_id, designation in _PHASE_2L_A_SAMPLES:
+        result = analyze_single(designation)
+        if result.error:
+            warning_count += 1
+            print(
+                "WARN phase 2L-A sample error | "
+                f"type={type_id} | designation={designation} | error={result.error}"
+            )
+            continue
+
+        for fallback_index, entry in enumerate(result.entries, start=1):
+            if getattr(entry, "material_canonical_id", None):
+                continue
+            entry_index = entry.item_no or fallback_index
+            warning_count += 1
+            print(
+                "WARN phase 2L-A unmanaged material entry | "
+                f"type={type_id} | entry_index={entry_index} | material={entry.material} | "
+                "reason=missing_material_canonical_id,string_material_path"
+            )
+
+    print(f"v phase 2L-A soft lock warnings emitted: {warning_count}")
+except Exception as e:
+    print(f"WARN phase 2L-A soft lock audit skipped: {e}")
+
 print("\n=== VALIDATION COMPLETE ===")
