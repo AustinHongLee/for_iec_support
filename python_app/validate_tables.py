@@ -328,6 +328,30 @@ try:
 except Exception as e:
     print(f"X component_rules fallback layer ERROR: {e}")
 
+# Phase 2B material identity scaffold
+try:
+    from core.material_identity import (
+        MATERIAL_ALIAS_MAP,
+        MATERIAL_CATALOG,
+        canonical_material_id,
+        normalize_material_alias,
+        resolve_material_identity,
+    )
+
+    assert MATERIAL_CATALOG["ASTM_A36_OR_JIS_SS400"].display_name == "A36 / SS400", "A36 catalog record failed"
+    assert canonical_material_id("A36/SS400") == "ASTM_A36_OR_JIS_SS400", "A36 slash alias failed"
+    assert canonical_material_id("A36 / SS400") == "ASTM_A36_OR_JIS_SS400", "A36 spaced alias failed"
+    assert canonical_material_id("SA-106 Gr.B") == "ASTM_SA_106_GR_B", "SA-106 alias failed"
+    assert canonical_material_id("ASTM A106 Grade B") == "ASTM_SA_106_GR_B", "A106 grade alias failed"
+    assert canonical_material_id("A194 4 / S3") == "ASTM_A194_4_S3", "A194 4/S3 alias failed"
+    assert canonical_material_id("SUS304") == "JIS_SUS304", "SUS304 alias failed"
+    assert canonical_material_id("INCONEL") == "NICKEL_ALLOY_INCONEL", "INCONEL alias failed"
+    assert resolve_material_identity("unknown-material") is None, "unknown material should not resolve"
+    assert normalize_material_alias(" A36/SS400 ") in MATERIAL_ALIAS_MAP, "normalized alias map failed"
+    print("v phase 2B material identity scaffold OK")
+except Exception as e:
+    print(f"X phase 2B material identity scaffold ERROR: {e}")
+
 # Test type41_table
 try:
     from data.type41_table import get_type41_data
