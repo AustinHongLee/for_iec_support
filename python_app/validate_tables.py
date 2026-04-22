@@ -259,13 +259,20 @@ try:
         estimate_eye_nut_weight,
         estimate_m28_weight,
         estimate_rod_weight,
-        resolve_material,
+    )
+    from core.hardware_material import (
+        HardwareKind,
+        HardwareMaterialOverrides,
+        ServiceClass,
+        resolve_hardware_material,
     )
     assert estimate_clamp_weight('4"', component_id="M-6") == 2.3, "M-6 clamp estimate should use centralized multiplier"
     assert estimate_rod_weight('5/8"', 3000) > 0, "rod estimate failed"
     assert estimate_eye_nut_weight('5/8"') >= 0.15, "eye nut estimate failed"
     assert estimate_m28_weight('1 1/8"') >= 0.3, "M-28 estimate failed"
-    assert resolve_material(overrides={"material": "SUS316"}, default="A36/SS400") == "SUS316", "material override failed"
+    override = HardwareMaterialOverrides(all_hardware="SUS316")
+    assert resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=override).name == "SUS316", "hardware material override failed"
+    assert resolve_hardware_material(HardwareKind.THREADED_ROD, service=ServiceClass.CRYO).name == "A320 L7", "hardware service material failed"
     print("v component_rules fallback layer OK")
 except Exception as e:
     print(f"X component_rules fallback layer ERROR: {e}")

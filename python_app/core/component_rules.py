@@ -13,9 +13,6 @@ from data.component_size_utils import (
     size_to_float,
 )
 
-DEFAULT_STRUCTURAL_MATERIAL = "A36/SS400"
-DEFAULT_UPPER_MATERIAL = "SUS304"
-
 CLAMP_WEIGHT_MULTIPLIER = {
     "M-4": 1.00,
     "M-5": 1.08,
@@ -47,19 +44,6 @@ COMPONENT_RULE_NOTES = {
     "eye_nut": "Eye nut fallback uses rod-size geometry and remains estimated.",
     "m28": "M-28 fallback uses rod-size geometry and remains estimated.",
 }
-
-
-def resolve_material(context: dict | None = None, overrides: dict | None = None, *, default: str = DEFAULT_STRUCTURAL_MATERIAL) -> str:
-    """Resolve material from single-item overrides, contextual pipe material, then default."""
-    context = context or {}
-    overrides = overrides or {}
-    return (
-        overrides.get("material")
-        or overrides.get("upper_material")
-        or context.get("pipe_material")
-        or context.get("upper_material")
-        or default
-    )
 
 
 def estimate_clamp_weight(line_size, *, component_id: str = "M-4", multiplier: float | None = None) -> float:
