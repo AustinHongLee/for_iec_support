@@ -32,6 +32,7 @@ from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -45,8 +46,13 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _attach_material_identity(result: AnalysisResult, material: MaterialSpec):
+    if result.entries:
+        result.entries[-1].material_canonical_id = material.canonical_id
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
@@ -102,7 +108,8 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         add_pipe_entry(result, line_size, data["pipe_sch"], pipe_length, support_material)
 
     # ── 2. Channel (MEMBER "N") ──
-    add_steel_section_entry(result, "Channel", channel_dim, l_val, material=steel_material)
+    add_steel_section_entry(result, "Channel", channel_dim, l_val, material=steel_material.name)
+    _attach_material_identity(result, steel_material)
 
     # ── 3. Wing Plate: Q × P × F ──
     add_plate_entry(

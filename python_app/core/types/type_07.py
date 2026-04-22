@@ -20,8 +20,10 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
+from ..material_identity import canonical_material_id
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -38,8 +40,15 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _attach_existing_material_identity(result: AnalysisResult, start_index: int):
+    for entry in result.entries[start_index:]:
+        canonical_id = canonical_material_id(entry.material)
+        if canonical_id:
+            entry.material_canonical_id = canonical_id
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
@@ -109,6 +118,8 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     add_plate_entry(result, plate_f[0], plate_f[1], plate_f[2], "Plate_F", material=plate_material)
 
     # 5. M42 底板 (用 Pipe C 尺寸查)
+    m42_start = len(result.entries)
     perform_action_by_letter(result, letter, pipe_c_val)
+    _attach_existing_material_identity(result, m42_start)
 
     return result

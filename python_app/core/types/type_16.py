@@ -11,6 +11,7 @@ from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -39,8 +40,8 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:

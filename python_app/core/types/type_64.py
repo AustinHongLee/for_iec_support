@@ -17,6 +17,7 @@ from ..component_rules import (
 )
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -32,8 +33,34 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _add_custom_entry(
+    result: AnalysisResult,
+    name: str,
+    spec: str,
+    material: MaterialSpec,
+    quantity: int,
+    unit_weight: float,
+    unit: str = "SET",
+    remark: str = "",
+    category: str = "螺栓類",
+):
+    add_custom_entry(
+        result,
+        name,
+        spec,
+        material.name,
+        quantity,
+        unit_weight,
+        unit,
+        remark=remark,
+        category=category,
+    )
+    if result.entries:
+        result.entries[-1].material_canonical_id = material.canonical_id
 
 
 def _build_clamp_remark(source: str, clamp_item: dict | None) -> str:
@@ -122,7 +149,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ① Threaded Rod ×2 (M-22), 長度 ≈ H
     rod_item = build_m22_item(rod_size, h_mm)
     rod_unit_wt = rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm)
-    add_custom_entry(
+    _add_custom_entry(
         result, "THREADED ROD",
         rod_item["designation"] if rod_item else f"M-22, {rod_size}, L={h_mm}mm",
         rod_material, 2, rod_unit_wt, "PC"
@@ -132,7 +159,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # ② Weldless Eye Nut ×2 (M-25)
     eye_nut_item = build_m25_item(rod_size)
-    add_custom_entry(
+    _add_custom_entry(
         result, "WELDLESS EYE NUT",
         eye_nut_item["designation"] if eye_nut_item else f"M-25, {rod_size}",
         eye_nut_material, 2, eye_nut_item["unit_weight_kg"] if eye_nut_item else estimate_eye_nut_weight(rod_size), "PC"
@@ -143,7 +170,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ③ Upper Clamp ×1 set
     upper_builder = build_m6_item if "M-6" in fig_info["upper_clamp"] else build_m4_item
     upper_clamp = upper_builder(f_str)
-    add_custom_entry(
+    _add_custom_entry(
         result, "UPPER CLAMP",
         upper_clamp["designation"] if upper_clamp else f"{fig_info['upper_clamp']}, {f_str}\"",
         clamp_material, 1, component_or_estimated_clamp_weight(
@@ -159,7 +186,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ④ Lower Clamp ×1 set
     lower_builder = build_m6_item if "M-6" in fig_info["lower_clamp"] else build_m4_item
     lower_clamp = lower_builder(e_str)
-    add_custom_entry(
+    _add_custom_entry(
         result, "LOWER CLAMP",
         lower_clamp["designation"] if lower_clamp else f"{fig_info['lower_clamp']}, {e_str}\"",
         clamp_material, 1, component_or_estimated_clamp_weight(

@@ -26,6 +26,7 @@ from ..component_rules import (
 )
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -65,8 +66,34 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _add_custom_entry(
+    result: AnalysisResult,
+    name: str,
+    spec: str,
+    material: MaterialSpec,
+    quantity: int,
+    unit_weight: float,
+    unit: str = "SET",
+    remark: str = "",
+    category: str = "螺栓類",
+):
+    add_custom_entry(
+        result,
+        name,
+        spec,
+        material.name,
+        quantity,
+        unit_weight,
+        unit,
+        remark=remark,
+        category=category,
+    )
+    if result.entries:
+        result.entries[-1].material_canonical_id = material.canonical_id
 
 
 def _parse_height_and_upper_fig(part4: str):
@@ -94,11 +121,11 @@ def _add_estimated_component(
     fig: str,
     line_size: float | None,
     rod_size: str,
-    material: str,
+    material: MaterialSpec,
     category: str = "螺栓類",
 ):
     unit_weight = estimate_missing_component_weight(component_id, line_size=line_size, rod_size=rod_size)
-    add_custom_entry(
+    _add_custom_entry(
         result,
         name,
         f"{component_id}, FIG-{fig}",
@@ -121,7 +148,7 @@ def _add_threaded_rod(
     *,
     height_is_range: bool,
     left_hand: bool,
-    material: str,
+    material: MaterialSpec,
 ):
     rod_item = build_m22_item(rod_size, height_mm, left_hand=left_hand)
     unit_weight = (
@@ -129,7 +156,7 @@ def _add_threaded_rod(
         if rod_item
         else estimate_rod_weight(rod_size, height_mm)
     )
-    add_custom_entry(
+    _add_custom_entry(
         result,
         "MACH. THREADED ROD",
         rod_item["designation"] if rod_item else f"M-22, {rod_size}, L={height_mm}mm",
@@ -147,9 +174,9 @@ def _add_threaded_rod(
         )
 
 
-def _add_turnbuckle(result: AnalysisResult, rod_size: str, *, material: str):
+def _add_turnbuckle(result: AnalysisResult, rod_size: str, *, material: MaterialSpec):
     row = get_m21_by_dia(rod_size)
-    add_custom_entry(
+    _add_custom_entry(
         result,
         "TURNBUCKLE",
         row["designation"] if row else f"M-21, {rod_size}",
@@ -163,9 +190,9 @@ def _add_turnbuckle(result: AnalysisResult, rod_size: str, *, material: str):
         result.warnings.append(f"M-21 table 尚無 rod size {rod_size}，turnbuckle 重量暫估")
 
 
-def _add_eye_nut(result: AnalysisResult, rod_size: str, *, left_hand: bool, remark: str, material: str):
+def _add_eye_nut(result: AnalysisResult, rod_size: str, *, left_hand: bool, remark: str, material: MaterialSpec):
     item = build_m25_item(rod_size, left_hand=left_hand)
-    add_custom_entry(
+    _add_custom_entry(
         result,
         "WELDLESS EYE NUT",
         item["designation"] if item else f"M-25, {rod_size}",
@@ -179,9 +206,9 @@ def _add_eye_nut(result: AnalysisResult, rod_size: str, *, left_hand: bool, rema
         result.warnings.append(f"M-25 table 尚無 rod size {rod_size}，eye nut 重量暫估")
 
 
-def _add_heavy_hex_nuts(result: AnalysisResult, rod_size: str, *, material: str):
+def _add_heavy_hex_nuts(result: AnalysisResult, rod_size: str, *, material: MaterialSpec):
     unit_weight = estimate_heavy_hex_nut_weight(rod_size)
-    add_custom_entry(
+    _add_custom_entry(
         result,
         "HEAVY HEX. NUT",
         f"{rod_size}",
@@ -200,14 +227,14 @@ def _add_upper_part(
     rod_size: str,
     has_turnbuckle: bool,
     *,
-    material: str,
-    eye_nut_material: str,
+    material: MaterialSpec,
+    eye_nut_material: MaterialSpec,
 ):
     row = get_type62_upper_part(upper_fig)
     component_id = row["component_id"]
     if component_id == "M-28":
         item = get_m28_by_rod_size(rod_size)
-        add_custom_entry(
+        _add_custom_entry(
             result,
             "UPPER ATTACHMENT",
             item["type"] if item else f"M-28, FIG-{upper_fig}, {rod_size}",
@@ -249,11 +276,11 @@ def _add_lower_part(
     line_size: float,
     rod_size: str,
     *,
-    clamp_material: str,
-    eye_nut_material: str,
-    hex_nut_material: str,
-    clevis_material: str,
-    lug_material: str,
+    clamp_material: MaterialSpec,
+    eye_nut_material: MaterialSpec,
+    hex_nut_material: MaterialSpec,
+    clevis_material: MaterialSpec,
+    lug_material: MaterialSpec,
 ):
     row = get_type62_lower_part(lower_fig)
     component_id = row["component_id"]
@@ -261,7 +288,7 @@ def _add_lower_part(
     if lower_fig in _CLAMP_BUILDERS:
         _, builder = _CLAMP_BUILDERS[lower_fig]
         item = builder(line_size)
-        add_custom_entry(
+        _add_custom_entry(
             result,
             "LOWER PIPE CLAMP",
             item["designation"] if item else f"{component_id}, FIG-{lower_fig}, {line_size:g}\"",
@@ -293,7 +320,7 @@ def _add_lower_part(
 
     if lower_fig == "Q":
         clevis = get_m24_by_dia(rod_size)
-        add_custom_entry(
+        _add_custom_entry(
             result,
             "FORGED STEEL CLEVIS",
             clevis["designation"] if clevis else f"M-24, {rod_size}",

@@ -14,6 +14,7 @@ from ..bolt import add_custom_entry
 from ..component_rules import estimate_m28_weight, estimate_rod_weight
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -27,8 +28,38 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _attach_material_identity(result: AnalysisResult, material: MaterialSpec):
+    if result.entries:
+        result.entries[-1].material_canonical_id = material.canonical_id
+
+
+def _add_custom_entry(
+    result: AnalysisResult,
+    name: str,
+    spec: str,
+    material: MaterialSpec,
+    quantity: int,
+    unit_weight: float,
+    unit: str = "SET",
+    remark: str = "",
+    category: str = "螺栓類",
+):
+    add_custom_entry(
+        result,
+        name,
+        spec,
+        material.name,
+        quantity,
+        unit_weight,
+        unit,
+        remark=remark,
+        category=category,
+    )
+    _attach_material_identity(result, material)
 
 
 def _parse_member_spec(member_str: str):
@@ -137,11 +168,12 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # ① Cross Member ×1 (依 L bucket)
     sec_type, sec_dim = _parse_member_spec(member_spec)
-    add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, strut_material)
+    add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, strut_material.name)
+    _attach_material_identity(result, strut_material)
 
     # ② Welded Eye Rod ×2 (M-23), 長度 ≈ H
     rod_item = build_m23_item(rod_size, h_mm)
-    add_custom_entry(
+    _add_custom_entry(
         result, "WELDED EYE ROD",
         rod_item["designation"] if rod_item else f"M-23, {rod_size}, L={h_mm}mm",
         rod_material, 2, rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm), "PC",
@@ -152,7 +184,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # ③ Angle Bracket ×2 (M-28)
     bracket_item = get_m28_by_rod_size(rod_size)
-    add_custom_entry(
+    _add_custom_entry(
         result, "ANGLE BRACKET",
         bracket_item["type"] if bracket_item else f"M-28, {rod_size}",
         bracket_material, 2, bracket_item["unit_weight_kg"] if bracket_item else estimate_m28_weight(rod_size), "SET",
@@ -166,7 +198,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         pl_w, pl_h, pl_t = _stiffener_pl(d_size)
         stiffener_wt = round(pl_w * pl_h * pl_t * 7.85e-6, 2)
         stiffener_desc = f"PL {pl_w}x{pl_h}x{pl_t}"
-        add_custom_entry(
+        _add_custom_entry(
             result, "STIFFENER",
             stiffener_desc,
             stiffener_material, 1, stiffener_wt, "SET"

@@ -23,8 +23,10 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
+from ..material_identity import canonical_material_id
 from ..hardware_material import (
     HardwareKind,
+    MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
@@ -39,8 +41,15 @@ def _material(
     *,
     service,
     overrides,
-) -> str:
-    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _attach_existing_material_identity(result: AnalysisResult, start_index: int):
+    for entry in result.entries[start_index:]:
+        canonical_id = canonical_material_id(entry.material)
+        if canonical_id:
+            entry.material_canonical_id = canonical_id
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
@@ -127,12 +136,14 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     _add_hex_nut_entry(result, bolt_dia, material=nut_material)
 
     # ── 6. M42 底板 (用 pipe_size_b 查表) ──
+    m42_start = len(result.entries)
     perform_action_by_letter(result, letter, pipe_size_b)
+    _attach_existing_material_identity(result, m42_start)
 
     return result
 
 
-def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str, *, material: str):
+def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str, *, material: MaterialSpec):
     """Adjustable Bolt (J bolt): 4 EA
     bolt_spec 格式: "M12*160L", "M16*180L", "M20*180L"
     """
@@ -144,7 +155,8 @@ def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str, *, material: str
     entry = AnalysisEntry()
     entry.name = "ADJ.BOLT"
     entry.spec = bolt_spec
-    entry.material = material
+    entry.material = material.name
+    entry.material_canonical_id = material.canonical_id
     entry.quantity = 4
     entry.unit_weight = unit_w
     entry.total_weight = round(unit_w * 4, 2)
@@ -159,7 +171,7 @@ def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str, *, material: str
     result.add_entry(entry)
 
 
-def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str, *, material: str):
+def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str, *, material: MaterialSpec):
     """HEX NUT: 4 EA (每支 J bolt 配 1 顆)
     bolt_dia: "M12", "M16", "M20"
     """
@@ -169,7 +181,8 @@ def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str, *, material: str):
     entry = AnalysisEntry()
     entry.name = "HEX NUT"
     entry.spec = bolt_dia
-    entry.material = material
+    entry.material = material.name
+    entry.material_canonical_id = material.canonical_id
     entry.quantity = 4
     entry.unit_weight = unit_w
     entry.total_weight = round(unit_w * 4, 2)
