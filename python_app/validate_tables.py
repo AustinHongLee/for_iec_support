@@ -398,6 +398,11 @@ try:
     assert spec_plate.entries[0].material == "A36 / SS400", "plate MaterialSpec should emit material.name"
     assert spec_plate.entries[0].material_canonical_id == "ASTM_A36_OR_JIS_SS400", "plate MaterialSpec canonical id missing"
 
+    default_plate = AnalysisResult(fullstring="phase-4B-default-plate")
+    add_plate_entry(default_plate, 100, 100, 10, "TEST_DEFAULT_PLATE")
+    assert default_plate.entries[0].material == "A36/SS400", "plate default material string changed"
+    assert default_plate.entries[0].material_canonical_id == "ASTM_A36_OR_JIS_SS400", "plate default canonical id missing"
+
     print("v phase 2I pipe/plate MaterialSpec compatibility OK")
 except Exception as e:
     print(f"X phase 2I pipe/plate MaterialSpec compatibility ERROR: {e}")
@@ -1151,6 +1156,46 @@ try:
     print("v phase 1D-6 material-system lock-in OK")
 except Exception as e:
     print(f"X phase 1D-6 material-system lock-in ERROR: {e}")
+
+# Phase 4B material hard lock for Phase 1D migrated Types.
+#
+# This is intentionally a hard failure: Phase 1D Types have completed material
+# migration, so missing canonical identity indicates a bypassed MaterialSpec path.
+try:
+    from core.calculator import analyze_single
+
+    _PHASE_4B_MIGRATED_TYPE_SAMPLES = [
+        ("07", "07-2B-20J"),
+        ("10", "10-2B-05A"),
+        ("14", "14-2B-1005"),
+        ("15", "15-2B-1005"),
+        ("16", "16-2B-05"),
+        ("62", "62-4B-5/8-05~30D-J(T)"),
+        ("64", "64-2-8-05A"),
+        ("65", "65-6B-1505"),
+    ]
+
+    hard_lock_errors = []
+    for type_id, designation in _PHASE_4B_MIGRATED_TYPE_SAMPLES:
+        result = analyze_single(designation)
+        if result.error:
+            hard_lock_errors.append(f"type={type_id} designation={designation} error={result.error}")
+            continue
+
+        for fallback_index, entry in enumerate(result.entries, start=1):
+            if getattr(entry, "material_canonical_id", None):
+                continue
+            entry_index = entry.item_no or fallback_index
+            hard_lock_errors.append(
+                f"type={type_id} entry_index={entry_index} material={entry.material}"
+            )
+
+    assert not hard_lock_errors, "Phase 4B migrated Type material hard-lock failures: " + "; ".join(hard_lock_errors)
+
+    print("v phase 4B material hard lock OK")
+except Exception as e:
+    print(f"X phase 4B material hard lock ERROR: {e}")
+    raise
 
 # Test type72 strap support table/calculator
 try:

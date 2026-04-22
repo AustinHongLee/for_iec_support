@@ -3,6 +3,15 @@
 """
 from .models import AnalysisEntry, AnalysisResult
 from .hardware_material import MaterialSpec
+from .material_identity import canonical_material_id
+
+
+_DEFAULT_PLATE_MATERIAL = MaterialSpec(
+    name="A36/SS400",
+    canonical_id=canonical_material_id("A36/SS400") or "UNRESOLVED_A36_SS400",
+    source="core.plate.default_material",
+    requires_review=True,
+)
 
 
 # 材質密度 (g/cm³ -> t/m³)
@@ -13,9 +22,17 @@ MATERIAL_DENSITY = {
 }
 
 
-def _material_name_and_identity(material: str | MaterialSpec) -> tuple[str, str | None]:
+def _material_name_and_identity(
+    material: str | MaterialSpec | None,
+    *,
+    default: MaterialSpec | None = None,
+) -> tuple[str, str | None]:
     if isinstance(material, MaterialSpec):
         return material.name, material.canonical_id
+    if material is None or material == "":
+        if default is not None:
+            return default.name, default.canonical_id
+        return "", None
     return str(material), None
 
 
@@ -29,9 +46,10 @@ def add_plate_entry(result: AnalysisResult, plate_a: float, plate_b: float,
     新增鋼板項目到結果
     對應 VBA: MainAddPlate
     """
-    material_name, canonical_id = _material_name_and_identity(material)
-    if not material_name:
-        material_name = "A36/SS400"
+    material_name, canonical_id = _material_name_and_identity(
+        material,
+        default=_DEFAULT_PLATE_MATERIAL,
+    )
 
     density = MATERIAL_DENSITY.get(material_name, 7.85)
     weight = plate_a / 1000 * plate_b / 1000 * plate_thickness * density
