@@ -277,6 +277,12 @@ try:
     assert resolve_hardware_material(HardwareKind.CLAMP_BODY, overrides=override).name == "SUS316", "hardware material override failed"
     assert resolve_hardware_material(HardwareKind.THREADED_ROD, service=ServiceClass.CRYO).name == "A320 L7", "hardware service material failed"
     assert parse_service_class({"service_class": "high-temp"}) == ServiceClass.HIGH_TEMP, "service parser failed"
+    empty_context = parse_hardware_material_context({})
+    assert empty_context.service == ServiceClass.AMBIENT, "empty override service parser failed"
+    assert empty_context.material_overrides is not None, "empty override must return concrete material overrides"
+    assert isinstance(empty_context.material_overrides.per_kind, dict), "empty override per_kind must be dict"
+    assert empty_context.material_overrides.per_kind == {}, "empty override per_kind should be empty dict"
+    assert empty_context.material_overrides.all_hardware is None, "empty override all_hardware should be None"
     parsed = parse_hardware_material_overrides({
         "hardware_material_by_kind": {
             "threaded_rod": "A193 B8",
@@ -287,11 +293,33 @@ try:
     assert parsed is not None and parsed.per_kind[HardwareKind.THREADED_ROD] == "A193 B8", "per-kind override parser failed"
     assert parsed.per_kind[HardwareKind.HEAVY_HEX_NUT] == "A194 8", "enum-key override parser failed"
     assert parsed.per_kind[HardwareKind.UPPER_BRACKET] == "SUS316", "legacy scoped parser failed"
+    per_kind_context = parse_hardware_material_context({
+        "hardware_material_by_kind": {
+            "threaded_rod": "A193 B8",
+            HardwareKind.HEAVY_HEX_NUT: "A194 8",
+        },
+    })
+    assert per_kind_context.material_overrides is not None, "per-kind context overrides missing"
+    assert isinstance(per_kind_context.material_overrides.per_kind, dict), "per-kind context per_kind must be dict"
+    assert per_kind_context.material_overrides.per_kind[HardwareKind.THREADED_ROD] == "A193 B8", "per-kind context parser failed"
+    assert per_kind_context.material_overrides.per_kind[HardwareKind.HEAVY_HEX_NUT] == "A194 8", "enum-key context parser failed"
+    legacy_context = parse_hardware_material_context(
+        {"upper_material": "SUS316"},
+        legacy_material_keys=("upper_material",),
+        legacy_material_kinds=(HardwareKind.UPPER_BRACKET,),
+    )
+    assert legacy_context.material_overrides is not None, "legacy context overrides missing"
+    assert legacy_context.material_overrides.per_kind == {HardwareKind.UPPER_BRACKET: "SUS316"}, "legacy context parser failed"
+    all_context = parse_hardware_material_context({"hardware_material": "INCONEL"})
+    assert all_context.material_overrides is not None, "all-hardware context overrides missing"
+    assert all_context.material_overrides.per_kind == {}, "all-hardware context per_kind should be empty dict"
+    assert all_context.material_overrides.all_hardware == "INCONEL", "all-hardware context parser failed"
     context = parse_hardware_material_context({"service": "cryo", "hardware_material": "INCONEL", "pipe_material": "A335 P11"})
     assert context.service == ServiceClass.CRYO, "hardware material context service failed"
     assert context.material_overrides and context.material_overrides.all_hardware == "INCONEL", "hardware material context override failed"
     pipe_only = parse_hardware_material_context({"pipe_material": "A335 P11"})
-    assert pipe_only.service == ServiceClass.AMBIENT and pipe_only.material_overrides is None, "pipe_material must not affect hardware parser"
+    assert pipe_only.service == ServiceClass.AMBIENT and pipe_only.material_overrides is not None, "pipe_material context should still be normalized"
+    assert pipe_only.material_overrides.per_kind == {} and pipe_only.material_overrides.all_hardware is None, "pipe_material must not affect hardware parser"
     print("v component_rules fallback layer OK")
 except Exception as e:
     print(f"X component_rules fallback layer ERROR: {e}")

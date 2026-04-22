@@ -71,6 +71,8 @@ class HardwareMaterialContext:
 
     Phase 1D-1 only centralizes parsing. Existing Type calculators continue to
     use their local parsing until follow-up phases opt in.
+    ``parse_hardware_material_context`` always returns a concrete
+    ``material_overrides`` object so callers can read fixed fields directly.
     """
 
     service: ServiceClass = ServiceClass.AMBIENT
@@ -164,6 +166,26 @@ def parse_hardware_material_overrides(
     return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware_str)
 
 
+def _normalize_material_overrides(
+    overrides: HardwareMaterialOverrides | None,
+) -> HardwareMaterialOverrides:
+    if overrides is None:
+        return HardwareMaterialOverrides(per_kind={}, all_hardware=None)
+
+    per_kind = {
+        _coerce_hardware_kind(kind): str(material)
+        for kind, material in overrides.per_kind.items()
+        if material is not None and material != ""
+    }
+    all_hardware = overrides.all_hardware
+    all_hardware_str = (
+        str(all_hardware)
+        if all_hardware is not None and all_hardware != ""
+        else None
+    )
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware_str)
+
+
 def parse_hardware_material_context(
     overrides: Mapping[str, object] | None,
     *,
@@ -176,16 +198,17 @@ def parse_hardware_material_context(
 ) -> HardwareMaterialContext:
     """Parse service and hardware material overrides as one future contract."""
 
+    material_overrides = parse_hardware_material_overrides(
+        overrides,
+        existing_key=existing_key,
+        per_kind_key=per_kind_key,
+        all_hardware_keys=all_hardware_keys,
+        legacy_material_keys=legacy_material_keys,
+        legacy_material_kinds=legacy_material_kinds,
+    )
     return HardwareMaterialContext(
         service=parse_service_class(overrides, keys=service_keys),
-        material_overrides=parse_hardware_material_overrides(
-            overrides,
-            existing_key=existing_key,
-            per_kind_key=per_kind_key,
-            all_hardware_keys=all_hardware_keys,
-            legacy_material_keys=legacy_material_keys,
-            legacy_material_kinds=legacy_material_kinds,
-        ),
+        material_overrides=_normalize_material_overrides(material_overrides),
     )
 
 
