@@ -7,7 +7,7 @@ FIG-A: insulated pipe, 配 D-63 shoe (NOT FURNISHED)
 FIG-B: bare pipe, 配 D-68 U-bolt
 """
 from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value, extract_parts
+from ..parser import get_part, get_lookup_value, extract_parts, parse_pipe_size
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
 from data.type59_table import get_type59_dims, get_type59_material
@@ -24,7 +24,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         result.error = "缺少管徑欄位"
         return result
 
-    size_str = part2.replace("B", "").strip()
+    size_str = parse_pipe_size(part2)
     pipe_size = get_lookup_value(size_str)
 
     # part3 = "A" or "B(S)" or "A(A)" etc.

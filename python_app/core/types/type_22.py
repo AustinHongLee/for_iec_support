@@ -16,6 +16,8 @@ Note 4: USE WITH M-42, TYPE L & P ONLY.
   2. MEMBER "M" (L段): 水平, 長度 L, A36/SS400
   3. M42 下部構件 (PerformActionByLetter)
 """
+import re
+
 from ..models import AnalysisResult
 from ..parser import get_part
 from ..steel import add_steel_section_entry
@@ -44,12 +46,26 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         result.error = f"Type 22: 第三段格式錯誤 ({fullstring})"
         return result
 
-    # 最後一個字元 = M42 letter
-    m42_letter = part3[-1].upper()
-    # 倒數第二個字元 = Fig
-    fig_choice = part3[-2].upper()
-    # 前面的數字 = H
-    h_digits = part3[:-2]
+    # Optional trailing X is a modifier and does not participate in H/Fig/M42 parsing.
+    if part3.upper().endswith("X"):
+        part3 = part3[:-1]
+
+    match = re.fullmatch(r"(\d+)([ABCabc])([A-Za-z])", part3)
+    if match:
+        h_digits = match.group(1)
+        fig_choice = match.group(2).upper()
+        m42_letter = match.group(3).upper()
+    else:
+        # Alternate Excel/export notation: 12(A) or 12(A)X.
+        match = re.fullmatch(r"(\d+)\(([A-Za-z])\)", part3)
+        if match:
+            h_digits = match.group(1)
+            fig_choice = match.group(2).upper()
+            m42_letter = match.group(2).upper()
+
+    if not match:
+        result.error = f"Type 22: 第三段格式錯誤 ({fullstring})"
+        return result
 
     if not h_digits.isdigit():
         result.error = f"Type 22: H 值無法解析 ({fullstring})"

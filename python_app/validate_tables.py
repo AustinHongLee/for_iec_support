@@ -2,6 +2,37 @@
 import sys
 sys.path.insert(0, ".")
 
+# Phase X parser normalization smoke tests.
+try:
+    from core.calculator import analyze_single
+    from core.parser import get_lookup_value, parse_pipe_size
+
+    assert parse_pipe_size("1/2B") == "1/2"
+    assert parse_pipe_size("1.1/2B") == "1-1/2"
+    assert parse_pipe_size("1 1/2B") == "1-1/2"
+    assert parse_pipe_size("2B") == "2"
+    assert get_lookup_value("1.1/2B") == 1.5
+    assert get_lookup_value("1/2B") == 0.5
+
+    parser_smoke_cases = [
+        "51-1.1/2B",
+        "57-1.1/2B-A",
+        "66-1.1/2B(P)-A-150-150",
+        "22-L75-12(A)X",
+        "59-1.1/2B-B(S)",
+    ]
+    for designation in parser_smoke_cases:
+        result = analyze_single(designation)
+        assert not result.error, f"{designation} should parse without Error: {result.error}"
+        assert result.entries, f"{designation} should enter Type calculation"
+
+    not_implemented = analyze_single("80-1B")
+    assert not_implemented.error == "Type 80 not implemented"
+
+    print("v phase X parser normalization OK")
+except Exception as e:
+    print(f"X phase X parser normalization ERROR: {e}")
+
 try:
     from data.component_table_registry import (
         EXISTING_COMPONENT_TABLES,

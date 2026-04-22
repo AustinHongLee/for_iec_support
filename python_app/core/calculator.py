@@ -131,7 +131,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
     handler = TYPE_HANDLERS.get(type_code)
     if not handler:
         result = AnalysisResult(fullstring=fullstring)
-        result.error = f"Type {type_code} 尚未實作"
+        result.error = f"Type {type_code} not implemented"
         apply_truth_contract(
             result,
             type_id=type_code,
