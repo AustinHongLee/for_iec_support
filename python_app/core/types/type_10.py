@@ -25,8 +25,7 @@ from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
 from ..hardware_material import (
     HardwareKind,
-    HardwareMaterialOverrides,
-    ServiceClass,
+    parse_hardware_material_context,
     resolve_hardware_material,
 )
 from data.type10_table import get_type10_data
@@ -35,59 +34,24 @@ _MAX_H = 1500
 _ALLOWED_M42_LETTERS = {"A", "B", "E", "G"}
 
 
-def _service_from_overrides(overrides: dict | None) -> ServiceClass:
-    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
-    if isinstance(value, ServiceClass):
-        return value
-    if value:
-        return ServiceClass(str(value).strip().lower().replace("-", "_"))
-    return ServiceClass.AMBIENT
-
-
-def _material_overrides_from_dict(
-    overrides: dict | None,
-    *,
-    legacy_kinds: set[HardwareKind],
-) -> HardwareMaterialOverrides | None:
-    if not overrides:
-        return None
-    existing = overrides.get("hardware_material_overrides")
-    if isinstance(existing, HardwareMaterialOverrides):
-        return existing
-
-    per_kind = {}
-    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
-        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
-        per_kind[kind] = material
-
-    legacy_material = overrides.get("material") or overrides.get("upper_material")
-    if legacy_material:
-        for kind in legacy_kinds:
-            per_kind.setdefault(kind, legacy_material)
-
-    all_hardware = overrides.get("hardware_material")
-    if not per_kind and not all_hardware:
-        return None
-    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
-
-
 def _material(
     kind: HardwareKind,
     *,
-    service: ServiceClass,
-    overrides: HardwareMaterialOverrides | None,
+    service,
+    overrides,
 ) -> str:
     return resolve_hardware_material(kind, service=service, overrides=overrides).name
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
-    overrides = overrides or {}
-    service = _service_from_overrides(overrides)
-    material_overrides = _material_overrides_from_dict(
+    material_context = parse_hardware_material_context(
         overrides,
-        legacy_kinds={HardwareKind.UPPER_BRACKET},
+        legacy_material_keys=("material", "upper_material"),
+        legacy_material_kinds=(HardwareKind.UPPER_BRACKET,),
     )
+    service = material_context.service
+    material_overrides = material_context.material_overrides
 
     # 第二段: line size A
     part2 = get_part(fullstring, 2)
