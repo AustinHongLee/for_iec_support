@@ -369,6 +369,39 @@ try:
 except Exception as e:
     print(f"X phase 2B material identity scaffold ERROR: {e}")
 
+# Phase 2I pipe/plate MaterialSpec compatibility
+try:
+    from core.hardware_material import HardwareKind, ServiceClass, resolve_hardware_material
+    from core.models import AnalysisResult
+    from core.pipe import add_pipe_entry
+    from core.plate import add_plate_entry
+
+    string_pipe = AnalysisResult(fullstring="phase-2I-string-pipe")
+    add_pipe_entry(string_pipe, 2, "SCH.40", 1000, "A36/SS400")
+    assert string_pipe.entries[0].material == "A36/SS400", "pipe string material path changed"
+    assert not hasattr(string_pipe.entries[0], "material_canonical_id"), "pipe string path should not attach canonical id"
+
+    string_plate = AnalysisResult(fullstring="phase-2I-string-plate")
+    add_plate_entry(string_plate, 100, 100, 10, "TEST_PLATE", material="SUS304")
+    assert string_plate.entries[0].material == "SUS304", "plate string material path changed"
+    assert not hasattr(string_plate.entries[0], "material_canonical_id"), "plate string path should not attach canonical id"
+
+    pipe_spec = resolve_hardware_material(HardwareKind.SUPPORT_PIPE, service=ServiceClass.HIGH_TEMP)
+    spec_pipe = AnalysisResult(fullstring="phase-2I-spec-pipe")
+    add_pipe_entry(spec_pipe, 2, "SCH.40", 1000, pipe_spec)
+    assert spec_pipe.entries[0].material == "SA-106 Gr.B", "pipe MaterialSpec should emit material.name"
+    assert spec_pipe.entries[0].material_canonical_id == "ASTM_SA_106_GR_B", "pipe MaterialSpec canonical id missing"
+
+    plate_spec = resolve_hardware_material(HardwareKind.SUPPORT_PLATE)
+    spec_plate = AnalysisResult(fullstring="phase-2I-spec-plate")
+    add_plate_entry(spec_plate, 100, 100, 10, "TEST_PLATE", material=plate_spec)
+    assert spec_plate.entries[0].material == "A36 / SS400", "plate MaterialSpec should emit material.name"
+    assert spec_plate.entries[0].material_canonical_id == "ASTM_A36_OR_JIS_SS400", "plate MaterialSpec canonical id missing"
+
+    print("v phase 2I pipe/plate MaterialSpec compatibility OK")
+except Exception as e:
+    print(f"X phase 2I pipe/plate MaterialSpec compatibility ERROR: {e}")
+
 # Test type41_table
 try:
     from data.type41_table import get_type41_data

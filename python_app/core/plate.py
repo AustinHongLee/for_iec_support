@@ -2,6 +2,7 @@
 鋼板處理模組 - 對應 VBA: C_鋼板處理
 """
 from .models import AnalysisEntry, AnalysisResult
+from .hardware_material import MaterialSpec
 
 
 # 材質密度 (g/cm³ -> t/m³)
@@ -12,9 +13,15 @@ MATERIAL_DENSITY = {
 }
 
 
+def _material_name_and_identity(material: str | MaterialSpec) -> tuple[str, str | None]:
+    if isinstance(material, MaterialSpec):
+        return material.name, material.canonical_id
+    return str(material), None
+
+
 def add_plate_entry(result: AnalysisResult, plate_a: float, plate_b: float,
                     plate_thickness: float, plate_name: str,
-                    material: str = "", plate_qty: int = 1,
+                    material: str | MaterialSpec = "", plate_qty: int = 1,
                     bolt_switch: bool = False,
                     bolt_x: float = 0, bolt_y: float = 0,
                     bolt_hole: float = 0, bolt_size: str = ""):
@@ -22,10 +29,11 @@ def add_plate_entry(result: AnalysisResult, plate_a: float, plate_b: float,
     新增鋼板項目到結果
     對應 VBA: MainAddPlate
     """
-    if not material:
-        material = "A36/SS400"
+    material_name, canonical_id = _material_name_and_identity(material)
+    if not material_name:
+        material_name = "A36/SS400"
 
-    density = MATERIAL_DENSITY.get(material, 7.85)
+    density = MATERIAL_DENSITY.get(material_name, 7.85)
     weight = plate_a / 1000 * plate_b / 1000 * plate_thickness * density
 
     remark = ""
@@ -37,7 +45,9 @@ def add_plate_entry(result: AnalysisResult, plate_a: float, plate_b: float,
     entry.spec = str(plate_thickness)
     entry.length = plate_a
     entry.width = plate_b
-    entry.material = material
+    entry.material = material_name
+    if canonical_id:
+        entry.material_canonical_id = canonical_id
     entry.quantity = plate_qty
     entry.unit_weight = round(weight, 2)
     entry.total_weight = round(weight * plate_qty, 2)
