@@ -8,8 +8,8 @@ Type 10 計算器 - 可調式 Dummy Pipe 支撐 (Four-Bolt Adjustable Support)
 PDF 限制: H≤1500mm
 
 構件:
-  1. Main Pipe (dummy): L+100, pipe_size_b / pipe_sch, upper_material
-  2. Support Pipe (vertical): H-100, pipe_size_b / pipe_sch, A53Gr.B
+  1. Main Pipe (dummy): L+100, pipe_size_b / pipe_sch, material by resolver
+  2. Support Pipe (vertical): H-100, pipe_size_b / pipe_sch, material by resolver
      ※ Support Pipe 長度 ≤ 0 時跳過
   3. Plate F: plate_w × plate_w × plate_t, 有鑽孔(4×dø)
   4. Adjustable Bolt (J bolt): bolt_spec, 4 EA
@@ -23,16 +23,71 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
-from ..component_rules import DEFAULT_UPPER_MATERIAL, resolve_material
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    ServiceClass,
+    resolve_hardware_material,
+)
 from data.type10_table import get_type10_data
 
 _MAX_H = 1500
 _ALLOWED_M42_LETTERS = {"A", "B", "E", "G"}
 
 
+def _service_from_overrides(overrides: dict | None) -> ServiceClass:
+    value = (overrides or {}).get("service") or (overrides or {}).get("service_class")
+    if isinstance(value, ServiceClass):
+        return value
+    if value:
+        return ServiceClass(str(value).strip().lower().replace("-", "_"))
+    return ServiceClass.AMBIENT
+
+
+def _material_overrides_from_dict(
+    overrides: dict | None,
+    *,
+    legacy_kinds: set[HardwareKind],
+) -> HardwareMaterialOverrides | None:
+    if not overrides:
+        return None
+    existing = overrides.get("hardware_material_overrides")
+    if isinstance(existing, HardwareMaterialOverrides):
+        return existing
+
+    per_kind = {}
+    for key, material in (overrides.get("hardware_material_by_kind") or {}).items():
+        kind = key if isinstance(key, HardwareKind) else HardwareKind(str(key).strip().lower())
+        per_kind[kind] = material
+
+    legacy_material = overrides.get("material") or overrides.get("upper_material")
+    if legacy_material:
+        for kind in legacy_kinds:
+            per_kind.setdefault(kind, legacy_material)
+
+    all_hardware = overrides.get("hardware_material")
+    if not per_kind and not all_hardware:
+        return None
+    return HardwareMaterialOverrides(per_kind=per_kind, all_hardware=all_hardware)
+
+
+def _material(
+    kind: HardwareKind,
+    *,
+    service: ServiceClass,
+    overrides: HardwareMaterialOverrides | None,
+) -> str:
+    return resolve_hardware_material(kind, service=service, overrides=overrides).name
+
+
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
     overrides = overrides or {}
+    service = _service_from_overrides(overrides)
+    material_overrides = _material_overrides_from_dict(
+        overrides,
+        legacy_kinds={HardwareKind.UPPER_BRACKET},
+    )
 
     # 第二段: line size A
     part2 = get_part(fullstring, 2)
@@ -52,8 +107,11 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     letter = part3[-1]
     h_val = int(part3[:-1]) * 100
 
-    # 取得上層材質
-    upper_material = resolve_material(overrides=overrides, default=DEFAULT_UPPER_MATERIAL)
+    upper_material = _material(HardwareKind.UPPER_BRACKET, service=service, overrides=material_overrides)
+    support_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
+    plate_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    bolt_material = _material(HardwareKind.ANCHOR_BOLT, service=service, overrides=material_overrides)
+    nut_material = _material(HardwareKind.HEAVY_HEX_NUT, service=service, overrides=material_overrides)
 
     pipe_size_b = data["pipe_size_b"]
     pipe_sch = data["pipe_sch"]
@@ -79,7 +137,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 2. Support Pipe (垂直柱) ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, "A53Gr.B")
+        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, support_material)
 
     # ── 3. Plate F (有鑽孔, 4×dø) ──
     # bolt_spec 例如 "M16*180L"，取 bolt 直徑部分作為 bolt_size
@@ -95,13 +153,14 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         bolt_y=w_val,
         bolt_hole=d_phi,
         bolt_size=bolt_dia,
+        material=plate_material,
     )
 
     # ── 4. Adjustable Bolt (J bolt), 4 EA ──
-    _add_adj_bolt_entry(result, bolt_spec)
+    _add_adj_bolt_entry(result, bolt_spec, material=bolt_material)
 
     # ── 5. HEX NUT, 4 EA ──
-    _add_hex_nut_entry(result, bolt_dia)
+    _add_hex_nut_entry(result, bolt_dia, material=nut_material)
 
     # ── 6. M42 底板 (用 pipe_size_b 查表) ──
     perform_action_by_letter(result, letter, pipe_size_b)
@@ -109,7 +168,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     return result
 
 
-def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str):
+def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str, *, material: str):
     """Adjustable Bolt (J bolt): 4 EA
     bolt_spec 格式: "M12*160L", "M16*180L", "M20*180L"
     """
@@ -121,7 +180,7 @@ def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str):
     entry = AnalysisEntry()
     entry.name = "ADJ.BOLT"
     entry.spec = bolt_spec
-    entry.material = "A307Gr.B(HDG)"
+    entry.material = material
     entry.quantity = 4
     entry.unit_weight = unit_w
     entry.total_weight = round(unit_w * 4, 2)
@@ -136,7 +195,7 @@ def _add_adj_bolt_entry(result: AnalysisResult, bolt_spec: str):
     result.add_entry(entry)
 
 
-def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str):
+def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str, *, material: str):
     """HEX NUT: 4 EA (每支 J bolt 配 1 顆)
     bolt_dia: "M12", "M16", "M20"
     """
@@ -146,7 +205,7 @@ def _add_hex_nut_entry(result: AnalysisResult, bolt_dia: str):
     entry = AnalysisEntry()
     entry.name = "HEX NUT"
     entry.spec = bolt_dia
-    entry.material = "A307Gr.B(HDG)"
+    entry.material = material
     entry.quantity = 4
     entry.unit_weight = unit_w
     entry.total_weight = round(unit_w * 4, 2)
