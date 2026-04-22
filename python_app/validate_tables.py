@@ -402,6 +402,274 @@ try:
 except Exception as e:
     print(f"X system consistency refactor smokes ERROR: {e}")
 
+# Phase 1D-0 material/override snapshot guardrails
+try:
+    from core.calculator import analyze_single
+
+    _SNAPSHOT_CASES = {
+        "07-2B-20J": {
+            "count": 6,
+            "total": 34.13,
+            "warnings": 0,
+            "materials": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36/SS400",
+                "SUS304",
+            ),
+            "weights": (0.93, 21.25, 2.83, 2.83, 2.29, 4.0),
+            "upper_override": (
+                "SUS316",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36/SS400",
+                "SUS304",
+            ),
+            "all_hardware": (
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "A36/SS400",
+                "SUS304",
+            ),
+            "cryo": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36/SS400",
+                "SUS304",
+            ),
+        },
+        "10-2B-05A": {
+            "count": 6,
+            "total": 10.52,
+            "warnings": 0,
+            "materials": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A194 2H",
+                "A36/SS400",
+            ),
+            "weights": (0.93, 2.16, 2.04, 3.2, 0.6, 1.59),
+            "upper_override": (
+                "SUS316",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A194 2H",
+                "A36/SS400",
+            ),
+            "all_hardware": (
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "A36/SS400",
+            ),
+            "cryo": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A194 4 / S3",
+                "A36/SS400",
+            ),
+        },
+        "14-2B-1005": {
+            "count": 7,
+            "total": 19.66,
+            "warnings": 0,
+            "materials": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+            "weights": (2.08, 9.36, 0.69, 0.53, 2.55, 0.45, 4.0),
+            "upper_override": (
+                "SUS316",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "SUS316",
+            ),
+            "all_hardware": (
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+            ),
+            "cryo": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+        },
+        "15-2B-1005": {
+            "count": 6,
+            "total": 15.98,
+            "warnings": 0,
+            "materials": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+            "weights": (2.08, 9.36, 1.01, 0.53, 2.55, 0.45),
+            "upper_override": (
+                "SUS316",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+            "all_hardware": (
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+            ),
+            "cryo": (
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+        },
+        "16-2B-05": {
+            "count": 3,
+            "total": 4.96,
+            "warnings": 0,
+            "materials": ("A36 / SS400", "A36 / SS400", "A36 / SS400"),
+            "weights": (1.11, 3.62, 0.23),
+            "upper_override": ("SUS316", "A36 / SS400", "A36 / SS400"),
+            "all_hardware": ("INCONEL", "INCONEL", "INCONEL"),
+            "cryo": ("A36 / SS400", "A36 / SS400", "A36 / SS400"),
+        },
+        "62-4B-5/8-05~30D-J(T)": {
+            "count": 6,
+            "total": 8.6,
+            "warnings": 3,
+            "materials": (
+                "A193 B7",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A194 2H",
+            ),
+            "weights": (4.65, 0.32, 0.95, 2.3, 0.22, 0.16),
+            "upper_override": (
+                "SUS316",
+                "SUS316",
+                "SUS316",
+                "SUS316",
+                "SUS316",
+                "SUS316",
+            ),
+            "all_hardware": (
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+                "INCONEL",
+            ),
+            "cryo": (
+                "A320 L7",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A194 4 / S3",
+            ),
+        },
+        "64-2-8-05A": {
+            "count": 4,
+            "total": 8.13,
+            "warnings": 2,
+            "materials": (
+                "A193 B7",
+                "A36 / SS400",
+                "A36 / SS400",
+                "A36 / SS400",
+            ),
+            "weights": (1.56, 0.44, 5.01, 1.12),
+            "upper_override": ("SUS316", "SUS316", "SUS316", "SUS316"),
+            "all_hardware": ("INCONEL", "INCONEL", "INCONEL", "INCONEL"),
+            "cryo": ("A320 L7", "A36 / SS400", "A36 / SS400", "A36 / SS400"),
+        },
+        "65-6B-1505": {
+            "count": 3,
+            "total": 20.8,
+            "warnings": 0,
+            "materials": ("A36 / SS400", "A193 B7", "A36 / SS400"),
+            "weights": (18.3, 1.86, 0.64),
+            "upper_override": ("SUS316", "SUS316", "SUS316"),
+            "all_hardware": ("INCONEL", "INCONEL", "INCONEL"),
+            "cryo": ("A36 / SS400", "A320 L7", "A36 / SS400"),
+        },
+    }
+
+    def _materials(result):
+        return tuple(entry.material for entry in result.entries)
+
+    def _weights(result):
+        return tuple(round(entry.weight_output, 2) for entry in result.entries)
+
+    for designation, expected in _SNAPSHOT_CASES.items():
+        default_result = analyze_single(designation)
+        assert not default_result.error, f"{designation} snapshot error: {default_result.error}"
+        assert len(default_result.entries) == expected["count"], f"{designation} entry count changed: {len(default_result.entries)}"
+        assert round(default_result.total_weight, 2) == expected["total"], f"{designation} total changed: {default_result.total_weight}"
+        assert len(default_result.warnings) == expected["warnings"], f"{designation} warning count changed: {default_result.warnings}"
+        assert _materials(default_result) == expected["materials"], f"{designation} material snapshot changed: {_materials(default_result)}"
+        assert _weights(default_result) == expected["weights"], f"{designation} weight snapshot changed: {_weights(default_result)}"
+
+        upper_result = analyze_single(designation, {"upper_material": "SUS316"})
+        all_result = analyze_single(designation, {"hardware_material": "INCONEL"})
+        cryo_result = analyze_single(designation, {"service": "cryo"})
+        pipe_result = analyze_single(designation, {"pipe_material": "A335 P11"})
+        for result in (upper_result, all_result, cryo_result, pipe_result):
+            assert not result.error, f"{designation} override snapshot error: {result.error}"
+            assert round(result.total_weight, 2) == expected["total"], f"{designation} override weight changed: {result.total_weight}"
+
+        assert _materials(upper_result) == expected["upper_override"], f"{designation} upper override changed: {_materials(upper_result)}"
+        assert _materials(all_result) == expected["all_hardware"], f"{designation} all-hardware override changed: {_materials(all_result)}"
+        assert _materials(cryo_result) == expected["cryo"], f"{designation} service material changed: {_materials(cryo_result)}"
+        assert _materials(pipe_result) == expected["materials"], f"{designation} pipe_material polluted hardware: {_materials(pipe_result)}"
+
+    print("v phase 1D-0 material/override snapshot baseline OK")
+except Exception as e:
+    print(f"X phase 1D-0 material/override snapshot baseline ERROR: {e}")
+
 # Test type72 strap support table/calculator
 try:
     from core.calculator import analyze_single
