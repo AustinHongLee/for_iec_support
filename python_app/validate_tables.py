@@ -132,6 +132,32 @@ try:
 except Exception as e:
     print(f"X project aggregation wrapper ERROR: {e}")
 
+# Type 01 Rev.1 table and note guardrails.
+try:
+    from core.calculator import analyze_single
+    from core.config_loader import get_type_table_as_dict
+
+    type01_table = get_type_table_as_dict("01")
+    assert type01_table[22]["pipe_size"] == "14", "Type 01 22 inch support pipe changed"
+    assert type01_table[24]["L"] == 677, "Type 01 24 inch L should follow D-1 Rev.1"
+    assert type01_table[50]["pipe_size"] == "28", "Type 01 50 inch support pipe missing"
+    assert type01_table[50]["L"] == 1382, "Type 01 50 inch L missing"
+
+    type01_large = analyze_single("01-50B-05A")
+    assert not type01_large.error, f"Type 01 50B should calculate: {type01_large.error}"
+    assert type01_large.entries[0].spec == '28"*STD.WT', f"Type 01 50B upper pipe spec changed: {type01_large.entries[0].spec}"
+    assert type01_large.entries[0].length == 1482, f"Type 01 50B upper pipe length changed: {type01_large.entries[0].length}"
+    assert any("NOTE 6" in warning for warning in type01_large.warnings), "Type 01 M42 A/B/E/G paving warning missing"
+
+    type01_mid = analyze_single("01-28B-05B")
+    assert not type01_mid.error, f"Type 01 28B should calculate: {type01_mid.error}"
+    assert type01_mid.entries[0].spec == '16"*STD.WT', f"Type 01 28B upper pipe spec changed: {type01_mid.entries[0].spec}"
+    assert type01_mid.entries[0].length == 882, f"Type 01 28B upper pipe length changed: {type01_mid.entries[0].length}"
+
+    print("v type01 Rev.1 table/note guardrails OK")
+except Exception as e:
+    print(f"X type01 Rev.1 table/note guardrails ERROR: {e}")
+
 try:
     from data.component_table_registry import (
         EXISTING_COMPONENT_TABLES,
