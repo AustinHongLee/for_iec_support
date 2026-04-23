@@ -192,11 +192,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(panel)
 
         self.result_table = QTableWidget()
-        self.result_table.setColumnCount(12)
-        self.result_table.setHorizontalHeaderLabels([
-            "描述", "項次", "品名", "尺寸/規格", "長度(mm)", "寬度(mm)",
-            "材質", "數量", "單重(kg)", "總重(kg)", "單位", "屬性",
-        ])
+        self._set_project_result_headers()
         self.result_table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents
         )
@@ -220,6 +216,15 @@ class MainWindow(QMainWindow):
         layout.addLayout(export_row)
 
         return panel
+
+    def _set_project_result_headers(self):
+        """Result table columns: single-support fields and project totals."""
+        self.result_table.setColumnCount(17)
+        self.result_table.setHorizontalHeaderLabels([
+            "型號", "組數", "項次", "品名", "尺寸/規格", "長度(mm)", "寬度(mm)",
+            "材質", "單件數量", "單件長度小計", "單件重量",
+            "總數量", "總長度小計", "總重量", "單位", "屬性", "備註",
+        ])
 
     # ══════════════════════════════════════════
     #  清單操作
@@ -490,6 +495,10 @@ class MainWindow(QMainWindow):
         self.result_table.setRowCount(0)
         total_weight = 0.0
 
+        if self._project_result is not None:
+            self._display_project_results()
+            return
+
         for result in self._results:
             if result.error:
                 row = self.result_table.rowCount()
@@ -524,6 +533,61 @@ class MainWindow(QMainWindow):
                 total_weight += entry.weight_output
 
         self.total_weight_label.setText(f"總重量: {total_weight:.2f} kg")
+
+    def _display_project_results(self):
+        """Display paired single-support and project-scaled values."""
+        total_weight = 0.0
+
+        for row_result in self._project_result.rows:
+            input_row = row_result.input_row
+            single_result = row_result.single_result
+            scaled_result = row_result.scaled_result
+
+            if single_result.error:
+                row = self.result_table.rowCount()
+                self.result_table.insertRow(row)
+                desc = QTableWidgetItem(input_row.designation)
+                desc.setForeground(QColor("red"))
+                self.result_table.setItem(row, 0, desc)
+                self.result_table.setItem(row, 1, QTableWidgetItem(str(input_row.quantity)))
+                err = QTableWidgetItem(f"錯誤: {single_result.error}")
+                err.setForeground(QColor("red"))
+                self.result_table.setItem(row, 3, err)
+                continue
+
+            for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
+                row = self.result_table.rowCount()
+                self.result_table.insertRow(row)
+                self.result_table.setItem(row, 0, QTableWidgetItem(
+                    input_row.designation if single_entry.item_no == 1 else ""
+                ))
+                self.result_table.setItem(row, 1, QTableWidgetItem(
+                    str(input_row.quantity) if single_entry.item_no == 1 else ""
+                ))
+                self.result_table.setItem(row, 2, QTableWidgetItem(str(single_entry.item_no)))
+                self.result_table.setItem(row, 3, QTableWidgetItem(single_entry.name))
+                self.result_table.setItem(row, 4, QTableWidgetItem(single_entry.spec))
+                self.result_table.setItem(row, 5, QTableWidgetItem(str(single_entry.length)))
+                self.result_table.setItem(row, 6, QTableWidgetItem(
+                    str(single_entry.width) if single_entry.width else ""
+                ))
+                self.result_table.setItem(row, 7, QTableWidgetItem(single_entry.material))
+                self.result_table.setItem(row, 8, QTableWidgetItem(str(single_entry.quantity)))
+                self.result_table.setItem(row, 9, QTableWidgetItem(
+                    f"{single_entry.length_subtotal:.3f}" if single_entry.length_subtotal else ""
+                ))
+                self.result_table.setItem(row, 10, QTableWidgetItem(f"{single_entry.weight_output:.2f}"))
+                self.result_table.setItem(row, 11, QTableWidgetItem(str(scaled_entry.quantity)))
+                self.result_table.setItem(row, 12, QTableWidgetItem(
+                    f"{scaled_entry.length_subtotal:.3f}" if scaled_entry.length_subtotal else ""
+                ))
+                self.result_table.setItem(row, 13, QTableWidgetItem(f"{scaled_entry.weight_output:.2f}"))
+                self.result_table.setItem(row, 14, QTableWidgetItem(single_entry.unit))
+                self.result_table.setItem(row, 15, QTableWidgetItem(single_entry.category))
+                self.result_table.setItem(row, 16, QTableWidgetItem(single_entry.remark if single_entry.remark else ""))
+                total_weight += scaled_entry.weight_output
+
+        self.total_weight_label.setText(f"專案總重量: {total_weight:.2f} kg")
 
     # ══════════════════════════════════════════
     #  匯出 / 設定
