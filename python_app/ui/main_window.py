@@ -9,6 +9,7 @@ IEC 管架支撐分析工具
 """
 import json
 import os
+from dataclasses import replace
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
@@ -22,11 +23,12 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor, QIcon
 
 from core.calculator import (
-    analyze_batch, analyze_single, get_supported_types,
+    analyze_single, get_supported_types,
     set_analysis_setting, get_analysis_setting,
 )
 from core.models import AnalysisResult
 from core.parser import get_type_code, get_part, get_lookup_value
+from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict
 from ui.type_manager import TypeManagerWidget
 from ui.ontology_browser import OntologyBrowserWidget
@@ -38,10 +40,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("IEC 管架支撐分析工具 (Python Edition)")
         self.setMinimumSize(1300, 720)
-        self._items = []           # list of item strings
-        self._item_enabled = {}    # {index: bool}
-        self._overrides = {}       # {index: dict}  第二層覆寫
+        self._project_rows = []    # list[ProjectInputRow]
         self._results = []
+        self._project_result = None
         self._selected_index = -1
         self._init_ui()
 
@@ -157,6 +158,9 @@ class MainWindow(QMainWindow):
         btn_batch = QPushButton("批次貼上...")
         btn_batch.clicked.connect(self._on_batch_paste)
         btn_row1.addWidget(btn_batch)
+        btn_qty = QPushButton("設定組數...")
+        btn_qty.clicked.connect(self._on_set_quantities)
+        btn_row1.addWidget(btn_qty)
         btn_load = QPushButton("從檔案載入...")
         btn_load.clicked.connect(self._on_load_file)
         btn_row1.addWidget(btn_load)
@@ -229,9 +233,8 @@ class MainWindow(QMainWindow):
         self.add_input.setFocus()
 
     def _add_item_to_list(self, text: str):
-        idx = len(self._items)
-        self._items.append(text)
-        self._item_enabled[idx] = True
+        idx = len(self._project_rows)
+        self._project_rows.append(ProjectInputRow(designation=text))
         item_widget = QListWidgetItem(text)
         item_widget.setCheckState(Qt.CheckState.Checked)
         self._update_item_display(idx, item_widget)
@@ -243,9 +246,12 @@ class MainWindow(QMainWindow):
             item_widget = self.item_list.item(idx)
         if item_widget is None:
             return
-        text = self._items[idx]
-        overrides = self._overrides.get(idx, {})
+        row = self._project_rows[idx]
+        text = row.designation
+        overrides = row.overrides or {}
         tags = []
+        if row.quantity != 1:
+            tags.append(f"{row.quantity}組")
         if overrides.get("connection"):
             tags.append("Tee" if overrides["connection"] == "tee" else "Elbow")
         if overrides.get("upper_material"):
@@ -259,6 +265,17 @@ class MainWindow(QMainWindow):
         else:
             item_widget.setText(text)
             item_widget.setForeground(QColor("black"))
+
+    def _refresh_item_list_display(self):
+        """Refresh all list labels and checkbox states from project rows."""
+        for idx, row in enumerate(self._project_rows):
+            item_widget = self.item_list.item(idx)
+            if item_widget is None:
+                continue
+            item_widget.setCheckState(
+                Qt.CheckState.Checked if row.enabled else Qt.CheckState.Unchecked
+            )
+            self._update_item_display(idx, item_widget)
 
     def _on_batch_paste(self):
         """批次貼上多筆"""
@@ -295,31 +312,113 @@ class MainWindow(QMainWindow):
                         self._add_item_to_list(line)
             self.statusBar().showMessage(f"已載入: {filepath}")
 
+    def _on_set_quantities(self):
+        """Two-stage quantity editor: designation list stays unchanged."""
+        if not self._project_rows:
+            QMessageBox.warning(self, "提示", "請先新增支撐編碼")
+            return
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("設定組數")
+        dlg.setMinimumSize(520, 420)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(QLabel("手動修改 quantity，或在下方逐列貼入組數。"))
+
+        table = QTableWidget()
+        table.setColumnCount(2)
+        table.setHorizontalHeaderLabels(["designation", "quantity"])
+        table.setRowCount(len(self._project_rows))
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        for idx, row in enumerate(self._project_rows):
+            desig_item = QTableWidgetItem(row.designation)
+            desig_item.setFlags(desig_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            table.setItem(idx, 0, desig_item)
+            table.setItem(idx, 1, QTableWidgetItem(str(row.quantity)))
+
+        lay.addWidget(table)
+
+        lay.addWidget(QLabel("批次貼入組數 (每行一個數字，逐列對應目前清單):"))
+        qty_text = QTextEdit()
+        qty_text.setPlaceholderText("2\n1\n1\n4")
+        qty_text.setMaximumHeight(90)
+        lay.addWidget(qty_text)
+
+        btn_row = QHBoxLayout()
+        btn_apply = QPushButton("套用批次組數")
+        btn_ok = QPushButton("確定")
+        btn_cancel = QPushButton("取消")
+        btn_row.addWidget(btn_apply)
+        btn_row.addStretch()
+        btn_row.addWidget(btn_ok)
+        btn_row.addWidget(btn_cancel)
+        lay.addLayout(btn_row)
+
+        def parse_quantity(text: str, row_number: int) -> int:
+            try:
+                value = int(text.strip())
+            except ValueError as exc:
+                raise ValueError(f"第 {row_number} 列組數不是整數: {text!r}") from exc
+            if value <= 0:
+                raise ValueError(f"第 {row_number} 列組數必須大於 0")
+            return value
+
+        def apply_batch_quantities():
+            lines = [line.strip() for line in qty_text.toPlainText().splitlines() if line.strip()]
+            if not lines:
+                return
+            if len(lines) > len(self._project_rows):
+                QMessageBox.warning(
+                    dlg,
+                    "組數列數過多",
+                    f"貼入 {len(lines)} 列組數，但目前只有 {len(self._project_rows)} 筆項目。",
+                )
+                return
+            try:
+                quantities = [parse_quantity(line, idx + 1) for idx, line in enumerate(lines)]
+            except ValueError as exc:
+                QMessageBox.warning(dlg, "組數格式錯誤", str(exc))
+                return
+            for idx, quantity in enumerate(quantities):
+                table.setItem(idx, 1, QTableWidgetItem(str(quantity)))
+
+        btn_apply.clicked.connect(apply_batch_quantities)
+        btn_ok.clicked.connect(dlg.accept)
+        btn_cancel.clicked.connect(dlg.reject)
+
+        if not dlg.exec():
+            return
+
+        updated_rows = []
+        try:
+            for idx, row in enumerate(self._project_rows):
+                qty_item = table.item(idx, 1)
+                quantity = parse_quantity(qty_item.text() if qty_item else "", idx + 1)
+                updated_rows.append(replace(row, quantity=quantity))
+        except ValueError as exc:
+            QMessageBox.warning(self, "組數格式錯誤", str(exc))
+            return
+
+        self._project_rows = updated_rows
+        self._refresh_item_list_display()
+        total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
+        self.statusBar().showMessage(f"已更新組數，啟用項目合計 {total_supports} 組")
+
     def _on_delete_item(self):
         row = self.item_list.currentRow()
         if row < 0:
             return
         self.item_list.takeItem(row)
-        self._items.pop(row)
-        # 重建 index mapping
-        new_enabled = {}
-        new_overrides = {}
-        for i in range(len(self._items)):
-            old_i = i if i < row else i + 1
-            new_enabled[i] = self._item_enabled.get(old_i, True)
-            if old_i in self._overrides:
-                new_overrides[i] = self._overrides[old_i]
-        self._item_enabled = new_enabled
-        self._overrides = new_overrides
+        self._project_rows.pop(row)
         self._selected_index = -1
         self.side_panel.clear_panel()
+        self._refresh_item_list_display()
 
     def _on_clear_all(self):
         self.item_list.clear()
-        self._items.clear()
-        self._item_enabled.clear()
-        self._overrides.clear()
+        self._project_rows.clear()
         self._results.clear()
+        self._project_result = None
         self._selected_index = -1
         self.result_table.setRowCount(0)
         self.btn_export.setEnabled(False)
@@ -329,62 +428,58 @@ class MainWindow(QMainWindow):
 
     def _on_item_selected(self, row):
         """清單項目被點選 → 更新 Side Panel"""
-        if row < 0 or row >= len(self._items):
+        if row < 0 or row >= len(self._project_rows):
             self._selected_index = -1
             self.side_panel.clear_panel()
             return
         # 同步 checkbox 狀態
         item_widget = self.item_list.item(row)
-        self._item_enabled[row] = (
-            item_widget.checkState() == Qt.CheckState.Checked
+        self._project_rows[row] = replace(
+            self._project_rows[row],
+            enabled=item_widget.checkState() == Qt.CheckState.Checked,
         )
         self._selected_index = row
+        project_row = self._project_rows[row]
         self.side_panel.show_item(
-            row, self._items[row], self._overrides.get(row, {})
+            row, project_row.designation, project_row.overrides or {}
         )
 
     def _on_override_changed(self, idx: int, overrides: dict):
         """Side Panel 發出覆寫變更"""
         # 移除空值
         clean = {k: v for k, v in overrides.items() if v}
-        if clean:
-            self._overrides[idx] = clean
-        elif idx in self._overrides:
-            del self._overrides[idx]
+        if 0 <= idx < len(self._project_rows):
+            self._project_rows[idx] = replace(
+                self._project_rows[idx],
+                overrides=clean or None,
+            )
         self._update_item_display(idx)
 
     # ══════════════════════════════════════════
     #  分析
     # ══════════════════════════════════════════
     def _on_analyze(self):
-        if not self._items:
+        if not self._project_rows:
             QMessageBox.warning(self, "提示", "請先新增支撐編碼")
             return
 
         # 同步 checkbox 狀態
         for i in range(self.item_list.count()):
             w = self.item_list.item(i)
-            self._item_enabled[i] = (w.checkState() == Qt.CheckState.Checked)
+            self._project_rows[i] = replace(
+                self._project_rows[i],
+                enabled=w.checkState() == Qt.CheckState.Checked,
+            )
 
-        # 過濾啟用項目
-        active_items = []
-        active_overrides = {}
-        active_idx_map = {}  # new_idx -> original_idx
-        for i, text in enumerate(self._items):
-            if self._item_enabled.get(i, True):
-                new_i = len(active_items)
-                active_items.append(text)
-                active_idx_map[new_i] = i
-                if i in self._overrides:
-                    active_overrides[new_i] = self._overrides[i]
-
-        self._results = analyze_batch(active_items, active_overrides)
+        self._project_result = analyze_project_rows(self._project_rows)
+        self._results = [row.scaled_result for row in self._project_result.rows]
         self._display_results()
         self.btn_export.setEnabled(True)
 
         error_count = sum(1 for r in self._results if r.error)
         self.statusBar().showMessage(
-            f"分析完成: {len(self._results)} 筆 "
+            f"分析完成: {len(self._results)} 筆 / "
+            f"{self._project_result.total_support_count} 組 "
             f"(成功 {len(self._results) - error_count}, 錯誤 {error_count})"
         )
 
@@ -725,8 +820,9 @@ class SidePanel(QGroupBox):
         parent = self.parent()
         if parent and hasattr(parent, "parent"):
             mw = parent.parent()
-            if hasattr(mw, "_items") and self._idx < len(mw._items):
-                self.show_item(self._idx, mw._items[self._idx], {})
+            if hasattr(mw, "_project_rows") and self._idx < len(mw._project_rows):
+                row = mw._project_rows[self._idx]
+                self.show_item(self._idx, row.designation, {})
 
 
 # ══════════════════════════════════════════════════
