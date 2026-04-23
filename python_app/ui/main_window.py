@@ -610,8 +610,11 @@ class MainWindow(QMainWindow):
             return
         try:
             if ext == ".xlsx":
-                from export.excel_export import export_to_excel
-                export_to_excel(self._results, filepath)
+                from export.excel_export import export_project_to_excel, export_to_excel
+                if self._project_result is not None:
+                    export_project_to_excel(self._project_result, filepath)
+                else:
+                    export_to_excel(self._results, filepath)
             elif ext == ".csv":
                 from export.csv_export import export_to_csv
                 export_to_csv(self._results, filepath)

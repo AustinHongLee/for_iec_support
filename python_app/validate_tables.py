@@ -88,6 +88,30 @@ try:
     except ValueError:
         pass
 
+    import os
+    import tempfile
+    import openpyxl
+    from export.excel_export import export_project_to_excel
+
+    fd, path = tempfile.mkstemp(suffix=".xlsx")
+    os.close(fd)
+    try:
+        export_project_to_excel(project, path)
+        wb = openpyxl.load_workbook(path, data_only=True)
+        ws = wb.active
+        assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
+        assert ws.cell(row=1, column=1).value == "型號", "project Excel header failed"
+        assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
+        assert ws.cell(row=1, column=12).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=2, column=2).value == 10, "project Excel quantity failed"
+        assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
+        assert ws.cell(row=2, column=12).value == original_quantity * 10, "project Excel total quantity failed"
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
     print("v project aggregation wrapper OK")
 except Exception as e:
     print(f"X project aggregation wrapper ERROR: {e}")
