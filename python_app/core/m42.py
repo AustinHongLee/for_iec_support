@@ -30,6 +30,12 @@ _DEFAULT_M42_STEEL_MATERIAL = MaterialSpec(
     source="core.m42.default_steel_material",
     requires_review=True,
 )
+_DEFAULT_M42_SS304_PLATE_MATERIAL = MaterialSpec(
+    name="SUS304",
+    canonical_id=canonical_material_id("SUS304") or "UNRESOLVED_SUS304",
+    source="core.m42.m42a_ss304_plate_material",
+    requires_review=False,
+)
 
 
 def add_m42_plate(
@@ -100,6 +106,7 @@ def perform_action_by_letter(
     plate_material = plate_material or _DEFAULT_M42_PLATE_MATERIAL
     bolt_material = bolt_material or _DEFAULT_M42_BOLT_MATERIAL
     steel_material = steel_material or _DEFAULT_M42_STEEL_MATERIAL
+    ss304_plate_material = _DEFAULT_M42_SS304_PLATE_MATERIAL
     actions = {
         "A": lambda: add_m42_plate(result, "a", pipe_size, plate_material),
         "B": lambda: (
@@ -132,9 +139,7 @@ def perform_action_by_letter(
             add_m42_plate(result, "c", pipe_size, plate_material),
             add_bolt_entry(result, pipe_size, 4, material=bolt_material)),
         "M": lambda: add_m42_plate(result, "a", pipe_size, plate_material),
-        "N": lambda: (
-            add_m42_plate(result, "a", pipe_size, plate_material),
-            add_steel_section_entry(result, "Angle", "40*40*5", 150, 2, material=steel_material)),
+        "N": lambda: add_m42_plate(result, "a", pipe_size, plate_material),
         "P": lambda: (
             add_m42_plate(result, "c", pipe_size, plate_material),
             add_bolt_entry(result, pipe_size, 4, material=bolt_material)),
@@ -143,10 +148,27 @@ def perform_action_by_letter(
             add_m42_plate(result, "a", pipe_size, plate_material),
             add_m42_plate(result, "e", pipe_size, plate_material),
             add_steel_section_entry(result, "Angle", "40*40*5", 150, 2, material=steel_material)),
-        # TYPE-T: 直接接 FDN (by civil), 不產生底板材料
-        "T": lambda: None,
+        "T": lambda: add_m42_plate(result, "a", pipe_size, ss304_plate_material),
+        "U": lambda: (
+            add_m42_plate(result, "a", pipe_size, plate_material),
+            add_m42_plate(result, "d", pipe_size, ss304_plate_material),
+            add_bolt_entry(result, pipe_size, 4, material=bolt_material)),
+        "V": lambda: (
+            add_m42_plate(result, "a", pipe_size, plate_material),
+            add_m42_plate(result, "d", pipe_size, ss304_plate_material),
+            add_bolt_entry(result, pipe_size, 4, material=bolt_material),
+            add_steel_section_entry(result, "Angle", "40*40*5", 150, 2, material=steel_material)),
+        "W": lambda: (
+            add_m42_plate(result, "b", pipe_size, ss304_plate_material),
+            add_bolt_entry(result, pipe_size, 4, material=bolt_material)),
+        "X": lambda: (
+            add_m42_plate(result, "c", pipe_size, ss304_plate_material),
+            add_bolt_entry(result, pipe_size, 4, material=bolt_material)),
+        "Y": lambda: add_m42_plate(result, "a", pipe_size, ss304_plate_material),
     }
 
     action = actions.get(letter.upper())
     if action:
         action()
+    else:
+        result.warnings.append(f"M-42 型式 '{letter}' 未定義，未新增底板組件")

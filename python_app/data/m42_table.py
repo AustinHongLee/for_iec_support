@@ -2,23 +2,26 @@
 M42 底板查詢表 - 對應 VBA 中的 M_42_Table 工作表
 """
 
-# M42/M43 底板表: pipe_size -> {各欄位}
-# 對照 PDF M-43 (STM-05.01 page 3 of 3) 欄位:
+# M42/M42A/M43 底板表: pipe_size -> {各欄位}
+# 對照 PDF M-43 Rev.1 (HP6-DSD-A4-500-001, page 3 of 3) 欄位:
 #   B=plate_a, C=plate_bc, D=plate_d_bc_bolt, E=plate_d,
 #   F=plate_d_bolt, G=plate_e, H=bolt_hole_dia, J=exp_bolt_spec,
-#   MACH.BOLT=mach_bolt, K=plate_thickness
+#   K=plate_thickness
 M42_TABLE = {
-    1:  {"steel": "L50x50x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    2:  {"steel": "L65x65x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    3:  {"steel": "L65x65x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    4:  {"steel": "L75x75x9",     "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    5:  {"steel": "L100x100x10",  "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    6:  {"steel": "L100x100x10",  "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": "M16", "mach_bolt": "M16 X 40", "plate_thickness": 9},
-    8:  {"steel": "C125x65x6",    "plate_a": 330, "plate_bc": 380, "plate_d_bc_bolt": 300, "plate_d": 490, "plate_d_bolt": 410, "plate_e": 380, "bolt_hole_dia": 22, "exp_bolt_spec": "M20", "mach_bolt": "M20 X 60", "plate_thickness": 16},
-    10: {"steel": "C150x75x9",    "plate_a": 330, "plate_bc": 380, "plate_d_bc_bolt": 300, "plate_d": 490, "plate_d_bolt": 410, "plate_e": 380, "bolt_hole_dia": 22, "exp_bolt_spec": "M20", "mach_bolt": "M20 X 60", "plate_thickness": 16},
-    12: {"steel": "H150x150x7",   "plate_a": 380, "plate_bc": 500, "plate_d_bc_bolt": 410, "plate_d": 560, "plate_d_bolt": 470, "plate_e": 430, "bolt_hole_dia": 26, "exp_bolt_spec": "M24", "mach_bolt": "M24 X 60", "plate_thickness": 16},
-    18: {"steel": "-",             "plate_a": 540, "plate_bc": 680, "plate_d_bc_bolt": 590, "plate_d": 680, "plate_d_bolt": 590, "plate_e": 680, "bolt_hole_dia": 26, "exp_bolt_spec": "M24", "mach_bolt": "M24 X 60", "plate_thickness": 16},
-    24: {"steel": "-",             "plate_a": 690, "plate_bc": 830, "plate_d_bc_bolt": 740, "plate_d": 830, "plate_d_bolt": 740, "plate_e": 830, "bolt_hole_dia": 26, "exp_bolt_spec": "M24", "mach_bolt": "M24 X 60", "plate_thickness": 16},
+    1:  {"steel": "L50x50x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    2:  {"steel": "L65x65x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    3:  {"steel": "L65x65x6",     "plate_a": 150, "plate_bc": 180, "plate_d_bc_bolt": 110, "plate_d": 290, "plate_d_bolt": 220, "plate_e": 200, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    4:  {"steel": "L75x75x9",     "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    5:  {"steel": "L100x100x10",  "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    6:  {"steel": "L100x100x10",  "plate_a": 230, "plate_bc": 260, "plate_d_bc_bolt": 190, "plate_d": 370, "plate_d_bolt": 300, "plate_e": 280, "bolt_hole_dia": 19, "exp_bolt_spec": '5/8"', "mach_bolt": '5/8" X 40', "plate_thickness": 9},
+    8:  {"steel": "C125x65x6",    "plate_a": 330, "plate_bc": 380, "plate_d_bc_bolt": 300, "plate_d": 490, "plate_d_bolt": 410, "plate_e": 380, "bolt_hole_dia": 22, "exp_bolt_spec": '3/4"', "mach_bolt": '3/4" X 60', "plate_thickness": 16},
+    10: {"steel": "C150x75x9",    "plate_a": 330, "plate_bc": 380, "plate_d_bc_bolt": 300, "plate_d": 490, "plate_d_bolt": 410, "plate_e": 380, "bolt_hole_dia": 22, "exp_bolt_spec": '3/4"', "mach_bolt": '3/4" X 60', "plate_thickness": 16},
+    12: {"steel": "H150x150x7",   "plate_a": 380, "plate_bc": 500, "plate_d_bc_bolt": 410, "plate_d": 560, "plate_d_bolt": 470, "plate_e": 430, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
+    14: {"steel": "-",             "plate_a": 440, "plate_bc": 580, "plate_d_bc_bolt": 490, "plate_d": 580, "plate_d_bolt": 490, "plate_e": 580, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
+    16: {"steel": "-",             "plate_a": 490, "plate_bc": 630, "plate_d_bc_bolt": 540, "plate_d": 630, "plate_d_bolt": 540, "plate_e": 630, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
+    18: {"steel": "-",             "plate_a": 540, "plate_bc": 680, "plate_d_bc_bolt": 590, "plate_d": 680, "plate_d_bolt": 590, "plate_e": 680, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
+    24: {"steel": "-",             "plate_a": 690, "plate_bc": 830, "plate_d_bc_bolt": 740, "plate_d": 830, "plate_d_bolt": 740, "plate_e": 830, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
+    28: {"steel": "-",             "plate_a": 790, "plate_bc": 930, "plate_d_bc_bolt": 840, "plate_d": 930, "plate_d_bolt": 840, "plate_e": 930, "bolt_hole_dia": 26, "exp_bolt_spec": '7/8"', "mach_bolt": '7/8" X 60', "plate_thickness": 16},
 }
 
 # 反向查表: 以型鋼名稱查 M42 資料 (VBA 中 column B 查表路徑)

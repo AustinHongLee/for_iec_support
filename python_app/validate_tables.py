@@ -544,6 +544,7 @@ try:
     from core.m42 import perform_action_by_letter
     from core.models import AnalysisResult
     from core.steel import add_steel_section_entry
+    from data.m42_table import get_m42_data
 
     steel_spec = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT)
     bolt_spec = resolve_hardware_material(HardwareKind.ANCHOR_BOLT)
@@ -608,6 +609,40 @@ try:
     )
     assert [entry.material for entry in m42_override.entries] == [steel_spec.name, steel_spec.name, bolt_spec.name], "m42 MaterialSpec override materials changed"
     assert [entry.material_canonical_id for entry in m42_override.entries] == [steel_spec.canonical_id, steel_spec.canonical_id, bolt_spec.canonical_id], "m42 MaterialSpec override canonical ids missing"
+
+    assert get_m42_data(14)["plate_a"] == 440, "M-43 14 inch row missing"
+    assert get_m42_data(16)["plate_bc"] == 630, "M-43 16 inch row missing"
+    assert get_m42_data(28)["plate_e"] == 930, "M-43 28 inch row missing"
+    assert get_m42_data(28)["exp_bolt_spec"] == '7/8"', "M-43 J bolt spec should follow Rev.1 table"
+
+    m42_type_t = AnalysisResult(fullstring="phase3A-m42a-T")
+    perform_action_by_letter(m42_type_t, "T", 2)
+    assert [entry.name for entry in m42_type_t.entries] == ["Plate_a_無鑽孔"], "M-42A Type-T should add Plate a"
+    assert [entry.material for entry in m42_type_t.entries] == ["SUS304"], "M-42A Type-T plate should be SS304"
+    assert all(getattr(entry, "material_canonical_id", None) for entry in m42_type_t.entries), "M-42A Type-T canonical id missing"
+
+    m42_type_v = AnalysisResult(fullstring="phase3A-m42a-V")
+    perform_action_by_letter(m42_type_v, "V", 2)
+    assert [entry.name for entry in m42_type_v.entries] == [
+        "Plate_a_無鑽孔",
+        "Plate_d_有鑽孔",
+        "EXP.BOLT",
+        "Angle",
+    ], "M-42A Type-V component sequence changed"
+    assert [entry.material for entry in m42_type_v.entries] == [
+        "A36/SS400",
+        "SUS304",
+        "SUS304",
+        "A36/SS400",
+    ], "M-42A Type-V materials changed"
+
+    m42_type_n = AnalysisResult(fullstring="phase3A-m42-N")
+    perform_action_by_letter(m42_type_n, "N", 2)
+    assert [entry.name for entry in m42_type_n.entries] == ["Plate_a_無鑽孔"], "M-42 Type-N should not add L40 bracket"
+
+    m42_unknown = AnalysisResult(fullstring="phase3A-m42-unknown")
+    perform_action_by_letter(m42_unknown, "Z", 2)
+    assert not m42_unknown.entries and m42_unknown.warnings, "unknown M-42 type should warn without adding BOM"
 
     print("v phase 3A core helper MaterialSpec compatibility OK")
 except Exception as e:
