@@ -33,6 +33,65 @@ try:
 except Exception as e:
     print(f"X phase X parser normalization ERROR: {e}")
 
+# Project-level aggregation wrapper smoke tests.
+try:
+    from core.calculator import analyze_single
+    from core.project_aggregation import (
+        ProjectInputRow,
+        analyze_project_rows,
+        scale_analysis_result,
+    )
+
+    single = analyze_single("51-1.1/2B")
+    assert not single.error and single.entries, "project aggregation source case failed"
+    original_entry = single.entries[0]
+    original_quantity = original_entry.quantity
+    original_qty_subtotal = original_entry.qty_subtotal
+    original_weight = original_entry.weight_output
+
+    scaled_one = scale_analysis_result(single, 1)
+    assert scaled_one.entries[0].quantity == original_quantity, "quantity=1 should preserve entry quantity"
+    assert scaled_one.entries[0].weight_output == original_weight, "quantity=1 should preserve entry weight"
+
+    scaled_ten = scale_analysis_result(single, 10)
+    assert scaled_ten is not single, "scaled result must be a new AnalysisResult"
+    assert scaled_ten.entries[0] is not original_entry, "scaled entries must not mutate original entries"
+    assert scaled_ten.entries[0].quantity == original_quantity * 10, "project quantity scaling failed"
+    assert scaled_ten.entries[0].qty_subtotal == original_qty_subtotal * 10, "project qty subtotal scaling failed"
+    assert scaled_ten.entries[0].weight_output == original_weight * 10, "project weight scaling failed"
+    assert original_entry.quantity == original_quantity, "single result quantity was mutated"
+    assert original_entry.qty_subtotal == original_qty_subtotal, "single result qty subtotal was mutated"
+    assert original_entry.weight_output == original_weight, "single result weight was mutated"
+
+    project = analyze_project_rows([
+        ProjectInputRow("51-1.1/2B", 10),
+        ProjectInputRow("51-1.1/2B", 2),
+        ProjectInputRow("57-1B-A", 1, enabled=False),
+    ])
+    assert not project.errors, f"project aggregation should not emit errors: {project.errors}"
+    assert len(project.rows) == 2, "disabled project rows should be skipped"
+    assert project.total_support_count == 12, "project support count failed"
+    assert len(project.aggregated_entries) == 1, "duplicate scaled entries should aggregate"
+    aggregate_entry = project.aggregated_entries[0]
+    assert aggregate_entry.quantity == original_quantity * 12, "aggregated quantity failed"
+    assert aggregate_entry.qty_subtotal == original_qty_subtotal * 12, "aggregated qty subtotal failed"
+    assert abs(aggregate_entry.weight_output - original_weight * 12) < 0.0001, "aggregated weight failed"
+    assert abs(project.total_weight - aggregate_entry.weight_output) < 0.0001, "project total weight failed"
+
+    errored = analyze_project_rows([ProjectInputRow("80-1B", 5)])
+    assert errored.errors == ["80-1B: Type 80 not implemented"], f"project error propagation failed: {errored.errors}"
+    assert errored.total_support_count == 5, "errored enabled row should still count supports"
+
+    try:
+        analyze_project_rows([ProjectInputRow("51-1.1/2B", 0)])
+        raise AssertionError("zero project quantity should fail")
+    except ValueError:
+        pass
+
+    print("v project aggregation wrapper OK")
+except Exception as e:
+    print(f"X project aggregation wrapper ERROR: {e}")
+
 try:
     from data.component_table_registry import (
         EXISTING_COMPONENT_TABLES,
