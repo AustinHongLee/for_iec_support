@@ -406,8 +406,18 @@ class MainWindow(QMainWindow):
 
         self._project_rows = updated_rows
         self._refresh_item_list_display()
+        self._clear_analysis_outputs()
         total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
         self.statusBar().showMessage(f"已更新組數，啟用項目合計 {total_supports} 組")
+
+    def _clear_analysis_outputs(self):
+        """Clear stale analysis/material outputs after project inputs change."""
+        self._results.clear()
+        self._project_result = None
+        self.result_table.setRowCount(0)
+        self.btn_export.setEnabled(False)
+        self.total_weight_label.setText("總重量: -- kg")
+        self.material_cutting_page.set_results_ready(False)
 
     def _on_delete_item(self):
         row = self.item_list.currentRow()
@@ -422,12 +432,8 @@ class MainWindow(QMainWindow):
     def _on_clear_all(self):
         self.item_list.clear()
         self._project_rows.clear()
-        self._results.clear()
-        self._project_result = None
+        self._clear_analysis_outputs()
         self._selected_index = -1
-        self.result_table.setRowCount(0)
-        self.btn_export.setEnabled(False)
-        self.total_weight_label.setText("總重量: -- kg")
         self.side_panel.clear_panel()
         self.statusBar().showMessage("已清除")
 
