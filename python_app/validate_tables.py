@@ -107,7 +107,7 @@ try:
     import os
     import tempfile
     import openpyxl
-    from export.excel_export import export_project_to_excel
+    from export.excel_export import export_project_to_excel, export_project_workbook
 
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
@@ -122,6 +122,34 @@ try:
         assert ws.cell(row=2, column=2).value == 10, "project Excel quantity failed"
         assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
         assert ws.cell(row=2, column=12).value == original_quantity * 10, "project Excel total quantity failed"
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    fd, path = tempfile.mkstemp(suffix=".xlsx")
+    os.close(fd)
+    try:
+        export_project_workbook(project, path)
+        wb = openpyxl.load_workbook(path, data_only=True)
+        assert wb.sheetnames == [
+            "專案摘要",
+            "重量分析",
+            "材料合計",
+            "下料明細",
+            "下料圖示",
+        ], f"project package workbook sheets changed: {wb.sheetnames}"
+        ws_summary = wb["專案摘要"]
+        assert ws_summary.cell(row=1, column=1).value == "專案材料統計總覽", "project package summary title failed"
+        ws_weight = wb["重量分析"]
+        assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
+        assert ws_weight.cell(row=4, column=2).value == 10, "project package quantity failed"
+        ws_material = wb["材料合計"]
+        assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
+        assert ws_material.cell(row=4, column=9).value == original_quantity * 12, "project package material purchase qty failed"
+        ws_visual = wb["下料圖示"]
+        assert ws_visual.cell(row=1, column=1).value == "下料圖示", "project package cutting visual title failed"
     finally:
         try:
             os.remove(path)
