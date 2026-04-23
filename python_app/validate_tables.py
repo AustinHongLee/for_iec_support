@@ -41,6 +41,7 @@ try:
         analyze_project_rows,
         scale_analysis_result,
     )
+    from core.material_summary import aggregate_project
 
     single = analyze_single("51-1.1/2B")
     assert not single.error and single.entries, "project aggregation source case failed"
@@ -77,6 +78,21 @@ try:
     assert aggregate_entry.qty_subtotal == original_qty_subtotal * 12, "aggregated qty subtotal failed"
     assert abs(aggregate_entry.weight_output - original_weight * 12) < 0.0001, "aggregated weight failed"
     assert abs(project.total_weight - aggregate_entry.weight_output) < 0.0001, "project total weight failed"
+
+    material_summary = aggregate_project(project)
+    assert abs(material_summary.total_weight - project.total_weight) < 0.0001, "project material summary total failed"
+    assert len(material_summary.lines) == 1, "project material summary should merge duplicate designations"
+    assert material_summary.lines[0].total_qty == original_quantity * 12, "project material summary quantity failed"
+    assert material_summary.lines[0].source_fullstrings == [
+        "51-1.1/2B × 10",
+        "51-1.1/2B × 2",
+    ], "project material summary source labels failed"
+
+    linear_project = analyze_project_rows([ProjectInputRow("24-L50-04", 2)])
+    linear_summary = aggregate_project(linear_project)
+    linear_lines = linear_summary.get_linear_lines()
+    assert linear_lines, "project cutting summary should include linear material"
+    assert "24-L50-04 × 2" in linear_lines[0].source_fullstrings, "project cutting source label failed"
 
     errored = analyze_project_rows([ProjectInputRow("80-1B", 5)])
     assert errored.errors == ["80-1B: Type 80 not implemented"], f"project error propagation failed: {errored.errors}"

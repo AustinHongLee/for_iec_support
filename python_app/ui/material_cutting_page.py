@@ -16,7 +16,12 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QBrush
 
 from core.models import AnalysisResult
-from core.material_summary import aggregate, MaterialSummary, SummaryLine
+from core.material_summary import (
+    aggregate,
+    aggregate_project,
+    MaterialSummary,
+    SummaryLine,
+)
 from core.cutting_optimizer import CuttingPlan, optimize_from_summary
 
 
@@ -137,6 +142,32 @@ class MaterialCuttingPage(QWidget):
         self.btn_export.setEnabled(True)
         self.lbl_status.setText(
             f"合計 {len(self._summary.lines)} 種材料 | "
+            f"總重 {self._summary.total_weight:.2f} kg | "
+            f"下料方案 {len(self._cutting_plans)} 種"
+        )
+
+    def generate_project(self, project):
+        """從 project-level 分析結果產生材料合計 + 下料方案"""
+        valid_rows = [row for row in project.rows if not row.scaled_result.error]
+        if not valid_rows:
+            QMessageBox.warning(self, "無資料", "沒有有效的專案分析結果")
+            return
+
+        self._summary = aggregate_project(project)
+
+        self._cutting_plans = []
+        for ln in self._summary.get_linear_lines():
+            plan = optimize_from_summary(ln)
+            if plan and plan.total_pieces > 0:
+                self._cutting_plans.append(plan)
+
+        self._display_summary()
+        self._display_cutting()
+
+        self.btn_export.setEnabled(True)
+        self.lbl_status.setText(
+            f"合計 {len(self._summary.lines)} 種材料 | "
+            f"支撐 {project.total_support_count} 組 | "
             f"總重 {self._summary.total_weight:.2f} kg | "
             f"下料方案 {len(self._cutting_plans)} 種"
         )

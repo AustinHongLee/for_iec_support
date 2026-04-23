@@ -635,7 +635,10 @@ class MainWindow(QMainWindow):
         if not self._results:
             QMessageBox.warning(self, "提示", "請先在重量分析頁完成分析")
             return
-        self.material_cutting_page.generate(self._results)
+        if self._project_result is not None:
+            self.material_cutting_page.generate_project(self._project_result)
+        else:
+            self.material_cutting_page.generate(self._results)
         self.main_tabs.setCurrentWidget(self.material_cutting_page)
 
     def _on_material_changed(self, text):
