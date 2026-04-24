@@ -36,7 +36,7 @@ def _register_types():
                          type_46, type_47, type_48, type_49, type_51, type_56, type_61, type_62,
                          type_72, type_73, type_76, type_77, type_78, type_79,
                          type_52, type_57,
-                         type_58, type_59, type_60, type_64, type_65)
+                         type_58, type_59, type_60, type_64, type_65, type_80)
 
     TYPE_HANDLERS.update({
         "01":  type_01.calculate,
@@ -92,6 +92,7 @@ def _register_types():
         "77":  type_77.calculate,
         "78":  type_78.calculate,
         "79":  type_79.calculate,
+        "80":  type_80.calculate,
         "52":  type_52.calculate,
         "53":  type_52.calculate,
         "54":  type_52.calculate,

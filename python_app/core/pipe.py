@@ -41,7 +41,7 @@ def add_pipe_entry(result: AnalysisResult, pipe_size, pipe_thickness: str,
     size_val = get_lookup_value(size_str)
 
     schedule = normalize_schedule(pipe_thickness)
-    details = get_pipe_details(size_val, schedule)
+    details = get_pipe_details(size_val, schedule, material_name)
 
     entry = AnalysisEntry()
     entry.name = "Pipe"

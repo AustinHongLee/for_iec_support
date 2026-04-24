@@ -15,7 +15,7 @@
 
 焊接於既有鋼構之間的單支構件, 無M-42, 不落地
 
-FIG-A: 直接接EXISTING STEEL, Total=H+L; FIG-B: 底部15mm板厚偏移, Total=(H−15)+L。第四段可選L1L2修改左右分配。
+FIG-A: Column=H + Top beam=L; FIG-B: 底部15mm板厚偏移, Column=(H−15) + Top beam=L。第四段可選L1L2修改左右分配。
 
 ---
 
@@ -30,14 +30,15 @@ FIG-A: 直接接EXISTING STEEL, Total=H+L; FIG-B: 底部15mm板厚偏移, Total=
 ## 核心運算邏輯
 
 ```text
-FIG-A: H+L; FIG-B: (H−15)+L
+FIG-A: Column(H) + Top beam(L)
+FIG-B: Column(H−15) + Top beam(L)
 ```
 
 ---
 
 ## 設計重點
 
-- 與 `M-42` 下部構件有關，最終組成會受到末段字母或允許型別限制。
+- 本型式不使用 `M-42`，直接焊接於既有鋼構。
 
 ---
 

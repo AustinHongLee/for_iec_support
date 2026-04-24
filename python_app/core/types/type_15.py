@@ -18,8 +18,9 @@ Heavy duty structural sliding support, steel-structure mounted
   1. Supporting Pipe A (垂直柱): H - 2×F - channelHeight, pipe_sch, SUPPORT_PIPE material by resolver
      ※ 長度 ≤ 0 時跳過
   2. Channel (MEMBER "N"): length = L, material by resolver
-  3. Wing Plate: Q × P × F, material by resolver
-  4. Stopper Plate: M × K × 6t, material by resolver
+     ※ 10" / 12" 視為 DETAIL "a"，改為 2 支橫向 Channel
+  3. Wing Plate: Q × P × F, 4 PC, material by resolver
+  4. Stopper Plate: M × K × 6t, 2 PC, material by resolver
   5. Base Plate: D × D × F (無鑽孔), material by resolver
   6. Top Plate (B SQ): B × B × F, material by resolver
 
@@ -39,6 +40,8 @@ from ..hardware_material import (
 from data.type15_table import get_type15_data, get_type15_h_max
 
 _STOPPER_T = 6  # mm
+_WING_QTY = 4
+_STOPPER_QTY = 2
 
 
 def _material(
@@ -53,6 +56,11 @@ def _material(
 def _attach_material_identity(result: AnalysisResult, material: MaterialSpec):
     if result.entries:
         result.entries[-1].material_canonical_id = material.canonical_id
+
+
+def _annotate_last_entry(result: AnalysisResult, remark: str):
+    if result.entries:
+        result.entries[-1].remark = remark
 
 
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
@@ -108,8 +116,18 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         add_pipe_entry(result, line_size, data["pipe_sch"], pipe_length, support_material)
 
     # ── 2. Channel (MEMBER "N") ──
-    add_steel_section_entry(result, "Channel", channel_dim, l_val, material=steel_material.name)
+    channel_qty = 2 if int(line_size) >= 10 else 1
+    add_steel_section_entry(
+        result,
+        "Channel",
+        channel_dim,
+        l_val,
+        steel_qty=channel_qty,
+        material=steel_material.name,
+    )
     _attach_material_identity(result, steel_material)
+    if channel_qty == 2:
+        _annotate_last_entry(result, 'detail_a_double_channel_for_10in_and_12in')
 
     # ── 3. Wing Plate: Q × P × F ──
     add_plate_entry(
@@ -119,6 +137,11 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=F,
         plate_name="Plate_WING",
         material=plate_material,
+        plate_qty=_WING_QTY,
+    )
+    _annotate_last_entry(
+        result,
+        f'shape=wing_plate; size={data["Q"]}x{data["P"]}x{F}; qty={_WING_QTY}; field_cut=P',
     )
 
     # ── 4. Stopper Plate: M × K × 6t ──
@@ -129,6 +152,11 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=_STOPPER_T,
         plate_name="Plate_STOPPER",
         material=plate_material,
+        plate_qty=_STOPPER_QTY,
+    )
+    _annotate_last_entry(
+        result,
+        f'shape=stopper_plate; size={data["M"]}x{data["K"]}x{_STOPPER_T}; qty={_STOPPER_QTY}; lip=10C',
     )
 
     # ── 5. Base Plate: D × D × F (無鑽孔, 落在 existing steel) ──

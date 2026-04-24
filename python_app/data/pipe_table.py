@@ -2,6 +2,7 @@
 管道查詢表 - 對應 VBA 中的 Pipe_Table 工作表
 包含管徑(inch)、外徑(mm)、各 Schedule 壁厚(mm)
 """
+import math
 
 # 管道外徑 (Nominal Pipe Size -> OD in mm)
 PIPE_OD = {
@@ -43,6 +44,23 @@ PIPE_THICKNESS = {
     42:   {"10S": 3.96, "STD.WT": 9.53},
 }
 
+PIPE_MATERIAL_DENSITY_G_CM3 = {
+    "A36/SS400": 7.85,
+    "A36 / SS400": 7.85,
+    "A53Gr.B": 7.85,
+    "SA-106 Gr.B": 7.85,
+    "SUS304": 7.93,
+    "SUS316": 7.98,
+    "AS": 7.82,
+}
+
+
+def get_pipe_material_density(material: str | None) -> float:
+    """Return pipe material density in g/cm^3; default to carbon steel."""
+    if not material:
+        return 7.85
+    return PIPE_MATERIAL_DENSITY_G_CM3.get(str(material), 7.85)
+
 
 def get_pipe_od(pipe_size: float) -> float:
     """取得管道外徑 (mm)"""
@@ -61,18 +79,23 @@ def get_pipe_thickness(pipe_size: float, schedule: str) -> float:
     return sch_map[schedule]
 
 
-def calculate_pipe_weight(od_mm: float, thickness_mm: float) -> float:
-    """計算管道每米重量 (kg/m)"""
-    import math
-    return round((od_mm - thickness_mm) * math.pi / 1000 * thickness_mm * 7.85, 2)
+def pipe_weight_constant(density_g_cm3: float) -> float:
+    """Return the standard pipe-weight constant for OD/t in mm."""
+    return math.pi * density_g_cm3 / 1000
 
 
-def get_pipe_details(pipe_size: float, schedule: str) -> dict:
+def calculate_pipe_weight(od_mm: float, thickness_mm: float, density_g_cm3: float = 7.85) -> float:
+    """計算管道每米重量 (kg/m): W=(OD-t)*t*(pi*density/1000)."""
+    return round((od_mm - thickness_mm) * thickness_mm * pipe_weight_constant(density_g_cm3), 2)
+
+
+def get_pipe_details(pipe_size: float, schedule: str, material: str | None = None) -> dict:
     """
     取得管道完整資訊
     回傳 {"od_mm": float, "thickness_mm": float, "weight_per_m": float}
     """
     od = get_pipe_od(pipe_size)
     thk = get_pipe_thickness(pipe_size, schedule)
-    wt = calculate_pipe_weight(od, thk)
-    return {"od_mm": od, "thickness_mm": thk, "weight_per_m": wt}
+    density = get_pipe_material_density(material)
+    wt = calculate_pipe_weight(od, thk, density)
+    return {"od_mm": od, "thickness_mm": thk, "weight_per_m": wt, "density_g_cm3": density}

@@ -12,6 +12,30 @@
 - `Safe to reference`: `yes` / `no`
 - `Notes`: 額外提醒
 
+## 2026-04-24 00:00:00 +08:00 | Codex
+
+- Action: 將使用者於對話中貼入的 `type` PNG 視為最新版圖面來源，並依此更新 Type 14 / Type 15 家族判讀
+- Files:
+  - `core/types/type_14.py`
+  - `core/types/type_15.py`
+  - `docs/types/type_14.md`
+  - `docs/types/type_15.md`
+  - `validate_tables.py`
+  - `coordination/WORKLOG.md`
+- Reason:
+  - 使用者明確指示：聊天中貼上的 `type.png` 為最新版圖面
+  - 需避免沿用舊版 PDF/舊假設，造成 Type 14 / 15 板件數量與 DETAIL "a" 判讀偏差
+- Status: done
+- Safe to reference: yes
+- Notes:
+  - Type 14 / 15 最新判讀基準：
+    1. `Plate_WING` 固定 4 片
+    2. `Plate_STOPPER` 固定 2 片
+    3. 10" / 12" 視為 `DETAIL "a"`，改為 2 支橫向 Channel
+    4. 非四方板件之形狀資訊寫入 BOM `remark`，供後續加工圖自動化使用
+
+---
+
 ## 2026-04-21 16:30:00 +08:00 | Claude (bug fix)
 
 - Action: 修正 Type 59 計算錯誤（對照 VBA A1_Type_Calculator_.bas Sub Type_59）

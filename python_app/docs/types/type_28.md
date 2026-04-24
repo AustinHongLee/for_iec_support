@@ -30,7 +30,7 @@ C125/C150用槽鋼(水平管); L50/L75用角鐵(垂直管+U-bolt側掛)。U-bolt
 ## 核心運算邏輯
 
 ```text
-型鋼 Total=2H+L(一體折/焊); M-42底板×1 set
+Left leg(H) + Top beam(L) + Right leg(H) + M-42底板×1 set
 ```
 
 ---

@@ -13,9 +13,9 @@
 
 ## 系統本質
 
-框架/搖籃型懸臂, H段×2(上下平行) + L段×1, FIG-A基本/FIG-B附U-bolt/FIG-C附Lug Plate(M-34)+K Bolt
+框架/搖籃型懸臂, 固定 3 件鋼構件: H段上件 + H段下件 + L段, FIG-C 再追加 Lug Plate(M-34)×2 + K Bolt×8
 
-框架結構: H段×2(上下平行)+L段×1, 全6mm角焊。FIG-A基本框架、FIG-B附U-bolt/Down Stopper、FIG-C附Lug Plate(M-34)+K Bolt。與Type 25差異在於多一支H段形成框架。
+框架結構: H段上件 + H段下件 + L段, 全6mm角焊。FIG-A基本框架、FIG-B附U-bolt/Down Stopper、FIG-C附Lug Plate(M-34)×2 + K Bolt×8。與Type 25差異在於多一支H段形成框架。
 
 ---
 
@@ -30,7 +30,8 @@
 ## 核心運算邏輯
 
 ```text
-型鋼: H×2 + L; FIG-C追加 Lug Plate(M-34查表) + K Bolt×2
+FIG-A/B: H段上件 + H段下件 + L段
+FIG-C: 上述 3 件鋼構 + Lug Plate(M-34查表)×2 + K Bolt×8
 ```
 
 ---

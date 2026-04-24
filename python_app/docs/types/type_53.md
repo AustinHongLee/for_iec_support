@@ -7,7 +7,7 @@
 | 分類 | Guided Pipe Shoe Support |
 | 圖面數 | 2 頁 |
 | 圖面編號 | E1906-DSP-500-006 |
-| 狀態 | ✅ 已實作 |
+| 狀態 | ✅ 3/4"~24" 已共用 Type 52 幾何；⚠️ 26"~42" D-64A 尚未獨立接線 |
 
 ---
 
@@ -253,6 +253,8 @@ Pipe（水平）
 | 2 | **Member 最大長度不得超過 Beam 寬度** |
 | 3 | HOPS = Height of Pipe Shoe, LOPS = Length of Pipe Shoe |
 
+目前 calculator 對 3/4"~24" 走 `type_52.py` 共用路徑，因此 `Pad_52Type`、`L40x40x5`、`H Beam / FB_52Type_3` 的幾何與 Type 52 保持一致。
+
 ### D-64A（第2頁）
 
 | NOTE | 內容 |
@@ -262,6 +264,8 @@ Pipe（水平）
 | 3 | TYPE-A: 保溫 ≤100mm, TYPE-B: 保溫 >100 ≤150mm |
 | 4 | 荷重條件: CS saddle, MAX 700°F & 300 PSI |
 | 5 | HOPS = Height of Pipe Shoe, LOPS = Length of Pipe Shoe |
+
+目前 calculator 尚未獨立落地 D-64A 的 26"~42" 大管 guide 結構；後續應補 `Guide NO.6 = L50x50x6 x2` 與 D-80B 多件組裝路徑。
 
 ---
 

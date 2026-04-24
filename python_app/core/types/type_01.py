@@ -29,6 +29,7 @@ from data.tee_table import get_tee_M
 
 
 _PAVING_LOW_POINT_M42_LETTERS = {"A", "B", "E", "G"}
+_DEFAULT_H_LIMIT_MM = 1500
 
 
 def _material_spec(kind: HardwareKind, material_name: str):
@@ -115,6 +116,11 @@ def calculate(fullstring: str, connection: str = "elbow",
     part3 = get_part(fullstring, 3)
     letter = part3[-1]
     h_value = int(part3[:-1]) * 100  # H×100mm
+    h_limit = int(overrides.get("h_limit") or _DEFAULT_H_LIMIT_MM)
+    if h_value > h_limit:
+        result.warnings.append(
+            f"H={h_value}mm 超出 Type 01 適用範圍 (≤ {h_limit}mm), 非標準設計"
+        )
     if letter.upper() in _PAVING_LOW_POINT_M42_LETTERS:
         result.warnings.append(
             f"M42 底座類型 {letter} — H 應從鋪面最低點起算 (NOTE 6)"

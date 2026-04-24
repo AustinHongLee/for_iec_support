@@ -24,16 +24,17 @@ Type 32 計算器  (判讀來源: D-35M, E1906-DSP-500-006)
     31: 底部=EXISTING STEEL, 上部=框架   → 支撐框 (由下往上撐)
     32: 上部=EXISTING STEEL, 底部=框架   → 吊掛框 (從上往下吊)
 
-  ★ VBA 輸出差異:
-    31: 2 筆分開 (H*2 一筆, L 一筆)
-    32: 1 筆合併 (H*2 + L)
-    原因: 32 的 U 型框 (左腿+底梁+右腿) 是一體折/焊的,
-          上方直接焊到 EXISTING STEEL, 不需額外上橫梁
+  結構拆分:
+    ① 左腿(H) ×1
+    ② 底梁(L) ×1
+    ③ 右腿(H) ×1
 
   ★ 無 M-42, 無螺栓, 無 U-bolt
 
 BOM:
-  ① 型鋼 ×1 筆  Total = H × 2 + L
+  ① 左腿 ×1  Length = H
+  ② 底梁 ×1  Length = L
+  ③ 右腿 ×1  Length = H
 
 DIMENSIONS TABLE (D-35M):
   MEMBER "M"      | L MAX | H MAX
@@ -100,22 +101,22 @@ def calculate(fullstring: str) -> AnalysisResult:
     section_dim = full_size[1:]  # 去掉前綴字母
 
     # ═══════════════════════════════════════════════════════
-    # ① H 方向 — 垂直腿 ×2 (左腿 + 右腿)
-    #    VBA 合併成一筆 H*2+L, 但下料時切 3 根獨立的
-    #    故拆成: 腿 qty=2 + 梁 qty=1
+    # ① 左腿 — H
     # ═══════════════════════════════════════════════════════
-    add_steel_section_entry(result, section_type, section_dim, section_H, steel_qty=2)
-    result.entries[-1].remark = (
-        f"吊掛框H向(左右腿), H={section_H} ×2"
-    )
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Left leg, H={section_H}"
 
     # ═══════════════════════════════════════════════════════
     # ② L 方向 — 底橫梁 ×1
     #    上方 = EXISTING STEEL (非 MEMBER)
     # ═══════════════════════════════════════════════════════
     add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = (
-        f"吊掛框L向(底梁), L={section_L}"
-    )
+    result.entries[-1].remark = f"Bottom beam, L={section_L}"
+
+    # ═══════════════════════════════════════════════════════
+    # ③ 右腿 — H
+    # ═══════════════════════════════════════════════════════
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Right leg, H={section_H}"
 
     return result

@@ -2,15 +2,20 @@
 Type 16 計算器
 格式: 16-2B-05
 - 第二段: 管徑
-- 第三段: 長度 (純數字, *100mm)
+- 第三段: H (純數字, *100mm)
+
+最新版圖面判讀:
+- DETAIL SEE D-80 (IF REQUIRED): not furnished，不納入本型式 BOM
+- FOR SPECIAL MAIN LINE SEE NOTE 2: 明確區分上下段管，上段暫定 SUS304、下段暫定 A53Gr.B
+- Hx SHALL BE CUT TO SUIT IN FIELD: 現階段只保留幾何公式，Hx 基準視為 H+300
 """
-import math
 from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..hardware_material import (
     HardwareKind,
+    HardwareMaterialOverrides,
     MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
@@ -44,6 +49,14 @@ def _material(
     return resolve_hardware_material(kind, service=service, overrides=overrides)
 
 
+def _fixed_material(kind: HardwareKind, material_name: str, *, service) -> MaterialSpec:
+    return resolve_hardware_material(
+        kind,
+        service=service,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
 def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
     material_context = parse_hardware_material_context(
@@ -57,15 +70,15 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # 解析
     part2 = get_part(fullstring, 2)
     pipe_size = int(get_lookup_value(part2))
-    third_length = int(get_part(fullstring, 3)) * 100
+    h_val = int(get_part(fullstring, 3)) * 100
 
     if pipe_size not in TYPE16_MAP:
         result.error = f"Type 16: 不支援管徑 {pipe_size}"
         return result
 
     support_pipe_size, pipe_thickness, plate_size = TYPE16_MAP[pipe_size]
-    upper_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
-    support_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
+    upper_material = _fixed_material(HardwareKind.SUPPORT_PIPE, "SUS304", service=service)
+    support_material = _fixed_material(HardwareKind.SUPPORT_PIPE, "A53Gr.B", service=service)
     plate_material = _material(HardwareKind.SUPPORT_PLATE, service=service, overrides=material_overrides)
 
     # 計算管道細節
@@ -78,9 +91,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     add_pipe_entry(result, support_pipe_size, pipe_thickness, main_pipe_length, upper_material)
 
     # 支管長度
-    support_pipe_length = round(
-        third_length - (pipe_details["od_mm"] / 2) - 100 + 300
-    )
+    support_pipe_length = round(h_val - (pipe_details["od_mm"] / 2) - 100 + 300)
     if support_pipe_length > 0:
         add_pipe_entry(result, support_pipe_size, pipe_thickness, support_pipe_length, support_material)
 

@@ -6,7 +6,7 @@
 | 分類 | Lug plate side support |
 | 適用範圍 | 2 1/2" & smaller, 3"~8", 10"~14" |
 | 圖面頁數 | 1 |
-| 狀態 | ✅ 已分析（待 calculator） |
+| 狀態 | ✅ 已分析 |
 
 ---
 
@@ -17,7 +17,7 @@ TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
 它有兩種使用情境：
 
 - `FIG-A`: 用在 insulated pipe，圖面直接指定 `PIPE SHOE (D-63) (NOT FURNISHED)`
-- `FIG-B`: 用在 bare pipe，改成 `U-BOLT (D-68)`
+- `FIG-B`: 用在 bare pipe，改成 `U-BOLT (D-68 / M-26)`，並依 M-26 note 配 4 顆 finished hex nuts
 
 也就是說，它不是獨立 shoe，而是：
 
@@ -57,7 +57,8 @@ TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
 |------|------|------|
 | Lug Plate ×2 | 本圖 | 由 `A/B/C/D/T` 查表決定尺寸 |
 | Pipe Shoe | `D-63` | 僅 `FIG-A`，且圖面標 `NOT FURNISHED` |
-| U-bolt | `D-68` | 僅 `FIG-B` |
+| U-bolt | `D-68 / M-26` | 僅 `FIG-B`，U-bolt 規格與 rod size 由 M-26 決定 |
+| Finished hex nut | `M-26` | 僅 `FIG-B`，4 PCS |
 | Shim | 現場調整 | `C/S SHIM IN FIELD (TYP.)` |
 
 ---
@@ -108,7 +109,7 @@ calculator 可以直接把 `(A)/(S)/(R)` 映射成 plate material。
 | FIG | 構件 |
 |------|------|
 | `A` | Lug Plate ×2 + `D-63 shoe` reference (not furnished) |
-| `B` | Lug Plate ×2 + U-bolt (`D-68`) |
+| `B` | Lug Plate ×2 + U-bolt (`D-68 / M-26`) + finished hex nut ×4 |
 
 ### 建議資料表
 
@@ -123,7 +124,7 @@ TYPE59_TABLE = {
 ### 實作重點
 
 - `line size` 不是逐一列尺寸，而是先落到 3 個 group
-- `FIG-A` / `FIG-B` 決定中間件是 `shoe` 或 `U-bolt`
+- `FIG-A` / `FIG-B` 決定中間件是 `shoe` 或 `U-bolt + finished hex nut`
 - `shoe` 在 BOM 是否計入，要跟專案既有「NOT FURNISHED」慣例一致
 - `material_symbol` 只影響 lug plate material，不改幾何
 
@@ -141,4 +142,4 @@ TYPE59_TABLE = {
 
 ## 給 Claude 的一句話摘要
 
-> TYPE-59 = 依 line size group 建兩塊 lug plate；`FIG-A` 配 `D-63 shoe`，`FIG-B` 配 `D-68 U-bolt`，材料尾碼只影響 plate material。
+> TYPE-59 = 依 line size group 建 lug plate；`FIG-A` 配 `D-63 shoe`，`FIG-B` 配 `D-68 / M-26 U-bolt + finished hex nut x4`，材料尾碼只影響 plate material。

@@ -15,7 +15,7 @@
 
 懸臂角鋼: H段(垂直)+L段(水平), FIG-A基本/FIG-B附U-bolt/FIG-C附Lug Plate(M-34)+K Bolt
 
-FIG-A簡易懸臂; FIG-B附U-bolt/Down Stopper(不含供貨); FIG-C附LUG PLATE TYPE-C(M-34查表)+K Bolt×2。第四段可選L1L2修改尺寸(供建模)。
+FIG-A簡易懸臂; FIG-B附U-bolt/Down Stopper(不含供貨); FIG-C附LUG PLATE TYPE-C(M-34查表)+K Bolt×4。第四段可選L1L2修改尺寸(供建模)。
 
 ---
 
@@ -30,7 +30,7 @@ FIG-A簡易懸臂; FIG-B附U-bolt/Down Stopper(不含供貨); FIG-C附LUG PLATE 
 ## 核心運算邏輯
 
 ```text
-角鋼×1, Total=H+L; FIG-C追加Lug Plate(M-34查表)+K Bolt×2
+角鋼×1, Total=H+L; FIG-C追加Lug Plate(M-34查表)+K Bolt×4
 ```
 
 ---

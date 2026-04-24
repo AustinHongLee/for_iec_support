@@ -22,8 +22,8 @@ Type 28 計算器  (判讀來源: D-31, E1906-DSP-500-006)
 
   力傳遞: 管線 → 上橫梁 → 左右支腿 → M-42 底板 → 基礎
 
-  門型框架由一根 MEMBER 折/焊構成:
-    左腿(H) + 橫梁(L) + 右腿(H) = 2H + L
+  門型框架由三段 MEMBER 組成:
+    左腿(H) + 橫梁(L) + 右腿(H)
 
   圖面標示 "FOR CHANNEL" — C125/C150 用槽鋼; L50/L75 用角鐵
 
@@ -35,8 +35,10 @@ Type 28 計算器  (判讀來源: D-31, E1906-DSP-500-006)
   ※ STANDARD U-BOLT(D-68) (NOT FURNISHED) — U-bolt 不含在本 Type BOM 內
 
 BOM (所有 MEMBER 共通, 無板件):
-  ① MEMBER "M" ×1  Total_Length = 2H + L
-  ② M-42 lower component ×1 set
+  ① 左腿 ×1  長度 = H
+  ② 上橫梁 ×1  長度 = L
+  ③ 右腿 ×1  長度 = H
+  ④ M-42 lower component ×1 set
 
 DIMENSIONS TABLE (D-31):
   MEMBER "M"    | L MAX | H MAX
@@ -50,7 +52,7 @@ NOTE 3: IF THE FOUNDATION IS NOT USED, "H" = FROM LOWEST POINT OF PAVING.
 NOTE 4: THIS TYPE SHALL BE USED WITH M-42. USE TYPE-L & P ONLY.
 
 VBA BUG: Section_Length_L 漏乘 * 100，導致 L 值差 100 倍。
-         Python 版已修正。
+         Python 版已修正，且採三件式結構表達。
 """
 from ..models import AnalysisResult
 from ..parser import get_part
@@ -117,24 +119,28 @@ def calculate(fullstring: str) -> AnalysisResult:
         )
 
     # ═══════════════════════════════════════════════════════
-    # ① MEMBER "M" — 門型框架 (一根構件折/焊成)
-    #    Total_Length = 2H + L
+    # ①~③ MEMBER "M" — 門型框架三件式
     #    左腿(H) + 橫梁(L) + 右腿(H)
     #
     #    VBA BUG: Section_Length_L 漏乘 *100
     #    VBA: Total = (H * 100 * 2) + L_digits  ← 錯
-    #    正確: Total = (H * 100 * 2) + (L * 100) = 2H + L
+    #    Python 版已修正 L 尺寸, 並拆成三件輸出.
     # ═══════════════════════════════════════════════════════
-    total_length = section_H * 2 + section_L
     section_dim = full_size[1:]  # 去掉前綴字母
-    add_steel_section_entry(result, section_type, section_dim, total_length)
+
     usage_hint = "Channel:管置上方" if section_type == "Channel" else "Angle:可U-bolt側掛"
-    result.entries[-1].remark = (
-        f"門型 M-42:{m42_letter}, 2×H={section_H}+L={section_L}={total_length} ({usage_hint})"
-    )
+
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Left leg, H={section_H} ({usage_hint})"
+
+    add_steel_section_entry(result, section_type, section_dim, section_L)
+    result.entries[-1].remark = f"Top beam, L={section_L} ({usage_hint})"
+
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Right leg, H={section_H} ({usage_hint})"
 
     # ═══════════════════════════════════════════════════════
-    # ② M-42 下部組件 (底板 + 螺栓)
+    # ④ M-42 下部組件 (底板 + 螺栓)
     #    NOTE 4: USE TYPE-L & P ONLY
     # ═══════════════════════════════════════════════════════
     perform_action_by_letter(result, m42_letter, full_size)

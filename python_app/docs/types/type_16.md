@@ -17,6 +17,11 @@
 
 Type 16 與 Type 01 同樣以 dummy pipe 自主管線引出，但支撐頭改為水平支管加端板，形成導向/限位式支撐。圖面列出 2"~24" 對應的 Pipe Size "B" 與 Cover Plate 尺寸 C，Hx 現場裁切。
 
+目前最新版圖面判讀補充如下：
+- `DETAIL SEE D-80 (IF REQUIRED)`：not furnished，現階段不納入 Type 16 BOM
+- `FOR SPECIAL MAIN LINE SEE NOTE 2`：上下段管已明確拆開，上段暫定不銹鋼、下段暫定碳鋼
+- `Hx SHALL BE CUT TO SUIT IN FIELD`：現階段只保留公式基準，暫視為 `H + 300`
+
 ---
 
 ## 編碼格式
@@ -30,10 +35,10 @@ Type 16 與 Type 01 同樣以 dummy pipe 自主管線引出，但支撐頭改為
 ## 核心運算邏輯
 
 ```text
-Main Pipe(dummy) = 1.5A(inch)×25.4 + OD/2 + 100 mm, upper material
-Support Pipe = Hx - OD/2 - 100 + 300 mm, A53Gr.B
+Main Pipe(dummy) = 1.5A(inch)×25.4 + OD/2 + 100 mm, 暫定 SUS304
+Support Pipe = H - OD/2 - 100 + 300 mm, 暫定 A53Gr.B
 Cover Plate = C × C × 6t
-無 M42，無夾具，必要時僅引用 D-80 介面
+無 M42，無夾具，D-80 介面本型式暫不供料
 ```
 
 ---

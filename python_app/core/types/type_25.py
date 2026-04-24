@@ -23,7 +23,7 @@ FIG-B  附 U-bolt / Down Stopper 型
 FIG-C  附連接板型
   ├ Member "M" 角鋼: H段 + L段 (同 FIG-A)
   ├ LUG PLATE TYPE C (SEE M-34) — 連接板 ×1
-  └ K BOLT — 連接螺栓 ×2
+  └ K BOLT — 連接螺栓 ×4
 ────────────────────────────────────────────
 
 DIMENSIONS TABLE (from drawing D-27):
@@ -165,14 +165,14 @@ def calculate(fullstring: str) -> AnalysisResult:
             )
             result.entries[-1].remark = f"SEE M-34, {fig_tag}"
 
-        # K BOLT ×2 (連接用螺栓)
+        # K BOLT ×4 (依 M-34 TYPE-C 四孔)
         if k_spec:
             add_custom_entry(
                 result,
                 name="BOLT",
                 spec=k_spec,
                 material="SS400",
-                quantity=2,
+                quantity=4,
                 unit_weight=0.1,  # 估值, 實際依 K bolt 規格
                 unit="PC",
             )

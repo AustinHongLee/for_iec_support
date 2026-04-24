@@ -157,6 +157,14 @@ Pipe（水平）
 | 3 | Reinforcing Pad | 依需求（designation 中用 (P) 標記） |
 | 4 | Weld | 5V TYP. |
 
+目前 calculator 會把 `Pad_52Type` 的公式來源寫入 remark：
+
+```text
+width = OD*pi/3
+<10": length = D + 25*2
+>=10": length = E*2 + 25*2 + 250
+```
+
 ### 10"~24"（補強型）
 
 | # | 構件 | 規格 |
@@ -166,6 +174,16 @@ Pipe（水平）
 | 3 | L-angle ×2 | L40×40×5, CUT IN FIELD |
 | 4 | Reinforcing Pad | 依需求（designation 中用 (P) 標記） |
 | 5 | Weld | 5V TYP. |
+
+`FB_52Type_3` 僅在 10" 以上出現，目前以：
+
+```text
+length = HOPS
+width = A + 35/2 - member_t/2
+qty = 4
+```
+
+其中 length 仍標記為 `pending precision check`。
 
 ### 不存在的構件
 
