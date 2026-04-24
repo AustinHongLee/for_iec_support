@@ -6,6 +6,7 @@ M-26 U-Bolt 資料表
 - Type 58 等 U-bolt 類支撐
 - bare pipe clamp / saddle 類型
 """
+from .component_size_utils import normalize_fractional_size
 
 M26_TABLE = {
     '1/4"': {"type": "UB-1/4B", "line_size": '1/4"', "rod_size_a": '1/4"', "B": 18, "C": 24, "D": 36, "E": 39, "load_650f_kg": 220, "load_750f_kg": 220},
@@ -33,9 +34,11 @@ M26_TABLE = {
 }
 
 
-def get_m26_by_line_size(line_size: str) -> dict | None:
+def get_m26_by_line_size(line_size) -> dict | None:
     """依 line size 查 U-bolt 規格。"""
-    return M26_TABLE.get(line_size)
+    key = normalize_fractional_size(line_size)
+    key = key.replace("-", " ")
+    return M26_TABLE.get(key)
 
 
 def get_m26_by_type(ub_type: str) -> dict | None:

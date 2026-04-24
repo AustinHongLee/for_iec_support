@@ -9,7 +9,22 @@ FIG-B: bare pipe (多 F 尺寸, 45°/120° 幾何)
 from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..plate import add_plate_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type60_table import get_type60_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -41,15 +56,20 @@ def calculate(fullstring: str) -> AnalysisResult:
         result.error = f"找不到 {support_no} 的尺寸資料"
         return result
 
-    material = "A36/SS400"
     t = data["T"]
 
     # ① Side Plate ×2 (A×B×T) — 主側板
-    add_plate_entry(result, data["A"], data["B"], t, "SIDE PLATE", material, 2)
+    add_plate_entry(
+        result, data["A"], data["B"], t,
+        "SIDE PLATE", _SUPPORT_PLATE_MATERIAL, 2
+    )
 
     # ② 若 FIG-B 有 F 值，額外計入底部連接板
     if data["F"] is not None:
-        add_plate_entry(result, data["C"], data["F"], t, "BOTTOM PLATE", material, 1)
+        add_plate_entry(
+            result, data["C"], data["F"], t,
+            "BOTTOM PLATE", _SUPPORT_PLATE_MATERIAL, 1
+        )
 
     # ③ Shoe reference (D-80/80B, NOT FURNISHED)
     result.warnings.append(

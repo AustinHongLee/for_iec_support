@@ -11,13 +11,13 @@ Type 26 計算器  (判讀來源: D-28 + D-29, E1906-DSP-500-006)
 結構: 標準化懸臂框架支撐 (Catalog Cantilever Frame Support)
 ────────────────────────────────────────────────────────────
  與 Type 25 (單純懸臂) 的關鍵差異:
- - Type 26 是框架/搖籃型, H 方向有「上下兩支」構件 → 材料 H×2
+ - Type 26 是框架/搖籃型, H 方向有「上下兩支」構件
  - 多支援 C125×65×6 槽鋼 (Channel)
  - H/L 上限不同 (普遍更大)
 ────────────────────────────────────────────────────────────
 
 FIG-A  基本框架型
-  ├ 框架結構: H段×2 (上下平行) + L段×1
+  ├ 框架結構: H段×2 (上下平行, 分列兩件) + L段×1
   └ 焊接組合, 全結構 6mm 角焊
 
 FIG-B  附 U-bolt / Down Stopper 型
@@ -27,8 +27,8 @@ FIG-B  附 U-bolt / Down Stopper 型
 
 FIG-C  附連接板型
   ├ 框架結構: 同 FIG-A
-  ├ LUG PLATE TYPE-C (SEE M-34) — 連接板 ×1
-  ├ K BOLT — 連接螺栓 ×2
+  ├ LUG PLATE TYPE-C (SEE M-34) — 連接板 ×2
+  ├ K BOLT — 連接螺栓 ×8
   └ SEE DETAIL "A" (底部連接)
 
 力傳遞路徑:
@@ -127,15 +127,18 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     # ═══════════════════════════════════════════════════════
     # 共通: 框架結構 (所有 Fig 皆有)
-    #   H段 ×2 (上下兩支平行構件) + L段 ×1
+    #   H段 ×2 (上下兩支平行構件, 分列兩件) + L段 ×1
     # ═══════════════════════════════════════════════════════
 
-    # 1. H 段 — 框架型 H×2 (兩支 H 方向構件, 上下平行)
-    h_total = section_H * 2
-    add_steel_section_entry(result, section_type, section_dim, h_total)
-    result.entries[-1].remark = f"{fig_tag}, H段×2 (H={section_H}×2={h_total})"
+    # 1. H 段上件
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"{fig_tag}, H段上件"
 
-    # 2. L 段 — 垂直/端部構件 ×1
+    # 2. H 段下件
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"{fig_tag}, H段下件"
+
+    # 3. L 段 — 垂直/端部構件 ×1
     add_steel_section_entry(result, section_type, section_dim, section_L)
     result.entries[-1].remark = f"{fig_tag}, L段"
 
@@ -152,6 +155,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         oj = table.get("OJ", 0)
 
         # DETAIL "A" — LUG PLATE TYPE-C (SEE M-34)
+        # Type 26 Fig-C 依框架上下兩支 H 段視為兩片 lug plate。
         if plate_a > 0:
             # C125 沒有 D 值, 使用 C 值作為板高估值
             plate_height = plate_c + (plate_d if plate_d else 0)
@@ -162,7 +166,7 @@ def calculate(fullstring: str) -> AnalysisResult:
                 plate_thickness=plate_t,
                 plate_name="LUG_PLATE_C",
                 material="A36/SS400",
-                plate_qty=1,
+                plate_qty=2,
                 bolt_switch=True,
                 bolt_x=2 * table.get("E", 0) + table.get("F", 0),
                 bolt_y=0,
@@ -171,14 +175,14 @@ def calculate(fullstring: str) -> AnalysisResult:
             )
             result.entries[-1].remark = f"SEE M-34, {fig_tag}"
 
-        # K BOLT ×2 (連接用螺栓)
+        # K BOLT ×8 (兩片 lug plate, 每片四孔)
         if k_spec:
             add_custom_entry(
                 result,
                 name="BOLT",
                 spec=k_spec,
                 material="SS400",
-                quantity=2,
+                quantity=8,
                 unit_weight=0.1,
                 unit="PC",
             )

@@ -19,9 +19,10 @@ Type 31 計算器  (判讀來源: D-35M, E1906-DSP-500-006)
 
   圖面標示 "FOR CHANNEL" — C125/C150/H250 用於需要更高剛性場合
 
-  結構拆分 (VBA 輸出 2 筆):
-    ① H 方向 (垂直): 左腿(H) + 右腿(H) = H × 2 → 一筆合併
-    ② L 方向 (水平): 上橫梁 = L → 一筆
+  結構拆分:
+    ① 左腿(H) ×1
+    ② 上橫梁(L) ×1
+    ③ 右腿(H) ×1
     底部 = EXISTING STEEL 本身 (非 MEMBER "M" 範圍)
 
   ★ 無 M-42 — 不落地, 焊接至既有鋼構
@@ -29,8 +30,9 @@ Type 31 計算器  (判讀來源: D-35M, E1906-DSP-500-006)
   ★ 與 TYPE-30 差異: 30=單支夾持, 31=矩形框架 (剛性更高)
 
 BOM:
-  ① 型鋼 (H方向) ×1 筆  Total = H × 2
-  ② 型鋼 (L方向) ×1 筆  Total = L
+  ① 左腿 ×1  Length = H
+  ② 上橫梁 ×1  Length = L
+  ③ 右腿 ×1  Length = H
 
 DIMENSIONS TABLE (D-35M):
   MEMBER "M"      | L MAX | H MAX
@@ -97,22 +99,22 @@ def calculate(fullstring: str) -> AnalysisResult:
     section_dim = full_size[1:]  # 去掉前綴字母
 
     # ═══════════════════════════════════════════════════════
-    # ① H 方向 — 垂直腿 ×2 (左腿 + 右腿, 各 H 長)
-    #    VBA 合併成一筆 H*2, 但下料時是切 2 根獨立的
-    #    故拆成 qty=2, 每根長 H
+    # ① 左腿 — H
     # ═══════════════════════════════════════════════════════
-    add_steel_section_entry(result, section_type, section_dim, section_H, steel_qty=2)
-    result.entries[-1].remark = (
-        f"框架H向(左右腿), H={section_H} ×2"
-    )
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Left leg, H={section_H}"
 
     # ═══════════════════════════════════════════════════════
     # ② L 方向 — 上橫梁 ×1
     #    底部 = EXISTING STEEL (非 MEMBER)
     # ═══════════════════════════════════════════════════════
     add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = (
-        f"框架L向(上梁), L={section_L}"
-    )
+    result.entries[-1].remark = f"Top beam, L={section_L}"
+
+    # ═══════════════════════════════════════════════════════
+    # ③ 右腿 — H
+    # ═══════════════════════════════════════════════════════
+    add_steel_section_entry(result, section_type, section_dim, section_H)
+    result.entries[-1].remark = f"Right leg, H={section_H}"
 
     return result

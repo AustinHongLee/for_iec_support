@@ -30,7 +30,7 @@ TYPE-51 是**結構型支撐（Structure Type）**，TYPE-66 是**介面型（In
 |:---:|------|------|:---:|
 | **3/4"~3"** | Flat Bar 承托 | "H"×50×9 FLAT BAR，無 Member "M" | D-62 |
 | **4"~24"** | 角鐵夾持承托 | Member "M"（L型角鐵）兩側對稱 | D-62 |
-| **26"~42"** | 槽鋼 + 鞍座組裝 | C 型槽鋼 + 雙側板 + 中央 saddle | D-62A |
+| **26"~42"** | 槽鋼 + 鞍座組裝 | C 型槽鋼 + D-91 reinforcing pad | D-62A / D-91 |
 
 > 此分級反映**製造方式**，三者力學行為相同：管線靠自重坐在支撐面上。
 
@@ -176,7 +176,7 @@ Pipe（水平）
 
 | # | 構件 | 規格 |
 |:---:|------|------|
-| 1 | Member "M" ×2 | L50×50×6（4"~6"）/ L65×65×6（8"~24"） |
+| 1 | Member "M" ×2 | L50×50×6（4"~6"）/ L65×65×6（8"~24"），每支長度 = 表內 H |
 | 2 | Base Plate / Saddle | 管線承托面 |
 | 3 | Weld | 6V TYP. |
 
@@ -184,10 +184,9 @@ Pipe（水平）
 
 | # | 構件 | 規格 |
 |:---:|------|------|
-| 1 | C-Channel ×2 | C125×65×6（26"~32"）/ C150×75×9（36"~42"） |
-| 2 | Saddle | 80° 弧面，中央承托 |
-| 3 | Side Plates | 高 50mm |
-| 4 | Reinforcing Pad | SEE D-91（大管必要） |
+| 1 | C-Channel ×2 | C125×65×6（26"~32"）/ C150×75×9（36"~42"），目前以 provisional length=300 輸出 |
+| 2 | Reinforcing Pad | SEE D-91 / Type 76：120° 弧寬 × 400L × 12t minimum |
+| 3 | Saddle / Side Detail | 80° saddle 與 50mm 側部圖示仍屬加工語意，暫以 remark 保留 |
 | 5 | Weld | 6V, 3 SIDES TYP. |
 
 ### 不存在的構件
@@ -255,7 +254,7 @@ Pipe（水平）
    - ≤24" → D-62 主表（H, Member "M"）
    - 26"~42" → D-62A 補充表
 4. 確認 Member 長度 ≤ Beam 寬度（NOTE 2）
-5. 大管確認 Reinforcing Pad 需求（D-91）
+5. 大管補入 D-91 / Type 76 Reinforcing Pad（120° × 400L × 12t minimum）
 6. 編碼: 51-{size}B
 ```
 

@@ -11,8 +11,25 @@ from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type41_table import get_type41_data
 from data.m45_table import get_m45_by_dia
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_EXPANSION_BOLT_MATERIAL = _material_spec(HardwareKind.EXPANSION_BOLT, "SUS304")
 
 
 def _parse_member(spec_str: str):
@@ -45,7 +62,9 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     # ① Member 1 (懸臂)
     m1_type, m1_dim = _parse_member(data["member1"])
-    add_steel_section_entry(result, m1_type, m1_dim, L)
+    add_steel_section_entry(
+        result, m1_type, m1_dim, L, material=_STRUCTURAL_MATERIAL
+    )
     result.entries[-1].remark = f"FIG-{fig} 懸臂, L={L}mm"
 
     # ② Member 2 (斜撐, 僅 FIG-B)
@@ -53,7 +72,10 @@ def calculate(fullstring: str) -> AnalysisResult:
         m2_type, m2_dim = _parse_member(data["member2"])
         # 斜撐長度 ≈ L×√2 (45° 對角), 簡化取 L
         brace_len = round(L * 1.414)
-        add_steel_section_entry(result, m2_type, m2_dim, brace_len)
+        add_steel_section_entry(
+            result, m2_type, m2_dim, brace_len,
+            material=_STRUCTURAL_MATERIAL,
+        )
         result.entries[-1].remark = f"FIG-B 斜撐, ~{brace_len}mm"
 
     # ③ Base Plate — A283 Gr.C
@@ -63,7 +85,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     bp_size = bd + 2 * data["b"]
     add_plate_entry(result, plate_a=bp_size, plate_b=bp_size,
                     plate_thickness=bp_t, plate_name="BASE PLATE",
-                    material="A36/SS400")
+                    material=_SUPPORT_PLATE_MATERIAL)
     result.entries[-1].remark = f"{bp_size}x{bp_size}x{bp_t}t, A283 Gr.C"
 
     # ④ EXP. BOLT (M-45)
@@ -72,7 +94,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     eb_qty = 4  # 4 EA standard
     if m45:
         add_custom_entry(result, name="EXP.BOLT", spec=f"EB-{eb_dia}",
-                         material="SUS304", quantity=eb_qty,
+                         material=_EXPANSION_BOLT_MATERIAL, quantity=eb_qty,
                          unit_weight=m45["L"] / 1000 * 0.5, unit="SET")
         result.entries[-1].remark = (
             f"M-45, Ø{eb_dia}, L={m45['L']}mm, "
@@ -80,7 +102,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         )
     else:
         add_custom_entry(result, name="EXP.BOLT", spec=eb_dia,
-                         material="SUS304", quantity=eb_qty,
+                         material=_EXPANSION_BOLT_MATERIAL, quantity=eb_qty,
                          unit_weight=0.5, unit="SET")
 
     return result

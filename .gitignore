@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+.venv_gui/
 .env
+.codex/
+.codex_tmp/
 
 # IDE
 .vscode/

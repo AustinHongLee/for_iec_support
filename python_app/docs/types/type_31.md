@@ -48,25 +48,28 @@
 
 ---
 
-## BOM 組成 (2 筆 / 3 根下料)
+## BOM 組成 (3 筆 / 3 根下料)
 
 | # | 項目 | 類別 | 長度公式 | 數量 | 備註 |
 |:-:|------|------|---------|:----:|------|
-| 1 | 立柱 (COLUMN) | 管路類 | H×100 mm | **2** | steel_qty=2, 一筆但 2 根 |
-| 2 | 上橫梁 (BEAM) | 管路類 | L×100 mm | 1 | |
+| 1 | 左腿 (Left leg) | 管路類 | H×100 mm | 1 | |
+| 2 | 上橫梁 (Top beam) | 管路類 | L×100 mm | 1 | |
+| 3 | 右腿 (Right leg) | 管路類 | H×100 mm | 1 | |
 
-> **注意**: VBA 原始做法合併成 1 筆 `Total = H×2 + L`，Python 版拆成 2 筆以正確反映下料數量（3 根）。
+> **注意**: VBA 原始做法可視為 `H×2 + L`，現行 Python 版拆成 3 筆以直接反映 fabrication 結構件。
 
 ---
 
 ## 運算邏輯
 
 ```
-立柱長度 = H × 100 mm
+左腿長度 = H × 100 mm
 橫梁長度 = L × 100 mm
+右腿長度 = H × 100 mm
 
-第一筆: add_steel_section_entry(section_H, steel_qty=2)
-第二筆: add_steel_section_entry(section_L, steel_qty=1)
+第一筆: add_steel_section_entry(section_H)
+第二筆: add_steel_section_entry(section_L)
+第三筆: add_steel_section_entry(section_H)
 ```
 
 ---
@@ -76,7 +79,7 @@
 | Type | 結構 | 底部 | M-42 | 下料 |
 |------|------|------|:----:|:----:|
 | **28** | 門型 (2H+L) | **落地** | ✅ | 合併 |
-| **31** | 框架 (2H+L) | **既有鋼構** | ❌ | 2筆3根 |
+| **31** | 框架 (H+L+H) | **既有鋼構** | ❌ | 3筆3根 |
 | **32** | 吊框 (2H+L) | **既有鋼構** | ❌ | 2筆3根 |
 | **33** | 半框 (H+L) | **既有鋼構** | ❌ | 2筆2根 |
 

@@ -10,7 +10,7 @@
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Sequence
 from collections import defaultdict
 import math
 
@@ -91,7 +91,30 @@ class MaterialSummary:
         return [ln for ln in self.lines if ln.aggregate_type == "piece"]
 
 
-def aggregate(results: List[AnalysisResult]) -> MaterialSummary:
+def _project_source_label(designation: str, quantity: int) -> str:
+    """Human-readable project source label for material summary/cutting."""
+    return f"{designation} × {quantity}" if quantity != 1 else designation
+
+
+def aggregate_project(project) -> MaterialSummary:
+    """
+    Aggregate a ProjectAnalysisResult for procurement/cutting.
+
+    Numeric totals come from scaled_result, while source labels preserve the
+    project row quantity so cutting plans remain traceable to the input list.
+    """
+    results = [row.scaled_result for row in project.rows]
+    labels = [
+        _project_source_label(row.input_row.designation, row.input_row.quantity)
+        for row in project.rows
+    ]
+    return aggregate(results, source_labels=labels)
+
+
+def aggregate(
+    results: List[AnalysisResult],
+    source_labels: Sequence[str] | None = None,
+) -> MaterialSummary:
     """
     將多筆 AnalysisResult 聚合為 MaterialSummary
 
@@ -99,18 +122,24 @@ def aggregate(results: List[AnalysisResult]) -> MaterialSummary:
     ----------
     results : list of AnalysisResult
         來自 analyze_batch 的所有分析結果
+    source_labels : sequence of str, optional
+        與 results 平行的來源標籤；project aggregation 會用它保留「型號 × 組數」。
 
     Returns
     -------
     MaterialSummary
         按 (name, spec, material) 聚合的採購清單
     """
+    if source_labels is not None and len(source_labels) != len(results):
+        raise ValueError("source_labels must have the same length as results")
+
     # key = (name, spec, material) — 鋼板額外按尺寸分
     groups: Dict[tuple, List[Tuple[AnalysisEntry, str]]] = defaultdict(list)
 
-    for r in results:
+    for index, r in enumerate(results):
         if r.error:
             continue
+        source_label = source_labels[index] if source_labels is not None else r.fullstring
         for entry in r.entries:
             if _classify_entry(entry) == "plate":
                 # 鋼板按 (name, material, length, width, thickness) 分組
@@ -118,7 +147,7 @@ def aggregate(results: List[AnalysisResult]) -> MaterialSummary:
                        round(entry.length, 1), round(entry.width, 1), entry.spec)
             else:
                 key = (entry.name, entry.spec, entry.material)
-            groups[key].append((entry, r.fullstring))
+            groups[key].append((entry, source_label))
 
     summary = MaterialSummary()
 

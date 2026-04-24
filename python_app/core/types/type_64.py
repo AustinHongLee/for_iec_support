@@ -10,14 +10,81 @@ FIG = A/B/C/D (決定 upper/lower clamp 類型)
 from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..bolt import add_custom_entry
-from data.type64_table import (
-    get_type64_rod, get_type64_figure,
-    ROD_WEIGHT_PER_M, EYE_NUT_WEIGHT,
+from ..component_rules import (
+    component_or_estimated_clamp_weight,
+    estimate_eye_nut_weight,
+    estimate_rod_weight,
 )
+from ..hardware_material import (
+    HardwareKind,
+    MaterialSpec,
+    parse_hardware_material_context,
+    resolve_hardware_material,
+)
+from data.type64_table import get_type64_rod, get_type64_figure
+from data.m22_table import build_m22_item
+from data.m25_table import build_m25_item
+from data.m4_table import build_m4_item
+from data.m6_table import build_m6_item
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def _material(
+    kind: HardwareKind,
+    *,
+    service,
+    overrides,
+) -> MaterialSpec:
+    return resolve_hardware_material(kind, service=service, overrides=overrides)
+
+
+def _add_custom_entry(
+    result: AnalysisResult,
+    name: str,
+    spec: str,
+    material: MaterialSpec,
+    quantity: int,
+    unit_weight: float,
+    unit: str = "SET",
+    remark: str = "",
+    category: str = "螺栓類",
+):
+    add_custom_entry(
+        result,
+        name,
+        spec,
+        material.name,
+        quantity,
+        unit_weight,
+        unit,
+        remark=remark,
+        category=category,
+    )
+    if result.entries:
+        result.entries[-1].material_canonical_id = material.canonical_id
+
+
+def _build_clamp_remark(source: str, clamp_item: dict | None) -> str:
+    if not clamp_item:
+        return ""
+    rod = clamp_item.get("rod_size_a")
+    if clamp_item.get("designation_inferred"):
+        base = f"推論 designation, ref {source}"
+    else:
+        base = f"SEE {source}"
+    return f"{base}, rod {rod}" if rod else base
+
+
+def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    material_context = parse_hardware_material_context(
+        overrides,
+        all_hardware_keys=("hardware_material", "material", "upper_material"),
+    )
+    service = material_context.service
+    material_overrides = material_context.material_overrides
+    rod_material = _material(HardwareKind.THREADED_ROD, service=service, overrides=material_overrides)
+    eye_nut_material = _material(HardwareKind.WELDLESS_EYE_NUT, service=service, overrides=material_overrides)
+    clamp_material = _material(HardwareKind.CLAMP_BODY, service=service, overrides=material_overrides)
 
     # ── 解析: 64-{E}-{F}-{HH}{FIG} ──
     part2 = get_part(fullstring, 2)  # E (supported)
@@ -78,41 +145,58 @@ def calculate(fullstring: str) -> AnalysisResult:
         )
 
     rod_size = rod_info["g"]
-    rod_wt_m = ROD_WEIGHT_PER_M.get(rod_size, 1.0)
-    eye_nut_wt = EYE_NUT_WEIGHT.get(rod_size, 0.2)
 
     # ① Threaded Rod ×2 (M-22), 長度 ≈ H
-    rod_length_m = h_mm / 1000.0
-    rod_unit_wt = round(rod_wt_m * rod_length_m, 2)
-    add_custom_entry(
+    rod_item = build_m22_item(rod_size, h_mm)
+    rod_unit_wt = rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm)
+    _add_custom_entry(
         result, "THREADED ROD",
-        f"M-22, {rod_size}, L={h_mm}mm",
-        "A36/SS400", 2, rod_unit_wt, "PC"
+        rod_item["designation"] if rod_item else f"M-22, {rod_size}, L={h_mm}mm",
+        rod_material, 2, rod_unit_wt, "PC"
     )
+    if not rod_item:
+        result.warnings.append(f"M-22 table 尚無 rod size {rod_size}，暫以 rod 鋼材重量估算")
 
     # ② Weldless Eye Nut ×2 (M-25)
-    add_custom_entry(
+    eye_nut_item = build_m25_item(rod_size)
+    _add_custom_entry(
         result, "WELDLESS EYE NUT",
-        f"M-25, {rod_size}",
-        "A36/SS400", 2, eye_nut_wt, "PC"
+        eye_nut_item["designation"] if eye_nut_item else f"M-25, {rod_size}",
+        eye_nut_material, 2, eye_nut_item["unit_weight_kg"] if eye_nut_item else estimate_eye_nut_weight(rod_size), "PC"
     )
+    if not eye_nut_item:
+        result.warnings.append(f"M-25 table 尚無 rod size {rod_size}，weldless eye nut 重量暫用估算值")
 
     # ③ Upper Clamp ×1 set
-    add_custom_entry(
+    upper_builder = build_m6_item if "M-6" in fig_info["upper_clamp"] else build_m4_item
+    upper_clamp = upper_builder(f_str)
+    _add_custom_entry(
         result, "UPPER CLAMP",
-        f"{fig_info['upper_clamp']}, {f_str}\"",
-        "A36/SS400", 1, 0.5 if e_size <= 4 else 1.5, "SET"
+        upper_clamp["designation"] if upper_clamp else f"{fig_info['upper_clamp']}, {f_str}\"",
+        clamp_material, 1, component_or_estimated_clamp_weight(
+            upper_clamp,
+            f_str,
+            component_id="M-6" if upper_builder is build_m6_item else "M-4",
+        ), "SET",
+        remark=_build_clamp_remark("M-6" if upper_builder is build_m6_item else "M-4", upper_clamp),
     )
+    if not upper_clamp or not upper_clamp.get("weight_ready"):
+        result.warnings.append("UPPER CLAMP 重量使用 core.component_rules 集中估算")
 
     # ④ Lower Clamp ×1 set
-    add_custom_entry(
+    lower_builder = build_m6_item if "M-6" in fig_info["lower_clamp"] else build_m4_item
+    lower_clamp = lower_builder(e_str)
+    _add_custom_entry(
         result, "LOWER CLAMP",
-        f"{fig_info['lower_clamp']}, {e_str}\"",
-        "A36/SS400", 1, 0.5 if e_size <= 4 else 1.5, "SET"
+        lower_clamp["designation"] if lower_clamp else f"{fig_info['lower_clamp']}, {e_str}\"",
+        clamp_material, 1, component_or_estimated_clamp_weight(
+            lower_clamp,
+            e_str,
+            component_id="M-6" if lower_builder is build_m6_item else "M-4",
+        ), "SET",
+        remark=_build_clamp_remark("M-6" if lower_builder is build_m6_item else "M-4", lower_clamp),
     )
-
-    result.warnings.append(
-        "Clamp 重量為估算值, 待 M-4/M-6 table 完成後可精確化"
-    )
+    if not lower_clamp or not lower_clamp.get("weight_ready"):
+        result.warnings.append("LOWER CLAMP 重量使用 core.component_rules 集中估算")
 
     return result

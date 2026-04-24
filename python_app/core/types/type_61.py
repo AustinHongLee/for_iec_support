@@ -13,7 +13,23 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value, extract_parts
 from ..bolt import add_custom_entry
 from ..plate import add_plate_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.pipe_table import get_pipe_details
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -58,7 +74,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     pipe_qty = t_mult
     add_custom_entry(result, name="TRUNNION PIPE",
                      spec=f'{int(trunn_size)}"*STD.WT',
-                     material="A53Gr.B", quantity=pipe_qty,
+                     material=_SUPPORT_PIPE_MATERIAL, quantity=pipe_qty,
                      unit_weight=round(trunn_length / 1000 * weight_per_m, 2),
                      unit="PC")
     result.entries[-1].remark = (
@@ -72,7 +88,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         pad_size = round(od + 50)
         add_plate_entry(result, plate_a=pad_size, plate_b=pad_size,
                         plate_thickness=12, plate_name="REIN. PAD",
-                        material="A36/SS400", plate_qty=pipe_qty)
+                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=pipe_qty)
         result.entries[-1].remark = f"Reinforcing Pad, ~{pad_size}×{pad_size}×12t"
 
     result.warnings.append(

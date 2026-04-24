@@ -26,6 +26,44 @@ def count_char(text: str, char: str) -> int:
     return text.count(char)
 
 
+def parse_pipe_size(size_str: str) -> str:
+    """
+    Normalize pipe-size designations to the repository lookup-key format.
+
+    Supported examples:
+    - "1/2B"   -> "1/2"
+    - "1.1/2B" -> "1-1/2"
+    - "1 1/2B" -> "1-1/2"
+    - "2B"     -> "2"
+    """
+    s = str(size_str).strip()
+    s = s.replace('"', "").replace("'", "")
+    s = re.sub(r"[Bb]$", "", s).strip()
+    s = s.replace("_", " ")
+
+    # Mixed fractions are historically entered as either 1.1/2, 1 1/2, or 1-1/2.
+    mixed = re.fullmatch(r"(\d+)[.\s-]+(\d+)/(\d+)", s)
+    if mixed:
+        whole, numerator, denominator = mixed.groups()
+        if int(denominator) == 0:
+            raise ValueError(f"invalid pipe size fraction: {size_str!r}")
+        return f"{int(whole)}-{int(numerator)}/{int(denominator)}"
+
+    fraction = re.fullmatch(r"(\d+)/(\d+)", s)
+    if fraction:
+        numerator, denominator = fraction.groups()
+        if int(denominator) == 0:
+            raise ValueError(f"invalid pipe size fraction: {size_str!r}")
+        return f"{int(numerator)}/{int(denominator)}"
+
+    decimal = re.fullmatch(r"\d+(?:\.\d+)?", s)
+    if decimal:
+        value = float(s)
+        return str(int(value)) if value.is_integer() else str(value)
+
+    return s
+
+
 def get_lookup_value(value) -> float:
     """
     將管徑字串轉換為數值
@@ -38,15 +76,10 @@ def get_lookup_value(value) -> float:
     - "3/4" -> 0.75
     - "1 1/2" -> 1.5
     - "1-1/2" -> 1.5
+    - "1.1/2" -> 1.5
     - "'10" -> 10
     """
-    s = str(value).strip()
-
-    # 移除 B 後綴
-    s = s.replace("B", "")
-
-    # 移除前導引號
-    s = s.lstrip("'")
+    s = parse_pipe_size(str(value).strip())
 
     # 處理分數 (可能帶整數部分, 用空格或-分隔)
     if "/" in s:
@@ -91,10 +124,7 @@ def clean_pipe_size(pipe_size) -> float:
     清理管徑字串，回傳數值
     對應 VBA: CleanPipeSize
     """
-    s = str(pipe_size)
-    s = s.replace("B", "")
-    s = s.replace("'", "")
-    return get_lookup_value(s)
+    return get_lookup_value(parse_pipe_size(pipe_size))
 
 
 def is_fourth_part_available(fullstring: str) -> bool:

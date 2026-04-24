@@ -12,8 +12,25 @@ from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.type44_table import get_type44_q, get_type44_brace, TYPE44_BRACE_H_MIN
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -55,14 +72,19 @@ def calculate(fullstring: str) -> AnalysisResult:
     theta = 30 if fig_type == "A" else 45
 
     # ① Channel 主柱 — length = H
-    add_steel_section_entry(result, section_type, section_dim, h_mm)
+    add_steel_section_entry(
+        result, section_type, section_dim, h_mm, material=_STRUCTURAL_MATERIAL
+    )
     result.entries[-1].remark = f"主柱, H={h_mm}mm, Q={q_val}mm"
 
     # ② L50 斜撐 (條件: H ≥ 1200)
     if h_mm >= TYPE44_BRACE_H_MIN:
         brace = get_type44_brace(fig_type)
         if brace:
-            add_steel_section_entry(result, "Angle", "50*50*6", brace["length"])
+            add_steel_section_entry(
+                result, "Angle", "50*50*6", brace["length"],
+                material=_STRUCTURAL_MATERIAL,
+            )
             result.entries[-1].remark = (
                 f"斜撐 FIG-{fig_type}(θ={theta}°), "
                 f"L={brace['length']}mm, H≥{TYPE44_BRACE_H_MIN}"
@@ -71,12 +93,12 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ③ Plate 90×45×6 (承托板)
     add_plate_entry(result, plate_a=90, plate_b=45,
                     plate_thickness=6, plate_name="PLATE",
-                    material="A36/SS400", plate_qty=1)
+                    material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
     result.entries[-1].remark = "承托板"
 
     # ④ M.B. 1/2"×30
     add_custom_entry(result, name="M.BOLT", spec='1/2"x30',
-                     material="SUS304", quantity=2,
+                     material=_ANCHOR_BOLT_MATERIAL, quantity=2,
                      unit_weight=0.3, unit="SET")
 
     return result

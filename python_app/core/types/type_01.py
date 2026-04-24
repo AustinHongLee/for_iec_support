@@ -20,7 +20,23 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..m42 import perform_action_by_letter
 from ..config_loader import get_type_table_as_dict
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.tee_table import get_tee_M
+
+
+_PAVING_LOW_POINT_M42_LETTERS = {"A", "B", "E", "G"}
+_DEFAULT_H_LIMIT_MM = 1500
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
 
 
 # ─── 建立查表 (從 JSON config 讀取, 失敗時用 fallback) ───
@@ -31,20 +47,37 @@ def _load_table() -> dict:
     if table:
         return table
     # fallback: 硬寫值 (與 PDF STM-05.01 一致)
-    return {
-        2:  {"pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
-        3:  {"pipe_size": "2",     "schedule": "SCH.40",  "L": 93},
-        4:  {"pipe_size": "3",     "schedule": "SCH.40",  "L": 139},
-        6:  {"pipe_size": "4",     "schedule": "SCH.40",  "L": 186},
-        8:  {"pipe_size": "6",     "schedule": "SCH.40",  "L": 271},
-        10: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 353},
-        12: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 370},
-        14: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 473},
-        16: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 491},
-        18: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 572},
-        20: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 594},
-        24: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 647},
-    }
+    return _TYPE01_FALLBACK_TABLE
+
+
+_TYPE01_FALLBACK_TABLE = {
+    2:  {"pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
+    3:  {"pipe_size": "2",     "schedule": "SCH.40",  "L": 93},
+    4:  {"pipe_size": "3",     "schedule": "SCH.40",  "L": 139},
+    6:  {"pipe_size": "4",     "schedule": "SCH.40",  "L": 186},
+    8:  {"pipe_size": "6",     "schedule": "SCH.40",  "L": 271},
+    10: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 353},
+    12: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 370},
+    14: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 473},
+    16: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 491},
+    18: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 572},
+    20: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 594},
+    22: {"pipe_size": "14",    "schedule": "STD.WT",  "L": 652},
+    24: {"pipe_size": "14",    "schedule": "STD.WT",  "L": 677},
+    26: {"pipe_size": "16",    "schedule": "STD.WT",  "L": 756},
+    28: {"pipe_size": "16",    "schedule": "STD.WT",  "L": 782},
+    30: {"pipe_size": "18",    "schedule": "STD.WT",  "L": 859},
+    32: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1060},
+    34: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1077},
+    36: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
+    38: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
+    40: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1147},
+    42: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1173},
+    44: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1200},
+    46: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1329},
+    48: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1355},
+    50: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1382},
+}
 
 
 def calculate(fullstring: str, connection: str = "elbow",
@@ -83,8 +116,18 @@ def calculate(fullstring: str, connection: str = "elbow",
     part3 = get_part(fullstring, 3)
     letter = part3[-1]
     h_value = int(part3[:-1]) * 100  # H×100mm
+    h_limit = int(overrides.get("h_limit") or _DEFAULT_H_LIMIT_MM)
+    if h_value > h_limit:
+        result.warnings.append(
+            f"H={h_value}mm 超出 Type 01 適用範圍 (≤ {h_limit}mm), 非標準設計"
+        )
+    if letter.upper() in _PAVING_LOW_POINT_M42_LETTERS:
+        result.warnings.append(
+            f"M42 底座類型 {letter} — H 應從鋪面最低點起算 (NOTE 6)"
+        )
 
     # ─── 上段管 (材質跟隨主管線) ───
+    upper_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
     if connection == "tee":
         tee_m = get_tee_M(line_size)
         upper_pipe_length = 100 + tee_m
@@ -95,13 +138,14 @@ def calculate(fullstring: str, connection: str = "elbow",
         upper_pipe_length = l_value + 100
 
     add_pipe_entry(result, support_pipe_size, pipe_thickness,
-                   upper_pipe_length, upper_material)
+                   upper_pipe_length, upper_pipe_material)
 
     # ─── 下段管 (固定黑鐵 A53Gr.B) ───
     lower_pipe_length = h_value - 100
     if lower_pipe_length > 0:
+        lower_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
         add_pipe_entry(result, support_pipe_size, pipe_thickness,
-                       lower_pipe_length, "A53Gr.B")
+                       lower_pipe_length, lower_pipe_material)
 
     # ─── M42 底板 ───
     perform_action_by_letter(result, letter, support_pipe_size)

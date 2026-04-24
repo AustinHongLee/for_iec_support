@@ -2,7 +2,7 @@
     "type_id": "01",
     "name": "Pipe Support TYPE-01",
     "drawing_no": "STM-05.01",
-    "applicable_range": "2\" ~ 24\"",
+    "applicable_range": "2\" ~ 50\"",
     "h_limit": 1500,
     "h_unit_mm": 100,
     "notes": [
@@ -10,7 +10,8 @@
         "H 由現場切割，需搭配 M-42 底板",
         "L 值基於 Long Radius Elbow 焊接位置",
         "焊接尺寸不超過管壁厚",
-        "H ≤ 1500mm 適用，支撐到 Grade 或 Plate"
+        "H ≤ 1500mm 適用，支撐到 Grade 或 Plate",
+        "若 lower component type 為 A/B/E/G，H 應從鋪面最低點起算"
     ],
     "connection_types": {
         "elbow": {
@@ -58,11 +59,26 @@
         {"line_size": 16, "pipe_size": "10",    "schedule": "SCH.40",  "L": 491},
         {"line_size": 18, "pipe_size": "12",    "schedule": "STD.WT",  "L": 572},
         {"line_size": 20, "pipe_size": "12",    "schedule": "STD.WT",  "L": 594},
-        {"line_size": 24, "pipe_size": "12",    "schedule": "STD.WT",  "L": 647}
+        {"line_size": 22, "pipe_size": "14",    "schedule": "STD.WT",  "L": 652},
+        {"line_size": 24, "pipe_size": "14",    "schedule": "STD.WT",  "L": 677},
+        {"line_size": 26, "pipe_size": "16",    "schedule": "STD.WT",  "L": 756},
+        {"line_size": 28, "pipe_size": "16",    "schedule": "STD.WT",  "L": 782},
+        {"line_size": 30, "pipe_size": "18",    "schedule": "STD.WT",  "L": 859},
+        {"line_size": 32, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1060},
+        {"line_size": 34, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1077},
+        {"line_size": 36, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
+        {"line_size": 38, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
+        {"line_size": 40, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1147},
+        {"line_size": 42, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1173},
+        {"line_size": 44, "pipe_size": "24",    "schedule": "STD.WT",  "L": 1200},
+        {"line_size": 46, "pipe_size": "28",    "schedule": "STD.WT",  "L": 1329},
+        {"line_size": 48, "pipe_size": "28",    "schedule": "STD.WT",  "L": 1355},
+        {"line_size": 50, "pipe_size": "28",    "schedule": "STD.WT",  "L": 1382}
     ],
-    "version": "1.0",
-    "last_modified": "2026-04-15",
+    "version": "1.1",
+    "last_modified": "2026-04-23",
     "change_log": [
-        {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"}
+        {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"},
+        {"date": "2026-04-23", "desc": "依 D-1 Rev.1 補齊 2\"~50\" table 與 NOTE 6 paving warning"}
     ]
 }

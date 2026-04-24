@@ -17,8 +17,9 @@ Type 27 計算器  (判讀來源: D-30, E1906-DSP-500-006)
   圖面左側 ELEV 畫得比較簡單.
 
   BOM:
-    ① MEMBER "M" 主件 (H-15+L 一體) ×1
-    ② M-42 lower component ×1 set
+    ① MEMBER "M" 立柱 (H-15) ×1
+    ② MEMBER "M" 頂部承管 (L) ×1
+    ③ M-42 lower component ×1 set
 
 ★ H150 版 — 完整板件系統
   H型鋼是開口截面, 需要周圍板件把它轉換成可焊、可承載、
@@ -26,8 +27,8 @@ Type 27 計算器  (判讀來源: D-30, E1906-DSP-500-006)
   圖面右側視圖 + Section A~A 明確顯示板件系統.
 
   BOM:
-    ① H150×150×10 主件 (H-15+L 一體) ×1
-    ② 6t top plate (頂部承載板) ×1
+    ① H150×150×10 立柱 ×1
+    ② H150×150×10 頂部承管 ×1
     ③ 6t side plate ×3 (圖面 "3 SIDES TYP." 6V)
     ④ 9t lower side/wing plate ×2 (配合H截面形成下部轉接構造)
     ⑤ M-42 lower component ×1 set
@@ -132,39 +133,21 @@ def calculate(fullstring: str) -> AnalysisResult:
     section_dim = full_size[1:]
 
     # ═══════════════════════════════════════════════════════
-    # ① MEMBER "M" — 主立件 (所有 MEMBER 共通)
-    #    VBA: Total_Length = (H - 15) + L
-    #    15mm = ELEV 圖面標示 15 TYP (頂端焊接接合偏移)
-    # ═══════════════════════════════════════════════════════
-    effective_H = section_H - _TOP_PLATE_DEDUCTION
-    total_length = effective_H + section_L
-    add_steel_section_entry(result, section_type, section_dim, total_length)
-    result.entries[-1].remark = (
-        f"M-42:{m42_letter}, H={section_H}-15={effective_H}+L={section_L}"
-        f"={total_length}{l1l2_tag}"
-    )
-
-    # ═══════════════════════════════════════════════════════
     # H150 限定 — 板件系統
     #   H型鋼是開口截面, 需要周圍板件補成可焊、可承載、
     #   可與 M-42 對接的標準化組件.
     #   角鐵版不需要這些板件 (簡化結構).
     # ═══════════════════════════════════════════════════════
     if is_hbeam:
-        # ② 6t top plate — 頂部承載板 ×1
-        #    圖面右側視圖明確標示 "6t PLATE"
-        #    管線直接座在此板上
-        #    尺寸: L(寬) × 200(深) × 6mm
-        add_plate_entry(
-            result,
-            plate_a=section_L,
-            plate_b=200,
-            plate_thickness=6,
-            plate_name="Plate_6t_Top",
-            material="A36/SS400",
-            plate_qty=1,
-        )
-        result.entries[-1].remark = f"頂部承載板 {section_L}×200×6"
+        # ① H Beam — 立柱
+        #    H150 版為多結構體：落地立柱 + 頂部承管，不能合併成單一 member。
+        column_length = section_H - 150
+        add_steel_section_entry(result, section_type, section_dim, column_length)
+        result.entries[-1].remark = "Column"
+
+        # ② H Beam — 頂部承管
+        add_steel_section_entry(result, section_type, section_dim, section_L)
+        result.entries[-1].remark = "Top support beam"
 
         # ③ 6t side plates ×3 — "3 SIDES TYP." 6V
         #    柱-板接合處補強/封邊, 把 H 型鋼頂端轉成承載面
@@ -194,11 +177,24 @@ def calculate(fullstring: str) -> AnalysisResult:
             plate_qty=2,
         )
         result.entries[-1].remark = "下部翼側板 200×100×9 ×2"
+    else:
+        # ① MEMBER "M" — 角鐵版立柱
+        #    15mm = ELEV 圖面標示 15 TYP (頂端焊接接合偏移)
+        effective_H = section_H - _TOP_PLATE_DEDUCTION
+        add_steel_section_entry(result, section_type, section_dim, effective_H)
+        result.entries[-1].remark = f"Column, H={section_H}-15={effective_H}{l1l2_tag}"
+
+        # ② MEMBER "M" — 角鐵版頂部承管
+        add_steel_section_entry(result, section_type, section_dim, section_L)
+        result.entries[-1].remark = f"Top support beam, L={section_L}{l1l2_tag}"
 
     # ═══════════════════════════════════════════════════════
     # M-42 下部組件 (底板 + 螺栓) — 所有 MEMBER 共通
     #    NOTE 4: USE TYPE-L & P ONLY
     # ═══════════════════════════════════════════════════════
+    m42_entry_start = len(result.entries)
     perform_action_by_letter(result, m42_letter, full_size)
+    if len(result.entries) == m42_entry_start:
+        result.warnings.append("Type 27: no base plate detected (check variant)")
 
     return result

@@ -62,6 +62,16 @@
 - 先在 `WORKLOG.md` 留下衝突描述
 - 再由人工判讀決定採信版本
 
+### 審核入口
+
+- 若本次任務需要第二位 AI 或人工快速審核，優先查看 `coordination/REVIEW_HANDOFF.md`
+- 凡是希望 Claude 協助審核的非 trivial 變更，Codex 應同步在 `REVIEW_HANDOFF.md` 新增或更新一筆交接
+- `REVIEW_HANDOFF.md` 應聚焦於：
+  - 這次改了什麼
+  - 哪些檔案最值得審
+  - 哪些地方仍是估算 / fallback / 推論
+- `WORKLOG.md` 是完成紀錄；`REVIEW_HANDOFF.md` 是 reviewer 的閱讀入口，兩者用途不要混淆
+
 ## 分層原則
 
 ### Type 層
@@ -89,6 +99,40 @@
 - 提供零件級尺寸、材質、推薦載重、配合尺寸
 
 `M/N` 層不應主導整個支撐型式邏輯，也不應反向承擔 Type 的組裝判斷。
+
+### Component Table 維護規則
+
+核心規則：
+
+`資料不可混放；邏輯可以共用。`
+
+實作要求：
+
+- 每一張原始 component PDF 應對應自己的 `data/*_table.py`
+- 該 PDF 轉錄出的 raw table values 必須放在自己的 table file，例如 `M-4-PIPE CLAMP A.pdf` 的 `TYPE / LINE SIZE / LOAD / B / C / D / E / F / G / H` 應放在 `data/m4_table.py`
+- 共用檔案可以存在，但只能放 normalize、builder、weight formula、validation helper 等共用邏輯
+- 共用檔案不應存放跨 PDF 的 raw source values，除非該檔名稱和文件明確標示它是 shared source table
+- 若多張 PDF 欄位結構相似，仍應保留各自的 raw table，再由 common helper 組裝成統一輸出格式
+- 修改某張 PDF 的資料時，應能只改該 component 的 table file，不應需要改會影響其他 component 的 common file
+
+狀態欄位建議分開看：
+
+- `lookup_ready`: 程式是否可查表
+- `source_transcribed`: 是否已依原始 PDF 逐欄轉錄
+- `weight_ready`: 是否有可信重量或完整可審公式
+
+判斷原則：
+
+- `lookup_ready=True` 不代表已精算
+- `source_transcribed=False` 時，不應宣稱是 PDF-backed table
+- `weight_ready=False` 時，重量必須標示為估算或 fallback
+
+M-4/M-5/M-6/M-7 clamp family 特別規則：
+
+- `m_clamp_common.py` 可以保留共用 builder 與 normalize helper
+- `m_clamp_common.py` 不應承擔 M-4/M-5/M-6/M-7 各 PDF 的 raw table values
+- `m4_table.py`, `m5_table.py`, `m6_table.py`, `m7_table.py` 應各自保存自己的 PDF 轉錄表
+- 若目前資料仍由 common file 推導，必須在 docs/status 中標示為 `lookup usable but source table not fully transcribed`
 
 ### 一句話原則
 

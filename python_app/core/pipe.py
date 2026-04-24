@@ -2,6 +2,7 @@
 管道計算模組 - 對應 VBA: B_管道計算相關函數
 """
 from .models import AnalysisEntry, AnalysisResult
+from .hardware_material import MaterialSpec
 from data.pipe_table import get_pipe_details
 
 
@@ -20,25 +21,35 @@ def normalize_schedule(thickness_str: str) -> str:
     return s
 
 
+def _material_name_and_identity(material: str | MaterialSpec) -> tuple[str, str | None]:
+    if isinstance(material, MaterialSpec):
+        return material.name, material.canonical_id
+    return str(material), None
+
+
 def add_pipe_entry(result: AnalysisResult, pipe_size, pipe_thickness: str,
-                   pipe_length: float, material: str):
+                   pipe_length: float, material: str | MaterialSpec):
     """
     新增管道項目到結果
     對應 VBA: AddPipeEntry
     """
+    material_name, canonical_id = _material_name_and_identity(material)
+
     # 清理 pipe_size
     size_str = str(pipe_size).replace("'", "").replace("B", "")
     from .parser import get_lookup_value
     size_val = get_lookup_value(size_str)
 
     schedule = normalize_schedule(pipe_thickness)
-    details = get_pipe_details(size_val, schedule)
+    details = get_pipe_details(size_val, schedule, material_name)
 
     entry = AnalysisEntry()
     entry.name = "Pipe"
     entry.spec = f'{size_str}"*{pipe_thickness}'
     entry.length = pipe_length
-    entry.material = material
+    entry.material = material_name
+    if canonical_id:
+        entry.material_canonical_id = canonical_id
     entry.quantity = 1
     entry.weight_per_unit = details["weight_per_m"]
     entry.unit_weight = round(pipe_length / 1000 * details["weight_per_m"], 2)

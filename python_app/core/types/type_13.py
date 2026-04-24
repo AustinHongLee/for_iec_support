@@ -35,8 +35,29 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
+from ..component_rules import component_or_estimated_clamp_weight
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type13_table import get_type13_data
-from data.m42_table import get_m47_dimensions
+from data.m47_table import build_m47_item
+from data.m4_table import build_m4_item
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_CLAMP_MATERIAL = _material_spec(HardwareKind.CLAMP_BODY, "A36/SS400")
+_M47_MATERIAL = _material_spec(HardwareKind.COLD_SHOE_INSULATION_CLAMP, "M-47")
+_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+
 
 _MAX_H = 1500
 _COVER_PLATE_SIZE = 75   # mm, square
@@ -91,7 +112,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 3. Supporting Pipe B (垂直柱) ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, "A53Gr.B")
+        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, _SUPPORT_PIPE_MATERIAL)
 
     # ── 4. Plate P (側板, 碳鋼) ──
     add_plate_entry(
@@ -100,7 +121,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=plate_wid,
         plate_thickness=plate_t,
         plate_name="Plate_P",
-        material="A36/SS400",
+        material=_SUPPORT_PLATE_MATERIAL,
     )
 
     # ── 5. Cover Plate (蓋板, 75×75×6t, 碳鋼) ──
@@ -110,7 +131,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=_COVER_PLATE_SIZE,
         plate_thickness=_COVER_PLATE_T,
         plate_name="COVER_PL",
-        material="A36/SS400",
+        material=_SUPPORT_PLATE_MATERIAL,
     )
 
     # ── 6. M42 底板 (用 pipe_size_b 查表) ──
@@ -121,19 +142,17 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
 def _add_pipe_clamp_entry(result: AnalysisResult, line_size: float):
     """Pipe Clamp TYPE-A (SEE M-4): 1 SET
-    管夾重量依管徑估算
+    由 M-4 component table 取得重量與 designation
     """
-    # 估算重量 (kg): 小管約 1~2kg, 大管約 3~8kg
-    clamp_weight_map = {
-        2: 1.0, 3: 1.5, 4: 2.0, 6: 3.0,
-        8: 4.0, 10: 5.0, 12: 6.0, 14: 7.0, 16: 8.0,
-    }
-    unit_w = clamp_weight_map.get(int(line_size), 3.0)
+    clamp_item = build_m4_item(line_size)
+    unit_w = component_or_estimated_clamp_weight(clamp_item, line_size, component_id="M-4")
+    spec = clamp_item["designation"] if clamp_item else f'TYPE-A {int(line_size)}"'
 
     entry = AnalysisEntry()
     entry.name = "PIPE CLAMP"
-    entry.spec = f"TYPE-A {int(line_size)}\""
-    entry.material = "A36/SS400"
+    entry.spec = spec
+    entry.material = _CLAMP_MATERIAL.name
+    entry.material_canonical_id = _CLAMP_MATERIAL.canonical_id
     entry.quantity = 1
     entry.unit_weight = unit_w
     entry.total_weight = unit_w
@@ -145,29 +164,34 @@ def _add_pipe_clamp_entry(result: AnalysisResult, line_size: float):
     entry.weight_output = unit_w
     entry.weight_per_unit = unit_w
     entry.category = "管路類"
+    if clamp_item:
+        entry.remark = f'SEE M-4, rod {clamp_item["rod_size_a"]}; weight estimated'
+        if not clamp_item.get("weight_ready"):
+            result.warnings.append("M-4 clamp 無 source unit-weight 欄，PIPE CLAMP 重量使用集中估算規則")
+    else:
+        entry.remark = "M-4 lookup failed; weight estimated by core.component_rules"
+        result.warnings.append("M-4 table lookup failed，PIPE CLAMP 重量使用集中估算規則")
     result.add_entry(entry)
 
 
 def _add_non_asbestos_sheet_entry(result: AnalysisResult, line_size: float):
     """Non-Asbestos Sheet (SEE M-47): 1 PC
-    尺寸依 M47 表查 (W × L)，厚度 3mm
+    由 M-47 component table 取得尺寸與重量
     """
-    try:
-        w, l = get_m47_dimensions(line_size)
-    except ValueError:
-        w, l = 50, 150  # fallback
-
-    thickness = 3  # mm
-    # 密度約 1.5 g/cm³ for non-asbestos sheet
-    weight = w / 1000 * l / 1000 * thickness / 1000 * 1500  # kg
-    weight = round(weight, 2)
-    if weight < 0.01:
-        weight = 0.01
+    gasket_item = build_m47_item(line_size)
+    if gasket_item:
+        w = gasket_item["width_mm"]
+        l = gasket_item["length_mm"]
+        thickness = gasket_item["thickness_mm"]
+        weight = gasket_item["unit_weight_kg"]
+    else:
+        w, l, thickness, weight = 50, 150, 3, 0.03
 
     entry = AnalysisEntry()
     entry.name = "NON-ASBESTOS"
-    entry.spec = f"{w}×{l}×{thickness}t"
-    entry.material = "M-47"
+    entry.spec = f"{w}×{l}×{thickness:g}t"
+    entry.material = _M47_MATERIAL.name
+    entry.material_canonical_id = _M47_MATERIAL.canonical_id
     entry.quantity = 1
     entry.unit_weight = weight
     entry.total_weight = weight
@@ -180,4 +204,6 @@ def _add_non_asbestos_sheet_entry(result: AnalysisResult, line_size: float):
     entry.weight_output = weight
     entry.weight_per_unit = weight
     entry.category = "管路類"
+    if gasket_item:
+        entry.remark = gasket_item["thickness_source"]
     result.add_entry(entry)

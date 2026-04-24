@@ -35,7 +35,20 @@ from ..parser import get_part, get_lookup_value, extract_parts
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.type12_table import get_type12_data
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
 
 _MAX_H = 1500
 _COVER_PLATE_SIZE = 75   # mm, square
@@ -95,16 +108,21 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 1. Supporting Pipe B (垂直柱) ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        add_pipe_entry(result, pipe_size_b, pipe_sch, support_pipe_length, "A53Gr.B")
+        support_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+        add_pipe_entry(
+            result, pipe_size_b, pipe_sch, support_pipe_length,
+            support_pipe_material,
+        )
 
     # ── 2. Plate P (側板) ──
+    plate_material_spec = _material_spec(HardwareKind.SUPPORT_PLATE, plate_material)
     add_plate_entry(
         result,
         plate_a=plate_len,
         plate_b=plate_wid,
         plate_thickness=plate_t,
         plate_name="Plate_P",
-        material=plate_material,
+        material=plate_material_spec,
     )
 
     # ── 3. Cover Plate (蓋板, 75×75×6t) ──
@@ -114,7 +132,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_b=_COVER_PLATE_SIZE,
         plate_thickness=_COVER_PLATE_T,
         plate_name="COVER_PL",
-        material=plate_material,
+        material=plate_material_spec,
     )
 
     # ── 4. M42 底板 (用 pipe_size_b 查表) ──

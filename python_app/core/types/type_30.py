@@ -25,10 +25,10 @@ Type 30 計算器  (判讀來源: D-35, E1906-DSP-500-006)
        TYP.
 
   FIG-A: 直接接 EXISTING STEEL (無板偏移)
-         Total_Length = H + L
+         Column = H, Top beam = L
 
   FIG-B: 底部有 15mm 板厚偏移
-         Total_Length = (H - 15) + L
+         Column = (H - 15), Top beam = L
 
   ★ 無 M-42 — 直接焊接至既有鋼構, 不落地
   ★ 與 TYPE-27/28 的本質差異: 27/28 落地需 M-42, 30 夾在結構間
@@ -42,8 +42,8 @@ DIMENSIONS TABLE (D-35):
 NOTE 2: "H" & "L" SHALL BE CUT SUIT IN FIELD.
 
 VBA NOTE: VBA 中 Section_Length_H/L 變量名互換,
-          但因加法交換律 (L+H = H+L), 最終結果相同.
-          FIG-B 的 15mm 扣除同理: (L-15)+H = L+(H-15).
+          但因加法交換律 (L+H = H+L), 總長數值相同。
+          Python 版採結構件拆分：Column + Top beam。
 """
 from ..models import AnalysisResult
 from ..parser import get_part
@@ -121,24 +121,23 @@ def calculate(fullstring: str) -> AnalysisResult:
         l1l2_tag = f", L1={L1}, L2={L2}"
 
     # ═══════════════════════════════════════════════════════
-    # ① MEMBER "M" — 唯一構件
-    #    FIG-A: Total = H + L (直接接既有鋼構, 無偏移)
-    #    FIG-B: Total = (H - 15) + L (底部板厚偏移 15mm)
+    # ①~② MEMBER "M" — 兩件式
+    #    FIG-A: Column = H, Top beam = L
+    #    FIG-B: Column = (H - 15), Top beam = L
     #    ★ 無 M-42 (不落地, 焊接至 EXISTING STEEL)
     # ═══════════════════════════════════════════════════════
     if fig == "A":
         effective_H = section_H
-        total_length = section_H + section_L
         h_formula = f"H={section_H}"
     else:  # FIG-B
         effective_H = section_H - _PLATE_OFFSET
-        total_length = effective_H + section_L
         h_formula = f"H={section_H}-15={effective_H}"
 
     section_dim = full_size[1:]  # 去掉前綴字母
-    add_steel_section_entry(result, section_type, section_dim, total_length)
-    result.entries[-1].remark = (
-        f"FIG-{fig}, {h_formula}+L={section_L}={total_length}{l1l2_tag}"
-    )
+    add_steel_section_entry(result, section_type, section_dim, effective_H)
+    result.entries[-1].remark = f"FIG-{fig}, Column, {h_formula}{l1l2_tag}"
+
+    add_steel_section_entry(result, section_type, section_dim, section_L)
+    result.entries[-1].remark = f"FIG-{fig}, Top beam, L={section_L}{l1l2_tag}"
 
     return result

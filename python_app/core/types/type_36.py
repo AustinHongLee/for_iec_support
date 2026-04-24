@@ -49,8 +49,26 @@ from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
+from ..hardware_material import (
+    HardwareKind,
+    HardwareMaterialOverrides,
+    resolve_hardware_material,
+)
 from data.steel_sections import get_section_details
 from data.m34_table import get_m34_by_member
+
+
+def _material_spec(kind: HardwareKind, material_name: str):
+    return resolve_hardware_material(
+        kind,
+        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
+    )
+
+
+_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
+_PLATE_LUG_MATERIAL = _material_spec(HardwareKind.PLATE_LUG, "A36/SS400")
+_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
+
 
 # ── D-35M 限制表 ─────────────────────────────────────────
 _H_MAX = {
@@ -108,7 +126,10 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ═══════════════════════════════════════════════════════
     # ① MEMBER — 主構件, length = H
     # ═══════════════════════════════════════════════════════
-    add_steel_section_entry(result, section_type, section_dim, section_H)
+    add_steel_section_entry(
+        result, section_type, section_dim, section_H,
+        material=_STRUCTURAL_MATERIAL,
+    )
     result.entries[-1].remark = f"固定型托條, H={section_H}"
 
     # ═══════════════════════════════════════════════════════
@@ -129,6 +150,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_b=plate_b,
         plate_thickness=plate_t,
         plate_name=f"LUG PLATE TYPE-C",
+        material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
     )
     result.entries[-1].remark = (
@@ -145,7 +167,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         result,
         name="K BOLT",
         spec=f'{bolt_k}x{"40" if bolt_k.startswith("5/8") else "50"}',
-        material="SUS304",
+        material=_ANCHOR_BOLT_MATERIAL,
         quantity=1,
         unit_weight=0.5 if bolt_k.startswith("5/8") else 0.8,
         unit="SET",

@@ -30,8 +30,14 @@ TYPE-14 的鋼構版本，直接落在 existing steel 上，無 anchor bolt
 ## 核心運算邏輯
 
 ```text
-查表取各部件尺寸 → Pipe(H-2F-CH) + Channel(L) + Wing PL + Stopper PL + Base PL(D×D) + Top PL
+查表取各部件尺寸 → Pipe(H-2F-CH) + Channel(L) + Wing PL×4 + Stopper PL×2 + Base PL(D×D) + Top PL
 ```
+
+補充判讀：
+- `Plate_WING` 固定 4 片
+- `Plate_STOPPER` 固定 2 片
+- 10"、12" 依圖上 `MEMBER "N" ... SEE DETAIL "a"`，目前視為 2 支橫向 Channel
+- 非四方板件已在 BOM remark 留幾何提示，方便後續自動化加工圖
 
 ---
 
