@@ -15,19 +15,33 @@ from collections import defaultdict
 import math
 
 from core.models import AnalysisResult, AnalysisEntry
+from core.component_roles import ComponentRole, ROLE_AGGREGATE_TYPE
 from data.stock_lengths import (
     STOCK_LENGTH_PIPE, STOCK_LENGTH_STEEL,
     get_effective_stock_length,
 )
 
 
-# ── 品名分類判斷 ──
-_LINEAR_NAMES = {"Pipe", "Angle"}                # 可能有長度需下料的
-_PLATE_NAMES = {"Plate"}                          # 鋼板 (算片數)
-# 其餘 (EXP.BOLT, MACH.BOLT, Nut, Washer 等) → 計件
+# ── 品名分類判斷 ──────────────────────────────────────────────
+_LINEAR_NAMES = {"Pipe", "Angle"}
+_PLATE_NAMES = {"Plate"}
 
 def _classify_entry(entry: AnalysisEntry) -> str:
-    """判斷 entry 屬於哪種聚合方式"""
+    """
+    判斷 entry 屬於哪種聚合方式: linear / plate / piece
+
+    優先使用 entry.role（Phase 0+ 新欄位）；
+    若 role 為空則 fallback 到舊的字串前綴邏輯（向後相容）。
+    """
+    # ── Phase 0+: role 欄位優先 ──────────────────────────────
+    if entry.role:
+        try:
+            cr = ComponentRole(entry.role)
+            return ROLE_AGGREGATE_TYPE.get(cr, "piece")
+        except ValueError:
+            pass  # 未知 role → fallback
+
+    # ── 舊版 fallback（字串前綴比對）────────────────────────
     base = entry.name.split("_")[0].strip()
     if base in _LINEAR_NAMES:
         return "linear"
@@ -42,31 +56,29 @@ def _classify_entry(entry: AnalysisEntry) -> str:
 @dataclass
 class SummaryLine:
     """合計表中的一行"""
-    name: str = ""                  # 品名
-    spec: str = ""                  # 規格
-    material: str = ""              # 材質
-    category: str = ""              # 屬性 (管路類/鋼板類/螺栓類)
-    aggregate_type: str = ""        # linear / plate / piece
+    name: str = ""
+    spec: str = ""
+    material: str = ""
+    category: str = ""
+    aggregate_type: str = ""
 
     # 線性材料
-    total_length_mm: float = 0.0    # 需求總長 (mm)
-    piece_count: int = 0            # 需求件數 (多少段)
+    total_length_mm: float = 0.0
+    piece_count: int = 0
     piece_lengths: List[Tuple[float, str]] = field(default_factory=list)
-    # (長度mm, 來源編碼) 明細
 
     # 鋼板
-    total_qty: int = 0              # 需求總數量
+    total_qty: int = 0
     plate_dims: List[Tuple[float, float, float]] = field(default_factory=list)
-    # (length, width, thickness) 明細
 
     # 通用
-    weight_per_unit: float = 0.0    # kg/m 或 kg/pc
-    total_weight: float = 0.0       # 總重 (kg)
+    weight_per_unit: float = 0.0
+    total_weight: float = 0.0
 
     # 採購建議
-    stock_length: float = 0.0       # 標準原料長度 (mm)
-    purchase_qty: int = 0           # 建議採購數量 (根/片/組)
-    purchase_unit: str = ""         # 根 / 片 / 組
+    stock_length: float = 0.0
+    purchase_qty: int = 0
+    purchase_unit: str = ""
 
     # 來源追蹤
     source_fullstrings: List[str] = field(default_factory=list)
@@ -92,17 +104,10 @@ class MaterialSummary:
 
 
 def _project_source_label(designation: str, quantity: int) -> str:
-    """Human-readable project source label for material summary/cutting."""
-    return f"{designation} × {quantity}" if quantity != 1 else designation
+    return f"{designation} x {quantity}" if quantity != 1 else designation
 
 
 def aggregate_project(project) -> MaterialSummary:
-    """
-    Aggregate a ProjectAnalysisResult for procurement/cutting.
-
-    Numeric totals come from scaled_result, while source labels preserve the
-    project row quantity so cutting plans remain traceable to the input list.
-    """
     results = [row.scaled_result for row in project.rows]
     labels = [
         _project_source_label(row.input_row.designation, row.input_row.quantity)
@@ -115,25 +120,10 @@ def aggregate(
     results: List[AnalysisResult],
     source_labels: Sequence[str] | None = None,
 ) -> MaterialSummary:
-    """
-    將多筆 AnalysisResult 聚合為 MaterialSummary
-
-    Parameters
-    ----------
-    results : list of AnalysisResult
-        來自 analyze_batch 的所有分析結果
-    source_labels : sequence of str, optional
-        與 results 平行的來源標籤；project aggregation 會用它保留「型號 × 組數」。
-
-    Returns
-    -------
-    MaterialSummary
-        按 (name, spec, material) 聚合的採購清單
-    """
+    """將多筆 AnalysisResult 聚合為 MaterialSummary"""
     if source_labels is not None and len(source_labels) != len(results):
         raise ValueError("source_labels must have the same length as results")
 
-    # key = (name, spec, material) — 鋼板額外按尺寸分
     groups: Dict[tuple, List[Tuple[AnalysisEntry, str]]] = defaultdict(list)
 
     for index, r in enumerate(results):
@@ -142,7 +132,6 @@ def aggregate(
         source_label = source_labels[index] if source_labels is not None else r.fullstring
         for entry in r.entries:
             if _classify_entry(entry) == "plate":
-                # 鋼板按 (name, material, length, width, thickness) 分組
                 key = (entry.name, entry.material,
                        round(entry.length, 1), round(entry.width, 1), entry.spec)
             else:
@@ -153,16 +142,15 @@ def aggregate(
 
     for key, items in groups.items():
         entries = [e for e, _ in items]
-        fullstrings = list(dict.fromkeys(fs for _, fs in items))  # 去重保序
+        fullstrings = list(dict.fromkeys(fs for _, fs in items))
 
         first = entries[0]
         agg_type = _classify_entry(first)
 
         if agg_type == "plate":
-            # key = (name, material, length, width, thickness_str)
             name, material = key[0], key[1]
             pl_l, pl_w, pl_t_str = key[2], key[3], key[4]
-            spec = f"{pl_l:.0f}×{pl_w:.0f}×{pl_t_str}t"
+            spec = f"{pl_l:.0f}x{pl_w:.0f}x{pl_t_str}t"
         else:
             name, spec, material = key[0], key[1], key[2]
 
@@ -183,7 +171,6 @@ def aggregate(
         else:
             _aggregate_piece(ln, entries)
 
-        # 過濾無效行 (例如計算出負值長度的)
         if agg_type == "linear" and ln.total_length_mm <= 0:
             continue
         if agg_type in ("plate", "piece") and ln.total_qty <= 0:
@@ -191,7 +178,6 @@ def aggregate(
 
         summary.lines.append(ln)
 
-    # 排序: 管路類 → 鋼板類 → 螺栓類，同類內按 spec 排
     _CATEGORY_ORDER = {"管路類": 0, "鋼板類": 1, "鋼材類": 2, "螺栓類": 3, "": 9}
     summary.lines.sort(key=lambda x: (
         _CATEGORY_ORDER.get(x.category, 9), x.name, x.spec, x.material
@@ -201,17 +187,15 @@ def aggregate(
 
 
 def _aggregate_linear(ln: SummaryLine, items: List[Tuple[AnalysisEntry, str]]):
-    """聚合線性材料 (管 / 角鋼 / 型鋼)"""
     for e, fullstring in items:
         if e.length <= 0:
-            continue  # 跳過計算異常的負值/零長度
+            continue
         for _ in range(e.quantity):
             ln.piece_lengths.append((e.length, fullstring))
             ln.total_length_mm += e.length
             ln.piece_count += 1
     ln.total_weight = sum(e.weight_output for e, _ in items if e.length > 0)
 
-    # 採購建議: 總長度 / 標準長度 → 無條件進位
     if "Pipe" in ln.name:
         ln.stock_length = STOCK_LENGTH_PIPE
         ln.purchase_unit = "根"
@@ -229,7 +213,6 @@ def _aggregate_linear(ln: SummaryLine, items: List[Tuple[AnalysisEntry, str]]):
 
 
 def _aggregate_plate(ln: SummaryLine, entries: List[AnalysisEntry]):
-    """聚合鋼板 (同尺寸已在上層按 key 分組)"""
     for e in entries:
         ln.total_qty += e.quantity
         if e.length and e.width:
@@ -245,7 +228,6 @@ def _aggregate_plate(ln: SummaryLine, entries: List[AnalysisEntry]):
 
 
 def _aggregate_piece(ln: SummaryLine, entries: List[AnalysisEntry]):
-    """聚合計件材料 (螺栓等)"""
     for e in entries:
         ln.total_qty += e.quantity
     ln.total_weight = sum(e.weight_output for e in entries)

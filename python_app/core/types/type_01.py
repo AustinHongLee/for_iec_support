@@ -14,6 +14,9 @@ Tee 接入 (code=01T):
   上段管材質: 跟隨主管線 (預設 SUS304, 由 context 傳入)
   下段管材質: A53Gr.B (固定黑鐵)
   M42 底板: 依字母代碼
+
+查表資料來源: configs/type_01.json (唯一 source of truth)
+  若 JSON 遺失或損毀, 計算會直接報錯, 請從備份還原或重新建立設定檔。
 """
 from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
@@ -39,45 +42,19 @@ def _material_spec(kind: HardwareKind, material_name: str):
     )
 
 
-# ─── 建立查表 (從 JSON config 讀取, 失敗時用 fallback) ───
+# ─── 建立查表 (從 JSON config 讀取) ───
 
 def _load_table() -> dict:
-    """從 configs/type_01.json 載入, 轉為 {line_size: row} dict"""
+    """從 configs/type_01.json 載入, 轉為 {line_size: row} dict。
+    JSON 為唯一 source of truth，若讀取失敗則直接報錯。
+    """
     table = get_type_table_as_dict("01")
-    if table:
-        return table
-    # fallback: 硬寫值 (與 PDF STM-05.01 一致)
-    return _TYPE01_FALLBACK_TABLE
-
-
-_TYPE01_FALLBACK_TABLE = {
-    2:  {"pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
-    3:  {"pipe_size": "2",     "schedule": "SCH.40",  "L": 93},
-    4:  {"pipe_size": "3",     "schedule": "SCH.40",  "L": 139},
-    6:  {"pipe_size": "4",     "schedule": "SCH.40",  "L": 186},
-    8:  {"pipe_size": "6",     "schedule": "SCH.40",  "L": 271},
-    10: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 353},
-    12: {"pipe_size": "8",     "schedule": "SCH.40",  "L": 370},
-    14: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 473},
-    16: {"pipe_size": "10",    "schedule": "SCH.40",  "L": 491},
-    18: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 572},
-    20: {"pipe_size": "12",    "schedule": "STD.WT",  "L": 594},
-    22: {"pipe_size": "14",    "schedule": "STD.WT",  "L": 652},
-    24: {"pipe_size": "14",    "schedule": "STD.WT",  "L": 677},
-    26: {"pipe_size": "16",    "schedule": "STD.WT",  "L": 756},
-    28: {"pipe_size": "16",    "schedule": "STD.WT",  "L": 782},
-    30: {"pipe_size": "18",    "schedule": "STD.WT",  "L": 859},
-    32: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1060},
-    34: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1077},
-    36: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
-    38: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1099},
-    40: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1147},
-    42: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1173},
-    44: {"pipe_size": "24",    "schedule": "STD.WT",  "L": 1200},
-    46: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1329},
-    48: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1355},
-    50: {"pipe_size": "28",    "schedule": "STD.WT",  "L": 1382},
-}
+    if not table:
+        raise FileNotFoundError(
+            "Type 01 設定檔遺失或損毀 (configs/type_01.json)，"
+            "請從備份還原或透過 GUI 設定介面重新建立。"
+        )
+    return table
 
 
 def calculate(fullstring: str, connection: str = "elbow",

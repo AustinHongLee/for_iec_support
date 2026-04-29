@@ -1,13 +1,13 @@
 """
-Type 52 計算器 (也用於 Type 53, 54, 55, 66, 67, 85)
-格式: 52-2B(P)-A(A)-130-500
+Type 52 calculator (also used for Type 53, 54, 55, 66, 67, 85)
+Format: 52-2B(P)-A(A)-130-500
 """
 import math
 from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value, extract_parts, count_char, clean_pipe_size
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
-from data.pipe_table import get_pipe_details
+from data.pipe_table import get_pipe_details, get_pipe_thickness
 
 
 def _get_pipe_size(fullstring: str) -> str:
@@ -110,15 +110,9 @@ def _table66_e(pipe_size: float) -> int:
     return 0
 
 
-def _pad_plate_thickness(pipe_size: float) -> int:
-    """D-80 NOTE 1 reinforcing pad thickness by line size."""
-    if pipe_size <= 1.5:
-        return 6
-    if 2 <= pipe_size <= 14:
-        return 9
-    if pipe_size >= 16:
-        return 12
-    return 6
+def _pad_plate_thickness(pipe_size: float) -> float:
+    """Pad thickness = ASME Sch 10S wall thickness (pad is cut from pipe)."""
+    return get_pipe_thickness(pipe_size, "10S")
 
 
 def _pad_plate_length(pipe_size: float) -> int:
@@ -157,8 +151,6 @@ def calculate(fullstring: str) -> AnalysisResult:
     first = get_part(fullstring, 1)
     dash_count = count_char(fullstring, "-")
 
-    # 預設值
-    hops_value = 150
     pipe_size_str = _get_pipe_size(fullstring)
     pipe_size = get_lookup_value(pipe_size_str.replace("B", ""))
     pad_symbol = _get_pad_symbol(fullstring)
@@ -169,48 +161,76 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     hops_value, lops_value = _parse_hops_lops(fullstring, pipe_size)
 
-    # === Pad 計算 ===
+    # === Pad ===
+    # Pad is cut from same-size pipe -> thickness = ASME Sch 10S wall thickness
     if pad_symbol != "N/A":
         pipe_thickness_val = _pad_plate_thickness(pipe_size)
         pad_a = _pad_plate_length(pipe_size)
         pad_b = _pad_plate_width(pipe_size)
-
+        length_rule = "D+25*2" if pipe_size < 10 else "E*2+25*2+250"
         add_plate_entry(result, round(pad_a), round(pad_b),
                         pipe_thickness_val, "Pad_52Type")
-        if pipe_size < 10:
-            length_rule = "D + 25*2"
-        else:
-            length_rule = "E*2 + 25*2 + 250"
         result.entries[-1].remark = (
-            f"120deg pad developed width=OD*pi/3; length_rule={length_rule}; "
-            f"thickness by line size={pipe_thickness_val}t"
+            "120deg pad; width=OD*pi/3; length=" + length_rule + "; "
+            "t=Sch10S=" + str(pipe_thickness_val) + "mm (cut from pipe)"
         )
 
-    # === 楔子 (Angle) ===
+    # === Angle wedge (type 52/53/54/55 only) ===
     if first in ("52", "53", "54", "55"):
         add_steel_section_entry(result, "Angle", "40*40*5", 150, 2, material_value)
         result.entries[-1].remark = "L40x40x5 side guide, CUT IN FIELD, length provisional=150"
 
-    # === C 型鋼 / FB ===
-    c_spec = _table66_c(pipe_size)
-    if c_spec == "FB12":
-        # FB 板 1
-        fb_a = _table66_a(pipe_size) + 35 * 2
-        fb_b = lops_value + 25 * 2
-        add_plate_entry(result, fb_a, fb_b, 12, "FB_52Type_1")
-        # FB 板 2
-        add_plate_entry(result, 100, fb_b, 12, "FB_52Type_2")
-    else:
-        add_steel_section_entry(result, "H Beam", c_spec, lops_value + 25 * 2, 1, material_value)
+    # === H Beam / Fab Plate  (D-80 table, 3 size ranges) ===
+    #
+    # Range 1: pipe <= 8"   -> CUT FROM H-200x100x5.5x8
+    #   Length = LOPS (user input) or D-table default; NO +25*2 end margin
+    #
+    # Range 2: 10" to 14"  -> CUT FROM H-200x200x8x12
+    #   Length = LOPS + 25*2 (25 mm margin each end)
+    #
+    # Range 3: 16" to 24"  -> FAB FROM 12t PLATE, assembled as T-section
+    #   Bottom plate (FB_52Type_1): W = A+35*2, L = LOPS+25*2, t = 12
+    #   Vertical plate (FB_52Type_2): W = 100 (fixed), L = LOPS+25*2, t = 12
+    #
+    # Deep logic note: H-beams are purchased full length then split in half;
+    # conceptually 1 purchased H-beam provides material for 2 supports.
 
-    # === D 鋼板 (>= 10B) ===
+    if pipe_size <= 8:
+        add_steel_section_entry(result, "H Beam", "200*100*5.5",
+                                lops_value, 1, material_value)
+        result.entries[-1].remark = (
+            "CUT FROM H-200x100x5.5x8; L=LOPS(default=D table); "
+            "[deep logic] 1 purchased H-beam split in half = 2 supports"
+        )
+    elif pipe_size <= 14:
+        add_steel_section_entry(result, "H Beam", "200*200*8",
+                                lops_value + 25 * 2, 1, material_value)
+        result.entries[-1].remark = (
+            "CUT FROM H-200x200x8x12; L=LOPS+25*2; "
+            "[deep logic] 1 purchased H-beam split in half = 2 supports"
+        )
+    else:
+        fb_length = lops_value + 25 * 2
+        fb_a = _table66_a(pipe_size) + 35 * 2
+        add_plate_entry(result, fb_a, fb_length, 12, "FB_52Type_1", material_value)
+        result.entries[-1].remark = (
+            "T-bottom plate: W=" + str(fb_a) + "(=A+35*2)"
+            ", L=" + str(fb_length) + "(=LOPS+25*2), t=12"
+        )
+        add_plate_entry(result, 100, fb_length, 12, "FB_52Type_2", material_value)
+        result.entries[-1].remark = (
+            "T-vertical plate: W=100(fixed)"
+            ", L=" + str(fb_length) + "(=LOPS+25*2), t=12"
+        )
+
+    # === Gusset plates (pipe >= 10" only) ===
     if pipe_size >= 10:
         d_a = hops_value
         d_b = _fb3_plate_width(pipe_size)
         d_t = _table66_b(pipe_size)
         add_plate_entry(result, d_a, d_b, d_t, "FB_52Type_3", plate_qty=4)
         result.entries[-1].remark = (
-            "length uses HOPS; width=A+35/2-member_t/2; qty=4; pending precision check"
+            "length=HOPS; width=A+35/2-member_t/2; qty=4; pending precision check"
         )
 
     return result
