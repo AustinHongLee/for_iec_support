@@ -63,6 +63,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         # ≤3": Flat Bar
         add_plate_entry(result, plate_a=h_val, plate_b=50,
                         plate_thickness=9, plate_name="FLAT BAR",
+                            plate_role="flat_bar",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"鞍座, {h_val}x50x9, 全焊接(6V), ×2"
     elif member is not None:

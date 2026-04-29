@@ -139,6 +139,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         bolt_size=bolt_dia,
         material=plate_material,
         plate_qty=2,
+        plate_role="generic_plate",
     )
 
     # ── 4. Adjustable Bolt (J bolt), 4 EA ──

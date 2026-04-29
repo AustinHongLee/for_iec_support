@@ -93,6 +93,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ③ Plate 90×45×6 (承托板)
     add_plate_entry(result, plate_a=90, plate_b=45,
                     plate_thickness=6, plate_name="PLATE",
+                        plate_role="generic_plate",
                     material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
     result.entries[-1].remark = "承托板"
 

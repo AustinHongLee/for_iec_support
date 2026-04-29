@@ -96,6 +96,6 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         add_pipe_entry(result, support_pipe_size, pipe_thickness, support_pipe_length, support_material)
 
     # 鋼板
-    add_plate_entry(result, plate_size, plate_size, 6, "Plate", material=plate_material)
+    add_plate_entry(result, plate_size, plate_size, 6, "Plate", material=plate_material, plate_role="generic_plate")
 
     return result

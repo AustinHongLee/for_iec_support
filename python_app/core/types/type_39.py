@@ -191,6 +191,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_name="LUG PLATE TYPE-C",
         material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
+        plate_role="lug_plate",
     )
     result.entries[-1].remark = (
         f"{lgp_y} (DETAIL Y), {m34['A']}x{m34['B']}x{m34['T']}t"
@@ -208,6 +209,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_name=f"LUG PLATE {detail_z_label}",
         material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
+        plate_role="lug_plate",
     )
     result.entries[-1].remark = (
         f"{lgp_z} (DETAIL Z, {detail_z_ref}), "

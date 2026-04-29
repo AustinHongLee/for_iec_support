@@ -152,6 +152,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         plate_name=f"LUG PLATE TYPE-C",
         material=_PLATE_LUG_MATERIAL,
         plate_qty=1,
+        plate_role="lug_plate",
     )
     result.entries[-1].remark = (
         f"{lgp_type}, {plate_a}x{plate_b}x{plate_t}t, "

@@ -86,7 +86,8 @@ def add_m42_plate(
         material=material or _DEFAULT_M42_PLATE_MATERIAL,
         bolt_switch=require_drilling,
         bolt_x=bolt_x, bolt_y=bolt_y,
-        bolt_hole=bolt_hole, bolt_size=bolt_size
+        bolt_hole=bolt_hole, bolt_size=bolt_size,
+        plate_role="base_plate",   # M42 底板
     )
 
 

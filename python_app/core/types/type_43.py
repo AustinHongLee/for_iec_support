@@ -122,6 +122,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     if m34:
         add_plate_entry(result, plate_a=m34["A"], plate_b=m34["B"],
                         plate_thickness=m34["T"], plate_name="LUG PLATE TYPE-C",
+                            plate_role="lug_plate",
                         material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"DETAIL Y(管線端), {m34['type']}"
     else:
@@ -138,6 +139,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         add_plate_entry(result, plate_a=m_dz["A"], plate_b=m_dz["B"],
                         plate_thickness=m_dz["T"],
                         plate_name=f"LUG PLATE {dz_label}",
+                            plate_role="lug_plate",
                         material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"DETAIL Z(Vessel端), {dz_label}"
 
@@ -149,6 +151,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ⑦ C/S Shim
     add_plate_entry(result, plate_a=t43_data["C"], plate_b=b_val,
                     plate_thickness=6, plate_name="C/S SHIM",
+                        plate_role="shim_plate",
                     material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
     result.entries[-1].remark = "現場微調用"
 

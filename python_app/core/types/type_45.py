@@ -105,6 +105,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     if m34:
         add_plate_entry(result, plate_a=m34["A"], plate_b=m34["B"],
                         plate_thickness=m34["T"], plate_name="LUG PLATE TYPE-C",
+                            plate_role="lug_plate",
                         material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"Detail Z(管線端), {m34['type']}"
 
@@ -119,6 +120,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         add_plate_entry(result, plate_a=m_dy["A"], plate_b=m_dy["B"],
                         plate_thickness=m_dy["T"],
                         plate_name=f"LUG PLATE {dy_label}",
+                            plate_role="lug_plate",
                         material=_PLATE_LUG_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"Detail Y(Vessel端), {dy_label}"
 

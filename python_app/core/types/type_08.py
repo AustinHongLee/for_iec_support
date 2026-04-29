@@ -106,9 +106,9 @@ def calculate(fullstring: str) -> AnalysisResult:
     perform_action_by_letter(result, letter, pipe_size)
 
     # 4. Plate(STOPPER): K × M × 6mm
-    add_plate_entry(result, k, m, 6, "Plate_STOPPER", material=_SUPPORT_PLATE_MATERIAL)
+    add_plate_entry(result, k, m, 6, "Plate_STOPPER", material=_SUPPORT_PLATE_MATERIAL, plate_role="stopper_plate")
 
     # 5. Plate(TOP): B × B × 6mm
-    add_plate_entry(result, b, b, 6, "Plate_TOP", material=_SUPPORT_PLATE_MATERIAL)
+    add_plate_entry(result, b, b, 6, "Plate_TOP", material=_SUPPORT_PLATE_MATERIAL, plate_role="top_plate")
 
     return result

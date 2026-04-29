@@ -88,6 +88,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         pad_size = round(od + 50)
         add_plate_entry(result, plate_a=pad_size, plate_b=pad_size,
                         plate_thickness=12, plate_name="REIN. PAD",
+                            plate_role="reinforcement_pad",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=pipe_qty)
         result.entries[-1].remark = f"Reinforcing Pad, ~{pad_size}×{pad_size}×12t"
 

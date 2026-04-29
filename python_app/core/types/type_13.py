@@ -122,6 +122,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=plate_t,
         plate_name="Plate_P",
         material=_SUPPORT_PLATE_MATERIAL,
+        plate_role="generic_plate",
     )
 
     # ── 5. Cover Plate (蓋板, 75×75×6t, 碳鋼) ──
@@ -132,6 +133,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=_COVER_PLATE_T,
         plate_name="COVER_PL",
         material=_SUPPORT_PLATE_MATERIAL,
+        plate_role="cover_plate",
     )
 
     # ── 6. M42 底板 (用 pipe_size_b 查表) ──

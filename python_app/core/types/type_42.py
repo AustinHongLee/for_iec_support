@@ -112,6 +112,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ④ C/S Shim
     add_plate_entry(result, plate_a=member_data["C"], plate_b=member_data["D"],
                     plate_thickness=6, plate_name="C/S SHIM",
+                        plate_role="shim_plate",
                     material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
     result.entries[-1].remark = "現場微調用"
 

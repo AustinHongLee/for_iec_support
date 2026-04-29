@@ -172,6 +172,7 @@ def calculate(fullstring: str) -> AnalysisResult:
                 bolt_y=0,
                 bolt_hole=oj,
                 bolt_size=k_spec,
+                plate_role="lug_plate",
             )
             result.entries[-1].remark = f"SEE M-34, {fig_tag}"
 

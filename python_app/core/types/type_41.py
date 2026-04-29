@@ -85,6 +85,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     bp_size = bd + 2 * data["b"]
     add_plate_entry(result, plate_a=bp_size, plate_b=bp_size,
                     plate_thickness=bp_t, plate_name="BASE PLATE",
+                        plate_role="base_plate",
                     material=_SUPPORT_PLATE_MATERIAL)
     result.entries[-1].remark = f"{bp_size}x{bp_size}x{bp_t}t, A283 Gr.C"
 

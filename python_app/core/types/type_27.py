@@ -160,6 +160,7 @@ def calculate(fullstring: str) -> AnalysisResult:
             plate_name="Plate_6t_Side",
             material="A36/SS400",
             plate_qty=3,
+            plate_role="side_plate",
         )
         result.entries[-1].remark = "3 SIDES TYP 上部補板 150×100×6"
 
@@ -175,6 +176,7 @@ def calculate(fullstring: str) -> AnalysisResult:
             plate_name="Plate_9t_Wing",
             material="A36/SS400",
             plate_qty=2,
+            plate_role="wing_plate",
         )
         result.entries[-1].remark = "下部翼側板 200×100×9 ×2"
     else:

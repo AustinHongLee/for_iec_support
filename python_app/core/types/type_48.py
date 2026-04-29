@@ -39,6 +39,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     add_plate_entry(result, plate_a=data["plate_a"], plate_b=data["plate_b"],
                     plate_thickness=data["plate_t"],
                     plate_name="PLATE",
+                        plate_role="generic_plate",
                     material=material, plate_qty=1)
     result.entries[-1].remark = (
         f"Drain Hub 偏移底座, {data['plate_size']}, "

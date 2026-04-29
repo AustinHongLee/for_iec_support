@@ -112,10 +112,10 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     add_pipe_entry(result, pipe_c_size, pipe_c_sch, pipe_c_length, support_material)
 
     # 3. Plate E (底板)
-    add_plate_entry(result, plate_e[0], plate_e[1], plate_e[2], "Plate_E", material=plate_material)
+    add_plate_entry(result, plate_e[0], plate_e[1], plate_e[2], "Plate_E", material=plate_material, plate_role="generic_plate")
 
     # 4. Plate F (滑動板)
-    add_plate_entry(result, plate_f[0], plate_f[1], plate_f[2], "Plate_F", material=plate_material)
+    add_plate_entry(result, plate_f[0], plate_f[1], plate_f[2], "Plate_F", material=plate_material, plate_role="generic_plate")
 
     # 5. M42 底板 (用 Pipe C 尺寸查)
     m42_start = len(result.entries)

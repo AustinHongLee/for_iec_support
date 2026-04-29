@@ -138,6 +138,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_name="Plate_WING",
         material=plate_material,
         plate_qty=_WING_QTY,
+        plate_role="wing_plate",
     )
     _annotate_last_entry(
         result,
@@ -153,6 +154,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_name="Plate_STOPPER",
         material=plate_material,
         plate_qty=_STOPPER_QTY,
+        plate_role="stopper_plate",
     )
     _annotate_last_entry(
         result,
@@ -167,6 +169,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=F,
         plate_name="Plate_BASE",
         material=plate_material,
+        plate_role="base_plate",
     )
 
     # ── 6. Top Plate (B SQ): B × B × F ──
@@ -177,6 +180,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
         plate_thickness=F,
         plate_name="Plate_TOP",
         material=plate_material,
+        plate_role="top_plate",
     )
 
     return result

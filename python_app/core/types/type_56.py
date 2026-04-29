@@ -61,6 +61,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         # 小管: PL 100×100×6
         add_plate_entry(result, plate_a=100, plate_b=100,
                         plate_thickness=6, plate_name="PLATE",
+                            plate_role="generic_plate",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"管線檔止, PL 100×100×6, R={R}mm"
 
@@ -70,6 +71,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         B = data["B"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=6, plate_name="MEMBER C",
+                            plate_role="channel",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"FAB FROM 6t PLATE, {A}x{B}x6, R={R}mm"
 
@@ -81,6 +83,7 @@ def calculate(fullstring: str) -> AnalysisResult:
         D = data["D"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=12, plate_name="MEMBER C",
+                            plate_role="channel",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"{C_desc}, A={A}, B={B}, D={D}, R={R}mm"
 
@@ -92,12 +95,14 @@ def calculate(fullstring: str) -> AnalysisResult:
         D = data["D"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=E, plate_name="MEMBER C",
+                            plate_role="channel",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"FAB FROM {E}t PLATE, A={A}, D={D}, R={R}mm"
 
         # 側板 ×2
         add_plate_entry(result, plate_a=D, plate_b=B,
                         plate_thickness=E, plate_name="SIDE PLATE",
+                            plate_role="side_plate",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2"
 
@@ -110,17 +115,20 @@ def calculate(fullstring: str) -> AnalysisResult:
         E = data["E"]
         add_plate_entry(result, plate_a=A, plate_b=B,
                         plate_thickness=E, plate_name="MEMBER C",
+                            plate_role="channel",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"主承載框, A={A}, B={B}, C={C}, R={R}mm"
 
         add_plate_entry(result, plate_a=D, plate_b=B,
                         plate_thickness=E, plate_name="SIDE PLATE",
+                            plate_role="side_plate",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
         result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2"
 
         # 120° 鞍座
         add_plate_entry(result, plate_a=C, plate_b=C,
                         plate_thickness=E, plate_name="SADDLE (120°)",
+                            plate_role="saddle_plate",
                         material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
         result.entries[-1].remark = f"120° 鞍座, 含 D-91 REIN. PAD"
 
