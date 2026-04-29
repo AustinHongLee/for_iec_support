@@ -1,0 +1,60 @@
+{
+  "type_id": "48",
+  "source": "data/type48_table.py",
+  "migrated": "2026-04-29",
+  "TYPE48_MATERIAL_SYMBOL": {
+    "CS": "",
+    "AS": "(A)",
+    "SS": "(B)"
+  },
+  "TYPE48_TABLE": {
+    "0.5": {
+      "plate_size": "150*100*6",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 6
+    },
+    "0.75": {
+      "plate_size": "150*100*6",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 6
+    },
+    "1": {
+      "plate_size": "150*100*6",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 6
+    },
+    "1.5": {
+      "plate_size": "150*100*6",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 6
+    },
+    "2": {
+      "plate_size": "150*100*6",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 6
+    },
+    "3": {
+      "plate_size": "150*100*9",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 9
+    },
+    "4": {
+      "plate_size": "150*100*9",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 9
+    },
+    "6": {
+      "plate_size": "150*100*9",
+      "plate_a": 150,
+      "plate_b": 100,
+      "plate_t": 9
+    }
+  }
+}

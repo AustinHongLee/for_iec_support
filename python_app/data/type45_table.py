@@ -1,55 +1,51 @@
 """
-Type 45 查表資料 — 曲面設備直接夾持支撐 (D-54, D-55)
-無 Trunnion, 有 Lug Plate, 僅 8"~14" 管徑
-H 公式: H = P - √(R² - Q²) - 60 - t
-
-⚠️ Detail Y/Z 反轉:
-  Detail Y = Vessel 端 → M-35/36 (Type-D/E)
-  Detail Z = 管線端 → M-34 (Type-C)
+Type 45 查表資料 — 資料來源: configs/type_45.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type45_table.py
+  Type 45 查表資料 — 曲面設備直接夾持支撐 (D-54, D-55)
+  無 Trunnion, 有 Lug Plate, 僅 8"~14" 管徑
+  H 公式: H = P - √(R² - Q²) - 60 - t
+  
+  ⚠️ Detail Y/Z 反轉:
+    Detail Y = Vessel 端 → M-35/36 (Type-D/E)
+    Detail Z = 管線端 → M-34 (Type-C)
 """
+import json as _json, os as _os
 
-# 管徑 → Q (mm) — 與 Type 44 相同
-TYPE45_PIPE_Q = {
-    8:  113,
-    10: 140,
-    12: 165,
-    14: 181,
-}
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_45.json")
 
-# 斜撐資料 (H > 1140 時才安裝)
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+TYPE45_BRACE_H_MIN = _DATA["TYPE45_BRACE_H_MIN"]
+
+# TYPE45_BRACE
 TYPE45_BRACE = {
-    "A": {"vertical": 400, "horizontal": 758, "length": 1008},  # θ=30°
-    "B": {"vertical": 693, "horizontal": 758, "length": 1150},  # θ=45°
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE45_BRACE"].items()
 }
-TYPE45_BRACE_H_MIN = 1140  # H > 此值才安裝斜撐
 
-# Member 尺寸 (D-55)
+# TYPE45_MEMBER
 TYPE45_MEMBER = {
-    "C100": {
-        "member_full": "C100*50*5",
-        "A": 170, "B": 50, "C": 100, "D": None, "E": 30, "F": 80,
-        "G": None, "J": 22, "K": '3/4"x50',
-    },
-    "C125": {
-        "member_full": "C125*65*6",
-        "A": 170, "B": None, "C": 125, "D": 55, "E": 30, "F": 80,
-        "G": 35, "J": 22, "K": '3/4"x50',
-    },
-    "C150": {
-        "member_full": "C150*75*9",
-        "A": 190, "B": None, "C": 150, "D": 70, "E": 30, "F": 100,
-        "G": 40, "J": 22, "K": '3/4"x50',
-    },
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE45_MEMBER"].items()
+}
+
+# TYPE45_PIPE_Q
+TYPE45_PIPE_Q = {
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE45_PIPE_Q"].items()
 }
 
 
+# ── 原始查詢函式（interface 不變）────────────────────────
 def get_type45_q(line_size: float) -> int | None:
     return TYPE45_PIPE_Q.get(int(line_size))
-
 
 def get_type45_member(member_code: str) -> dict | None:
     return TYPE45_MEMBER.get(member_code)
 
-
 def get_type45_brace(fig: str) -> dict | None:
     return TYPE45_BRACE.get(fig)
+

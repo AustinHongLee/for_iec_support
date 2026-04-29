@@ -1,23 +1,36 @@
-"""
-Type 76 large-pipe pad support data (D-91).
-
-The drawing has no dimensional table; it states the support applies to pipe
-sizes 26"~42", with a 120-degree pad cut from the main pipe or fabricated from
-carbon-steel plate, 12t minimum, 400mm long.
-"""
 from __future__ import annotations
-
 import math
-
 from .component_size_utils import STEEL_DENSITY_KG_PER_MM3, normalize_fractional_size, size_to_float
-from .pipe_table import PIPE_OD
+from .pipe_table import PIPE_OD as _PIPE_OD_src
+"""
+Type 76 查表資料 — 資料來源: configs/type_76.json
+Bridge module (auto-fixed 2026-04-29): interface 不變，底層讀 JSON。
+"""
+import json as _json, os as _os
+from .component_size_utils import normalize_fractional_size
+
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_76.json")
+
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+STEEL_DENSITY_KG_PER_MM3 = _DATA["STEEL_DENSITY_KG_PER_MM3"]
+TYPE76_MIN_THICKNESS_MM = _DATA["TYPE76_MIN_THICKNESS_MM"]
+TYPE76_PAD_ANGLE_DEG = _DATA["TYPE76_PAD_ANGLE_DEG"]
+TYPE76_PAD_LENGTH_MM = _DATA["TYPE76_PAD_LENGTH_MM"]
+
+# PIPE_OD (dict)
+PIPE_OD = {
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["PIPE_OD"].items()
+}
+
+# TYPE76_SUPPORTED_SIZES (list)
+TYPE76_SUPPORTED_SIZES = _DATA["TYPE76_SUPPORTED_SIZES"]
 
 
-TYPE76_SUPPORTED_SIZES = ['26"', '28"', '30"', '32"', '34"', '36"', '40"', '42"']
-TYPE76_PAD_ANGLE_DEG = 120
-TYPE76_PAD_LENGTH_MM = 400
-TYPE76_MIN_THICKNESS_MM = 12
-
+# ── 原始查詢函式（interface 不變）────────────────────────
 
 def get_type76_data(line_size) -> dict | None:
     key = normalize_fractional_size(line_size)
@@ -42,5 +55,7 @@ def get_type76_data(line_size) -> dict | None:
     }
 
 
+
 def list_type76_sizes() -> list[str]:
     return TYPE76_SUPPORTED_SIZES[:]
+

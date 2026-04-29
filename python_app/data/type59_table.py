@@ -1,33 +1,38 @@
 """
-Type 59 — Lug Plate Support for Shoe / Bare Pipe
-圖號: D-70
-管徑: 2-1/2" & smaller, 3"~8", 10"~14"
-FIG-A: insulated pipe (配 D-63 shoe, NOT FURNISHED)
-FIG-B: bare pipe (配 D-68 U-bolt)
-
-尺寸表依管徑分 3 組
-TABLE A 材料符號: CS=NONE, AS=(A), SS=(S), A516-60=(R)
+Type 59 查表資料 — 資料來源: configs/type_59.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type59_table.py
+  Type 59 — Lug Plate Support for Shoe / Bare Pipe
+  圖號: D-70
+  管徑: 2-1/2" & smaller, 3"~8", 10"~14"
+  FIG-A: insulated pipe (配 D-63 shoe, NOT FURNISHED)
+  FIG-B: bare pipe (配 D-68 U-bolt)
+  
+  尺寸表依管徑分 3 組
+  TABLE A 材料符號: CS=NONE, AS=(A), SS=(S), A516-60=(R)
 """
+import json as _json, os as _os
 
-# 三組尺寸 (A, B, C, D, T, S_T, plate_qty) mm
-# S_T = 不鏽鋼專用板厚（對應圖紙 D-70 TABLE A "FOR STAINLESS STEEL ONLY" 欄）
-#   small=6, medium=9；large="-" (圖紙無定義) 以 None 表示 → 計算器應給警告
-# plate_qty: D=None → 1片；D=120 → 2片（依 VBA D=0 then 1 else 2 邏輯）
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_59.json")
+
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+# TYPE59_DIMS
 TYPE59_DIMS = {
-    "small":  {"A": 80,  "B": 55,  "C": 15, "D": None, "T": 9,  "S_T": 6,    "plate_qty": 1},  # 2-1/2" & smaller
-    "medium": {"A": 150, "B": 100, "C": 50, "D": None, "T": 12, "S_T": 9,    "plate_qty": 1},  # 3"~8"
-    "large":  {"A": 150, "B": 130, "C": 50, "D": 120,  "T": 12, "S_T": None, "plate_qty": 2},  # 10"~14"  (SS欄為"–"，無定義)
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE59_DIMS"].items()
 }
 
-# 材料符號對應
+# TYPE59_MATERIAL_MAP
 TYPE59_MATERIAL_MAP = {
-    "":    {"material": "A283 Gr.C", "desc": "Carbon Steel"},
-    "(A)": {"material": "A387-22",   "desc": "Alloy Steel"},
-    "(S)": {"material": "A240-304",  "desc": "Stainless Steel"},
-    "(R)": {"material": "A516-60",   "desc": "Carbon Steel (A516-60)"},
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE59_MATERIAL_MAP"].items()
 }
 
 
+# ── 原始查詢函式（interface 不變）────────────────────────
 def _size_to_float(size_str: str) -> float:
     """將管徑字串轉為浮點數"""
     s = size_str.replace("B", "").strip()
@@ -42,7 +47,6 @@ def _size_to_float(size_str: str) -> float:
             return int(num) / int(den)
     return float(s)
 
-
 def get_type59_group(pipe_size_str: str) -> str:
     """依管徑取得尺寸群組"""
     ps = _size_to_float(pipe_size_str)
@@ -55,14 +59,12 @@ def get_type59_group(pipe_size_str: str) -> str:
     else:
         return ""
 
-
 def get_type59_dims(pipe_size_str: str) -> dict | None:
     """依管徑取得 lug plate 尺寸"""
     group = get_type59_group(pipe_size_str)
     if group:
         return TYPE59_DIMS[group]
     return None
-
 
 def get_type59_material(symbol: str) -> dict | None:
     """依材料符號取得材料"""
@@ -76,3 +78,4 @@ if __name__ == "__main__":
     print("\nMaterial map:")
     for sym, mat in TYPE59_MATERIAL_MAP.items():
         print(f"  '{sym}' → {mat['material']}")
+

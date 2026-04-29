@@ -1,0 +1,29 @@
+{
+  "type_id": "44",
+  "source": "data/type44_table.py",
+  "migrated": "2026-04-29",
+  "TYPE44_BRACE": {
+    "A": {
+      "vertical": 450,
+      "horizontal": 780,
+      "length": 1016
+    },
+    "B": {
+      "vertical": 780,
+      "horizontal": 780,
+      "length": 1203
+    }
+  },
+  "TYPE44_MEMBERS": [
+    "C100",
+    "C125",
+    "C150"
+  ],
+  "TYPE44_PIPE_Q": {
+    "8": 113,
+    "10": 140,
+    "12": 165,
+    "14": 181
+  },
+  "TYPE44_BRACE_H_MIN": 1200
+}

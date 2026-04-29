@@ -1,45 +1,40 @@
 """
-Type 64 — Pipe-to-Pipe Rod Hanger
-圖號: D-78
-Supported line E: 1/2"~12"
-H: 500~3000mm
-
-E → rod size G
-FIG-A~D → upper/lower clamp 組合
+Type 64 查表資料 — 資料來源: configs/type_64.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type64_table.py
+  Type 64 — Pipe-to-Pipe Rod Hanger
+  圖號: D-78
+  Supported line E: 1/2"~12"
+  H: 500~3000mm
+  
+  E → rod size G
+  FIG-A~D → upper/lower clamp 組合
 """
-from .component_size_utils import normalize_fractional_size
+import json as _json, os as _os
 
-# E (supported line size) → rod size G
-TYPE64_ROD_TABLE = {
-    '1/2"':   {"g": '3/8"', "fig_bc_only": False},
-    '3/4"':   {"g": '3/8"', "fig_bc_only": False},
-    '1"':     {"g": '1/2"', "fig_bc_only": False},
-    '1 1/4"': {"g": '1/2"', "fig_bc_only": False},
-    '1 1/2"': {"g": '1/2"', "fig_bc_only": False},
-    '2"':     {"g": '5/8"', "fig_bc_only": False},
-    '2 1/2"': {"g": '5/8"', "fig_bc_only": False},
-    '3"':     {"g": '5/8"', "fig_bc_only": False},
-    '4"':     {"g": '3/4"', "fig_bc_only": False},
-    '5"':     {"g": '3/4"', "fig_bc_only": True},
-    '6"':     {"g": '3/4"', "fig_bc_only": True},
-    '8"':     {"g": '7/8"', "fig_bc_only": True},
-    '10"':    {"g": '1"', "fig_bc_only": True},
-    '12"':    {"g": '1"', "fig_bc_only": True},
-}
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_64.json")
 
-# FIG → upper/lower clamp type
-# M-4 = TYPE-A Pipe Clamp (welded), M-6 = TYPE-C Pipe Clamp (bolted)
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+# TYPE64_FIGURE_MAP
 TYPE64_FIGURE_MAP = {
-    "A": {"upper_clamp": "M-6 TYPE-C", "lower_clamp": "M-6 TYPE-C"},
-    "B": {"upper_clamp": "M-6 TYPE-C", "lower_clamp": "M-4 TYPE-A"},
-    "C": {"upper_clamp": "M-4 TYPE-A", "lower_clamp": "M-6 TYPE-C"},
-    "D": {"upper_clamp": "M-4 TYPE-A", "lower_clamp": "M-4 TYPE-A"},
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE64_FIGURE_MAP"].items()
 }
 
+# TYPE64_ROD_TABLE
+TYPE64_ROD_TABLE = {
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE64_ROD_TABLE"].items()
+}
+
+
+# ── 原始查詢函式（interface 不變）────────────────────────
 def get_type64_rod(supported_size: str) -> dict | None:
     """依 supported line size 查 rod size"""
     return TYPE64_ROD_TABLE.get(normalize_fractional_size(supported_size))
-
 
 def get_type64_figure(fig: str) -> dict | None:
     """依 FIG 查 clamp 組合"""
@@ -54,3 +49,4 @@ if __name__ == "__main__":
     print("\nFigure Map:")
     for f, c in TYPE64_FIGURE_MAP.items():
         print(f"  FIG-{f}: upper={c['upper_clamp']}, lower={c['lower_clamp']}")
+

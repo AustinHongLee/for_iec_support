@@ -1,0 +1,167 @@
+{
+  "type_id": "62",
+  "source": "data/type62_table.py",
+  "migrated": "2026-04-29",
+  "TYPE62_PART_TABLE": {
+    "A": {
+      "role": "upper",
+      "component_id": "M-31",
+      "component_name": "STEEL WASHER PLATE",
+      "grinnell_fig_no": "60",
+      "pipe_size_min": null,
+      "pipe_size_max": null,
+      "max_temp_f": null,
+      "max_insulation_thk_in": null,
+      "remarks": "",
+      "component_table_ready": false
+    },
+    "C": {
+      "role": "upper",
+      "component_id": "M-28",
+      "component_name": "BEAM ATTACHMENT A",
+      "grinnell_fig_no": "66",
+      "pipe_size_min": null,
+      "pipe_size_max": null,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": null,
+      "remarks": "",
+      "component_table_ready": true
+    },
+    "D": {
+      "role": "upper",
+      "component_id": "M-28",
+      "component_name": "BEAM ATTACHMENT A",
+      "grinnell_fig_no": "66",
+      "pipe_size_min": null,
+      "pipe_size_max": null,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": null,
+      "remarks": "",
+      "component_table_ready": true
+    },
+    "E": {
+      "role": "lower",
+      "component_id": "M-3",
+      "component_name": "ADJUSTABLE CLEVIS",
+      "grinnell_fig_no": "260",
+      "pipe_size_min": 0.5,
+      "pipe_size_max": 30.0,
+      "max_temp_f": 650,
+      "max_insulation_thk_in": null,
+      "remarks": "",
+      "component_table_ready": false
+    },
+    "G": {
+      "role": "lower",
+      "component_id": "M-4",
+      "component_name": "PIPE CLAMP TYPE-A",
+      "grinnell_fig_no": "212",
+      "pipe_size_min": 0.5,
+      "pipe_size_max": 24.0,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": null,
+      "remarks": "",
+      "component_table_ready": true
+    },
+    "H": {
+      "role": "lower",
+      "component_id": "M-5",
+      "component_name": "PIPE CLAMP TYPE-B",
+      "grinnell_fig_no": "216",
+      "pipe_size_min": 3.0,
+      "pipe_size_max": 42.0,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": null,
+      "remarks": "LOAD CAPACITY GREATER THAN FIG-G",
+      "component_table_ready": true
+    },
+    "J": {
+      "role": "lower",
+      "component_id": "M-6",
+      "component_name": "PIPE CLAMP TYPE-C",
+      "grinnell_fig_no": "295",
+      "pipe_size_min": 0.75,
+      "pipe_size_max": 24.0,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": 4,
+      "remarks": "",
+      "component_table_ready": true
+    },
+    "K": {
+      "role": "lower",
+      "component_id": "M-7",
+      "component_name": "PIPE CLAMP TYPE-D",
+      "grinnell_fig_no": "295H",
+      "pipe_size_min": 6.0,
+      "pipe_size_max": 36.0,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": 4,
+      "remarks": "LOAD CAPACITY GREATER THAN FIG-J",
+      "component_table_ready": true
+    },
+    "L": {
+      "role": "lower",
+      "component_id": "M-8",
+      "component_name": "PIPE CLAMP TYPE-E",
+      "grinnell_fig_no": "295A",
+      "pipe_size_min": 1.5,
+      "pipe_size_max": 10.0,
+      "max_temp_f": 1050,
+      "max_insulation_thk_in": 4,
+      "remarks": "",
+      "component_table_ready": false
+    },
+    "M": {
+      "role": "lower",
+      "component_id": "M-9",
+      "component_name": "PIPE CLAMP TYPE-F",
+      "grinnell_fig_no": "224",
+      "pipe_size_min": 4.0,
+      "pipe_size_max": 16.0,
+      "max_temp_f": 1050,
+      "max_insulation_thk_in": 4,
+      "remarks": "LOAD CAPACITY GREATER THAN FIG-L",
+      "component_table_ready": false
+    },
+    "N": {
+      "role": "lower",
+      "component_id": "M-10",
+      "component_name": "PIPE CLAMP TYPE-G",
+      "grinnell_fig_no": "246",
+      "pipe_size_min": 10.0,
+      "pipe_size_max": 24.0,
+      "max_temp_f": 1075,
+      "max_insulation_thk_in": 6,
+      "remarks": "LOAD CAPACITY GREATER THAN FIG-M",
+      "component_table_ready": false
+    },
+    "Q": {
+      "role": "lower",
+      "component_id": "M-24",
+      "component_name": "FORGED STEEL CLEVIS",
+      "grinnell_fig_no": "299",
+      "pipe_size_min": 2.0,
+      "pipe_size_max": 24.0,
+      "max_temp_f": 750,
+      "max_insulation_thk_in": null,
+      "remarks": "USES LUG PLATE TYPE-B (M-33)",
+      "component_table_ready": true
+    }
+  },
+  "TYPE62_UPPER_FIGS": [
+    "A",
+    "C",
+    "D"
+  ],
+  "TYPE62_LOWER_FIGS": [
+    "E",
+    "G",
+    "H",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "Q"
+  ]
+}

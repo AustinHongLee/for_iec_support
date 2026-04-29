@@ -1,0 +1,52 @@
+{
+  "type_id": "59",
+  "source": "data/type59_table.py",
+  "migrated": "2026-04-29",
+  "TYPE59_DIMS": {
+    "small": {
+      "A": 80,
+      "B": 55,
+      "C": 15,
+      "D": null,
+      "T": 9,
+      "S_T": 6,
+      "plate_qty": 1
+    },
+    "medium": {
+      "A": 150,
+      "B": 100,
+      "C": 50,
+      "D": null,
+      "T": 12,
+      "S_T": 9,
+      "plate_qty": 1
+    },
+    "large": {
+      "A": 150,
+      "B": 130,
+      "C": 50,
+      "D": 120,
+      "T": 12,
+      "S_T": null,
+      "plate_qty": 2
+    }
+  },
+  "TYPE59_MATERIAL_MAP": {
+    "": {
+      "material": "A283 Gr.C",
+      "desc": "Carbon Steel"
+    },
+    "(A)": {
+      "material": "A387-22",
+      "desc": "Alloy Steel"
+    },
+    "(S)": {
+      "material": "A240-304",
+      "desc": "Stainless Steel"
+    },
+    "(R)": {
+      "material": "A516-60",
+      "desc": "Carbon Steel (A516-60)"
+    }
+  }
+}

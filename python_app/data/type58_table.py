@@ -1,41 +1,31 @@
 """
-Type 58 — U-Bolt Plate Saddle on Steel Plate / Shape Steel
-圖號: D-69
-管徑: 1/4"~30"
-FIG-A: 鋼板放在平板上
-FIG-B: 鋼板放在型鋼上 (多 X 尺寸)
-
-欄位: rod_size, hole_d(mm), hole_pitch(mm), plate_l(mm), plate_b(mm), plate_t(mm), x(mm)
+Type 58 查表資料 — 資料來源: configs/type_58.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type58_table.py
+  Type 58 — U-Bolt Plate Saddle on Steel Plate / Shape Steel
+  圖號: D-69
+  管徑: 1/4"~30"
+  FIG-A: 鋼板放在平板上
+  FIG-B: 鋼板放在型鋼上 (多 X 尺寸)
+  
+  欄位: rod_size, hole_d(mm), hole_pitch(mm), plate_l(mm), plate_b(mm), plate_t(mm), x(mm)
 """
+import json as _json, os as _os
 
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_58.json")
+
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+# TYPE58_TABLE
 TYPE58_TABLE = {
-    "1/4":   {"rod_size": '1/4"',  "hole_d": 8,  "hole_pitch": 30,  "plate_l": 90,  "plate_b": 50,  "plate_t": 6,  "x": 4},
-    "3/8":   {"rod_size": '1/4"',  "hole_d": 8,  "hole_pitch": 30,  "plate_l": 90,  "plate_b": 50,  "plate_t": 6,  "x": 4},
-    "1/2":   {"rod_size": '3/8"',  "hole_d": 12, "hole_pitch": 38,  "plate_l": 90,  "plate_b": 50,  "plate_t": 6,  "x": 5},
-    "3/4":   {"rod_size": '3/8"',  "hole_d": 12, "hole_pitch": 45,  "plate_l": 90,  "plate_b": 60,  "plate_t": 6,  "x": 6},
-    "1":     {"rod_size": '1/2"',  "hole_d": 16, "hole_pitch": 50,  "plate_l": 100, "plate_b": 65,  "plate_t": 6,  "x": 7},
-    "1-1/4": {"rod_size": '1/2"',  "hole_d": 16, "hole_pitch": 55,  "plate_l": 100, "plate_b": 70,  "plate_t": 9,  "x": 8},
-    "1-1/2": {"rod_size": '1/2"',  "hole_d": 16, "hole_pitch": 60,  "plate_l": 110, "plate_b": 75,  "plate_t": 9,  "x": 9},
-    "2":     {"rod_size": '5/8"',  "hole_d": 18, "hole_pitch": 75,  "plate_l": 125, "plate_b": 90,  "plate_t": 9,  "x": 10},
-    "2-1/2": {"rod_size": '5/8"',  "hole_d": 18, "hole_pitch": 85,  "plate_l": 140, "plate_b": 100, "plate_t": 9,  "x": 12},
-    "3":     {"rod_size": '5/8"',  "hole_d": 18, "hole_pitch": 100, "plate_l": 160, "plate_b": 110, "plate_t": 9,  "x": 14},
-    "4":     {"rod_size": '3/4"',  "hole_d": 22, "hole_pitch": 120, "plate_l": 180, "plate_b": 130, "plate_t": 12, "x": 16},
-    "5":     {"rod_size": '3/4"',  "hole_d": 22, "hole_pitch": 140, "plate_l": 200, "plate_b": 150, "plate_t": 12, "x": 18},
-    "6":     {"rod_size": '3/4"',  "hole_d": 22, "hole_pitch": 160, "plate_l": 220, "plate_b": 170, "plate_t": 12, "x": 20},
-    "8":     {"rod_size": '7/8"',  "hole_d": 24, "hole_pitch": 200, "plate_l": 260, "plate_b": 210, "plate_t": 12, "x": 24},
-    "10":    {"rod_size": '1"',    "hole_d": 28, "hole_pitch": 240, "plate_l": 310, "plate_b": 250, "plate_t": 16, "x": 28},
-    "12":    {"rod_size": '1"',    "hole_d": 28, "hole_pitch": 270, "plate_l": 350, "plate_b": 280, "plate_t": 16, "x": 30},
-    "14":    {"rod_size": '1-1/8"',"hole_d": 30, "hole_pitch": 300, "plate_l": 380, "plate_b": 310, "plate_t": 16, "x": 32},
-    "16":    {"rod_size": '1-1/4"',"hole_d": 34, "hole_pitch": 340, "plate_l": 420, "plate_b": 350, "plate_t": 19, "x": 36},
-    "18":    {"rod_size": '1-1/4"',"hole_d": 34, "hole_pitch": 380, "plate_l": 460, "plate_b": 390, "plate_t": 19, "x": 38},
-    "20":    {"rod_size": '1-3/8"',"hole_d": 38, "hole_pitch": 420, "plate_l": 500, "plate_b": 430, "plate_t": 19, "x": 42},
-    "24":    {"rod_size": '1-1/2"',"hole_d": 40, "hole_pitch": 500, "plate_l": 580, "plate_b": 510, "plate_t": 22, "x": 48},
-    "26":    {"rod_size": '1-1/2"',"hole_d": 40, "hole_pitch": 540, "plate_l": 630, "plate_b": 550, "plate_t": 22, "x": 52},
-    "28":    {"rod_size": '1-5/8"',"hole_d": 44, "hole_pitch": 580, "plate_l": 670, "plate_b": 590, "plate_t": 22, "x": 56},
-    "30":    {"rod_size": '1-5/8"',"hole_d": 44, "hole_pitch": 620, "plate_l": 710, "plate_b": 630, "plate_t": 25, "x": 60},
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE58_TABLE"].items()
 }
 
 
+# ── 原始查詢函式（interface 不變）────────────────────────
 def get_type58_data(pipe_size_str: str) -> dict | None:
     """查詢 Type 58 尺寸資料"""
     return TYPE58_TABLE.get(pipe_size_str)
@@ -45,3 +35,4 @@ if __name__ == "__main__":
     print(f"Type 58 table: {len(TYPE58_TABLE)} entries")
     for k, v in TYPE58_TABLE.items():
         print(f"  {k:>6}\" → rod={v['rod_size']}, plate={v['plate_l']}×{v['plate_b']}×{v['plate_t']}")
+

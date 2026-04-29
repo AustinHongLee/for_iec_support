@@ -1,0 +1,61 @@
+{
+  "type_id": "19",
+  "source": "data/type19_table.py",
+  "migrated": "2026-04-29",
+  "TYPE19_TABLE": {
+    "1": {
+      "member": "L40X40X5",
+      "L": 600,
+      "section_type": "Angle",
+      "dim": "40*40*5"
+    },
+    "1.5": {
+      "member": "L40X40X5",
+      "L": 600,
+      "section_type": "Angle",
+      "dim": "40*40*5"
+    },
+    "2": {
+      "member": "L50X50X6",
+      "L": 600,
+      "section_type": "Angle",
+      "dim": "50*50*6"
+    },
+    "3": {
+      "member": "L50X50X6",
+      "L": 600,
+      "section_type": "Angle",
+      "dim": "50*50*6"
+    },
+    "4": {
+      "member": "L75X75X9",
+      "L": 600,
+      "section_type": "Angle",
+      "dim": "75*75*9"
+    },
+    "6": {
+      "member": "L75X75X9",
+      "L": 1200,
+      "section_type": "Angle",
+      "dim": "75*75*9"
+    },
+    "8": {
+      "member": "H194X150X6X9",
+      "L": 1200,
+      "section_type": "H Beam",
+      "dim": "194*150*6"
+    },
+    "10": {
+      "member": "H194X150X6X9",
+      "L": 1200,
+      "section_type": "H Beam",
+      "dim": "194*150*6"
+    },
+    "12": {
+      "member": "H194X150X6X9",
+      "L": 1200,
+      "section_type": "H Beam",
+      "dim": "194*150*6"
+    }
+  }
+}

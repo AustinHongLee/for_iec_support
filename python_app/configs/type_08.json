@@ -1,0 +1,28 @@
+{
+  "type_id": "08",
+  "source": "data/type08_table.py",
+  "migrated": "2026-04-29",
+  "TYPE08_TABLE": {
+    "2": {
+      "pipe_sch": "SCH.40",
+      "K": 70,
+      "M": 160,
+      "B": 80,
+      "member_n": "C100*50*5"
+    },
+    "3": {
+      "pipe_sch": "SCH.40",
+      "K": 70,
+      "M": 160,
+      "B": 110,
+      "member_n": "C100*50*5"
+    },
+    "4": {
+      "pipe_sch": "SCH.40",
+      "K": 85,
+      "M": 185,
+      "B": 135,
+      "member_n": "C125*65*6"
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "type_id": "64",
+  "source": "data/type64_table.py",
+  "migrated": "2026-04-29",
+  "TYPE64_FIGURE_MAP": {
+    "A": {
+      "upper_clamp": "M-6 TYPE-C",
+      "lower_clamp": "M-6 TYPE-C"
+    },
+    "B": {
+      "upper_clamp": "M-6 TYPE-C",
+      "lower_clamp": "M-4 TYPE-A"
+    },
+    "C": {
+      "upper_clamp": "M-4 TYPE-A",
+      "lower_clamp": "M-6 TYPE-C"
+    },
+    "D": {
+      "upper_clamp": "M-4 TYPE-A",
+      "lower_clamp": "M-4 TYPE-A"
+    }
+  },
+  "TYPE64_ROD_TABLE": {
+    "1/2\"": {
+      "g": "3/8\"",
+      "fig_bc_only": false
+    },
+    "3/4\"": {
+      "g": "3/8\"",
+      "fig_bc_only": false
+    },
+    "1\"": {
+      "g": "1/2\"",
+      "fig_bc_only": false
+    },
+    "1 1/4\"": {
+      "g": "1/2\"",
+      "fig_bc_only": false
+    },
+    "1 1/2\"": {
+      "g": "1/2\"",
+      "fig_bc_only": false
+    },
+    "2\"": {
+      "g": "5/8\"",
+      "fig_bc_only": false
+    },
+    "2 1/2\"": {
+      "g": "5/8\"",
+      "fig_bc_only": false
+    },
+    "3\"": {
+      "g": "5/8\"",
+      "fig_bc_only": false
+    },
+    "4\"": {
+      "g": "3/4\"",
+      "fig_bc_only": false
+    },
+    "5\"": {
+      "g": "3/4\"",
+      "fig_bc_only": true
+    },
+    "6\"": {
+      "g": "3/4\"",
+      "fig_bc_only": true
+    },
+    "8\"": {
+      "g": "7/8\"",
+      "fig_bc_only": true
+    },
+    "10\"": {
+      "g": "1\"",
+      "fig_bc_only": true
+    },
+    "12\"": {
+      "g": "1\"",
+      "fig_bc_only": true
+    }
+  }
+}

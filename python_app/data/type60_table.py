@@ -1,47 +1,31 @@
 """
-Type 60 — Large Bore Shoe Side Support
-圖號: D-71
-管徑: 16"~42"
-FIG-A: insulated pipe (配 D-80/80B shoe, NOT FURNISHED)
-FIG-B: bare pipe
-
-完整 support number → 尺寸列 (A, B, C, D, E, F, T) mm
+Type 60 查表資料 — 資料來源: configs/type_60.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type60_table.py
+  Type 60 — Large Bore Shoe Side Support
+  圖號: D-71
+  管徑: 16"~42"
+  FIG-A: insulated pipe (配 D-80/80B shoe, NOT FURNISHED)
+  FIG-B: bare pipe
+  
+  完整 support number → 尺寸列 (A, B, C, D, E, F, T) mm
 """
+import json as _json, os as _os
 
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_60.json")
+
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+# TYPE60_TABLE
 TYPE60_TABLE = {
-    # FIG-A (insulated)
-    "60-16B-A":  {"A": 250, "B": 200, "C": 100, "D": 150, "E": 50, "F": None, "T": 12},
-    "60-18B-A":  {"A": 275, "B": 225, "C": 100, "D": 175, "E": 50, "F": None, "T": 12},
-    "60-20B-A":  {"A": 300, "B": 250, "C": 100, "D": 200, "E": 50, "F": None, "T": 12},
-    "60-22B-A":  {"A": 325, "B": 275, "C": 125, "D": 200, "E": 50, "F": None, "T": 16},
-    "60-24B-A":  {"A": 350, "B": 300, "C": 125, "D": 225, "E": 50, "F": None, "T": 16},
-    "60-26B-A":  {"A": 375, "B": 325, "C": 125, "D": 250, "E": 50, "F": None, "T": 16},
-    "60-28B-A":  {"A": 400, "B": 350, "C": 150, "D": 250, "E": 50, "F": None, "T": 19},
-    "60-30B-A":  {"A": 425, "B": 375, "C": 150, "D": 275, "E": 50, "F": None, "T": 19},
-    "60-32B-A":  {"A": 450, "B": 400, "C": 150, "D": 300, "E": 50, "F": None, "T": 19},
-    "60-34B-A":  {"A": 475, "B": 425, "C": 175, "D": 300, "E": 50, "F": None, "T": 22},
-    "60-36B-A":  {"A": 500, "B": 450, "C": 175, "D": 325, "E": 50, "F": None, "T": 22},
-    "60-38B-A":  {"A": 525, "B": 475, "C": 175, "D": 350, "E": 50, "F": None, "T": 22},
-    "60-40B-A":  {"A": 550, "B": 500, "C": 200, "D": 350, "E": 50, "F": None, "T": 25},
-    "60-42B-A":  {"A": 575, "B": 525, "C": 200, "D": 375, "E": 50, "F": None, "T": 25},
-    # FIG-B (bare pipe)
-    "60-16B-B":  {"A": 250, "B": 200, "C": 100, "D": 150, "E": 50, "F": 75,  "T": 12},
-    "60-18B-B":  {"A": 275, "B": 225, "C": 100, "D": 175, "E": 50, "F": 80,  "T": 12},
-    "60-20B-B":  {"A": 300, "B": 250, "C": 100, "D": 200, "E": 50, "F": 90,  "T": 12},
-    "60-22B-B":  {"A": 325, "B": 275, "C": 125, "D": 200, "E": 50, "F": 95,  "T": 16},
-    "60-24B-B":  {"A": 350, "B": 300, "C": 125, "D": 225, "E": 50, "F": 100, "T": 16},
-    "60-26B-B":  {"A": 375, "B": 325, "C": 125, "D": 250, "E": 50, "F": 110, "T": 16},
-    "60-28B-B":  {"A": 400, "B": 350, "C": 150, "D": 250, "E": 50, "F": 115, "T": 19},
-    "60-30B-B":  {"A": 425, "B": 375, "C": 150, "D": 275, "E": 50, "F": 120, "T": 19},
-    "60-32B-B":  {"A": 450, "B": 400, "C": 150, "D": 300, "E": 50, "F": 125, "T": 19},
-    "60-34B-B":  {"A": 475, "B": 425, "C": 175, "D": 300, "E": 50, "F": 130, "T": 22},
-    "60-36B-B":  {"A": 500, "B": 450, "C": 175, "D": 325, "E": 50, "F": 140, "T": 22},
-    "60-38B-B":  {"A": 525, "B": 475, "C": 175, "D": 350, "E": 50, "F": 145, "T": 22},
-    "60-40B-B":  {"A": 550, "B": 500, "C": 200, "D": 350, "E": 50, "F": 150, "T": 25},
-    "60-42B-B":  {"A": 575, "B": 525, "C": 200, "D": 375, "E": 50, "F": 160, "T": 25},
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE60_TABLE"].items()
 }
 
 
+# ── 原始查詢函式（interface 不變）────────────────────────
 def get_type60_data(support_no: str) -> dict | None:
     """以完整 support number 查詢 Type 60 尺寸"""
     return TYPE60_TABLE.get(support_no)
@@ -52,3 +36,4 @@ if __name__ == "__main__":
     for k, v in sorted(TYPE60_TABLE.items()):
         f_str = f"F={v['F']}" if v['F'] else "F=—"
         print(f"  {k:>12} → A={v['A']}, B={v['B']}, T={v['T']}, {f_str}")
+

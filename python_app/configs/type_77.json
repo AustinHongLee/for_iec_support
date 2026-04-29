@@ -1,0 +1,78 @@
+{
+  "type_id": "77",
+  "source": "data/type77_table.py",
+  "migrated": "2026-04-29",
+  "TYPE77_TABLE": {
+    "26\"": {
+      "line_size": "26\"",
+      "A": 200,
+      "B": 35,
+      "C": 600,
+      "T": 12,
+      "H": 650,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "28\"": {
+      "line_size": "28\"",
+      "A": 200,
+      "B": 35,
+      "C": 600,
+      "T": 12,
+      "H": 650,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "30\"": {
+      "line_size": "30\"",
+      "A": 250,
+      "B": 40,
+      "C": 650,
+      "T": 12,
+      "H": 700,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "32\"": {
+      "line_size": "32\"",
+      "A": 250,
+      "B": 40,
+      "C": 650,
+      "T": 12,
+      "H": 700,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "34\"": {
+      "line_size": "34\"",
+      "A": 250,
+      "B": 45,
+      "C": 750,
+      "T": 12,
+      "H": 750,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "36\"": {
+      "line_size": "36\"",
+      "A": 250,
+      "B": 45,
+      "C": 750,
+      "T": 12,
+      "H": 750,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    },
+    "40\"": {
+      "line_size": "40\"",
+      "A": 300,
+      "B": 50,
+      "C": 850,
+      "T": 16,
+      "H": 800,
+      "material_note": "identical or similar to pipe material",
+      "transcription_status": "ai_visual_transcribed"
+    }
+  },
+  "STEEL_DENSITY_KG_PER_MM3": 7.85e-06
+}

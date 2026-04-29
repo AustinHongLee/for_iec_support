@@ -1,37 +1,30 @@
 """
-Type 57 查表資料 - U-Bolt on Existing Steel (D-68)
-lookup key = line size (float, 吋)
-
-FIG-A: SLIDE, FIG-B: FIXED
-構件: U-BOLT (ref M-26) + ROD
+Type 57 查表資料 — 資料來源: configs/type_57.json
+Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
+原始資料備份: data/_pre_json_backup/type57_table.py
+  Type 57 查表資料 - U-Bolt on Existing Steel (D-68)
+  lookup key = line size (float, 吋)
+  
+  FIG-A: SLIDE, FIG-B: FIXED
+  構件: U-BOLT (ref M-26) + ROD
 """
+import json as _json, os as _os
 
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_57.json")
+
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
+
+# TYPE57_TABLE
 TYPE57_TABLE = {
-    0.25: {"rod": '1/4"', "u_bolt": "UB-1/4B"},
-    0.5:  {"rod": '1/4"', "u_bolt": "UB-1/2B"},
-    0.75: {"rod": '1/4"', "u_bolt": "UB-3/4B"},
-    1:    {"rod": '1/4"', "u_bolt": "UB-1B"},
-    1.25: {"rod": '3/8"', "u_bolt": "UB-1-1/4B"},
-    1.5:  {"rod": '3/8"', "u_bolt": "UB-1-1/2B"},
-    2:    {"rod": '3/8"', "u_bolt": "UB-2B"},
-    2.5:  {"rod": '1/2"', "u_bolt": "UB-2-1/2B"},
-    3:    {"rod": '1/2"', "u_bolt": "UB-3B"},
-    3.5:  {"rod": '1/2"', "u_bolt": "UB-3-1/2B"},
-    4:    {"rod": '1/2"', "u_bolt": "UB-4B"},
-    5:    {"rod": '1/2"', "u_bolt": "UB-5B"},
-    6:    {"rod": '5/8"', "u_bolt": "UB-6B"},
-    8:    {"rod": '5/8"', "u_bolt": "UB-8B"},
-    10:   {"rod": '3/4"', "u_bolt": "UB-10B"},
-    12:   {"rod": '7/8"', "u_bolt": "UB-12B"},
-    14:   {"rod": '7/8"', "u_bolt": "UB-14B"},
-    16:   {"rod": '7/8"', "u_bolt": "UB-16B"},
-    18:   {"rod": '1"',   "u_bolt": "UB-18B"},
-    20:   {"rod": '1"',   "u_bolt": "UB-20B"},
-    24:   {"rod": '1"',   "u_bolt": "UB-24B"},
-    30:   {"rod": '1"',   "u_bolt": "UB-30B"},
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    for k, v in _DATA["TYPE57_TABLE"].items()
 }
 
 
+# ── 原始查詢函式（interface 不變）────────────────────────
 def get_type57_data(line_size: float) -> dict | None:
     """依管徑查 Type 57 U-bolt / Rod 規格"""
     return TYPE57_TABLE.get(line_size)
+

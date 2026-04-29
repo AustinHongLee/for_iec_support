@@ -1,0 +1,22 @@
+{
+  "type_id": "09",
+  "source": "data/type09_table.py",
+  "migrated": "2026-04-29",
+  "TYPE09_TABLE": {
+    "2": {
+      "support_pipe": 2,
+      "pipe_sch": "SCH.80",
+      "L": 106
+    },
+    "3": {
+      "support_pipe": 2,
+      "pipe_sch": "SCH.40",
+      "L": 93
+    },
+    "4": {
+      "support_pipe": 2,
+      "pipe_sch": "SCH.40",
+      "L": 106
+    }
+  }
+}

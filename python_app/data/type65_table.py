@@ -1,138 +1,38 @@
-"""
-Type 65 — Trapeze Hanger with Cross Member
-圖號: D-79
-管徑: 2"~24"
-L = 500/1000/1500/2000/2500 (bucket)
-H = HH × 100 mm
-
-D (line size) → rod size A, member M (by L bucket), weld Y
-12" & larger → 加 stiffener
-"""
 from .component_size_utils import normalize_fractional_size
+"""
+Type 65 查表資料 — 資料來源: configs/type_65.json
+Bridge module (auto-fixed 2026-04-29): interface 不變，底層讀 JSON。
+"""
+import json as _json, os as _os
 
-TYPE65_TABLE = {
-    "2":  {
-        "rod_size": '3/8"',
-        "member_by_l": {
-            500: "L65*65*6", 1000: "L65*65*6", 1500: "L75*75*9",
-            2000: "L90*90*9", 2500: "L90*90*9",
-        },
-        "weld_y": 6,
-    },
-    "2 1/2": {
-        "rod_size": '3/8"',
-        "member_by_l": {
-            500: "L65*65*6", 1000: "L65*65*6", 1500: "L75*75*9",
-            2000: "L90*90*9", 2500: "L90*90*9",
-        },
-        "weld_y": 6,
-    },
-    "3": {
-        "rod_size": '1/2"',
-        "member_by_l": {
-            500: "L65*65*6", 1000: "L75*75*9", 1500: "L75*75*9",
-            2000: "L90*90*9", 2500: "L100*100*10",
-        },
-        "weld_y": 6,
-    },
-    "4": {
-        "rod_size": '1/2"',
-        "member_by_l": {
-            500: "L75*75*9", 1000: "L75*75*9", 1500: "L90*90*9",
-            2000: "L100*100*10", 2500: "L100*100*10",
-        },
-        "weld_y": 6,
-    },
-    "5": {
-        "rod_size": '5/8"',
-        "member_by_l": {
-            500: "L75*75*9", 1000: "L75*75*9", 1500: "L90*90*9",
-            2000: "L100*100*10", 2500: "L100*100*10",
-        },
-        "weld_y": 6,
-    },
-    "6": {
-        "rod_size": '5/8"',
-        "member_by_l": {
-            500: "L75*75*9", 1000: "L90*90*9", 1500: "L90*90*9",
-            2000: "L100*100*10", 2500: "L100*100*10",
-        },
-        "weld_y": 6,
-    },
-    "8": {
-        "rod_size": '3/4"',
-        "member_by_l": {
-            500: "L90*90*9", 1000: "L90*90*9", 1500: "L100*100*10",
-            2000: "C125*65*6", 2500: "C125*65*6",
-        },
-        "weld_y": 6,
-    },
-    "10": {
-        "rod_size": '7/8"',
-        "member_by_l": {
-            500: "L90*90*9", 1000: "L100*100*10", 1500: "C125*65*6",
-            2000: "C150*75*9", 2500: "C150*75*9",
-        },
-        "weld_y": 6,
-    },
-    "12": {
-        "rod_size": '1"',
-        "member_by_l": {
-            500: "L100*100*10", 1000: "C125*65*6", 1500: "C150*75*9",
-            2000: "C150*75*9", 2500: "C200*80*7.5",
-        },
-        "weld_y": 9,
-    },
-    "14": {
-        "rod_size": '1"',
-        "member_by_l": {
-            500: "C125*65*6", 1000: "C125*65*6", 1500: "C150*75*9",
-            2000: "C200*80*7.5", 2500: "C200*80*7.5",
-        },
-        "weld_y": 9,
-    },
-    "16": {
-        "rod_size": '1 1/8"',
-        "member_by_l": {
-            500: "C125*65*6", 1000: "C150*75*9", 1500: "C200*80*7.5",
-            2000: "C200*80*7.5", 2500: "C200*80*7.5",
-        },
-        "weld_y": 9,
-    },
-    "18": {
-        "rod_size": '1 1/4"',
-        "member_by_l": {
-            500: "C150*75*9", 1000: "C150*75*9", 1500: "C200*80*7.5",
-            2000: "C200*80*7.5", 2500: "C200*80*7.5",
-        },
-        "weld_y": 9,
-    },
-    "20": {
-        "rod_size": '1 1/4"',
-        "member_by_l": {
-            500: "C150*75*9", 1000: "C200*80*7.5", 1500: "C200*80*7.5",
-            2000: "C200*80*7.5", 2500: "C200*80*7.5",
-        },
-        "weld_y": 9,
-    },
-    "24": {
-        "rod_size": '1 1/2"',
-        "member_by_l": {
-            500: "C200*80*7.5", 1000: "C200*80*7.5", 1500: "C200*80*7.5",
-            2000: "C200*80*7.5", 2500: "C200*80*7.5",
-        },
-        "weld_y": 12,
-    },
-}
+_HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+_JSON_PATH = _os.path.join(_HERE, "configs", "type_65.json")
 
-# 標準 L bucket 值
-L_BUCKETS = [500, 1000, 1500, 2000, 2500]
+with open(_JSON_PATH, encoding="utf-8") as _f:
+    _DATA = _json.load(_f)
 
+# TYPE65_TABLE: 外層 key = 字串管徑 ("2","3"...)，內層 member_by_l key = int mm
+def _rebuild_type65_table(raw):
+    out = {}
+    for pipe_key, row in raw.items():
+        row2 = dict(row)
+        if "member_by_l" in row2:
+            row2["member_by_l"] = {int(k): v for k, v in row2["member_by_l"].items()}
+        out[pipe_key] = row2
+    return out
+TYPE65_TABLE = _rebuild_type65_table(_DATA["TYPE65_TABLE"])
+
+# L_BUCKETS (list)
+L_BUCKETS = _DATA["L_BUCKETS"]
+
+
+# ── 原始查詢函式（interface 不變）────────────────────────
 
 def get_type65_data(line_size: str) -> dict | None:
     """依管徑查 Type 65 資料"""
     key = normalize_fractional_size(line_size).replace('"', "")
     return TYPE65_TABLE.get(key)
+
 
 
 def snap_l_bucket(l_mm: int) -> int | None:
@@ -147,3 +47,4 @@ if __name__ == "__main__":
     print(f"Type 65 table: {len(TYPE65_TABLE)} entries")
     for k, v in TYPE65_TABLE.items():
         print(f"  D={k:>5}\" → rod={v['rod_size']}, members={list(v['member_by_l'].values())}")
+
