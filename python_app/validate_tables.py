@@ -553,6 +553,18 @@ try:
         f"Type 06 H field-trim warning missing: {type06.warnings}"
     )
 
+    type07 = analyze_single("07-2B-20J")
+    assert not type07.error, f"Type 07 should calculate: {type07.error}"
+    assert type07.entries[0].name == "Pipe" and type07.entries[0].length == 271, (
+        f"Type 07 Pipe B should be L+200: {type07.entries[0]}"
+    )
+    assert type07.entries[1].name == "Pipe" and type07.entries[1].length == 1782, (
+        f"Type 07 Pipe C should be H-200-PlateF-M42: {type07.entries[1]}"
+    )
+    assert any("H值長是欲保留現場裁切預量" in warning for warning in type07.warnings), (
+        f"Type 07 H field-trim warning missing: {type07.warnings}"
+    )
+
     type20 = analyze_single("20-L50-05A")
     assert not type20.error, f"Type 20 should calculate: {type20.error}"
     assert len(type20.entries) == 1, f"Type 20 BOM count changed: {len(type20.entries)}"
@@ -590,9 +602,9 @@ try:
     assert type25_c.entries[3].name == "BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
     assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts: {type25_c.entries[3].quantity}"
 
-    print("v type03/type05/type06/type20/type26 structural guardrails OK")
+    print("v type03/type05/type06/type07/type20/type26 structural guardrails OK")
 except Exception as e:
-    print(f"X type03/type05/type06/type20/type26 structural guardrails ERROR: {e}")
+    print(f"X type03/type05/type06/type07/type20/type26 structural guardrails ERROR: {e}")
     raise
 
 # Type 52/66 D-80 pad and FB guardrails.
@@ -1578,8 +1590,8 @@ try:
     _SNAPSHOT_CASES = {
         "07-2B-20J": {
             "count": 6,
-            "total": 34.13,
-            "warnings": 0,
+            "total": 33.54,
+            "warnings": 1,
             "materials": (
                 "A36 / SS400",
                 "A36 / SS400",
@@ -1588,9 +1600,9 @@ try:
                 "A36 / SS400",
                 "A36/SS400",
             ),
-            "weights": (0.93, 21.25, 4.0, 2.83, 2.83, 2.29),
+            "weights": (1.47, 20.12, 4.0, 2.83, 2.83, 2.29),
             "quantities": (1, 1, 4, 1, 1, 1),
-            "upper_total": 34.5,
+            "upper_total": 33.9,
             "upper_override": (
                 "SUS316",
                 "SUS316",

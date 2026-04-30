@@ -5,12 +5,12 @@ Type 07 計算器 - 滑動彎頭支撐
 - 第二段: Supported Line Size A
 - 第三段: H(數字×100mm) + M42代碼(字母, 應為J)
 
-PDF 限制: 2000 < H < 3500, M42 僅允許 J
+PDF 限制: 1500 < H < 3500, M42 僅允許 J
 Note 1: alloy/stainless → material is resolved through hardware material policy
 
 構件:
-  1. Pipe B (dummy): L+100mm, material by resolver
-  2. Pipe C (支撐柱): H - 100 - plate_F厚 - M42板厚, material by resolver
+  1. Pipe B (dummy): L+200mm, material by resolver
+  2. Pipe C (支撐柱): H - 200 - plate_F厚 - M42板厚, material by resolver
   3. Plate E (底板)
   4. Plate F (滑動板)
   5. M42 底板 (用 Pipe C 尺寸查表)
@@ -30,9 +30,11 @@ from ..hardware_material import (
 from data.type07_table import get_type07_data
 from data.m42_table import resolve_m42_data
 
-_MIN_H = 2000
+_MIN_H = 1500
 _MAX_H = 3500
 _ALLOWED_M42_LETTERS = {"J"}
+_ELBOW_OFFSET_MM = 200
+_FIELD_TRIM_WARNING = "H值長是欲保留現場裁切預量"
 
 
 def _material(
@@ -76,6 +78,8 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     letter = part3[-1]
     h = int(part3[:-1]) * 100
 
+    result.warnings.append(f"Type 07: H={h}mm {_FIELD_TRIM_WARNING}")
+
     # H 範圍檢查
     if h < _MIN_H or h > _MAX_H:
         result.warnings.append(
@@ -105,12 +109,12 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     support_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)
     plate_material = _material(HardwareKind.SUPPORT_PLATE, service=service, overrides=material_overrides)
 
-    # 1. Pipe B (dummy): L + 100
-    pipe_b_length = L + 100
+    # 1. Pipe B (dummy): L + 200
+    pipe_b_length = L + _ELBOW_OFFSET_MM
     add_pipe_entry(result, pipe_b_size, pipe_b_sch, pipe_b_length, upper_material)
 
-    # 2. Pipe C (支撐柱): H - 100 - plate_F厚 - M42板厚
-    pipe_c_length = h - 100 - plate_f[2] - m42_plate_thickness
+    # 2. Pipe C (支撐柱): H - 200 - plate_F厚 - M42板厚
+    pipe_c_length = h - _ELBOW_OFFSET_MM - plate_f[2] - m42_plate_thickness
     add_pipe_entry(result, pipe_c_size, pipe_c_sch, pipe_c_length, support_material)
 
     # 3. Plate E (底板)

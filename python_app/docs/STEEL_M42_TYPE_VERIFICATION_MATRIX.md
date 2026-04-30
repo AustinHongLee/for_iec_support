@@ -22,6 +22,7 @@ Status legend:
 | 03 | Angle L75 vertical formula + 130 horizontal | Yes, by fixed `L75*75*9` | partial | Confirm U-bolt supply rule and M42 letter options. |
 | 05 | Angle by member vertical formula + fixed 130 horizontal | Yes, by member steel | partial | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
 | 06 | Angle by member, H + L with field-trim warning | No | partial | Confirm no M37 supply rule and whether L also needs user-facing warning. |
+| 07 | Pipe B/C + Plate E/F sliding support | Yes, fixed `J` by Pipe C | partial | Confirm material override scope and H field-trim warning wording. |
 | 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
 | 14 | Channel N plus plates/anchor bolt | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
 | 15 | Channel N plus plates | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
@@ -123,6 +124,37 @@ Type 06: H=500mm H值長是欲保留現場裁切預量
 | 2 | Angle | `50*50*6` | 1000 | 0 | 1 | 4.43 | A36/SS400 |
 
 Total weight: 6.64 kg.
+
+### Type 07
+
+Input: `07-2B-20J`
+
+Confirmed formula update:
+
+```text
+shared elbow offset = 200
+Pipe B length = L + 200 = 71 + 200 = 271mm
+Pipe C length = H - 200 - Plate F thickness - M42 plate thickness
+Pipe C length = 2000 - 200 - 9 - 9 = 1782mm
+H valid warning range = 1500~3500mm
+```
+
+Warnings:
+
+```text
+Type 07: H=2000mm H值長是欲保留現場裁切預量
+```
+
+| Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
+|---:|---|---|---:|---:|---:|---:|---|---|
+| 1 | Pipe | `1-1/2"*SCH.80` | 271 | 0 | 1 | 1.47 | A36 / SS400 |  |
+| 2 | Pipe | `3"*SCH.40` | 1782 | 0 | 1 | 20.12 | A36 / SS400 |  |
+| 3 | Plate_E | `9` | 200 | 200 | 1 | 2.83 | A36 / SS400 |  |
+| 4 | Plate_F | `9` | 200 | 200 | 1 | 2.83 | A36 / SS400 |  |
+| 5 | Plate_b_有鑽孔 | `9` | 180 | 180 | 1 | 2.29 | A36/SS400 | rect holes 110x110, dia 19, 5/8" x4 |
+| 6 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
+
+Total weight: 33.54 kg.
 
 ### Type 08
 
