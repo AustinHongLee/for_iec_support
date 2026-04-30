@@ -1282,7 +1282,7 @@ try:
     from core.m42 import perform_action_by_letter
     from core.models import AnalysisResult
     from core.steel import add_steel_section_entry
-    from data.m42_table import get_m42_data
+    from data.m42_table import get_m42_data, resolve_m42_data
 
     steel_spec = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT)
     bolt_spec = resolve_hardware_material(HardwareKind.ANCHOR_BOLT)
@@ -1353,6 +1353,22 @@ try:
     assert get_m42_data(28)["plate_e"] == 930, "M-43 28 inch row missing"
     assert get_m42_data(28)["exp_bolt_spec"] == '7/8"', "M-43 J bolt spec should follow Rev.1 table"
 
+    m42_half, warn_half = resolve_m42_data(0.5)
+    assert m42_half["plate_a"] == 150 and warn_half, "M42 0.5 inch fallback to 1 inch row missing"
+    m42_three_quarter, warn_three_quarter = resolve_m42_data(0.75)
+    assert m42_three_quarter["plate_a"] == 150 and warn_three_quarter, "M42 0.75 inch fallback to 1 inch row missing"
+    m42_two_half, warn_two_half = resolve_m42_data(2.5)
+    assert m42_two_half["plate_a"] == 150 and not warn_two_half, "M42 2.5 inch should use 1~3 inch row without warning"
+    m42_twenty, warn_twenty = resolve_m42_data(20)
+    assert m42_twenty["plate_a"] == 690 and warn_twenty, "M42 20 inch fallback to 24 inch row missing"
+    m42_twenty_two, warn_twenty_two = resolve_m42_data(22)
+    assert m42_twenty_two["plate_a"] == 690 and warn_twenty_two, "M42 22 inch fallback to 24 inch row missing"
+    m42_twenty_six, warn_twenty_six = resolve_m42_data(26)
+    assert m42_twenty_six["plate_a"] == 790 and warn_twenty_six, "M42 26 inch fallback to 28 inch row missing"
+
+    m42_l80, warn_l80 = resolve_m42_data("L80*80*8")
+    assert m42_l80["plate_a"] == 230 and warn_l80, "M42 L80 fallback to L100 row missing"
+
     m42_type_t = AnalysisResult(fullstring="phase3A-m42a-T")
     perform_action_by_letter(m42_type_t, "T", 2)
     assert [entry.name for entry in m42_type_t.entries] == ["Plate_a_無鑽孔"], "M-42A Type-T should add Plate a"
@@ -1373,10 +1389,24 @@ try:
         "SUS304",
         "A36/SS400",
     ], "M-42A Type-V materials changed"
+    assert m42_type_v.entries[-1].name == "Angle" and m42_type_v.entries[-1].quantity == 2, "M-42A Type-V should include two L40 angles"
 
     m42_type_n = AnalysisResult(fullstring="phase3A-m42-N")
     perform_action_by_letter(m42_type_n, "N", 2)
     assert [entry.name for entry in m42_type_n.entries] == ["Plate_a_無鑽孔"], "M-42 Type-N should not add L40 bracket"
+
+    m42_a_075 = AnalysisResult(fullstring="phase3A-m42-A-075")
+    perform_action_by_letter(m42_a_075, "A", 0.75)
+    assert m42_a_075.entries[0].name == "Plate_a_無鑽孔", "M42 Type-A fallback should still use Plate a"
+    assert m42_a_075.entries[0].length == 150 and m42_a_075.entries[0].spec == "9", "M42 0.75 inch Type-A fallback plate changed"
+    assert m42_a_075.warnings, "M42 0.75 inch fallback should warn"
+
+    m42_b_20 = AnalysisResult(fullstring="phase3A-m42-B-20")
+    perform_action_by_letter(m42_b_20, "B", 20)
+    assert [entry.name for entry in m42_b_20.entries] == ["Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"], "M42 Type-B 20 inch fallback BOM changed"
+    assert m42_b_20.entries[0].length == 690 and m42_b_20.entries[1].length == 830, "M42 Type-B 20 inch should use 24 inch row"
+    assert m42_b_20.entries[2].spec == '7/8"' and m42_b_20.entries[2].quantity == 4, "M42 Type-B 20 inch fallback bolt changed"
+    assert len(m42_b_20.warnings) == 1, f"M42 fallback warning should not duplicate: {m42_b_20.warnings}"
 
     m42_unknown = AnalysisResult(fullstring="phase3A-m42-unknown")
     perform_action_by_letter(m42_unknown, "Z", 2)

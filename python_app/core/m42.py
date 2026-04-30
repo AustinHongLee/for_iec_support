@@ -8,7 +8,7 @@ from .material_identity import canonical_material_id
 from .plate import add_plate_entry
 from .bolt import add_bolt_entry
 from .steel import add_steel_section_entry
-from data.m42_table import get_m42_data
+from data.m42_table import resolve_m42_data
 from .parser import get_lookup_value
 
 
@@ -38,6 +38,11 @@ _DEFAULT_M42_SS304_PLATE_MATERIAL = MaterialSpec(
 )
 
 
+def _append_warning_once(result: AnalysisResult, warning: str | None) -> None:
+    if warning and warning not in result.warnings:
+        result.warnings.append(warning)
+
+
 def add_m42_plate(
     result: AnalysisResult,
     plate_type: str,
@@ -51,10 +56,11 @@ def add_m42_plate(
     """
     s = str(pipe_size)
     if "*" in s or "x" in s:
-        m42 = get_m42_data(s)
+        m42, warning = resolve_m42_data(s)
     else:
         size_val = get_lookup_value(pipe_size)
-        m42 = get_m42_data(size_val)
+        m42, warning = resolve_m42_data(size_val)
+    _append_warning_once(result, warning)
 
     require_drilling = plate_type in ("b", "c", "d")
 

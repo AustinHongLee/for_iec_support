@@ -26,7 +26,7 @@ from ..material_specs import (
     SUPPORT_PLATE_A36_SS400,
 )
 from data.type08_table import get_type08_data
-from data.m42_table import get_m42_data
+from data.m42_table import resolve_m42_data
 
 
 _SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
@@ -80,7 +80,9 @@ def calculate(fullstring: str) -> AnalysisResult:
     channel_height = int(member_n.split("*")[0][1:])  # 去掉 C 取數字
 
     # M42 板厚
-    m42_data = get_m42_data(pipe_size)
+    m42_data, m42_warning = resolve_m42_data(pipe_size)
+    if m42_warning and m42_warning not in result.warnings:
+        result.warnings.append(m42_warning)
     m42_plate_thickness = m42_data["plate_thickness"]
 
     # 1. Pipe A (支撐柱): H - 6(top plate厚) - channel高/2 - M42板厚

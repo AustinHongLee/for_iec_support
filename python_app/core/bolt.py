@@ -4,7 +4,7 @@
 from .models import AnalysisEntry, AnalysisResult
 from .hardware_material import MaterialSpec
 from .material_identity import canonical_material_id
-from data.m42_table import get_m42_data
+from data.m42_table import resolve_m42_data
 from .parser import get_lookup_value
 
 
@@ -47,10 +47,12 @@ def add_bolt_entry(
     )
     s = str(pipe_size)
     if "*" in s or "x" in s:
-        m42 = get_m42_data(s)
+        m42, warning = resolve_m42_data(s)
     else:
         size_val = get_lookup_value(pipe_size)
-        m42 = get_m42_data(size_val)
+        m42, warning = resolve_m42_data(size_val)
+    if warning and warning not in result.warnings:
+        result.warnings.append(warning)
     bolt_size = m42["exp_bolt_spec"]
 
     entry = AnalysisEntry()

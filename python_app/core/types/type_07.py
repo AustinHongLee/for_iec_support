@@ -28,7 +28,7 @@ from ..hardware_material import (
     resolve_hardware_material,
 )
 from data.type07_table import get_type07_data
-from data.m42_table import get_m42_data
+from data.m42_table import resolve_m42_data
 
 _MIN_H = 2000
 _MAX_H = 3500
@@ -96,7 +96,9 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
 
     # 取 M42 板厚 (用 pipe C 尺寸查)
     pipe_c_val = int(get_lookup_value(pipe_c_size))
-    m42_data = get_m42_data(pipe_c_val)
+    m42_data, m42_warning = resolve_m42_data(pipe_c_val)
+    if m42_warning and m42_warning not in result.warnings:
+        result.warnings.append(m42_warning)
     m42_plate_thickness = m42_data["plate_thickness"]
 
     upper_material = _material(HardwareKind.SUPPORT_PIPE, service=service, overrides=material_overrides)

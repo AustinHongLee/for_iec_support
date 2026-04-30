@@ -36,6 +36,26 @@ M42_BY_STEEL["H250*250*9"] = M42_TABLE[12]
 # 補充 H150*150*10 — Type_27 圖面 MEMBER "M" 使用 H150×150×10, M42 表原本只有 H150*150*7
 M42_BY_STEEL["H150*150*10"] = M42_TABLE[12]
 
+_M42_NUMERIC_KEYS = sorted(M42_TABLE.keys())
+
+_M42_STEEL_CODE_ROWS = {
+    "L50": 1,
+    "L65": 1,
+    "L75": 4,
+    "L100": 4,
+    "L150": 12,
+    "C125": 8,
+    "C150": 10,
+    "H150": 12,
+    "H250": 12,
+}
+
+_M42_STEEL_FALLBACKS = {
+    "L": [(50, 1, "L50"), (65, 1, "L65"), (75, 4, "L75"), (100, 4, "L100"), (150, 12, "L150")],
+    "C": [(125, 8, "C125"), (150, 10, "C150")],
+    "H": [(150, 12, "H150"), (250, 12, "H250")],
+}
+
 # M47 管夾尺寸: pipe_size -> (W, L)
 M47_DIMENSIONS = {
     0.75: (50, 83), 1: (50, 105), 1.5: (50, 152), 2: (50, 190),
@@ -68,6 +88,98 @@ def get_m42_data_by_steel(steel_name: str) -> dict:
     if key not in M42_BY_STEEL:
         raise ValueError(f"型鋼 {steel_name} 不在 M42 查詢表中")
     return M42_BY_STEEL[key]
+
+
+def _resolve_m42_numeric_key(pipe_size) -> tuple[int, str | None]:
+    size = float(pipe_size)
+    if size in M42_TABLE:
+        return int(size), None
+
+    # M-43 lists range rows for 1"~3" and 4"~6"; fractional sizes inside
+    # these ranges use the same row group and should not be treated as errors.
+    if 1 <= size <= 3:
+        return 1, None
+    if 4 <= size <= 6:
+        return 4, None
+
+    candidates = [key for key in _M42_NUMERIC_KEYS if key >= size]
+    if candidates:
+        fallback = candidates[0]
+        return fallback, (
+            f"M42: 管徑 {pipe_size}\" 未列於 M-43 表，"
+            f"改用 {fallback}\" row 計算，需人工確認"
+        )
+
+    fallback = _M42_NUMERIC_KEYS[-1]
+    return fallback, (
+        f"M42: 管徑 {pipe_size}\" 超出 M-43 表，"
+        f"暫用最大 {fallback}\" row 計算，需人工確認"
+    )
+
+
+def _steel_code(steel_name: str) -> str | None:
+    normalized = steel_name.upper().replace("X", "*")
+    prefix = normalized[0] if normalized else ""
+    digits = []
+    for char in normalized[1:]:
+        if char.isdigit():
+            digits.append(char)
+            continue
+        break
+    if not digits or prefix not in _M42_STEEL_FALLBACKS:
+        return None
+    return f"{prefix}{int(''.join(digits))}"
+
+
+def _resolve_m42_steel_key(steel_name: str) -> tuple[int, str | None]:
+    key = steel_name.replace("x", "*")
+    if key in M42_BY_STEEL:
+        row = M42_BY_STEEL[key]
+        for table_key, table_row in M42_TABLE.items():
+            if table_row is row:
+                return table_key, None
+
+    code = _steel_code(steel_name)
+    if not code:
+        raise ValueError(f"型鋼 {steel_name} 不在 M42 查詢表中")
+
+    if code in _M42_STEEL_CODE_ROWS:
+        return _M42_STEEL_CODE_ROWS[code], None
+
+    prefix = code[0]
+    size = int(code[1:])
+    candidates = _M42_STEEL_FALLBACKS[prefix]
+    larger = [item for item in candidates if item[0] >= size]
+    if larger:
+        _, row_key, fallback_code = larger[0]
+        return row_key, (
+            f"M42: 型鋼 {steel_name} 未列於 M-43 表，"
+            f"改用 {fallback_code} row 計算，需人工確認"
+        )
+
+    _, row_key, fallback_code = candidates[-1]
+    return row_key, (
+        f"M42: 型鋼 {steel_name} 超出 M-43 表，"
+        f"暫用最大 {fallback_code} row 計算，需人工確認"
+    )
+
+
+def resolve_m42_data(pipe_size) -> tuple[dict, str | None]:
+    """
+    M42 engineering resolver.
+
+    Returns (row, warning). It keeps strict table rows in get_m42_data(), but
+    lets calculator flows continue for documented fallback cases:
+    - 0.5"/0.75" -> 1" row, with warning.
+    - Missing pipe sizes such as 20"/22" -> next listed row, with warning.
+    - Missing shape steel sizes -> next same-family listed steel row, with warning.
+    """
+    s = str(pipe_size)
+    if "*" in s or "x" in s:
+        row_key, warning = _resolve_m42_steel_key(s)
+    else:
+        row_key, warning = _resolve_m42_numeric_key(pipe_size)
+    return M42_TABLE[row_key], warning
 
 
 def get_m47_dimensions(pipe_size: float) -> tuple:
