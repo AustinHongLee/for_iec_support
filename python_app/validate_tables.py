@@ -135,6 +135,7 @@ try:
         wb = openpyxl.load_workbook(path, data_only=True)
         assert wb.sheetnames == [
             "專案摘要",
+            "長官統計",
             "重量分析",
             "材料合計",
             "下料明細",
@@ -148,8 +149,31 @@ try:
         ws_material = wb["材料合計"]
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
         assert ws_material.cell(row=4, column=9).value == original_quantity * 12, "project package material purchase qty failed"
+        ws_leader = wb["長官統計"]
+        assert ws_leader.cell(row=1, column=1).value == "長官急件統計", "leader procurement sheet title failed"
+        assert ws_leader.cell(row=16, column=4).value == 12, "leader procurement CS <=15kg support count failed"
         ws_visual = wb["下料圖示"]
         assert ws_visual.cell(row=1, column=1).value == "下料圖示", "project package cutting visual title failed"
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    leader_project = analyze_project_rows([
+        ProjectInputRow("57-1/2B-A", 2),
+        ProjectInputRow("52-1/2B-A-150-200", 3),
+        ProjectInputRow("66-10B(P)-A-150-250", 4),
+    ])
+    fd, path = tempfile.mkstemp(suffix=".xlsx")
+    os.close(fd)
+    try:
+        export_project_workbook(leader_project, path)
+        wb = openpyxl.load_workbook(path, data_only=True)
+        ws_leader = wb["長官統計"]
+        assert ws_leader.cell(row=4, column=4).value == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
+        assert ws_leader.cell(row=8, column=4).value == 3, "leader procurement <=4in pipe shoe HDG count failed"
+        assert ws_leader.cell(row=9, column=4).value == 4, "leader procurement 5~10in pipe shoe HDG count failed"
     finally:
         try:
             os.remove(path)

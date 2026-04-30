@@ -1,11 +1,13 @@
 """
 Excel 匯出模組
 """
+from dataclasses import dataclass
 from typing import List
 from core.models import AnalysisResult
 from core.project_aggregation import ProjectAnalysisResult
 from core.material_summary import aggregate_project, MaterialSummary
 from core.cutting_optimizer import CuttingPlan, optimize_from_summary
+from core.parser import get_lookup_value, get_part
 
 # 表頭定義 (對應 VBA 的 headers)
 HEADERS = [
@@ -30,7 +32,17 @@ CUTTING_HEADERS = [
     "累計(mm)", "餘料(mm)", "使用率", "用於",
 ]
 
+LEADER_STAT_HEADERS = ["項目", "工事內容", "單位", "數量"]
+
 VISUAL_SLOT_COUNT = 30
+
+
+@dataclass(frozen=True)
+class LeaderStatRow:
+    item: str
+    label: str
+    unit: str
+    key: str
 
 
 def _styles():
@@ -237,6 +249,7 @@ def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
 
     wb = openpyxl.Workbook()
     _write_project_summary_sheet(wb.active, project, summary, cutting_plans)
+    _write_leader_procurement_sheet(wb.create_sheet("長官統計"), project)
     _write_project_weight_sheet(wb.create_sheet("重量分析"), project)
     _write_material_summary_sheet(wb.create_sheet("材料合計"), summary)
     _write_cutting_detail_sheet(wb.create_sheet("下料明細"), cutting_plans)
@@ -287,9 +300,10 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
 
     ws.cell(row=10, column=1, value="Workbook 結構").font = styles["section_font"]
     ws.cell(row=11, column=1, value="重量分析：單件與專案總量對照")
-    ws.cell(row=12, column=1, value="材料合計：採購清單與來源追蹤")
-    ws.cell(row=13, column=1, value="下料明細：每根原料的切割順序")
-    ws.cell(row=14, column=1, value="下料圖示：以比例色塊顯示每根原料使用狀態")
+    ws.cell(row=12, column=1, value="長官統計：急件採購/製裝數量彙總")
+    ws.cell(row=13, column=1, value="材料合計：採購清單與來源追蹤")
+    ws.cell(row=14, column=1, value="下料明細：每根原料的切割順序")
+    ws.cell(row=15, column=1, value="下料圖示：以比例色塊顯示每根原料使用狀態")
     ws.cell(row=16, column=1, value="注意事項").font = styles["section_font"]
     ws.cell(row=17, column=1, value="材料與重量仍以各 Type calculator 與 component table 為準。")
     ws.cell(row=18, column=1, value="下料圖示為規劃輔助；現場仍需依實際餘料與鋸口條件確認。")
@@ -298,6 +312,162 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     for row_idx in range(3, 8):
         for col_idx in range(1, 9):
             ws.cell(row_idx, col_idx).border = styles["border"]
+
+
+def _leader_stat_template() -> list[LeaderStatRow]:
+    return [
+        LeaderStatRow("1", 'U-Bolt & Band  <= 6" 熱浸鍍鋅', "組", "uband_hdg_le6"),
+        LeaderStatRow("1", 'U-Bolt & Band  >= 8" 熱浸鍍鋅', "組", "uband_hdg_ge8"),
+        LeaderStatRow("1", 'U-Bolt & Band  <= 6" (SUS 304)', "組", "uband_304_le6"),
+        LeaderStatRow("1", 'U-Bolt & Band  >= 8" (SUS 304)', "組", "uband_304_ge8"),
+        LeaderStatRow("2", '管鞋(PIPE SHOE) <=4" 熱浸鍍鋅', "組", "shoe_hdg_le4"),
+        LeaderStatRow("2", '管鞋(PIPE SHOE) 5"~10" 熱浸鍍鋅', "組", "shoe_hdg_5_10"),
+        LeaderStatRow("2", '管鞋(PIPE SHOE) 12"~24" 熱浸鍍鋅', "組", "shoe_hdg_12_24"),
+        LeaderStatRow("2", '管鞋(PIPE SHOE) >=26" 熱浸鍍鋅', "組", "shoe_hdg_ge26"),
+        LeaderStatRow("2", "保冷支撐座(長春帶料)", "組", "cold_support"),
+        LeaderStatRow("3", '管鞋(PIPE SHOE) <=4" (SUS 304)', "組", "shoe_304_le4"),
+        LeaderStatRow("3", '管鞋(PIPE SHOE) 5"~10" (SUS 304)', "組", "shoe_304_5_10"),
+        LeaderStatRow("3", '管鞋(PIPE SHOE) 12"~24" (SUS 304)', "組", "shoe_304_12_24"),
+        LeaderStatRow("4", "CS(熱鍍鋅)管支撐(Pipe Support)製裝 <=15kg", "組", "cs_support_le15"),
+        LeaderStatRow("4", "CS(熱鍍鋅)管支撐(Pipe Support)製裝 >15kg", "KG", "cs_support_gt15"),
+    ]
+
+
+def _parse_designation_type(designation: str) -> str:
+    return (get_part(designation, 1) or "").strip()
+
+
+def _parse_designation_pipe_size(designation: str) -> float | None:
+    token = (get_part(designation, 2) or "").strip()
+    if not token:
+        return None
+    token = token.split("(")[0].replace('"', "").strip()
+    if token.upper().endswith("B"):
+        token = token[:-1]
+    try:
+        return float(get_lookup_value(token))
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_304_material(material: str) -> bool:
+    return "304" in str(material or "").upper().replace(" ", "")
+
+
+def _is_ubolt_or_band_entry(name: str) -> bool:
+    upper = str(name or "").upper().replace(" ", "")
+    return "U-BOLT" in upper or "UBOLT" in upper or "U-BAND" in upper or "UBAND" in upper
+
+
+def _support_has_304_material(row_result) -> bool:
+    return any(_is_304_material(entry.material) for entry in row_result.scaled_result.entries)
+
+
+def _is_cold_support_type(type_id: str) -> bool:
+    return type_id.endswith("C") and type_id[:-1].isdigit()
+
+
+def _leader_size_bucket(size: float | None, buckets: tuple[tuple[str, float, float], ...]) -> str | None:
+    if size is None:
+        return None
+    for key, lower, upper in buckets:
+        if lower <= size <= upper:
+            return key
+    return None
+
+
+def _leader_procurement_stats(project: ProjectAnalysisResult) -> dict[str, float]:
+    stats = {row.key: 0.0 for row in _leader_stat_template()}
+    pipe_shoe_types = {"52", "53", "54", "55", "66", "67", "80", "85"}
+
+    for row_result in project.rows:
+        if row_result.single_result.error:
+            continue
+
+        designation = row_result.input_row.designation
+        project_qty = row_result.input_row.quantity
+        type_id = _parse_designation_type(designation)
+        pipe_size = _parse_designation_pipe_size(designation)
+
+        for entry in row_result.scaled_result.entries:
+            if not _is_ubolt_or_band_entry(entry.name):
+                continue
+            material_key = "304" if _is_304_material(entry.material) else "hdg"
+            bucket = _leader_size_bucket(pipe_size, (
+                ("le6", 0.0, 6.0),
+                ("ge8", 8.0, 999.0),
+            ))
+            if bucket:
+                stats[f"uband_{material_key}_{bucket}"] += entry.quantity
+
+        if type_id in pipe_shoe_types:
+            material_key = "304" if _support_has_304_material(row_result) else "hdg"
+            bucket = _leader_size_bucket(pipe_size, (
+                ("le4", 0.0, 4.0),
+                ("5_10", 5.0, 10.0),
+                ("12_24", 12.0, 24.0),
+                ("ge26", 26.0, 999.0),
+            ))
+            if bucket and f"shoe_{material_key}_{bucket}" in stats:
+                stats[f"shoe_{material_key}_{bucket}"] += project_qty
+
+        if _is_cold_support_type(type_id):
+            stats["cold_support"] += project_qty
+
+        if not _support_has_304_material(row_result):
+            single_weight = row_result.single_result.total_weight
+            scaled_weight = row_result.scaled_result.total_weight
+            if single_weight <= 15:
+                stats["cs_support_le15"] += project_qty
+            else:
+                stats["cs_support_gt15"] += scaled_weight
+
+    return stats
+
+
+def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
+    styles = _styles()
+    rows = _leader_stat_template()
+    stats = _leader_procurement_stats(project)
+
+    _setup_sheet(ws, "長官急件統計", "D1")
+    ws.cell(row=2, column=1, value="材質統計規則：除明細材質含 304 者歸 SUS304，其餘視為熱浸鍍鋅。")
+    ws.cell(row=2, column=1).font = styles["section_font"]
+    ws.merge_cells("A2:D2")
+    _write_headers(ws, 3, LEADER_STAT_HEADERS)
+
+    start_row = 4
+    for offset, stat_row in enumerate(rows):
+        row = start_row + offset
+        value = stats.get(stat_row.key, 0.0)
+        if stat_row.unit == "組":
+            value = int(value)
+        else:
+            value = round(value, 2)
+        values = [stat_row.item, stat_row.label, stat_row.unit, value]
+        for col, cell_value in enumerate(values, 1):
+            ws.cell(row=row, column=col, value=cell_value)
+
+    item_start: dict[str, int] = {}
+    item_end: dict[str, int] = {}
+    for offset, stat_row in enumerate(rows):
+        row = start_row + offset
+        item_start.setdefault(stat_row.item, row)
+        item_end[stat_row.item] = row
+    for item, first_row in item_start.items():
+        last_row = item_end[item]
+        if last_row > first_row:
+            ws.merge_cells(start_row=first_row, start_column=1, end_row=last_row, end_column=1)
+        ws.cell(first_row, 1).alignment = styles["center"]
+
+    last_row = start_row + len(rows) - 1
+    _apply_table_style(ws, 3, last_row, len(LEADER_STAT_HEADERS))
+    for row in range(start_row, last_row + 1):
+        ws.cell(row=row, column=3).alignment = styles["center"]
+        ws.cell(row=row, column=4).alignment = styles["right"]
+        ws.cell(row=row, column=4).number_format = "0.00" if ws.cell(row=row, column=3).value == "KG" else "0"
+    ws.freeze_panes = "A4"
+    _set_widths(ws, [8, 44, 10, 14])
 
 
 def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
