@@ -11,7 +11,8 @@ from typing import Iterable
 
 APP_DIR = Path(__file__).resolve().parents[1]
 
-HARDENED_TYPES = {"03", "05", "06", "07", "08", "27", "39", "42", "43", "52", "66", "80"}
+HARDENED_TYPES = {"03", "05", "06", "07", "08", "27", "39", "42", "43"}
+PIPE_SHOE_REVIEW_TYPES = {"52", "53", "54", "55", "66", "67", "80", "85"}
 STEEL_M42_TYPES = {
     "03", "05", "07", "08", "14", "15", "19", "20", "21", "22", "23", "24",
     "25", "26", "27", "28", "30", "31", "32", "33", "34", "35", "36", "37",
@@ -66,6 +67,8 @@ def _entry_summary(entry) -> dict[str, object]:
 def risk_status(type_id: str, error: str, warnings: list[str]) -> str:
     if error:
         return "error"
+    if type_id in PIPE_SHOE_REVIEW_TYPES:
+        return "review"
     if type_id in HARDENED_TYPES:
         return "hardened" if not warnings else "review"
     if warnings:

@@ -32,6 +32,12 @@ Last updated: 2026-04-30.
 | Type 07 | Shared elbow offset is `200`; Pipe B length is `L + 200`; Pipe C length is `H - 200 - Plate F thickness - M42 plate thickness`; H range warning is `1500~3500`; always emits H field-trim warning. | `core/types/type_07.py` | `validate_tables.py` |
 | Type 08 | Pipe A formula remains `H - 6 - channel height/2 - M42 plate thickness`; Channel N remains `L`; top plate remains `B x B x 6`; Stopper is fixed quantity 2, with `10C chamfer / 10mm` drawing feature kept as note. | `core/types/type_08.py` | `validate_tables.py` |
 
+## Revoked / Reopened Assumptions
+
+| Area | Reopened issue | Immediate policy |
+|---|---|---|
+| Pipe shoe family `52/53/54/55/66/67/80/85` | `52-1/2B-A-150-200` exposed that the shared spec resolves small pipe shoes to `H Beam 200*100*5.5`, while D-80 NOTE 1 says shoes for pipes `1-1/2"` and smaller may be fabricated from `6t PLATE`. | Do not classify pipe shoe family as hardened for procurement. Batch reports mark these Types as `review` until the D-80/D-80A/D-80B branches are re-verified and locked. |
+
 ## Batch Verification Strategy
 
 Use this when a long procurement list must be checked faster than manual drawing-by-drawing review.

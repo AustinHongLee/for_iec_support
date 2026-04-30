@@ -11,8 +11,8 @@ Tool: `python_app/tools/batch_verify_designations.py`.
 | Metric | Count |
 |---|---:|
 | Total designations parsed | 253 |
-| `hardened` | 51 |
-| `review` | 29 |
+| `hardened` | 0 |
+| `review` | 80 |
 | `high` | 143 |
 | `ok` | 29 |
 | `error` | 1 |
@@ -62,6 +62,14 @@ Status meaning:
 | `51-1/2B` | `Type 51: 管徑 1/2B (0.5") 不在範圍 (3/4"~42")` |
 
 ## Warning Items
+
+After the pipe shoe safety downgrade, pipe shoe rows at `<=1-1/2"` also emit:
+
+```text
+Pipe shoe D-80 NOTE 1: <=1-1/2" shoe should be reviewed as 6t PLATE fabrication; current shared spec resolves C=200*100*5.5
+```
+
+Affected examples in this list include `52-1/2B-A-150-200`, `52-3/4B(P)-100-150`, `52-3/4B-100-150`, `52-3/4B-170-200`, `66-1/2B-A-150-200`, `66-3/4B(P)-100-150`, `66-1B(P)-100-150`, `66-1B(P)-A-150-150`, and `66-1.1/2B(P)-A-150-150`.
 
 | Designation | Warning |
 |---|---|
@@ -117,10 +125,10 @@ Status meaning:
 ## Recommended Hardening Order
 
 1. Fix or decide `51-1/2B` first, because it is the only blocking calculation error.
-2. Resolve warning-only M42 designation anomalies before broad steel review:
+2. Re-open pipe shoe family `52/53/54/55/66/67/80/85`. The previous "lower immediate risk" conclusion is revoked because `52-1/2B-A-150-200` currently resolves to H Beam while D-80 NOTE 1 points to `6t PLATE` fabrication for `<=1-1/2"`.
+3. Resolve warning-only M42 designation anomalies before broad steel review:
    `22-L75-12(A)X`, `22-L75-14(A)X`, Type 27 `X/U`, and Type 28 `D`.
-3. Harden Type 23 next. It accounts for the largest unverified structural-steel volume. Verify by branch/member family rather than all 52 rows:
+4. Harden Type 23 next. It accounts for the largest unverified structural-steel volume. Verify by branch/member family rather than all 52 rows:
    C100/C150/H100/L50/L65/L75/L100 and Fig A/B/C.
-4. Harden Type 32 and Type 35 after Type 23. Together they represent 54 high-risk rows.
-5. Then handle Type 24/25/26/30/37/51/53 as smaller batches.
-6. Treat Type 52/66/80 as lower immediate risk because they already have locked or hardened coverage in the current project.
+5. Harden Type 32 and Type 35 after Type 23. Together they represent 54 high-risk rows.
+6. Then handle Type 24/25/26/30/37/51/53 as smaller batches.

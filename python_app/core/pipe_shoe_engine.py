@@ -203,6 +203,11 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
 
     pipe_details = get_pipe_details(pipe_size, "10S")
     ctx = _resolve_sizing(spec, pipe_size, pipe_details)
+    if pipe_size <= 1.5 and ctx["C"] != "PL6":
+        result.warnings.append(
+            "Pipe shoe D-80 NOTE 1: <=1-1/2\" shoe should be reviewed as 6t PLATE fabrication; "
+            f"current shared spec resolves C={ctx['C']}"
+        )
     default_lops = ctx["D"]
     hops, lops = _parse_hops_lops(fullstring, pipe_size, default_lops)
     ns = _make_eval_ns(ctx, pipe_size, hops, lops, pipe_details)

@@ -53,15 +53,15 @@ Status legend:
 | 46 | Channel main column + conditional L50 brace | No M42 | pending | Confirm H length and brace trigger. |
 | 47 | Channel main column + conditional L50 brace | No M42 | pending | Confirm H+A length and brace trigger. |
 | 51 | Small pipe flat bar, larger pipe Angle/Channel | No M42 | partial | Confirm small vs large branch and steel quantity. |
-| 52 | Pipe shoe Angle/H Beam by shared spec | No M42 | locked | Confirm shared spec against D-80 for more sizes. |
+| 52 | Pipe shoe Angle/H Beam by shared spec | No M42 | review | Shared spec regression: small-pipe D-80 NOTE 1 says <=1-1/2" should be reviewed as 6t plate fabrication. |
 | 53 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm variant-specific restraint/guiding differences. |
 | 54 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm clamp/gasket variants. |
 | 55 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm clamp/gasket variants. |
-| 66 | Pipe shoe H Beam / fabricated plate path | No M42 | locked | Confirm compact and large-pipe D-80A cases. |
+| 66 | Pipe shoe H Beam / fabricated plate path | No M42 | review | Re-open D-80 small-pipe and shared pipe shoe family assumptions. |
 | 67 | Pipe shoe H Beam / fabricated plate path | No M42 | pending | Confirm variant-specific differences from 66. |
 | 85 | Pipe shoe shared spec | No M42 | pending | Confirm why it shares `type_52.py` and any drawing delta. |
 | 65 | Parsed Angle/Channel/H Beam member | No M42 | pending | Confirm member parser and plate/angle bracket supply. |
-| 80 | H Beam or Angle path by D-95/D-96 | No M42 | locked | Keep small/big golden cases; add mid-size if needed. |
+| 80 | H Beam or Angle path by D-95/D-96 | No M42 | review | Pipe shoe family is under re-verification; do not treat as procurement-locked yet. |
 
 ## Batch 1 Output For User Check
 
