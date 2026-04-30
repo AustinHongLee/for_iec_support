@@ -632,23 +632,35 @@ try:
                 return entry
         raise AssertionError(f"{result.fullstring} missing {name}: {[e.name for e in result.entries]}")
 
+    retainer_small = analyze_single("52-1/2B-A-150-200")
+    assert not retainer_small.error, f"Type 52 small retainer should calculate: {retainer_small.error}"
+    retainer_h = _entry_by_name(retainer_small, "H Beam")
+    assert retainer_h.length == 200, f"Type 52 <=8in MEMBER C length should use LOPS/D without +50: {retainer_h.length}"
+    assert "width=100" in retainer_h.remark and "H=HOPS(150)" in retainer_h.remark, (
+        f"Type 52 small MEMBER C remark should carry width/HOPS: {retainer_h.remark}"
+    )
+    retainer_angle = _entry_by_name(retainer_small, "Angle")
+    assert retainer_angle.quantity == 2, f"Type 52 should still add L40 retainer angles x2: {retainer_angle.quantity}"
+
     small = analyze_single("66-1.1/2B(P)-A-150-150")
     assert not small.error, f"Type 66 small pad should calculate: {small.error}"
     small_pad = _entry_by_name(small, "Pad_52Type")
     small_details = get_pipe_details(1.5, "10S")
     small_od = small_details["od_mm"]
     small_t_sch10s = small_details["thickness_mm"]   # Phase 5: <=8" uses Sch10S wall
-    assert small_pad.length == 200, f"small Pad_52Type length should be D+50: {small_pad.length}"
+    assert small_pad.length == 150, f"small Pad_52Type length should be LOPS+E*2: {small_pad.length}"
     assert small_pad.width == round(small_od * math.pi / 3), f"small Pad_52Type 120-degree width changed: {small_pad.width}"
     assert small_pad.spec == str(small_t_sch10s), f"small Pad_52Type thickness should be Sch10S wall ({small_t_sch10s}mm): {small_pad.spec}"
+    assert any("OD*pi/3" in warning for warning in small.warnings), f"small Pad_52Type practical width warning missing: {small.warnings}"
 
     large = analyze_single("66-10B(P)-A-150-250")
     assert not large.error, f"Type 66 large pad should calculate: {large.error}"
     large_pad = _entry_by_name(large, "Pad_52Type")
     large_od = get_pipe_details(10, "10S")["od_mm"]
+    large_t_sch10s = get_pipe_details(10, "10S")["thickness_mm"]
     assert large_pad.length == 400, f"large Pad_52Type length should be E*2+50+250: {large_pad.length}"
     assert large_pad.width == round(large_od * math.pi / 3), f"large Pad_52Type 120-degree width changed: {large_pad.width}"
-    assert large_pad.spec == "9", f"large Pad_52Type thickness should be 9t: {large_pad.spec}"
+    assert large_pad.spec == str(large_t_sch10s), f"large Pad_52Type thickness should be Sch10S wall ({large_t_sch10s}mm): {large_pad.spec}"
 
     h_beam = _entry_by_name(large, "H Beam")
     assert h_beam.length == 300, f"H Beam length should be LOPS+50: {h_beam.length}"
@@ -656,8 +668,8 @@ try:
     fb3 = _entry_by_name(large, "FB_52Type_3")
     assert fb3.quantity == 4, f"FB_52Type_3 should be 4 pieces for 10 inch and larger: {fb3.quantity}"
     assert fb3.length == 150, f"FB_52Type_3 length should use HOPS: {fb3.length}"
-    assert fb3.width == 143.5, f"FB_52Type_3 width should be A+35/2-C/2: {fb3.width}"
-    assert "HOPS" in fb3.remark, f"FB_52Type_3 HOPS precision marker missing: {fb3.remark}"
+    assert fb3.width == 130, f"FB_52Type_3 width should use table A: {fb3.width}"
+    assert "not fabrication height" in fb3.remark, f"FB_52Type_3 calculation-height marker missing: {fb3.remark}"
 
     compact = analyze_single("66-14B(P)-100-300")
     assert not compact.error, f"Type 66 compact HOPS/LOPS format should calculate: {compact.error}"
@@ -872,7 +884,7 @@ try:
     assert [(e.name, e.spec, e.length, e.width, e.quantity) for e in type52.entries] == [
         (e.name, e.spec, e.length, e.width, e.quantity) for e in type53.entries
     ], "Type 53 should share Type 52 D-80 shoe geometry path"
-    assert type52.entries[0].name == "Pad_52Type" and "length_rule=D + 25*2" in type52.entries[0].remark, f"Type 52 small-pipe pad remark missing rule: {type52.entries[0].remark}"
+    assert type52.entries[0].name == "Pad_52Type" and "length_rule=LOPS + E*2" in type52.entries[0].remark, f"Type 52 small-pipe pad remark missing rule: {type52.entries[0].remark}"
     assert type52.entries[1].name == "Angle" and "CUT IN FIELD" in type52.entries[1].remark, f"Type 52 L40 remark missing field-cut note: {type52.entries[1].remark}"
 
     type52_large = priority_results["52-14B(P)-A(A)-130-500"]
@@ -881,8 +893,8 @@ try:
         (e.name, e.spec, e.length, e.width, e.quantity) for e in type53_large.entries
     ], "Type 53 large <=24in path should share Type 52 geometry"
     assert any(entry.name == "FB_52Type_3" and entry.quantity == 4 for entry in type52_large.entries), f"Type 52 large-pipe FB_52Type_3 x4 missing: {[(entry.name, entry.quantity) for entry in type52_large.entries]}"
-    assert "length_rule=E*2 + 25*2 + 250" in type52_large.entries[0].remark, f"Type 52 large-pipe pad remark missing rule: {type52_large.entries[0].remark}"
-    assert "width=A+35/2-member_t/2" in type52_large.entries[-1].remark, f"Type 52 FB_52Type_3 remark missing width rule: {type52_large.entries[-1].remark}"
+    assert "length_rule=LOPS + E*2 + 25*2" in type52_large.entries[0].remark, f"Type 52 large-pipe pad remark missing rule: {type52_large.entries[0].remark}"
+    assert "width=A" in type52_large.entries[-1].remark, f"Type 52 FB_52Type_3 remark missing width rule: {type52_large.entries[-1].remark}"
 
     type57_slide = priority_results["57-2B-A"]
     type57_fixed = analyze_single("57-2B-B")

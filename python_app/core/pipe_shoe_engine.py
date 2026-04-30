@@ -203,10 +203,9 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
 
     pipe_details = get_pipe_details(pipe_size, "10S")
     ctx = _resolve_sizing(spec, pipe_size, pipe_details)
-    if pipe_size <= 1.5 and ctx["C"] != "PL6":
+    if pipe_size >= 26:
         result.warnings.append(
-            "Pipe shoe D-80 NOTE 1: <=1-1/2\" shoe should be reviewed as 6t PLATE fabrication; "
-            f"current shared spec resolves C={ctx['C']}"
+            "Pipe shoe D-80B 26\"~50\" branch not fully hardened; current shared spec is provisional"
         )
     default_lops = ctx["D"]
     hops, lops = _parse_hops_lops(fullstring, pipe_size, default_lops)
@@ -223,12 +222,15 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
             pad_t = ctx["pad_t"]
             pad_len = round(_eval_expr(comp["length_expr"], ns))
             pad_w = round(_eval_expr(comp["width_expr"], ns))
-            length_rule = "D + 25*2" if pipe_size < 10 else "E*2 + 25*2 + 250"
+            length_rule = "LOPS + E*2" if pipe_size <= 8 else "LOPS + E*2 + 25*2"
+            result.warnings.append(
+                "Pipe shoe pad width uses OD*pi/3 as practical calculation value"
+            )
             add_plate_entry(result, pad_len, pad_w, pad_t, name,
                             plate_role="reinforcement_pad")
             result.entries[-1].remark = (
                 "120deg pad; width=OD*pi/3; length_rule=" + length_rule + "; "
-                "t=" + str(pad_t) + "mm; HOPS=" + str(hops)
+                "t=SCH10S(" + str(pad_t) + "mm); HOPS=" + str(hops)
             )
 
         elif comp["id"] == "wedge":
@@ -242,8 +244,11 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
             beam_l = round(_eval_expr(comp["length_expr"], ns))
             add_steel_section_entry(result, "H Beam", c_spec,
                                     beam_l, 1, material)
+            member_width = c_spec.split("*")[1] if "*" in c_spec else str(ctx["A"])
+            length_rule = "LOPS/D" if pipe_size <= 8 else "LOPS+25*2"
             result.entries[-1].remark = (
-                "CUT FROM H" + c_spec + "; L=LOPS+25*2; "
+                "MEMBER C, CUT FROM H" + c_spec + "; width=" + str(member_width) + "; "
+                "L=" + length_rule + "; H=HOPS(" + str(hops) + "); "
                 "[deep logic] 1 purchased H-beam split in half = 2 supports"
             )
 

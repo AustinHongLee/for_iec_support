@@ -357,6 +357,20 @@ LOPS 分兩種情況：
 | 3 | Reinforcing Pad (optional) | Ø6 WEEP HOLE，材料同管材 |
 | 4 | Field Weld | W=4(SCH≤80) / W=6(SCH≥160) |
 
+Calculator rule for the D-80 shared core:
+
+```text
+Pad (if P):
+  width = OD*pi/3  (practical calculation warning)
+  length = LOPS + E*2
+  thickness = pipe SCH10S wall
+
+Member C:
+  width = A or member C width
+  length = LOPS or D
+  height = HOPS or 100
+```
+
 ### 中管 10"~24"
 
 | # | 品名 | 說明 |
@@ -366,6 +380,32 @@ LOPS 分兩種情況：
 | 3 | Member "C" | 底部結構件 |
 | 4 | Reinforcing Pad | Ø6 WEEP HOLE |
 | 5 | Field Weld | 6V, 3 SIDES TYP. |
+
+Calculator rule for the D-80 shared core:
+
+```text
+Pad (if P):
+  width = OD*pi/3  (practical calculation warning)
+  length = LOPS + E*2 + 25*2
+  thickness = pipe SCH10S wall
+
+Member C, 10"~14":
+  width = A + 35*2, or member C width when using H200x200x8
+  length = LOPS + 25*2
+  height = HOPS or 100
+
+Member C, 16"~24":
+  fabricated from 12t flat bar
+  width = A
+  length = LOPS + 25*2
+  height = HOPS or 100
+
+Reinforcing flat bar, 10"~24":
+  quantity = 4
+  thickness = B
+  height = HOPS (calculation only, not fabrication height)
+  width = A
+```
 
 ### 大管 26"~42"
 

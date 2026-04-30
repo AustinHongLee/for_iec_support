@@ -63,13 +63,13 @@ Status meaning:
 
 ## Warning Items
 
-After the pipe shoe safety downgrade, pipe shoe rows at `<=1-1/2"` also emit:
+After the pipe shoe Type 66 core rework, pipe shoe rows with reinforcing pads emit:
 
 ```text
-Pipe shoe D-80 NOTE 1: <=1-1/2" shoe should be reviewed as 6t PLATE fabrication; current shared spec resolves C=200*100*5.5
+Pipe shoe pad width uses OD*pi/3 as practical calculation value
 ```
 
-Affected examples in this list include `52-1/2B-A-150-200`, `52-3/4B(P)-100-150`, `52-3/4B-100-150`, `52-3/4B-170-200`, `66-1/2B-A-150-200`, `66-3/4B(P)-100-150`, `66-1B(P)-100-150`, `66-1B(P)-A-150-150`, and `66-1.1/2B(P)-A-150-150`.
+Rows in `52/53/54/55/66/67/80/85` are still classified as `review` by the batch tool until D-80B / D-96 branches are separately hardened.
 
 | Designation | Warning |
 |---|---|
@@ -125,7 +125,7 @@ Affected examples in this list include `52-1/2B-A-150-200`, `52-3/4B(P)-100-150`
 ## Recommended Hardening Order
 
 1. Fix or decide `51-1/2B` first, because it is the only blocking calculation error.
-2. Re-open pipe shoe family `52/53/54/55/66/67/80/85`. The previous "lower immediate risk" conclusion is revoked because `52-1/2B-A-150-200` currently resolves to H Beam while D-80 NOTE 1 points to `6t PLATE` fabrication for `<=1-1/2"`.
+2. Keep pipe shoe family `52/53/54/55/66/67/80/85` in review. Type 66 D-80 core for `<=24"` has been reworked, but D-80B / D-96 branches remain provisional.
 3. Resolve warning-only M42 designation anomalies before broad steel review:
    `22-L75-12(A)X`, `22-L75-14(A)X`, Type 27 `X/U`, and Type 28 `D`.
 4. Harden Type 23 next. It accounts for the largest unverified structural-steel volume. Verify by branch/member family rather than all 52 rows:

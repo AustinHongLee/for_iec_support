@@ -161,8 +161,9 @@ Pipe（水平）
 
 ```text
 width = OD*pi/3
-<10": length = D + 25*2
->=10": length = E*2 + 25*2 + 250
+<=8": length = LOPS + E*2
+>=10": length = LOPS + E*2 + 25*2
+thickness = pipe SCH10S wall
 ```
 
 ### 10"~24"（補強型）
@@ -175,15 +176,16 @@ width = OD*pi/3
 | 4 | Reinforcing Pad | 依需求（designation 中用 (P) 標記） |
 | 5 | Weld | 5V TYP. |
 
-`FB_52Type_3` 僅在 10" 以上出現，目前以：
+`FB_52Type_3` 僅在 10"~24" 出現，目前以：
 
 ```text
-length = HOPS
-width = A + 35/2 - member_t/2
+thickness = B
+height/length = HOPS (calculation only, not fabrication height)
+width = A
 qty = 4
 ```
 
-其中 length 仍標記為 `pending precision check`。
+其中 HOPS 會保留 warning/remark，避免被誤認為施工展開高度。
 
 ### 不存在的構件
 

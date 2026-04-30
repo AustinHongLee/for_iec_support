@@ -44,12 +44,10 @@
     ],
 
     "pad_t_rule": "sch10s_wall",
-    "_pad_t_comment": "For pipe_size <= 8: use Sch10S wall thickness from pipe_table. For 10~14: 9mm. For >=16: 12mm.",
+    "_pad_t_comment": "Reinforcing pad thickness uses the pipe SCH.10S wall thickness for all pipe sizes handled by this shared D-80 path.",
 
     "pad_t_fallback_by_size": [
-      { "lte": 8,  "rule": "sch10s_wall" },
-      { "lte": 14, "v": 9               },
-      { "else": true, "v": 12           }
+      { "else": true, "rule": "sch10s_wall" }
     ]
   },
 
@@ -60,8 +58,8 @@
       "when":  "pad_symbol != N/A",
       "role":  "reinforcement_pad",
       "thickness_rule": "pad_t_fallback_by_size",
-      "length_expr":    "D+50 if pipe_size<10 else E*2+300",
-      "_length_comment": "D+25*2  or  E*2+25*2+250",
+      "length_expr":    "LOPS + E*2 if pipe_size <= 8 else LOPS + E*2 + 25*2",
+      "_length_comment": "<=8: LOPS + E*2; >=10: LOPS + E*2 + 25*2",
       "width_expr":     "OD*pi/3",
       "_width_comment": "120-degree developed width"
     },
@@ -81,8 +79,8 @@
       "when":   "C != FB12",
       "role":   "h_section",
       "spec_ref": "C",
-      "length_expr": "LOPS+50",
-      "_length_comment": "LOPS + 25*2",
+      "length_expr": "LOPS if pipe_size <= 8 else LOPS+25*2",
+      "_length_comment": "<=8: LOPS or D; 10~14: LOPS + 25*2",
       "remark_template": "CUT FROM H{C}; L=LOPS+25*2; [deep logic] 1 purchased H-beam split in half = 2 supports"
     },
     {
@@ -91,11 +89,11 @@
       "when":     "C == FB12",
       "role":     "generic_plate",
       "thickness": 12,
-      "width_expr":  "A+70",
-      "_width_comment": "A + 35*2",
+      "width_expr":  "A",
+      "_width_comment": "16~24: main fabricated 12t bottom plate width = table A",
       "length_expr": "LOPS+50",
       "_length_comment": "LOPS + 25*2",
-      "remark_template": "T-bottom plate: W={A+70}(=A+35*2), L={LOPS+50}(=LOPS+25*2), t=12"
+      "remark_template": "T-bottom plate: W=A, L={LOPS+50}(=LOPS+25*2), t=12"
     },
     {
       "id":       "fab_web",
@@ -103,10 +101,10 @@
       "when":     "C == FB12",
       "role":     "generic_plate",
       "thickness": 12,
-      "width":    100,
+      "width_expr": "HOPS",
       "length_expr": "LOPS+50",
       "_length_comment": "LOPS + 25*2",
-      "remark_template": "T-vertical plate: W=100(fixed), L={LOPS+50}(=LOPS+25*2), t=12"
+      "remark_template": "T-vertical plate: W=HOPS, L={LOPS+50}(=LOPS+25*2), t=12"
     },
     {
       "id":       "gusset",
@@ -115,10 +113,10 @@
       "role":     "generic_plate",
       "thickness_ref": "B",
       "length_expr":   "HOPS",
-      "width_expr":    "A+17.5-C_t/2",
-      "_width_comment": "A + 35/2 - member_thickness/2",
+      "width_expr":    "A",
+      "_width_comment": "10~24: reinforcing flat bar width = table A",
       "qty":           4,
-      "remark": "length=HOPS; width=A+35/2-member_t/2; qty=4"
+      "remark": "height=HOPS for calculation only, not fabrication height; width=A; qty=4"
     }
   ]
 }

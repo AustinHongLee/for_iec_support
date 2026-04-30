@@ -31,12 +31,13 @@ Last updated: 2026-04-30.
 | Type 06 | H length remains the input H value, but always emits warning: `H值長是欲保留現場裁切預量`. | `core/types/type_06.py` | `validate_tables.py` |
 | Type 07 | Shared elbow offset is `200`; Pipe B length is `L + 200`; Pipe C length is `H - 200 - Plate F thickness - M42 plate thickness`; H range warning is `1500~3500`; always emits H field-trim warning. | `core/types/type_07.py` | `validate_tables.py` |
 | Type 08 | Pipe A formula remains `H - 6 - channel height/2 - M42 plate thickness`; Channel N remains `L`; top plate remains `B x B x 6`; Stopper is fixed quantity 2, with `10C chamfer / 10mm` drawing feature kept as note. | `core/types/type_08.py` | `validate_tables.py` |
+| Type 66 / pipe shoe core | Type 66 D-80 is the pipe shoe core. Type 52/53/54/55 add small restraint/guide components; they do not change the shoe core. Pad width is `OD*pi/3` with practical-calculation warning. Pad length is `LOPS + E*2` for `<=8"` and `LOPS + E*2 + 25*2` for `>=10"`. Pad thickness is SCH10S wall. Member C length is `LOPS/D` for `<=8"` and `LOPS + 25*2` for `10"~14"`. For `16"~24"`, fabricated 12t plates use width `A`, length `LOPS + 25*2`, height `HOPS`. `10"~24"` adds four reinforcing flat bars: thickness `B`, height `HOPS` as calculation-only warning, width `A`. | `core/pipe_shoe_engine.py`, `configs/pipe_shoe_spec.json` | `validate_tables.py` |
 
 ## Revoked / Reopened Assumptions
 
 | Area | Reopened issue | Immediate policy |
 |---|---|---|
-| Pipe shoe family `52/53/54/55/66/67/80/85` | `52-1/2B-A-150-200` exposed that the shared spec resolves small pipe shoes to `H Beam 200*100*5.5`, while D-80 NOTE 1 says shoes for pipes `1-1/2"` and smaller may be fabricated from `6t PLATE`. | Do not classify pipe shoe family as hardened for procurement. Batch reports mark these Types as `review` until the D-80/D-80A/D-80B branches are re-verified and locked. |
+| Pipe shoe family `52/53/54/55/66/67/80/85` | Earlier shared spec used `+25*2` on all H-beam member lengths and fixed pad thickness ranges. User clarified the Type 66 core rules above. | `<=24"` shared Type 66 core has been corrected and guarded. `26"~50"` D-80B remains provisional and should stay `review` until separately hardened. |
 
 ## Batch Verification Strategy
 
