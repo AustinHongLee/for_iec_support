@@ -174,6 +174,7 @@ def _parse_hops_lops(fullstring: str, pipe_size: float,
         return bool(v and str(v).strip().isdigit())
 
     try:
+        # Explicit designation dimensions override D-80 table/default values.
         if _int(part4) and _int(part5):
             return int(part4), int(part5)
         if _int(part3) and _int(part4):

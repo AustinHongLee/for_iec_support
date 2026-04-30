@@ -283,6 +283,9 @@ DIMENSION (mm)
 > LOPS 在有 Pipe Stop 的工況下需另行計算（NOTE 4）。
 > HOPS 由保溫厚度決定（TABLE "A"）。
 
+**計算優先序**：designation 末段若明確給出 `HOPS` / `LOPS`，必須優先於 D-80 表格/預設值。
+例如 `66-1/2B(P)-A-150-200` 使用 `HOPS=150`, `LOPS=200`；未給修改值時才使用 D-80 表格/預設尺寸。
+
 ---
 
 ## 工程 NOTES 彙整

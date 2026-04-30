@@ -632,10 +632,17 @@ try:
                 return entry
         raise AssertionError(f"{result.fullstring} missing {name}: {[e.name for e in result.entries]}")
 
+    retainer_default = analyze_single("52-1/2B-A")
+    assert not retainer_default.error, f"Type 52 default HOPS/LOPS should calculate: {retainer_default.error}"
+    retainer_default_h = _entry_by_name(retainer_default, "H Beam")
+    assert retainer_default_h.length == 150, (
+        f"Type 52 without explicit LOPS should use D-80 table/default LOPS=150: {retainer_default_h.length}"
+    )
+
     retainer_small = analyze_single("52-1/2B-A-150-200")
     assert not retainer_small.error, f"Type 52 small retainer should calculate: {retainer_small.error}"
     retainer_h = _entry_by_name(retainer_small, "H Beam")
-    assert retainer_h.length == 200, f"Type 52 <=8in MEMBER C length should use LOPS/D without +50: {retainer_h.length}"
+    assert retainer_h.length == 200, f"Type 52 explicit LOPS should override table/default LOPS: {retainer_h.length}"
     assert "width=100" in retainer_h.remark and "H=HOPS(150)" in retainer_h.remark, (
         f"Type 52 small MEMBER C remark should carry width/HOPS: {retainer_h.remark}"
     )
