@@ -20,7 +20,7 @@ Status legend:
 | Type | Steel procurement path | M42 path | Current status | Next verification focus |
 |---|---|---|---|---|
 | 03 | Angle L75 vertical formula + 130 horizontal | Yes, by fixed `L75*75*9` | partial | Confirm U-bolt supply rule and M42 letter options. |
-| 05 | Angle by member + fixed 130 horizontal | Yes, by member steel | pending | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
+| 05 | Angle by member vertical formula + fixed 130 horizontal | Yes, by member steel | partial | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
 | 06 | Angle by member, H + L | No | pending | Confirm H/L parsing and no M42/no M37 supply rule. |
 | 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
 | 14 | Channel N plus plates/anchor bolt | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
@@ -91,14 +91,21 @@ Total weight: 16.80 kg.
 
 Input: `05-L50-05L`
 
+Confirmed formula update:
+
+```text
+vertical Angle length = H*100 - 15
+05-L50-05L = 500 - 15 = 485mm
+```
+
 | Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
 |---:|---|---|---:|---:|---:|---:|---|---|
-| 1 | Angle | `50*50*6` | 500 | 0 | 1 | 2.21 | A36/SS400 |  |
+| 1 | Angle | `50*50*6` | 485 | 0 | 1 | 2.15 | A36/SS400 | H=500 - top offset=15 |
 | 2 | Angle | `50*50*6` | 130 | 0 | 1 | 0.58 | A36/SS400 |  |
 | 3 | Plate_c_有鑽孔 | `9` | 180 | 180 | 1 | 2.29 | A36/SS400 | rect holes 110x110, dia 19, 5/8" x4 |
 | 4 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
 
-Total weight: 9.08 kg.
+Total weight: 9.02 kg.
 
 ### Type 06
 

@@ -2,8 +2,9 @@
 Type 05 計算器
 格式: 05-L50-05L
 - 第二段: 型鋼代碼 (L50, L65, L75)
-- 第三段: 長度(數字×100mm) + M42代碼(字母)
+- 第三段: 高度(數字×100mm) + M42代碼(字母)
 PDF 限制: 管徑≤2", H≤1500mm, M42僅允許 D/L/P/R
+垂直型鋼下料長: H×100 - 15mm top offset
 """
 from ..models import AnalysisResult
 from ..parser import get_part
@@ -13,6 +14,7 @@ from data.steel_sections import get_section_details
 
 _ALLOWED_M42_LETTERS = {"D", "L", "P", "R"}
 _MAX_H = 1500
+_TOP_OFFSET_MM = 15
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -48,8 +50,10 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 去掉型鋼前綴字母得到純尺寸 (L50*50*6 -> 50*50*6)
     section_dim = full_size[1:]  # 去掉第一個字元
 
-    # 1. 角鐵 垂直段 (H)
-    add_steel_section_entry(result, section_type, section_dim, h)
+    # 1. 角鐵 垂直段 (H 扣除圖面上方 15mm offset)
+    vertical_length = h - _TOP_OFFSET_MM
+    add_steel_section_entry(result, section_type, section_dim, vertical_length)
+    result.entries[-1].remark = f"H={h} - top offset={_TOP_OFFSET_MM}"
 
     # 2. 角鐵 水平段 (固定 130mm)
     add_steel_section_entry(result, section_type, section_dim, 130)

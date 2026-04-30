@@ -532,6 +532,15 @@ try:
     assert type03.entries[3].name == "Plate_c_有鑽孔", f"Type 03 M42 Type-L plate changed: {[entry.name for entry in type03.entries]}"
     assert type03.entries[4].name == "EXP.BOLT" and type03.entries[4].quantity == 4, f"Type 03 M42 Type-L bolt changed: {[entry.name for entry in type03.entries]}"
 
+    type05 = analyze_single("05-L50-05L")
+    assert not type05.error, f"Type 05 should calculate: {type05.error}"
+    assert type05.entries[0].name == "Angle", f"Type 05 first entry should be vertical angle: {type05.entries[0].name}"
+    assert type05.entries[0].length == 485, f"Type 05 vertical angle should subtract 15mm offset: {type05.entries[0].length}"
+    assert "top offset=15" in type05.entries[0].remark, f"Type 05 vertical angle remark missing formula: {type05.entries[0].remark}"
+    assert type05.entries[1].length == 130, f"Type 05 horizontal angle length changed: {type05.entries[1].length}"
+    assert type05.entries[2].name == "Plate_c_有鑽孔", f"Type 05 M42 Type-L plate changed: {[entry.name for entry in type05.entries]}"
+    assert type05.entries[3].name == "EXP.BOLT" and type05.entries[3].quantity == 4, f"Type 05 M42 Type-L bolt changed: {[entry.name for entry in type05.entries]}"
+
     type20 = analyze_single("20-L50-05A")
     assert not type20.error, f"Type 20 should calculate: {type20.error}"
     assert len(type20.entries) == 1, f"Type 20 BOM count changed: {len(type20.entries)}"
@@ -569,9 +578,9 @@ try:
     assert type25_c.entries[3].name == "BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
     assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts: {type25_c.entries[3].quantity}"
 
-    print("v type03/type20/type26 structural guardrails OK")
+    print("v type03/type05/type20/type26 structural guardrails OK")
 except Exception as e:
-    print(f"X type03/type20/type26 structural guardrails ERROR: {e}")
+    print(f"X type03/type05/type20/type26 structural guardrails ERROR: {e}")
     raise
 
 # Type 52/66 D-80 pad and FB guardrails.
