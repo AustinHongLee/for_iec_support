@@ -23,3 +23,8 @@ _tmp_*
 
 # Generated outputs
 python_app/output/
+
+# Pytest cache
+python_app/pytest-cache-files-*/
+.pytest_cache/
+**/__pycache__/
