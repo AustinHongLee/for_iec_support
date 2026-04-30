@@ -7,9 +7,10 @@ from typing import Any
 from .config_loader import load_config
 from .material_specs import SUPPORT_PLATE_A36_SS400, U_BOLT_A36_SS400
 from .models import AnalysisResult
-from .parser import get_lookup_value, get_part, parse_pipe_size
+from .parser import extract_parts, get_lookup_value, get_part, parse_pipe_size
 from .plate import add_plate_entry
 from .bolt import add_custom_entry
+from data.m26_table import get_m26_by_line_size
 
 
 _MATERIALS = {
@@ -32,10 +33,7 @@ def _component_enabled(component: dict[str, Any], row: dict[str, Any]) -> bool:
 
 
 def _material(key: str):
-    try:
-        return _MATERIALS[key]
-    except KeyError as exc:
-        raise KeyError(f"Unknown TypeSpec material key '{key}'") from exc
+    return _MATERIALS.get(key, key)
 
 
 def _add_plate_component(
@@ -49,7 +47,7 @@ def _add_plate_component(
         plate_b=_field(row, component["plate_b_field"]),
         plate_thickness=_field(row, component["plate_thickness_field"]),
         plate_name=component["name"],
-        material=_material(component["material"]),
+        material=_material(component["material"].format(**row)),
         plate_qty=component.get("quantity", 1),
         plate_role=component.get("plate_role", ""),
     )
@@ -77,7 +75,7 @@ def _add_custom_component(
         result,
         name=component["name"],
         spec=component["spec"].format(**row),
-        material=_material(component["material"]),
+        material=_material(component["material"].format(**row)),
         quantity=component.get("quantity", 1),
         unit_weight=_unit_weight(component, row),
         unit=component.get("unit", "PC"),
@@ -89,7 +87,16 @@ def _add_custom_component(
 def _size_key(pipe_token: str, designation: dict[str, Any]) -> str:
     if designation.get("size_key") == "parse_pipe_size":
         return parse_pipe_size(pipe_token)
+    if designation.get("size_key") == "lookup_value":
+        value = get_lookup_value(pipe_token)
+        return str(int(value)) if float(value).is_integer() else str(value)
     return pipe_token.replace("B", "").strip()
+
+
+def _parse_designation_part(raw: str, designation: dict[str, Any]) -> tuple[str, str]:
+    if designation.get("extract_suffix"):
+        return extract_parts(raw)
+    return raw, ""
 
 
 def _row_key(type_id: str, designation: dict[str, Any], pipe_token: str, fig: str) -> str:
@@ -99,6 +106,15 @@ def _row_key(type_id: str, designation: dict[str, Any], pipe_token: str, fig: st
         size_key=_size_key(pipe_token, designation),
         figure=fig,
     )
+
+
+def _row_from_provider(spec: dict[str, Any], line_size: float) -> dict[str, Any] | None:
+    provider = spec.get("row_provider")
+    if provider == "m26_by_line_size":
+        return get_m26_by_line_size(line_size)
+    if provider:
+        raise KeyError(f"Unknown TypeSpec row provider '{provider}'")
+    return None
 
 
 def _warning_enabled(warning: dict[str, Any], fig: str) -> bool:
@@ -131,6 +147,7 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
         result.error = spec.get("missing_pipe_error", "缺少管徑欄位")
         return result
 
+    pipe_token, material_suffix = _parse_designation_part(pipe_token, designation)
     size_str = pipe_token.replace("B", "").strip()
     pipe_size = get_lookup_value(size_str)
     min_size, max_size = designation["pipe_size_range"]
@@ -140,15 +157,33 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
 
     fig = designation.get("default_figure", "A")
     allowed_figures = set(designation.get("allowed_figures", []))
-    if fig_token and fig_token.strip().upper() in allowed_figures:
-        fig = fig_token.strip().upper()
+    if fig_token:
+        parsed_fig = fig_token.strip().upper()
+        if parsed_fig in allowed_figures:
+            fig = parsed_fig
+        elif designation.get("use_invalid_figure_as_value"):
+            fig = parsed_fig
+            warning_template = designation.get("invalid_figure_warning")
+            if warning_template:
+                result.warnings.append(warning_template.format(figure=fig))
 
-    table = config[spec["table_key"]]
     support_no = _row_key(type_id, designation, pipe_token, fig)
-    row = table.get(support_no)
+    if "table_key" in spec:
+        table = config[spec["table_key"]]
+        row = table.get(support_no)
+    else:
+        row = _row_from_provider(spec, pipe_size)
     if not row:
         result.error = spec["missing_row_error"].format(support_no=support_no)
         return result
+
+    material_map = designation.get("material_map", {})
+    row["material"] = material_map.get(material_suffix, material_map.get("", ""))
+    row["material_suffix"] = material_suffix
+    row["figure"] = fig
+    row["support_no"] = support_no
+    row["type_id"] = type_id
+    row["mode_label"] = designation.get("mode_labels", {}).get(fig, fig)
 
     for component in spec["components"]:
         if not _component_enabled(component, row):
@@ -165,7 +200,12 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
             return result
 
     context = dict(row)
-    context.update({"figure": fig, "support_no": support_no, "type_id": type_id})
+    context.update({
+        "figure": fig,
+        "support_no": support_no,
+        "type_id": type_id,
+        "mode_label": row["mode_label"],
+    })
     for warning in spec.get("warnings", []):
         if not _warning_enabled(warning, fig):
             continue

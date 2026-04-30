@@ -143,6 +143,17 @@ Type 48 不屬於 Vessel 支撐家族 (42~47)。它是落地型（GRADE），用
 
 ## BOM
 
+目前實作已採用 TypeSpec path：
+
+```text
+configs/type_48.json
+  TYPE_SPEC.engine = table_parts_v1
+core/type_spec_engine.py
+core/types/type_48.py
+```
+
+`type_48.py` 只保留 thin wrapper。`TYPE_SPEC.designation.material_map` 定義 `NONE/(A)/(B)` 到 plate material 的對應，`TYPE_SPEC.components` 定義唯一的 `PLATE` BOM row。
+
 | # | 品名 | 說明 |
 |:---:|------|------|
 | 1 | PLATE "C" | 150×100×6 或 150×100×9，依管徑 |

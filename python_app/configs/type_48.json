@@ -2,6 +2,44 @@
   "type_id": "48",
   "source": "data/type48_table.py",
   "migrated": "2026-04-29",
+  "TYPE_SPEC": {
+    "engine": "table_parts_v1",
+    "designation": {
+      "pipe_size_part": 2,
+      "default_figure": "",
+      "allowed_figures": [],
+      "pipe_size_range": [
+        0.5,
+        6
+      ],
+      "extract_suffix": true,
+      "size_key": "lookup_value",
+      "support_no_template": "{size_key}",
+      "material_map": {
+        "": "A36/SS400",
+        "(A)": "AS",
+        "(B)": "SUS304"
+      }
+    },
+    "missing_pipe_error": "Type 48: 缺少管徑",
+    "range_error": "Type 48: 管徑 {size} 超出範圍 (1/2\"~6\")",
+    "missing_row_error": "Type 48: 管徑 {support_no} 不在範圍 (1/2\"~6\")",
+    "table_key": "TYPE48_TABLE",
+    "components": [
+      {
+        "id": "plate",
+        "kind": "plate",
+        "name": "PLATE",
+        "plate_a_field": "plate_a",
+        "plate_b_field": "plate_b",
+        "plate_thickness_field": "plate_t",
+        "quantity": 1,
+        "material": "{material}",
+        "plate_role": "generic_plate",
+        "remark": "Drain Hub 偏移底座, {plate_size}, offset=100mm, 全焊接(6V)"
+      }
+    ]
+  },
   "TYPE48_MATERIAL_SYMBOL": {
     "CS": "",
     "AS": "(A)",

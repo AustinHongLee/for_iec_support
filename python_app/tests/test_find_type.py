@@ -31,6 +31,14 @@ def test_locate_shared_dispatch_type():
 
 
 def test_locate_type_spec_engine():
+    info = locate_type("48")
+    assert info["handler"]["calculator"] == "python_app/core/types/type_48.py"
+    assert info["config"]["type_spec_engine"] == "table_parts_v1"
+
+    info = locate_type("57")
+    assert info["handler"]["calculator"] == "python_app/core/types/type_57.py"
+    assert info["config"]["type_spec_engine"] == "table_parts_v1"
+
     info = locate_type("58")
 
     assert info["handler"]["supported"] is True

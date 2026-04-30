@@ -2,6 +2,57 @@
   "type_id": "57",
   "source": "data/type57_table.py",
   "migrated": "2026-04-29",
+  "TYPE_SPEC": {
+    "engine": "table_parts_v1",
+    "designation": {
+      "pipe_size_part": 2,
+      "figure_part": 3,
+      "default_figure": "A",
+      "allowed_figures": [
+        "A",
+        "B"
+      ],
+      "use_invalid_figure_as_value": true,
+      "invalid_figure_warning": "模式 '{figure}' 無效，Type 57 僅支援 A(SLIDE) / B(FIXED)",
+      "pipe_size_range": [
+        0.25,
+        30
+      ],
+      "support_no_template": "{size_key}",
+      "mode_labels": {
+        "A": "SLIDE",
+        "B": "FIXED"
+      }
+    },
+    "missing_pipe_error": "Type 57: 缺少管徑",
+    "range_error": "Type 57 / M-26 查表失敗: 管徑 {size} 超出查表範圍",
+    "missing_row_error": "Type 57 / M-26 查表失敗: 管徑 {support_no} 不在查表範圍",
+    "row_provider": "m26_by_line_size",
+    "components": [
+      {
+        "id": "u_bolt",
+        "kind": "custom",
+        "name": "U-BOLT",
+        "spec": "{type}",
+        "quantity": 1,
+        "material": "Carbon Steel",
+        "unit": "SET",
+        "unit_weight": 1,
+        "remark": "M-26, {mode_label}, rod={rod_size_a}, B/C/D/E={B}/{C}/{D}/{E}, load650/750={load_650f_kg}/{load_750f_kg}kg, unit weight placeholder"
+      },
+      {
+        "id": "finished_hex_nut",
+        "kind": "custom",
+        "name": "FINISHED HEX NUT",
+        "spec": "{rod_size_a}",
+        "quantity": 4,
+        "material": "Carbon Steel",
+        "unit": "PC",
+        "unit_weight": 0,
+        "remark": "M-26 note 1: four finished hex nuts, nut weight included in U-bolt set placeholder"
+      }
+    ]
+  },
   "TYPE57_TABLE": {
     "0.25": {
       "rod": "1/4\"",
