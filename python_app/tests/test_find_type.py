@@ -28,6 +28,9 @@ def test_locate_shared_dispatch_type():
     assert info["expected_calculator"]["path"] == "python_app/core/types/type_66.py"
     assert info["expected_calculator"]["exists"] is False
     assert info["shared_dispatch"] is True
+    assert info["shared_spec"]["path"] == "python_app/configs/pipe_shoe_spec.json"
+    assert info["shared_spec"]["exists"] is True
+    assert info["shared_spec"]["engine"] == "pipe_shoe_engine"
 
 
 def test_locate_type_spec_engine():
@@ -48,3 +51,13 @@ def test_locate_type_spec_engine():
 
     info = locate_type("60")
     assert info["config"]["type_spec_engine"] == "table_plate_v1"
+
+
+def test_locate_storage_alias_type():
+    info = locate_type("01T")
+
+    assert info["storage_id"] == "01"
+    assert info["handler"]["supported"] is True
+    assert info["handler"]["calculator"] == "python_app/core/types/type_01.py"
+    assert info["config"]["path"] == "python_app/configs/type_01.json"
+    assert info["config"]["exists"] is True

@@ -29,6 +29,29 @@ Optional anchors:
 
 ---
 
+## Calculation Data Anchor Rule
+
+Every Type registered in `TYPE_HANDLERS` must have one primary visible calculation data anchor:
+
+| Anchor kind | Valid when | Example |
+|---|---|---|
+| Direct config | The Type has its own calculation JSON. | `configs/type_01.json` |
+| Storage alias | A Type variant intentionally reuses another Type's calculator and config. | `01T` uses `type_01.py` and `configs/type_01.json` |
+| Shared spec | Multiple Types intentionally share one declarative spec and shared engine. | `configs/pipe_shoe_spec.json` for 52/53/54/55/66/67/85 |
+| Legacy data bridge | The only verified table still lives in `data/typeXX_table.py`. | Temporary migration state only |
+
+`support_ontology.json` and `type_catalog.json` are metadata. They may describe grouping, names, UI search, tags, or selection logic, but they do not count as calculation data anchors.
+
+Calculator-only constants are allowed only as temporary technical debt. If a supported Type stores limits, allowed members, material maps, dimensions, or component decisions only inside `core/types/type_XX.py`, the Type must appear in the calculator-only risk list from:
+
+```powershell
+python python_app/tools/audit_table_json_coverage.py
+```
+
+When adding or refactoring a Type, do not hide new standard data only in Python. Add a direct config, register a storage alias, or register a shared spec pattern in `python_app/tools/find_type.py` and document it here.
+
+---
+
 ## Fast Locator Rules
 
 Given a Type id `XX`, inspect in this order:
@@ -70,7 +93,15 @@ python python_app/tools/find_type.py 51
 python python_app/tools/find_type.py 66 --json
 ```
 
-The tool reports the dispatcher handler, expected calculator path, actual calculator path, JSON config, `TYPE_SPEC.engine` when present, data bridge, Type doc, drawing, catalog entry, test mentions, and whether the Type uses shared dispatch.
+The tool reports the dispatcher handler, expected calculator path, actual calculator path, JSON config, shared spec when present, `TYPE_SPEC.engine` when present, data bridge, Type doc, drawing, catalog entry, test mentions, and whether the Type uses shared dispatch.
+
+To audit all implemented Type anchors at once:
+
+```powershell
+python python_app/tools/audit_table_json_coverage.py
+```
+
+Use the `Supported Type Calculation Anchors` section to find calculator-only Types. That list is the migration backlog for flattening risk.
 
 ---
 
@@ -80,9 +111,10 @@ When values disagree, use this precedence:
 
 1. Explicit original drawing evidence in `assets/Type/*.pdf` or a transcribed source note.
 2. `configs/type_XX.json` if the Type is JSON-backed and verified.
-3. `data/typeXX_table.py` if it is still the only implemented table.
-4. `docs/types/type_XX.md` for interpretation, assumptions, and TODOs.
-5. `type_catalog.json` only for UI metadata, never as calculation truth.
+3. Registered shared spec JSON when the Type intentionally uses shared dispatch.
+4. `data/typeXX_table.py` if it is still the only implemented table.
+5. `docs/types/type_XX.md` for interpretation, assumptions, and TODOs.
+6. `type_catalog.json` and `support_ontology.json` only for metadata, never as calculation truth.
 
 If a change is based on interpretation or estimation, record it in the Type doc and add a warning/evidence path in code when the existing model supports it.
 
@@ -166,7 +198,7 @@ Do not combine table migration, formula changes, material policy changes, and UI
 |---|---|---|
 | JSON-backed single Type | `type_01.py` + `configs/type_01.json` | Calculator reads config table directly. |
 | JSON bridge table | `data/type51_table.py` + `configs/type_51.json` | Bridge protects existing lookup API. |
-| Shared declarative engine | `type_52.py` + `pipe_shoe_engine.py` + `pipe_shoe_spec.json` | One dispatcher covers 52/53/54/55/66/67. |
+| Shared declarative engine | `type_52.py` + `pipe_shoe_engine.py` + `pipe_shoe_spec.json` | One dispatcher covers 52/53/54/55/66/67/85. |
 | Shared helper/constants | `trunnion_engine.py`, `material_specs.py` | Use for repeated behavior, not for unrelated Type coupling. |
 
 ---

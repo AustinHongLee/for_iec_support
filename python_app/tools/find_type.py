@@ -11,6 +11,20 @@ from typing import Any
 APP_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = APP_DIR.parent
 
+_SHARED_SPECS = [
+    {
+        "name": "pipe_shoe_spec",
+        "types": {"52", "53", "54", "55", "66", "67", "85"},
+        "dispatcher": "python_app/core/types/type_52.py",
+        "path": APP_DIR / "configs" / "pipe_shoe_spec.json",
+        "engine": "pipe_shoe_engine",
+    },
+]
+
+_TYPE_STORAGE_ALIASES = {
+    "01T": "01",
+}
+
 
 def _ensure_import_path() -> None:
     app_dir = str(APP_DIR)
@@ -54,6 +68,23 @@ def _config_info(path: Path) -> dict[str, Any]:
         config = json.load(fh)
     info["type_spec_engine"] = config.get("TYPE_SPEC", {}).get("engine")
     return info
+
+
+def _shared_spec_info(type_id: str, handler_calculator: str | None) -> dict[str, Any] | None:
+    for spec in _SHARED_SPECS:
+        if type_id not in spec["types"]:
+            continue
+        if handler_calculator != spec["dispatcher"]:
+            continue
+        path = spec["path"]
+        return {
+            "name": spec["name"],
+            "path": _rel(path),
+            "exists": path.exists(),
+            "engine": spec["engine"],
+            "dispatcher": spec["dispatcher"],
+        }
+    return None
 
 
 def _handler_info(type_id: str) -> dict[str, Any]:
@@ -125,8 +156,9 @@ def _test_mentions(type_id: str) -> list[str]:
 
 def locate_type(type_id: str) -> dict[str, Any]:
     type_id = normalize_type_id(type_id)
-    config_name = type_id.lower()
-    data_name = type_id.lower().replace("t", "")
+    storage_id = _TYPE_STORAGE_ALIASES.get(type_id, type_id)
+    config_name = storage_id.lower()
+    data_name = storage_id.lower().replace("t", "")
 
     expected_calculator = APP_DIR / "core" / "types" / f"type_{config_name}.py"
     config = APP_DIR / "configs" / f"type_{config_name}.json"
@@ -136,6 +168,7 @@ def locate_type(type_id: str) -> dict[str, Any]:
 
     info = {
         "type_id": type_id,
+        "storage_id": storage_id,
         "dispatcher": _path_info(APP_DIR / "core" / "calculator.py"),
         "handler": _handler_info(type_id),
         "expected_calculator": _path_info(expected_calculator),
@@ -150,6 +183,7 @@ def locate_type(type_id: str) -> dict[str, Any]:
     handler_calculator = info["handler"].get("calculator")
     expected = info["expected_calculator"]["path"]
     info["shared_dispatch"] = bool(handler_calculator and expected and handler_calculator != expected)
+    info["shared_spec"] = _shared_spec_info(type_id, handler_calculator)
     return info
 
 
@@ -163,6 +197,8 @@ def format_report(info: dict[str, Any]) -> str:
         f"Type {info['type_id']}",
         f"supported: {_format_bool(handler.get('supported', False))}",
     ]
+    if info.get("storage_id") and info["storage_id"] != info["type_id"]:
+        lines.append(f"storage_id: {info['storage_id']}")
     if handler.get("handler"):
         lines.append(f"handler: {handler['handler']}")
     if handler.get("calculator"):
@@ -175,6 +211,12 @@ def format_report(info: dict[str, Any]) -> str:
         f"doc: {info['doc']['path']} ({'exists' if info['doc']['exists'] else 'missing'})",
         f"drawing: {info['drawing']['path']} ({'exists' if info['drawing']['exists'] else 'missing'})",
     ])
+    if info.get("shared_spec"):
+        shared_spec = info["shared_spec"]
+        lines.append(
+            f"shared_spec: {shared_spec['path']} "
+            f"({'exists' if shared_spec['exists'] else 'missing'}, {shared_spec['engine']})"
+        )
     if info["config"].get("type_spec_engine"):
         lines.append(f"type_spec_engine: {info['config']['type_spec_engine']}")
     catalog_entry = info["catalog"]["entry"]
