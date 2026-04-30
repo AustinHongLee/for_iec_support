@@ -23,7 +23,7 @@ Status legend:
 | 05 | Angle by member vertical formula + fixed 130 horizontal | Yes, by member steel | partial | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
 | 06 | Angle by member, H + L with field-trim warning | No | partial | Confirm no M37 supply rule and whether L also needs user-facing warning. |
 | 07 | Pipe B/C + Plate E/F sliding support | Yes, fixed `J` by Pipe C | partial | Confirm material override scope and H field-trim warning wording. |
-| 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
+| 08 | Channel N + pipe + top/stopper plates | Yes, G/J by pipe size | partial | Confirm material rule and whether H/L needs user-facing field-trim warning. |
 | 14 | Channel N plus plates/anchor bolt | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
 | 15 | Channel N plus plates | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
 | 19 | Angle/H Beam from table | No | pending | Confirm M-43-like section table and line-size row mapping. |
@@ -166,7 +166,7 @@ Input: `08-2B-1005G`
 | 2 | Channel | `100*50*5` | 1000 | 0 | 1 | 9.36 | A36/SS400 |  |
 | 3 | Plate_b_有鑽孔 | `9` | 180 | 180 | 1 | 2.29 | A36/SS400 | rect holes 110x110, dia 19, 5/8" x4 |
 | 4 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
-| 5 | Plate_STOPPER | `6` | 70 | 160 | 1 | 0.53 | A36/SS400 |  |
+| 5 | Plate_STOPPER | `6` | 70 | 160 | 2 | 1.06 | A36/SS400 | STOPPER 2片；圖面保留 10C chamfer / 10mm 折角特徵 |
 | 6 | Plate_TOP | `6` | 80 | 80 | 1 | 0.30 | A36/SS400 |  |
 
-Total weight: 18.85 kg.
+Total weight: 19.38 kg.

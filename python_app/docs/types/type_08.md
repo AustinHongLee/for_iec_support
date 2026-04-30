@@ -30,7 +30,7 @@
 ## 核心運算邏輯
 
 ```text
-PipeA(H-6-channel高/2-M42板厚,黑鐵) + ChannelN(L) + M42(G/J,用pipe size查) + Plate_STOPPER(K×M×6) + Plate_TOP(B×B×6)
+PipeA(H-6-channel高/2-M42板厚,黑鐵) + ChannelN(L) + M42(G/J,用pipe size查) + Plate_STOPPER(K×M×6, 2片) + Plate_TOP(B×B×6)
 ```
 
 ---
@@ -39,6 +39,7 @@ PipeA(H-6-channel高/2-M42板厚,黑鐵) + ChannelN(L) + M42(G/J,用pipe size查
 
 - 與 `M-42` 下部構件有關，最終組成會受到末段字母或允許型別限制。
 - `H`、`L` 或 `Hx` 等尺寸多為現場裁切值，文件中的公式代表估算與下料邏輯。
+- Stopper 固定 2 片；圖面右側的 `10C` chamfer / `10mm` 折角特徵先保留為備註，供後續施工圖資料化。
 - 此型式重點在滑動或限位功能，應優先比對圖面上的止擋、滑板與間隙設定。
 
 ---

@@ -565,6 +565,18 @@ try:
         f"Type 07 H field-trim warning missing: {type07.warnings}"
     )
 
+    type08 = analyze_single("08-2B-1005G")
+    assert not type08.error, f"Type 08 should calculate: {type08.error}"
+    stopper_entries = [entry for entry in type08.entries if entry.name == "Plate_STOPPER"]
+    assert len(stopper_entries) == 1, f"Type 08 should have one stopper BOM line: {[entry.name for entry in type08.entries]}"
+    assert stopper_entries[0].quantity == 2, f"Type 08 stopper should be 2 pcs: {stopper_entries[0]}"
+    assert "10C chamfer" in stopper_entries[0].display_remark, (
+        f"Type 08 stopper drawing feature note missing: {stopper_entries[0].display_remark}"
+    )
+    assert type08.entries[-1].name == "Plate_TOP" and type08.entries[-1].quantity == 1, (
+        f"Type 08 top plate should remain one piece: {type08.entries[-1]}"
+    )
+
     type20 = analyze_single("20-L50-05A")
     assert not type20.error, f"Type 20 should calculate: {type20.error}"
     assert len(type20.entries) == 1, f"Type 20 BOM count changed: {len(type20.entries)}"
@@ -602,9 +614,9 @@ try:
     assert type25_c.entries[3].name == "BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
     assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts: {type25_c.entries[3].quantity}"
 
-    print("v type03/type05/type06/type07/type20/type26 structural guardrails OK")
+    print("v type03/type05/type06/type07/type08/type20/type26 structural guardrails OK")
 except Exception as e:
-    print(f"X type03/type05/type06/type07/type20/type26 structural guardrails ERROR: {e}")
+    print(f"X type03/type05/type06/type07/type08/type20/type26 structural guardrails ERROR: {e}")
     raise
 
 # Type 52/66 D-80 pad and FB guardrails.

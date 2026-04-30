@@ -11,7 +11,7 @@ PDF 限制: H≤1500mm, L≤1000mm, M42僅允許 G/J
   1. Pipe A (支撐柱): H - 6(top plate厚) - channel高/2 - M42板厚, 黑鐵
   2. Channel N: 長度 = L
   3. M42 底板 (用 pipe size 查表)
-  4. Plate(STOPPER): K × M × 6mm
+  4. Plate(STOPPER): K × M × 6mm, 2 pcs
   5. Plate(TOP): B × B × 6mm
 """
 from ..models import AnalysisResult
@@ -100,8 +100,18 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 3. M42 底板 (用 pipe size 查表)
     perform_action_by_letter(result, letter, pipe_size)
 
-    # 4. Plate(STOPPER): K × M × 6mm
-    add_plate_entry(result, k, m, 6, "Plate_STOPPER", material=_SUPPORT_PLATE_MATERIAL, plate_role="stopper_plate")
+    # 4. Plate(STOPPER): K × M × 6mm, 2 pcs
+    add_plate_entry(
+        result,
+        k,
+        m,
+        6,
+        "Plate_STOPPER",
+        material=_SUPPORT_PLATE_MATERIAL,
+        plate_qty=2,
+        plate_role="stopper_plate",
+        notes_zh="STOPPER 2片；圖面保留 10C chamfer / 10mm 折角特徵",
+    )
 
     # 5. Plate(TOP): B × B × 6mm
     add_plate_entry(result, b, b, 6, "Plate_TOP", material=_SUPPORT_PLATE_MATERIAL, plate_role="top_plate")
