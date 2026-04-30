@@ -42,13 +42,15 @@ Every Type registered in `TYPE_HANDLERS` must have one primary visible calculati
 
 `support_ontology.json` and `type_catalog.json` are metadata. They may describe grouping, names, UI search, tags, or selection logic, but they do not count as calculation data anchors.
 
+Use `configs/type_anchor_index.json` as the human-readable map for non-obvious anchors. This index should list storage aliases and shared specs so searching for a Type id like `66` immediately reveals `configs/pipe_shoe_spec.json`.
+
 Calculator-only constants are allowed only as temporary technical debt. If a supported Type stores limits, allowed members, material maps, dimensions, or component decisions only inside `core/types/type_XX.py`, the Type must appear in the calculator-only risk list from:
 
 ```powershell
 python python_app/tools/audit_table_json_coverage.py
 ```
 
-When adding or refactoring a Type, do not hide new standard data only in Python. Add a direct config, register a storage alias, or register a shared spec pattern in `python_app/tools/find_type.py` and document it here.
+When adding or refactoring a Type, do not hide new standard data only in Python. Add a direct config, register a storage alias in `configs/type_anchor_index.json`, or register a shared spec in `configs/type_anchor_index.json` and document any new pattern here.
 
 ---
 
@@ -94,6 +96,12 @@ python python_app/tools/find_type.py 66 --json
 ```
 
 The tool reports the dispatcher handler, expected calculator path, actual calculator path, JSON config, shared spec when present, `TYPE_SPEC.engine` when present, data bridge, Type doc, drawing, catalog entry, test mentions, and whether the Type uses shared dispatch.
+
+For shared or aliased Types, first check:
+
+```powershell
+rg -n '"66"|pipe_shoe' python_app/configs/type_anchor_index.json
+```
 
 To audit all implemented Type anchors at once:
 

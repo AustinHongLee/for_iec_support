@@ -10,20 +10,7 @@ from typing import Any
 
 APP_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = APP_DIR.parent
-
-_SHARED_SPECS = [
-    {
-        "name": "pipe_shoe_spec",
-        "types": {"52", "53", "54", "55", "66", "67", "85"},
-        "dispatcher": "python_app/core/types/type_52.py",
-        "path": APP_DIR / "configs" / "pipe_shoe_spec.json",
-        "engine": "pipe_shoe_engine",
-    },
-]
-
-_TYPE_STORAGE_ALIASES = {
-    "01T": "01",
-}
+ANCHOR_INDEX_PATH = APP_DIR / "configs" / "type_anchor_index.json"
 
 
 def _ensure_import_path() -> None:
@@ -59,6 +46,34 @@ def _path_info(path: Path) -> dict[str, Any]:
     }
 
 
+def _load_anchor_index() -> dict[str, Any]:
+    if not ANCHOR_INDEX_PATH.exists():
+        return {"version": None, "types": {}}
+    with ANCHOR_INDEX_PATH.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _anchor_index_entry(type_id: str) -> dict[str, Any] | None:
+    entry = _load_anchor_index().get("types", {}).get(type_id)
+    return dict(entry) if entry else None
+
+
+def _anchor_index_info(type_id: str) -> dict[str, Any]:
+    entry = _anchor_index_entry(type_id)
+    return {
+        "path": _rel(ANCHOR_INDEX_PATH),
+        "exists": ANCHOR_INDEX_PATH.exists(),
+        "entry": entry,
+    }
+
+
+def _storage_id(type_id: str) -> str:
+    entry = _anchor_index_entry(type_id)
+    if entry and entry.get("anchor_kind") == "storage_alias":
+        return entry.get("storage_id", type_id)
+    return type_id
+
+
 def _config_info(path: Path) -> dict[str, Any]:
     info = _path_info(path)
     info["type_spec_engine"] = None
@@ -71,20 +86,24 @@ def _config_info(path: Path) -> dict[str, Any]:
 
 
 def _shared_spec_info(type_id: str, handler_calculator: str | None) -> dict[str, Any] | None:
-    for spec in _SHARED_SPECS:
-        if type_id not in spec["types"]:
-            continue
-        if handler_calculator != spec["dispatcher"]:
-            continue
-        path = spec["path"]
-        return {
-            "name": spec["name"],
-            "path": _rel(path),
-            "exists": path.exists(),
-            "engine": spec["engine"],
-            "dispatcher": spec["dispatcher"],
-        }
-    return None
+    entry = _anchor_index_entry(type_id)
+    if not entry or entry.get("anchor_kind") != "shared_spec":
+        return None
+    if handler_calculator != entry.get("calculator"):
+        return None
+
+    anchor = entry.get("calculation_anchor")
+    path = APP_DIR / anchor if anchor else None
+    if not path:
+        return None
+    return {
+        "name": Path(anchor).stem,
+        "path": _rel(path),
+        "exists": path.exists(),
+        "engine": entry.get("engine"),
+        "dispatcher": entry.get("calculator"),
+        "family": entry.get("family"),
+    }
 
 
 def _handler_info(type_id: str) -> dict[str, Any]:
@@ -156,7 +175,7 @@ def _test_mentions(type_id: str) -> list[str]:
 
 def locate_type(type_id: str) -> dict[str, Any]:
     type_id = normalize_type_id(type_id)
-    storage_id = _TYPE_STORAGE_ALIASES.get(type_id, type_id)
+    storage_id = _storage_id(type_id)
     config_name = storage_id.lower()
     data_name = storage_id.lower().replace("t", "")
 
@@ -169,6 +188,7 @@ def locate_type(type_id: str) -> dict[str, Any]:
     info = {
         "type_id": type_id,
         "storage_id": storage_id,
+        "anchor_index": _anchor_index_info(type_id),
         "dispatcher": _path_info(APP_DIR / "core" / "calculator.py"),
         "handler": _handler_info(type_id),
         "expected_calculator": _path_info(expected_calculator),
@@ -199,6 +219,13 @@ def format_report(info: dict[str, Any]) -> str:
     ]
     if info.get("storage_id") and info["storage_id"] != info["type_id"]:
         lines.append(f"storage_id: {info['storage_id']}")
+    anchor_entry = info.get("anchor_index", {}).get("entry")
+    if anchor_entry:
+        lines.append(
+            "anchor_index: "
+            f"{info['anchor_index']['path']} "
+            f"({anchor_entry.get('anchor_kind')}, {anchor_entry.get('family') or '-'})"
+        )
     if handler.get("handler"):
         lines.append(f"handler: {handler['handler']}")
     if handler.get("calculator"):

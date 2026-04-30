@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "purpose": "Discoverability index for supported Types whose calculation data is not in configs/type_XX.json.",
+  "rules": [
+    "support_ontology.json and type_catalog.json are metadata only; they are not calculation anchors.",
+    "Every TYPE_HANDLERS entry without a direct configs/type_XX.json should be listed here unless it is intentionally calculator-only technical debt."
+  ],
+  "types": {
+    "01T": {
+      "anchor_kind": "storage_alias",
+      "storage_id": "01",
+      "calculation_anchor": "configs/type_01.json",
+      "calculator": "python_app/core/types/type_01.py",
+      "family": "type_01_tee_variant",
+      "note": "Tee variant of Type 01; reuses Type 01 calculator and config."
+    },
+    "52": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "53": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "54": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "55": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "66": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "67": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    },
+    "85": {
+      "anchor_kind": "shared_spec",
+      "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "calculator": "python_app/core/types/type_52.py",
+      "engine": "pipe_shoe_engine",
+      "family": "pipe_shoe"
+    }
+  }
+}
