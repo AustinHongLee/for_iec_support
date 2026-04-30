@@ -590,7 +590,7 @@ class MainWindow(QMainWindow):
                 self.result_table.setItem(row, 13, QTableWidgetItem(f"{scaled_entry.weight_output:.2f}"))
                 self.result_table.setItem(row, 14, QTableWidgetItem(single_entry.unit))
                 self.result_table.setItem(row, 15, QTableWidgetItem(single_entry.category))
-                self.result_table.setItem(row, 16, QTableWidgetItem(single_entry.remark if single_entry.remark else ""))
+                self.result_table.setItem(row, 16, QTableWidgetItem(single_entry.display_remark))
                 total_weight += scaled_entry.weight_output
 
         self.total_weight_label.setText(f"專案總重量: {total_weight:.2f} kg")

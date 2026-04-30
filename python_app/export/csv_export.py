@@ -35,5 +35,5 @@ def export_to_csv(results: List[AnalysisResult], filepath: str):
                     entry.length_subtotal if entry.length_subtotal else "",
                     entry.qty_subtotal if entry.qty_subtotal else "",
                     entry.weight_output, entry.category,
-                    entry.remark if entry.remark else "",
+                    entry.display_remark,
                 ])

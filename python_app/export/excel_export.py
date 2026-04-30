@@ -162,7 +162,7 @@ def export_to_excel(results: List[AnalysisResult], filepath: str):
             ws.cell(row=row, column=15, value=entry.qty_subtotal if entry.qty_subtotal else "")
             ws.cell(row=row, column=16, value=entry.weight_output)
             ws.cell(row=row, column=17, value=entry.category)
-            ws.cell(row=row, column=18, value=entry.remark if entry.remark else "")
+            ws.cell(row=row, column=18, value=entry.display_remark)
             row += 1
 
     _format_sheet(ws, HEADERS)
@@ -211,7 +211,7 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
             ws.cell(row=row, column=14, value=scaled_entry.weight_output)
             ws.cell(row=row, column=15, value=single_entry.unit)
             ws.cell(row=row, column=16, value=single_entry.category)
-            ws.cell(row=row, column=17, value=single_entry.remark if single_entry.remark else "")
+            ws.cell(row=row, column=17, value=single_entry.display_remark)
             row += 1
 
     _format_sheet(ws, PROJECT_HEADERS)
@@ -336,7 +336,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
                 scaled_entry.weight_output,
                 single_entry.unit,
                 single_entry.category,
-                single_entry.remark if single_entry.remark else "",
+                single_entry.display_remark,
             ]
             for col, value in enumerate(values, 1):
                 ws.cell(row=row, column=col, value=value)

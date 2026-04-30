@@ -8,6 +8,11 @@ Phase 0 變更 (2026-04-29):
   - AnalysisEntry 新增 role (str) 及 geometry (GeometryHints) 欄位
   - 舊欄位 remark 保留，不破壞現有邏輯
 
+Phase 2 變更 (2026-04-30):
+  - AnalysisEntry 新增 display_remark property：
+    優先顯示結構化 geometry.holes，fallback 到 remark 字串
+  - 供 UI / export 使用，取代直接讀 entry.remark
+
 遷移策略：
   新 type 直接填 role + geometry；舊 type 的 remark 字串短期繼續有效。
   Phase 3 統一把 remark 搬進 geometry.notes_zh，role 改用 ComponentRole enum。
@@ -82,6 +87,37 @@ class AnalysisEntry:
     # ── Phase 0 新增欄位（optional，向後相容）────────────────
     role: str = ""                      # ComponentRole 的值，例如 "lug_plate"
     geometry: GeometryHints = field(default_factory=GeometryHints)
+
+    # ── Phase 2 新增 property ────────────────────────────────
+    @property
+    def display_remark(self) -> str:
+        """
+        優先顯示結構化幾何資訊，fallback 到 remark 字串。
+        供 UI / export 使用，取代直接讀 entry.remark。
+
+        輸出範例：
+          "螺孔: rect Φ18 [70×100] 5/8\" ×4"
+          "螺孔: circular Φ22 [R=60] M20 ×6"
+          "中文備註文字"
+          ""  (若皆無資訊)
+        """
+        h = self.geometry.holes
+        if h and h.pattern != "none" and h.diameter > 0:
+            if h.pattern == "circular":
+                pitch = f"R={h.pitch_x:.0f}"
+            elif h.pitch_y:
+                pitch = f"{h.pitch_x:.0f}×{h.pitch_y:.0f}"
+            else:
+                pitch = f"{h.pitch_x:.0f}"
+            spec = f" {h.fastener_spec}" if h.fastener_spec else ""
+            count = f" ×{h.count}" if h.count else ""
+            hole_str = f"螺孔: {h.pattern} Φ{h.diameter:.0f} [{pitch}]{spec}{count}"
+            if self.geometry.notes_zh:
+                return f"{hole_str} | {self.geometry.notes_zh}"
+            return hole_str
+        if self.geometry.notes_zh:
+            return self.geometry.notes_zh
+        return self.remark
 
 
 @dataclass
