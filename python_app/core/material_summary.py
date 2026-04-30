@@ -104,7 +104,7 @@ class MaterialSummary:
 
 
 def _project_source_label(designation: str, quantity: int) -> str:
-    return f"{designation} x {quantity}" if quantity != 1 else designation
+    return f"{designation} × {quantity}" if quantity != 1 else designation
 
 
 def aggregate_project(project) -> MaterialSummary:

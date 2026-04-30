@@ -16,13 +16,17 @@ with open(_JSON_PATH, encoding="utf-8") as _f:
 
 # TYPE48_MATERIAL_SYMBOL
 TYPE48_MATERIAL_SYMBOL = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit()
+     else float(k) if isinstance(k, str) and k.lstrip("-").replace(".", "", 1).isdigit()
+     else k): v
     for k, v in _DATA["TYPE48_MATERIAL_SYMBOL"].items()
 }
 
 # TYPE48_TABLE
 TYPE48_TABLE = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit()
+     else float(k) if isinstance(k, str) and k.lstrip("-").replace(".", "", 1).isdigit()
+     else k): v
     for k, v in _DATA["TYPE48_TABLE"].items()
 }
 

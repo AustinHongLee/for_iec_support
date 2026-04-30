@@ -11,6 +11,7 @@ Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
   FIG-A~D → upper/lower clamp 組合
 """
 import json as _json, os as _os
+from .component_size_utils import normalize_fractional_size
 
 _HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 _JSON_PATH = _os.path.join(_HERE, "configs", "type_64.json")

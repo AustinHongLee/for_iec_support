@@ -68,7 +68,7 @@ ROLE_AGGREGATE_TYPE: dict[ComponentRole, str] = {
     ComponentRole.ANGLE:            "linear",
     ComponentRole.CHANNEL:          "linear",
     ComponentRole.H_SECTION:        "linear",
-    ComponentRole.FLAT_BAR:         "linear",
+    ComponentRole.FLAT_BAR:         "plate",   # flat bar in shoe context = discrete piece (add_plate_entry)
 
     # plate
     ComponentRole.BASE_PLATE:       "plate",

@@ -14,6 +14,8 @@ Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
   reference for regression checks.
 """
 import json as _json, os as _os
+from .component_size_utils import normalize_fractional_size
+from copy import deepcopy
 
 _HERE = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 _JSON_PATH = _os.path.join(_HERE, "configs", "type_79.json")

@@ -22,7 +22,9 @@ TYPE76_PAD_LENGTH_MM = _DATA["TYPE76_PAD_LENGTH_MM"]
 
 # PIPE_OD (dict)
 PIPE_OD = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
+    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit()
+     else float(k) if isinstance(k, str) and k.lstrip("-").replace(".", "", 1).isdigit()
+     else k): v
     for k, v in _DATA["PIPE_OD"].items()
 }
 
