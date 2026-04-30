@@ -2,6 +2,12 @@
 
 Purpose: capture the human-verified visual interpretation of the M-42, M-42A, and M-43 standard drawings. The source PDF has no extractable text, so keep this file updated when a user confirms drawing interpretation.
 
+Standard source: `HP6-DSD-A4-500-001`, M-42 / M-42A / M-43 Rev.1.
+
+Standard date / check date: 2024-07-15.
+
+Evidence path: user-provided PDF image snapshots, interpreted by AI vision and corrected/confirmed by the user.
+
 ## Plate Definitions
 
 | Plate | Meaning | Size source |

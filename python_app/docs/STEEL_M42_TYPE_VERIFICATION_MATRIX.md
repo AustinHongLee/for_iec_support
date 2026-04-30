@@ -1,0 +1,120 @@
+# Steel / M42 Type Verification Matrix
+
+Purpose: track verification of support Types that affect structural steel procurement or M42 lower-component procurement.
+
+Verification basis:
+
+- M42/M42A/M43 standard source: `HP6-DSD-A4-500-001`, Rev.1, standard/check date 2024-07-15.
+- M42 visual rules: `docs/M42_BASE_SUPPORT_RULES.md`.
+- Steel weight source: `data/steel_sections.py`.
+- Current calculator smoke/golden entry point: `validate_tables.py`.
+
+Status legend:
+
+- `locked`: has explicit golden assertions for steel/M42 BOM details.
+- `partial`: has smoke or some assertions, but not enough drawing-by-drawing coverage.
+- `pending`: calculator runs or source exists, but steel/M42 correctness still needs manual verification.
+
+## Scope Matrix
+
+| Type | Steel procurement path | M42 path | Current status | Next verification focus |
+|---|---|---|---|---|
+| 03 | Angle L75 vertical + 130 horizontal | Yes, by fixed `L75*75*9` | pending | Confirm U-bolt supply rule and M42 letter options. |
+| 05 | Angle by member + fixed 130 horizontal | Yes, by member steel | pending | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
+| 06 | Angle by member, H + L | No | pending | Confirm H/L parsing and no M42/no M37 supply rule. |
+| 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
+| 14 | Channel N plus plates/anchor bolt | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
+| 15 | Channel N plus plates | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
+| 19 | Angle/H Beam from table | No | pending | Confirm M-43-like section table and line-size row mapping. |
+| 20 | Angle/Channel H member | No | partial | Confirm single member H and section table. |
+| 21 | Angle member H + L | No | pending | Confirm figure/length rules. |
+| 22 | Angle member H + L | Yes, L/P by member steel | pending | Confirm Fig A/B/C parsing and M42 L/P. |
+| 23 | Angle member H + L | No | pending | Confirm figure/length rules. |
+| 24 | Single Angle H | No | pending | Confirm no U-bolt supply and no M42. |
+| 25 | Angle H + L | No | partial | Confirm Fig C optional L1/L2 split. |
+| 26 | Angle/Channel multi-member | No | partial | Confirm Fig A/C member split and lengths. |
+| 27 | Angle/H Beam column + top beam | Yes, by member steel | locked | Expand golden set only if new member/M42 variants appear. |
+| 28 | Angle/Channel portal frame | Yes, by member steel | partial | Lock golden cases for all standard M42 L/P and channel variant. |
+| 30 | Angle/Channel clamp frame | No | partial | Confirm Fig A/B offset and no M42. |
+| 31 | Angle/Channel/H Beam frame | No | pending | Confirm three-member frame lengths. |
+| 32 | Angle/Channel/H Beam hanging frame | No | pending | Confirm lower beam and hanging-leg lengths. |
+| 33 | Angle/Channel half frame | No | pending | Confirm side/low beam orientation and lengths. |
+| 34 | Angle/Channel cantilever | No | pending | Confirm column + top beam lengths. |
+| 35 | Channel rail | No | partial | Confirm Fig A qty=1 and Fig B qty=2. |
+| 36 | Section member by table | No | pending | Confirm source drawing formula and steel quantity. |
+| 37 | H/Angle beam + brace | No | pending | Confirm H150 special thickness and brace formula. |
+| 39 | Angle/Channel trunnion support | No M42 | locked | Keep golden cases for L75/C125/C200. |
+| 41 | Parsed steel spec + optional extra member | No | pending | Confirm all supported patterns and steel spec parser. |
+| 42 | Trunnion main beam + diagonal brace | No M42 | locked | Keep golden cases for L75/C125/C200. |
+| 43 | Trunnion main beam + diagonal brace | No M42 | locked | Keep golden cases for L75/C125/C200 plus lug plates. |
+| 44 | Channel main column + conditional L50 brace | No M42 | pending | Confirm brace trigger and length. |
+| 45 | Channel main column + conditional L50 brace | No M42 | pending | Confirm H+A length and brace trigger. |
+| 46 | Channel main column + conditional L50 brace | No M42 | pending | Confirm H length and brace trigger. |
+| 47 | Channel main column + conditional L50 brace | No M42 | pending | Confirm H+A length and brace trigger. |
+| 51 | Small pipe flat bar, larger pipe Angle/Channel | No M42 | partial | Confirm small vs large branch and steel quantity. |
+| 52 | Pipe shoe Angle/H Beam by shared spec | No M42 | locked | Confirm shared spec against D-80 for more sizes. |
+| 53 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm variant-specific restraint/guiding differences. |
+| 54 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm clamp/gasket variants. |
+| 55 | Pipe shoe Angle/H Beam by shared spec | No M42 | pending | Confirm clamp/gasket variants. |
+| 66 | Pipe shoe H Beam / fabricated plate path | No M42 | locked | Confirm compact and large-pipe D-80A cases. |
+| 67 | Pipe shoe H Beam / fabricated plate path | No M42 | pending | Confirm variant-specific differences from 66. |
+| 85 | Pipe shoe shared spec | No M42 | pending | Confirm why it shares `type_52.py` and any drawing delta. |
+| 65 | Parsed Angle/Channel/H Beam member | No M42 | pending | Confirm member parser and plate/angle bracket supply. |
+| 80 | H Beam or Angle path by D-95/D-96 | No M42 | locked | Keep small/big golden cases; add mid-size if needed. |
+
+## Batch 1 Output For User Check
+
+These are current calculator outputs, not yet declared correct until checked against drawings.
+
+### Type 03
+
+Input: `03-1B-05L`
+
+| Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
+|---:|---|---|---:|---:|---:|---:|---|---|
+| 1 | Angle | `75*75*9` | 500 | 0 | 1 | 4.98 | A36/SS400 |  |
+| 2 | Angle | `75*75*9` | 130 | 0 | 1 | 1.29 | A36/SS400 |  |
+| 3 | U.bolt | `UB-1B` | 0 | 0 | 1 | 1.00 | SUS304 |  |
+| 4 | Plate_c_有鑽孔 | `9` | 260 | 260 | 1 | 4.78 | A36/SS400 | rect holes 190x190, dia 19, 5/8" x4 |
+| 5 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
+
+Total weight: 16.05 kg.
+
+### Type 05
+
+Input: `05-L50-05L`
+
+| Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
+|---:|---|---|---:|---:|---:|---:|---|---|
+| 1 | Angle | `50*50*6` | 500 | 0 | 1 | 2.21 | A36/SS400 |  |
+| 2 | Angle | `50*50*6` | 130 | 0 | 1 | 0.58 | A36/SS400 |  |
+| 3 | Plate_c_有鑽孔 | `9` | 180 | 180 | 1 | 2.29 | A36/SS400 | rect holes 110x110, dia 19, 5/8" x4 |
+| 4 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
+
+Total weight: 9.08 kg.
+
+### Type 06
+
+Input: `06-L50-0510-0401`
+
+| Item | Name | Spec | L | W | Qty | Weight output | Material |
+|---:|---|---|---:|---:|---:|---:|---|
+| 1 | Angle | `50*50*6` | 500 | 0 | 1 | 2.21 | A36/SS400 |
+| 2 | Angle | `50*50*6` | 1000 | 0 | 1 | 4.43 | A36/SS400 |
+
+Total weight: 6.64 kg.
+
+### Type 08
+
+Input: `08-2B-1005G`
+
+| Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
+|---:|---|---|---:|---:|---:|---:|---|---|
+| 1 | Pipe | `2"*SCH.40` | 435 | 0 | 1 | 2.37 | A53Gr.B |  |
+| 2 | Channel | `100*50*5` | 1000 | 0 | 1 | 9.36 | A36/SS400 |  |
+| 3 | Plate_b_有鑽孔 | `9` | 180 | 180 | 1 | 2.29 | A36/SS400 | rect holes 110x110, dia 19, 5/8" x4 |
+| 4 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
+| 5 | Plate_STOPPER | `6` | 70 | 160 | 1 | 0.53 | A36/SS400 |  |
+| 6 | Plate_TOP | `6` | 80 | 80 | 1 | 0.30 | A36/SS400 |  |
+
+Total weight: 18.85 kg.
