@@ -19,7 +19,7 @@ Status legend:
 
 | Type | Steel procurement path | M42 path | Current status | Next verification focus |
 |---|---|---|---|---|
-| 03 | Angle L75 vertical + 130 horizontal | Yes, by fixed `L75*75*9` | pending | Confirm U-bolt supply rule and M42 letter options. |
+| 03 | Angle L75 vertical formula + 130 horizontal | Yes, by fixed `L75*75*9` | partial | Confirm U-bolt supply rule and M42 letter options. |
 | 05 | Angle by member + fixed 130 horizontal | Yes, by member steel | pending | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
 | 06 | Angle by member, H + L | No | pending | Confirm H/L parsing and no M42/no M37 supply rule. |
 | 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
@@ -70,15 +70,22 @@ These are current calculator outputs, not yet declared correct until checked aga
 
 Input: `03-1B-05L`
 
+Confirmed formula update:
+
+```text
+vertical Angle length = H*100 + 1.5*NPS*25.4 + 20 + supported line OD/2
+03-1B-05L = 500 + 38.1 + 20 + 16.7 = 574.8mm
+```
+
 | Item | Name | Spec | L | W | Qty | Weight output | Material | Remark |
 |---:|---|---|---:|---:|---:|---:|---|---|
-| 1 | Angle | `75*75*9` | 500 | 0 | 1 | 4.98 | A36/SS400 |  |
+| 1 | Angle | `75*75*9` | 574.8 | 0 | 1 | 5.73 | A36/SS400 | H=500 + LR elbow center=38.1 + clearance=20 + OD/2=16.7 |
 | 2 | Angle | `75*75*9` | 130 | 0 | 1 | 1.29 | A36/SS400 |  |
 | 3 | U.bolt | `UB-1B` | 0 | 0 | 1 | 1.00 | SUS304 |  |
 | 4 | Plate_c_有鑽孔 | `9` | 260 | 260 | 1 | 4.78 | A36/SS400 | rect holes 190x190, dia 19, 5/8" x4 |
 | 5 | EXP.BOLT | `5/8"` | 0 | 0 | 4 | 4.00 | SUS304 |  |
 
-Total weight: 16.05 kg.
+Total weight: 16.80 kg.
 
 ### Type 05
 
