@@ -37,29 +37,16 @@ from ..models import AnalysisResult
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
-from ..bolt import add_custom_entry
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
+from ..trunnion_engine import (
+    STRUCTURAL_MATERIAL as _STRUCTURAL_MATERIAL,
+    PLATE_LUG_MATERIAL as _PLATE_LUG_MATERIAL,
+    add_bolt_set,
 )
 from data.steel_sections import get_section_details
 from data.type39_table import get_type39_data, get_type39_formula
 from data.m34_table import get_m34_by_member
 from data.m35_table import get_m35_by_member
 from data.m36_table import get_m36_by_member
-
-
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
-_PLATE_LUG_MATERIAL = _material_spec(HardwareKind.PLATE_LUG, "A36/SS400")
-_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -219,15 +206,7 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ═══════════════════════════════════════════════════════
     # ⑤ K BOLT — 3/4"x50, ×2 SET (DETAIL Y + DETAIL Z 各一)
     # ═══════════════════════════════════════════════════════
-    add_custom_entry(
-        result,
-        name="K BOLT",
-        spec='3/4"x50',
-        material=_ANCHOR_BOLT_MATERIAL,
-        quantity=2,
-        unit_weight=0.8,
-        unit="SET",
-    )
+    add_bolt_set(result, "K BOLT", '3/4"x50', 2)
     result.entries[-1].remark = f"DETAIL Y + DETAIL Z 各 1 SET"
 
     return result

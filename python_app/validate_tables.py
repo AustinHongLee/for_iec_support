@@ -2476,7 +2476,37 @@ try:
         ("EXP.BOLT",       "5/8\"",       -1,   4),
     ])
 
-    print("v phase 5b golden cases type_27/42/43 OK")
+    # ── type_39: C125 H=500 FIG-A (標準, L=200 default) ────────────────────
+    # main = 500+200=700; N=692; LUG-C T=10 L=170; LUG-E T=10 L=145
+    _golden("39-C125-500 A", [
+        ("Channel",          "125*65*6", 700,  1),
+        ("Channel",          "125*65*6", 692,  1),
+        ("LUG PLATE TYPE-C", "10",       170,  1),
+        ("LUG PLATE TYPE-E", "10",       145,  1),
+        ("K BOLT",           '3/4"x50',  -1,   2),
+    ])
+
+    # ── type_39: C200 H=800 FIG-B (大型, θ=45°) ─────────────────────────────
+    # main = 800+200=1000; N=1187; LUG-C T=12 L=220; LUG-D T=12 L=160
+    _golden("39-C200-800 B", [
+        ("Channel",          "200*80*7.5", 1000,  1),
+        ("Channel",          "200*80*7.5", 1187,  1),
+        ("LUG PLATE TYPE-C", "12",         220,  1),
+        ("LUG PLATE TYPE-D", "12",         160,  1),
+        ("K BOLT",           '3/4"x50',     -1,   2),
+    ])
+
+    # ── type_39: L75 H=300 FIG-A (小角鐵版) ─────────────────────────────────
+    # main = 300+200=500; N=438; LUG-C T=9 L=160; LUG-E T=9 L=135
+    _golden("39-L75-300 A", [
+        ("Angle",            "75*75*9",  500,  1),
+        ("Angle",            "75*75*9",  438,  1),
+        ("LUG PLATE TYPE-C", "9",        160,  1),
+        ("LUG PLATE TYPE-E", "9",        135,  1),
+        ("K BOLT",           '3/4"x50',  -1,   2),
+    ])
+
+    print("v phase 5b golden cases type_27/42/43/39 OK")
 except Exception as e:
     import traceback
     print(f"X phase 5b golden cases FAILED: {e}")
