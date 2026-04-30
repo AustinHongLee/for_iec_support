@@ -22,27 +22,23 @@ from .parser import get_part, get_lookup_value
 from .plate import add_plate_entry
 from .steel import add_steel_section_entry
 from .bolt import add_custom_entry
-from .hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
+from .material_specs import (
+    ANCHOR_BOLT_SUS304,
+    PLATE_LUG_A36_SS400,
+    STRUCTURAL_A36_SS400,
+    SUPPORT_PIPE_A53GRB,
+    SUPPORT_PLATE_A36_SS400,
 )
 from data.steel_sections import get_section_details
 
 
 # ── 材料常數（type_42 & type_43 共用） ───────────────────────────────────────
 
-def _mat(kind: HardwareKind, name: str):
-    return resolve_hardware_material(
-        kind, overrides=HardwareMaterialOverrides(per_kind={kind: name})
-    )
-
-
-STRUCTURAL_MATERIAL  = _mat(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
-SUPPORT_PIPE_MATERIAL = _mat(HardwareKind.SUPPORT_PIPE,    "A53Gr.B")
-SUPPORT_PLATE_MATERIAL= _mat(HardwareKind.SUPPORT_PLATE,   "A36/SS400")
-PLATE_LUG_MATERIAL   = _mat(HardwareKind.PLATE_LUG,        "A36/SS400")
-ANCHOR_BOLT_MATERIAL = _mat(HardwareKind.ANCHOR_BOLT,      "SUS304")
+STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
+SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
+SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
+PLATE_LUG_MATERIAL = PLATE_LUG_A36_SS400
+ANCHOR_BOLT_MATERIAL = ANCHOR_BOLT_SUS304
 
 
 # ── 解析結果容器 ──────────────────────────────────────────────────────────────

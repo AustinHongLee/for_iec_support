@@ -20,23 +20,20 @@ from ..pipe import add_pipe_entry
 from ..m42 import perform_action_by_letter
 from ..hardware_material import (
     HardwareKind,
-    HardwareMaterialOverrides,
     MaterialSpec,
-    resolve_hardware_material,
+)
+from ..material_specs import (
+    HEAVY_HEX_NUT_A307_HDG,
+    SUPPORT_PIPE_A53GRB,
+    THREADED_ROD_A307_HDG,
+    material_spec,
 )
 from data.type09_table import get_type09_data
 
 
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
-_THREADED_ROD_MATERIAL = _material_spec(HardwareKind.THREADED_ROD, "A307Gr.B(HDG)")
-_HEX_NUT_MATERIAL = _material_spec(HardwareKind.HEAVY_HEX_NUT, "A307Gr.B(HDG)")
+_SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
+_THREADED_ROD_MATERIAL = THREADED_ROD_A307_HDG
+_HEX_NUT_MATERIAL = HEAVY_HEX_NUT_A307_HDG
 
 
 _MAX_H = 1500
@@ -65,7 +62,7 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # 取得上層材質
     from ..calculator import get_analysis_setting
     upper_material = overrides.get("upper_material") or get_analysis_setting("upper_material") or "SUS304"
-    upper_material_spec = _material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
+    upper_material_spec = material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
 
     support_pipe = data["support_pipe"]  # 都是 2"
     pipe_sch = data["pipe_sch"]

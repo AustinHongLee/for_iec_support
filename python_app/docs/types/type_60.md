@@ -6,7 +6,7 @@
 | 分類 | Large bore shoe support |
 | 適用範圍 | 16"~42" |
 | 圖面頁數 | 1 |
-| 狀態 | ✅ 已分析（待 calculator） |
+| 狀態 | ✅ 已分析，calculator 已改為 TypeSpec wrapper |
 
 ---
 
@@ -82,6 +82,17 @@ TYPE60_TABLE = {
 ---
 
 ## Calculator Handoff
+
+目前實作已採用 TypeSpec path：
+
+```text
+configs/type_60.json
+  TYPE_SPEC.engine = table_plate_v1
+core/type_spec_engine.py
+core/types/type_60.py
+```
+
+`type_60.py` 只保留 thin wrapper，BOM component 定義由 `TYPE_SPEC.components` 決定。
 
 ### 最小輸入
 

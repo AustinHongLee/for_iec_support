@@ -12,25 +12,18 @@ from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
+from ..material_specs import (
+    ANCHOR_BOLT_SUS304,
+    STRUCTURAL_A36_SS400,
+    SUPPORT_PLATE_A36_SS400,
 )
 from data.steel_sections import get_section_details
 from data.type46_table import (get_type46_47_q, TYPE46_BRACE, TYPE46_BRACE_H_MIN)
 
 
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
-_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
-_ANCHOR_BOLT_MATERIAL = _material_spec(HardwareKind.ANCHOR_BOLT, "SUS304")
+_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
+_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
+_ANCHOR_BOLT_MATERIAL = ANCHOR_BOLT_SUS304
 
 
 def calculate(fullstring: str) -> AnalysisResult:

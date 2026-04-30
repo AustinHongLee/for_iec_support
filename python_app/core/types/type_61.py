@@ -13,23 +13,12 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value, extract_parts
 from ..bolt import add_custom_entry
 from ..plate import add_plate_entry
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
-)
+from ..material_specs import SUPPORT_PIPE_A53GRB, SUPPORT_PLATE_A36_SS400
 from data.pipe_table import get_pipe_details
 
 
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
-_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
+_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
 
 
 def calculate(fullstring: str) -> AnalysisResult:

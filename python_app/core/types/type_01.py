@@ -23,23 +23,13 @@ from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..m42 import perform_action_by_letter
 from ..config_loader import get_type_table_as_dict
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
-)
+from ..hardware_material import HardwareKind
+from ..material_specs import SUPPORT_PIPE_A53GRB, material_spec
 from data.tee_table import get_tee_M
 
 
 _PAVING_LOW_POINT_M42_LETTERS = {"A", "B", "E", "G"}
 _DEFAULT_H_LIMIT_MM = 1500
-
-
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
 
 
 # ─── 建立查表 (從 JSON config 讀取) ───
@@ -104,7 +94,7 @@ def calculate(fullstring: str, connection: str = "elbow",
         )
 
     # ─── 上段管 (材質跟隨主管線) ───
-    upper_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
+    upper_pipe_material = material_spec(HardwareKind.SUPPORT_PIPE, upper_material)
     if connection == "tee":
         tee_m = get_tee_M(line_size)
         upper_pipe_length = 100 + tee_m
@@ -120,7 +110,7 @@ def calculate(fullstring: str, connection: str = "elbow",
     # ─── 下段管 (固定黑鐵 A53Gr.B) ───
     lower_pipe_length = h_value - 100
     if lower_pipe_length > 0:
-        lower_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+        lower_pipe_material = SUPPORT_PIPE_A53GRB
         add_pipe_entry(result, support_pipe_size, pipe_thickness,
                        lower_pipe_length, lower_pipe_material)
 

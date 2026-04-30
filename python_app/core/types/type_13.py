@@ -36,27 +36,21 @@ from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
 from ..component_rules import component_or_estimated_clamp_weight
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
+from ..material_specs import (
+    CLAMP_BODY_A36_SS400,
+    COLD_SHOE_INSULATION_CLAMP_M47,
+    SUPPORT_PIPE_A53GRB,
+    SUPPORT_PLATE_A36_SS400,
 )
 from data.type13_table import get_type13_data
 from data.m47_table import build_m47_item
 from data.m4_table import build_m4_item
 
 
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_CLAMP_MATERIAL = _material_spec(HardwareKind.CLAMP_BODY, "A36/SS400")
-_M47_MATERIAL = _material_spec(HardwareKind.COLD_SHOE_INSULATION_CLAMP, "M-47")
-_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
-_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_CLAMP_MATERIAL = CLAMP_BODY_A36_SS400
+_M47_MATERIAL = COLD_SHOE_INSULATION_CLAMP_M47
+_SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
+_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
 
 
 _MAX_H = 1500

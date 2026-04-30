@@ -35,19 +35,9 @@ from ..parser import get_part, get_lookup_value, extract_parts
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..m42 import perform_action_by_letter
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
-)
+from ..hardware_material import HardwareKind
+from ..material_specs import SUPPORT_PIPE_A53GRB, material_spec
 from data.type12_table import get_type12_data
-
-
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
 
 
 _MAX_H = 1500
@@ -108,14 +98,14 @@ def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
     # ── 1. Supporting Pipe B (垂直柱) ──
     support_pipe_length = h_val - 100
     if support_pipe_length > 0:
-        support_pipe_material = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
+        support_pipe_material = SUPPORT_PIPE_A53GRB
         add_pipe_entry(
             result, pipe_size_b, pipe_sch, support_pipe_length,
             support_pipe_material,
         )
 
     # ── 2. Plate P (側板) ──
-    plate_material_spec = _material_spec(HardwareKind.SUPPORT_PLATE, plate_material)
+    plate_material_spec = material_spec(HardwareKind.SUPPORT_PLATE, plate_material)
     add_plate_entry(
         result,
         plate_a=plate_len,

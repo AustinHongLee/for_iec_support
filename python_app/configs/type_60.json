@@ -2,6 +2,55 @@
   "type_id": "60",
   "source": "data/type60_table.py",
   "migrated": "2026-04-29",
+  "TYPE_SPEC": {
+    "engine": "table_plate_v1",
+    "designation": {
+      "pipe_size_part": 2,
+      "figure_part": 3,
+      "default_figure": "A",
+      "allowed_figures": [
+        "A",
+        "B"
+      ],
+      "pipe_size_range": [
+        16,
+        42
+      ],
+      "support_no_template": "{type_id}-{pipe_token}-{figure}"
+    },
+    "missing_pipe_error": "缺少管徑欄位",
+    "range_error": "管徑 {size}\" 超出 Type 60 範圍 (16\"~42\")",
+    "missing_row_error": "找不到 {support_no} 的尺寸資料",
+    "table_key": "TYPE60_TABLE",
+    "components": [
+      {
+        "id": "side_plate",
+        "kind": "plate",
+        "name": "SIDE PLATE",
+        "plate_a_field": "A",
+        "plate_b_field": "B",
+        "plate_thickness_field": "T",
+        "quantity": 2,
+        "material": "support_plate_a36_ss400"
+      },
+      {
+        "id": "bottom_plate",
+        "kind": "plate",
+        "when_field_not_null": "F",
+        "name": "BOTTOM PLATE",
+        "plate_a_field": "C",
+        "plate_b_field": "F",
+        "plate_thickness_field": "T",
+        "quantity": 1,
+        "material": "support_plate_a36_ss400"
+      }
+    ],
+    "warnings": [
+      {
+        "template": "FIG-{figure}: Pipe Shoe (D-80/80B) NOT FURNISHED, 需另行計算 TYPE-66"
+      }
+    ]
+  },
   "TYPE60_TABLE": {
     "60-16B-A": {
       "A": 250,

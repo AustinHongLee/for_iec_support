@@ -20,25 +20,18 @@ from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
 from ..steel import add_steel_section_entry
 from ..m42 import perform_action_by_letter
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
+from ..material_specs import (
+    STRUCTURAL_A36_SS400,
+    SUPPORT_PIPE_A53GRB,
+    SUPPORT_PLATE_A36_SS400,
 )
 from data.type08_table import get_type08_data
 from data.m42_table import get_m42_data
 
 
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_SUPPORT_PIPE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PIPE, "A53Gr.B")
-_STRUCTURAL_MATERIAL = _material_spec(HardwareKind.STRUCTURAL_STRUT, "A36/SS400")
-_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
+_SUPPORT_PIPE_MATERIAL = SUPPORT_PIPE_A53GRB
+_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
+_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
 
 
 _MAX_H = 1500
