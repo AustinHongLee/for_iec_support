@@ -21,7 +21,7 @@ Status legend:
 |---|---|---|---|---|
 | 03 | Angle L75 vertical formula + 130 horizontal | Yes, by fixed `L75*75*9` | partial | Confirm U-bolt supply rule and M42 letter options. |
 | 05 | Angle by member vertical formula + fixed 130 horizontal | Yes, by member steel | partial | Confirm allowed M42 D/L/P/R and member-to-M42 lookup. |
-| 06 | Angle by member, H + L | No | pending | Confirm H/L parsing and no M42/no M37 supply rule. |
+| 06 | Angle by member, H + L with field-trim warning | No | partial | Confirm no M37 supply rule and whether L also needs user-facing warning. |
 | 08 | Channel N + pipe/plates | Yes, G/J by pipe size | partial | Confirm pipe length formula subtracts top plate, channel half-height, and M42 K. |
 | 14 | Channel N plus plates/anchor bolt | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
 | 15 | Channel N plus plates | No M42 | partial | Confirm DETAIL a logic for 10"/12" and steel length. |
@@ -110,6 +110,12 @@ Total weight: 9.02 kg.
 ### Type 06
 
 Input: `06-L50-0510-0401`
+
+Warnings:
+
+```text
+Type 06: H=500mm H值長是欲保留現場裁切預量
+```
 
 | Item | Name | Spec | L | W | Qty | Weight output | Material |
 |---:|---|---|---:|---:|---:|---:|---|

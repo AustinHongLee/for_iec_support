@@ -8,6 +8,7 @@ Type 06 計算器
 
 PDF 限制: H≤1500mm, L≤1000mm
 構件: 角鐵兩支(垂直H + 水平L), M-37 Lug Plate 不含在材料內
+注意: H 為保留現場裁切預量的長度，正常輸入也要提示 warning
 """
 from ..models import AnalysisResult
 from ..parser import get_part
@@ -16,6 +17,7 @@ from data.steel_sections import get_section_details
 
 _MAX_H = 1500
 _MAX_L = 1000
+_FIELD_TRIM_WARNING = "H值長是欲保留現場裁切預量"
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -36,6 +38,8 @@ def calculate(fullstring: str) -> AnalysisResult:
     part3 = get_part(fullstring, 3)
     h = int(part3[:2]) * 100
     l = int(part3[2:]) * 100
+
+    result.warnings.append(f"Type 06: H={h}mm {_FIELD_TRIM_WARNING}")
 
     # H 超限檢查
     if h > _MAX_H:

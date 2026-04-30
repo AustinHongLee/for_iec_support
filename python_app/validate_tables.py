@@ -541,6 +541,18 @@ try:
     assert type05.entries[2].name == "Plate_c_有鑽孔", f"Type 05 M42 Type-L plate changed: {[entry.name for entry in type05.entries]}"
     assert type05.entries[3].name == "EXP.BOLT" and type05.entries[3].quantity == 4, f"Type 05 M42 Type-L bolt changed: {[entry.name for entry in type05.entries]}"
 
+    type06 = analyze_single("06-L50-0510-0401")
+    assert not type06.error, f"Type 06 should calculate: {type06.error}"
+    assert [entry.name for entry in type06.entries] == ["Angle", "Angle"], (
+        f"Type 06 BOM sequence changed: {[entry.name for entry in type06.entries]}"
+    )
+    assert [entry.length for entry in type06.entries] == [500, 1000], (
+        f"Type 06 member lengths changed: {[entry.length for entry in type06.entries]}"
+    )
+    assert any("H值長是欲保留現場裁切預量" in warning for warning in type06.warnings), (
+        f"Type 06 H field-trim warning missing: {type06.warnings}"
+    )
+
     type20 = analyze_single("20-L50-05A")
     assert not type20.error, f"Type 20 should calculate: {type20.error}"
     assert len(type20.entries) == 1, f"Type 20 BOM count changed: {len(type20.entries)}"
@@ -578,9 +590,9 @@ try:
     assert type25_c.entries[3].name == "BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
     assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts: {type25_c.entries[3].quantity}"
 
-    print("v type03/type05/type20/type26 structural guardrails OK")
+    print("v type03/type05/type06/type20/type26 structural guardrails OK")
 except Exception as e:
-    print(f"X type03/type05/type20/type26 structural guardrails ERROR: {e}")
+    print(f"X type03/type05/type06/type20/type26 structural guardrails ERROR: {e}")
     raise
 
 # Type 52/66 D-80 pad and FB guardrails.
