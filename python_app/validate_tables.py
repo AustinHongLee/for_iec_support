@@ -581,10 +581,12 @@ try:
     small = analyze_single("66-1.1/2B(P)-A-150-150")
     assert not small.error, f"Type 66 small pad should calculate: {small.error}"
     small_pad = _entry_by_name(small, "Pad_52Type")
-    small_od = get_pipe_details(1.5, "10S")["od_mm"]
+    small_details = get_pipe_details(1.5, "10S")
+    small_od = small_details["od_mm"]
+    small_t_sch10s = small_details["thickness_mm"]   # Phase 5: <=8" uses Sch10S wall
     assert small_pad.length == 200, f"small Pad_52Type length should be D+50: {small_pad.length}"
     assert small_pad.width == round(small_od * math.pi / 3), f"small Pad_52Type 120-degree width changed: {small_pad.width}"
-    assert small_pad.spec == "6", f"small Pad_52Type thickness should be 6t: {small_pad.spec}"
+    assert small_pad.spec == str(small_t_sch10s), f"small Pad_52Type thickness should be Sch10S wall ({small_t_sch10s}mm): {small_pad.spec}"
 
     large = analyze_single("66-10B(P)-A-150-250")
     assert not large.error, f"Type 66 large pad should calculate: {large.error}"

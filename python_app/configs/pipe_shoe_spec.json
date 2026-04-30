@@ -1,0 +1,124 @@
+{
+  "_comment": "Pipe Shoe family TypeSpec — covers types 52/53/54/55/66/67 (D-62, D-62A, D-80)",
+  "_version": "1.0.0",
+
+  "variants": {
+    "52": { "angle_wedge": true  },
+    "53": { "angle_wedge": true  },
+    "54": { "angle_wedge": true  },
+    "55": { "angle_wedge": true  },
+    "66": { "angle_wedge": false },
+    "67": { "angle_wedge": false }
+  },
+
+  "sizing": {
+    "_comment": "D-80 range lookup tables — each entry: lte/lt/else boundary, value v",
+
+    "A_by_size": [
+      { "lte": 8,  "v": 100 },
+      { "lte": 14, "v": 130 },
+      { "lte": 20, "v": 250 },
+      { "else": true, "v": 300 }
+    ],
+
+    "B_by_size": [
+      { "lte": 8,  "v": 0  },
+      { "lte": 14, "v": 9  },
+      { "else": true, "v": 12 }
+    ],
+
+    "C_by_size": [
+      { "lte": 8,  "v": "200*100*5.5" },
+      { "lte": 14, "v": "200*200*8"   },
+      { "else": true, "v": "FB12"     }
+    ],
+
+    "D_by_size": [
+      { "lte": 2.5, "v": 150 },
+      { "else": true, "v": 250 }
+    ],
+
+    "E_by_size": [
+      { "lt": 2, "v": 0 },
+      { "else": true, "v": 50 }
+    ],
+
+    "pad_t_rule": "sch10s_wall",
+    "_pad_t_comment": "For pipe_size <= 8: use Sch10S wall thickness from pipe_table. For 10~14: 9mm. For >=16: 12mm.",
+
+    "pad_t_fallback_by_size": [
+      { "lte": 8,  "rule": "sch10s_wall" },
+      { "lte": 14, "v": 9               },
+      { "else": true, "v": 12           }
+    ]
+  },
+
+  "components": [
+    {
+      "id":    "pad",
+      "name":  "Pad_52Type",
+      "when":  "pad_symbol != N/A",
+      "role":  "reinforcement_pad",
+      "thickness_rule": "pad_t_fallback_by_size",
+      "length_expr":    "D+50 if pipe_size<10 else E*2+300",
+      "_length_comment": "D+25*2  or  E*2+25*2+250",
+      "width_expr":     "OD*pi/3",
+      "_width_comment": "120-degree developed width"
+    },
+    {
+      "id":     "wedge",
+      "name":   "Angle",
+      "when":   "angle_wedge",
+      "role":   "angle",
+      "spec":   "40*40*5",
+      "length": 150,
+      "qty":    2,
+      "remark": "L40x40x5 side guide, CUT IN FIELD, length provisional=150"
+    },
+    {
+      "id":     "beam",
+      "name":   "H Beam",
+      "when":   "C != FB12",
+      "role":   "h_section",
+      "spec_ref": "C",
+      "length_expr": "LOPS+50",
+      "_length_comment": "LOPS + 25*2",
+      "remark_template": "CUT FROM H{C}; L=LOPS+25*2; [deep logic] 1 purchased H-beam split in half = 2 supports"
+    },
+    {
+      "id":       "fab_bottom",
+      "name":     "FB_52Type_1",
+      "when":     "C == FB12",
+      "role":     "generic_plate",
+      "thickness": 12,
+      "width_expr":  "A+70",
+      "_width_comment": "A + 35*2",
+      "length_expr": "LOPS+50",
+      "_length_comment": "LOPS + 25*2",
+      "remark_template": "T-bottom plate: W={A+70}(=A+35*2), L={LOPS+50}(=LOPS+25*2), t=12"
+    },
+    {
+      "id":       "fab_web",
+      "name":     "FB_52Type_2",
+      "when":     "C == FB12",
+      "role":     "generic_plate",
+      "thickness": 12,
+      "width":    100,
+      "length_expr": "LOPS+50",
+      "_length_comment": "LOPS + 25*2",
+      "remark_template": "T-vertical plate: W=100(fixed), L={LOPS+50}(=LOPS+25*2), t=12"
+    },
+    {
+      "id":       "gusset",
+      "name":     "FB_52Type_3",
+      "when":     "pipe_size >= 10",
+      "role":     "generic_plate",
+      "thickness_ref": "B",
+      "length_expr":   "HOPS",
+      "width_expr":    "A+17.5-C_t/2",
+      "_width_comment": "A + 35/2 - member_thickness/2",
+      "qty":           4,
+      "remark": "length=HOPS; width=A+35/2-member_t/2; qty=4"
+    }
+  ]
+}
