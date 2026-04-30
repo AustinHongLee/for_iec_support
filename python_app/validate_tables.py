@@ -2506,7 +2506,32 @@ try:
         ("K BOLT",           '3/4"x50',  -1,   2),
     ])
 
-    print("v phase 5b golden cases type_27/42/43/39 OK")
+    # ── type_56: 管線檔止 5 個尺寸分支 ──────────────────────────────────────
+    # ≤2-1/2": PL 100×100×6
+    _golden("56-2B", [
+        ("PLATE",     "6",  100,  1),
+    ])
+    # 3"~4": FAB FROM 6t PLATE
+    _golden("56-4B", [
+        ("MEMBER C",  "6",   75,  1),
+    ])
+    # 5"~14": CUT FROM H型鋼
+    _golden("56-10B", [
+        ("MEMBER C",  "12", 200,  1),
+    ])
+    # 16"~24": FAB FROM 12t PLATE + 側板×2
+    _golden("56-20B", [
+        ("MEMBER C",   "12", 300,  1),
+        ("SIDE PLATE", "12", 300,  2),
+    ])
+    # 26"~42": 大型 + 鞍座
+    _golden("56-36B", [
+        ("MEMBER C",      "12", 450,  1),
+        ("SIDE PLATE",    "12", 400,  2),
+        ("SADDLE (120°)", "12", 350,  1),
+    ])
+
+    print("v phase 5b golden cases type_27/42/43/39/56 OK")
 except Exception as e:
     import traceback
     print(f"X phase 5b golden cases FAILED: {e}")

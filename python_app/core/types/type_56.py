@@ -21,23 +21,9 @@ from ..models import AnalysisResult
 from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
-from ..hardware_material import (
-    HardwareKind,
-    HardwareMaterialOverrides,
-    resolve_hardware_material,
-)
+from ..trunnion_engine import SUPPORT_PLATE_MATERIAL as _SUPPORT_PLATE_MATERIAL
 from data.type56_table import get_type56_data
 from data.pipe_table import get_pipe_od
-
-
-def _material_spec(kind: HardwareKind, material_name: str):
-    return resolve_hardware_material(
-        kind,
-        overrides=HardwareMaterialOverrides(per_kind={kind: material_name}),
-    )
-
-
-_SUPPORT_PLATE_MATERIAL = _material_spec(HardwareKind.SUPPORT_PLATE, "A36/SS400")
 
 
 def calculate(fullstring: str) -> AnalysisResult:
