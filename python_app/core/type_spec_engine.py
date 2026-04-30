@@ -5,14 +5,16 @@ from __future__ import annotations
 from typing import Any
 
 from .config_loader import load_config
-from .material_specs import SUPPORT_PLATE_A36_SS400
+from .material_specs import SUPPORT_PLATE_A36_SS400, U_BOLT_A36_SS400
 from .models import AnalysisResult
-from .parser import get_lookup_value, get_part
+from .parser import get_lookup_value, get_part, parse_pipe_size
 from .plate import add_plate_entry
+from .bolt import add_custom_entry
 
 
 _MATERIALS = {
     "support_plate_a36_ss400": SUPPORT_PLATE_A36_SS400,
+    "u_bolt_a36_ss400": U_BOLT_A36_SS400,
 }
 
 
@@ -56,6 +58,56 @@ def _add_plate_component(
         result.entries[-1].remark = remark_template.format(**row)
 
 
+def _unit_weight(component: dict[str, Any], row: dict[str, Any]) -> float:
+    if "unit_weight" in component:
+        return component["unit_weight"]
+    mapping = component.get("unit_weight_map")
+    if mapping:
+        key = row.get(mapping["field"])
+        return mapping.get("values", {}).get(key, mapping.get("default", 0))
+    return 0
+
+
+def _add_custom_component(
+    result: AnalysisResult,
+    component: dict[str, Any],
+    row: dict[str, Any],
+) -> None:
+    add_custom_entry(
+        result,
+        name=component["name"],
+        spec=component["spec"].format(**row),
+        material=_material(component["material"]),
+        quantity=component.get("quantity", 1),
+        unit_weight=_unit_weight(component, row),
+        unit=component.get("unit", "PC"),
+        remark=component.get("remark", "").format(**row),
+        category=component.get("category", "螺栓類"),
+    )
+
+
+def _size_key(pipe_token: str, designation: dict[str, Any]) -> str:
+    if designation.get("size_key") == "parse_pipe_size":
+        return parse_pipe_size(pipe_token)
+    return pipe_token.replace("B", "").strip()
+
+
+def _row_key(type_id: str, designation: dict[str, Any], pipe_token: str, fig: str) -> str:
+    return designation["support_no_template"].format(
+        type_id=type_id,
+        pipe_token=pipe_token.strip(),
+        size_key=_size_key(pipe_token, designation),
+        figure=fig,
+    )
+
+
+def _warning_enabled(warning: dict[str, Any], fig: str) -> bool:
+    when_figure = warning.get("when_figure")
+    if when_figure:
+        return fig == when_figure
+    return True
+
+
 def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
     config = load_config(type_id)
     result = AnalysisResult(fullstring=fullstring)
@@ -67,7 +119,7 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
     if not spec:
         result.error = f"Type {type_id}: missing TYPE_SPEC"
         return result
-    if spec.get("engine") != "table_plate_v1":
+    if spec.get("engine") not in ("table_plate_v1", "table_parts_v1"):
         result.error = f"Type {type_id}: unsupported TypeSpec engine {spec.get('engine')}"
         return result
 
@@ -92,11 +144,7 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
         fig = fig_token.strip().upper()
 
     table = config[spec["table_key"]]
-    support_no = designation["support_no_template"].format(
-        type_id=type_id,
-        pipe_token=pipe_token.strip(),
-        figure=fig,
-    )
+    support_no = _row_key(type_id, designation, pipe_token, fig)
     row = table.get(support_no)
     if not row:
         result.error = spec["missing_row_error"].format(support_no=support_no)
@@ -105,14 +153,22 @@ def calculate_table_plate_spec(fullstring: str, type_id: str) -> AnalysisResult:
     for component in spec["components"]:
         if not _component_enabled(component, row):
             continue
-        if component.get("kind") != "plate":
-            result.error = f"Type {type_id}: unsupported component kind {component.get('kind')}"
+        kind = component.get("kind")
+        if kind == "plate":
+            _add_plate_component(result, component, row)
+            continue
+        if kind == "custom":
+            _add_custom_component(result, component, row)
+            continue
+        else:
+            result.error = f"Type {type_id}: unsupported component kind {kind}"
             return result
-        _add_plate_component(result, component, row)
 
     context = dict(row)
     context.update({"figure": fig, "support_no": support_no, "type_id": type_id})
     for warning in spec.get("warnings", []):
+        if not _warning_enabled(warning, fig):
+            continue
         result.warnings.append(warning["template"].format(**context))
 
     return result

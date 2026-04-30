@@ -2,6 +2,73 @@
   "type_id": "58",
   "source": "data/type58_table.py",
   "migrated": "2026-04-29",
+  "TYPE_SPEC": {
+    "engine": "table_parts_v1",
+    "designation": {
+      "pipe_size_part": 2,
+      "figure_part": 3,
+      "default_figure": "A",
+      "allowed_figures": [
+        "A",
+        "B"
+      ],
+      "pipe_size_range": [
+        0.25,
+        30
+      ],
+      "size_key": "parse_pipe_size",
+      "support_no_template": "{size_key}"
+    },
+    "missing_pipe_error": "缺少管徑欄位",
+    "range_error": "管徑 {size}\" 超出 Type 58 範圍 (1/4\"~30\")",
+    "missing_row_error": "管徑 {support_no}\" 不在 Type 58 查詢表中",
+    "table_key": "TYPE58_TABLE",
+    "components": [
+      {
+        "id": "steel_plate",
+        "kind": "plate",
+        "name": "STEEL PLATE",
+        "plate_a_field": "plate_l",
+        "plate_b_field": "plate_b",
+        "plate_thickness_field": "plate_t",
+        "quantity": 1,
+        "material": "support_plate_a36_ss400"
+      },
+      {
+        "id": "u_bolt",
+        "kind": "custom",
+        "name": "U-BOLT",
+        "spec": "M-26, {rod_size}",
+        "quantity": 1,
+        "material": "u_bolt_a36_ss400",
+        "unit": "SET",
+        "unit_weight_map": {
+          "field": "rod_size",
+          "default": 1.0,
+          "values": {
+            "1/4\"": 0.1,
+            "3/8\"": 0.2,
+            "1/2\"": 0.4,
+            "5/8\"": 0.6,
+            "3/4\"": 0.9,
+            "7/8\"": 1.3,
+            "1\"": 1.8,
+            "1-1/8\"": 2.3,
+            "1-1/4\"": 2.9,
+            "1-3/8\"": 3.5,
+            "1-1/2\"": 4.2,
+            "1-5/8\"": 5.0
+          }
+        }
+      }
+    ],
+    "warnings": [
+      {
+        "when_figure": "B",
+        "template": "FIG-B: 鋼板安裝於型鋼上, X={x}mm"
+      }
+    ]
+  },
   "TYPE58_TABLE": {
     "1/4": {
       "rod_size": "1/4\"",

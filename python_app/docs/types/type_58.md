@@ -6,7 +6,7 @@
 | 分類 | U-bolt clamp support |
 | 適用範圍 | 1/4"~30" |
 | 圖面頁數 | 1 |
-| 狀態 | ✅ 已分析（待 calculator） |
+| 狀態 | ✅ 已分析，calculator 已改為 TypeSpec wrapper |
 
 ---
 
@@ -76,7 +76,18 @@ TYPE-58 是最直接的 `U-bolt + steel plate` 夾持式支撐。
 
 ## Calculator Handoff
 
-建議 calculator 只做查表與構件拼裝，不做幾何重建。
+目前實作已採用 TypeSpec path：
+
+```text
+configs/type_58.json
+  TYPE_SPEC.engine = table_parts_v1
+core/type_spec_engine.py
+core/types/type_58.py
+```
+
+`type_58.py` 只保留 thin wrapper。`TYPE_SPEC.components` 定義 `STEEL PLATE` 與 `U-BOLT`，`TYPE_SPEC.warnings` 定義 FIG-B 的 `X` warning。
+
+calculator 只做查表與構件拼裝，不做幾何重建。
 
 ### 最小輸入
 
@@ -111,7 +122,7 @@ TYPE58_TABLE = {
 
 - `FIG-A` 與 `FIG-B` 使用同一張尺寸表
 - `FIG` 主要影響 remark / 安裝型態，不一定影響 BOM 數量
-- 若目前系統還沒有 `M-26` table，可先以 custom entry 佔位，後續再接 component table
+- `U-BOLT` 仍以 custom entry + rod-size weight map 表示；後續可再接 M-26 component table
 
 ---
 
