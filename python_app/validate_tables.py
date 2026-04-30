@@ -2313,4 +2313,90 @@ try:
 except Exception as e:
     print(f"WARN phase 2L-A soft lock audit skipped: {e}")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 5b golden cases — type_27 / type_42 / type_43
+# 目的：鎖定高風險 type 的計算結果，任何回歸會立即報錯。
+# 更新方式：先跑 analyze_single(designation)，確認邏輯正確後再更新 expected。
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    from core.calculator import analyze_single
+
+    def _golden(designation: str, expected: list[tuple]):
+        """
+        比對計算結果與預期值。
+        expected: [(name, spec, length, qty), ...]  length=-1 表示不比對
+        """
+        r = analyze_single(designation)
+        assert not r.error, f"{designation}: unexpected error '{r.error}'"
+        assert len(r.entries) == len(expected), (
+            f"{designation}: expected {len(expected)} entries, got {len(r.entries)}"
+        )
+        for i, (entry, (exp_name, exp_spec, exp_len, exp_qty)) in enumerate(
+            zip(r.entries, expected), start=1
+        ):
+            if exp_name:
+                assert entry.name == exp_name, (
+                    f"{designation} entry#{i}: name '{entry.name}' != '{exp_name}'"
+                )
+            if exp_spec:
+                assert entry.spec == exp_spec, (
+                    f"{designation} entry#{i}: spec '{entry.spec}' != '{exp_spec}'"
+                )
+            if exp_len >= 0:
+                assert entry.length == exp_len, (
+                    f"{designation} entry#{i}: length {entry.length} != {exp_len}"
+                )
+            if exp_qty >= 0:
+                assert entry.quantity == exp_qty, (
+                    f"{designation} entry#{i}: qty {entry.quantity} != {exp_qty}"
+                )
+
+    # ── type_42: 8B C125 H=500 FIG-A (θ=30°) ──────────────────────────────
+    # G = g_coeff * 500 + g_offset → 722
+    _golden("42-8B-C125-500 A", [
+        ("Channel",  "125*65*6", 500,  1),
+        ("Channel",  "125*65*6", 722,  1),
+        ("TRUNNION", "4\"",       -1,   1),
+        ("C/S SHIM", "6",        125,  1),
+        ("M.BOLT",   '3/4"x50',  -1,   2),
+    ])
+
+    # ── type_43: 8B C125 H=500 FIG-A (θ=30°) ──────────────────────────────
+    # main_len = 500 + A; N = n_coeff * 500 + n_offset → 692
+    _golden("43-8B-C125-500 A", [
+        ("Channel",          "125*65*6", 670,  1),
+        ("Channel",          "125*65*6", 692,  1),
+        ("TRUNNION",         "4\"",       -1,   1),
+        ("LUG PLATE TYPE-C", "10",       170,  1),
+        ("LUG PLATE TYPE-E", "10",       145,  1),
+        ("K BOLT",           '3/4"x50',  -1,   2),
+        ("C/S SHIM",         "6",        125,  1),
+    ])
+
+    # ── type_27 H150: L=500 H=500 M42=L ────────────────────────────────────
+    # column = H - 150 = 350; top = L = 500
+    _golden("27-H150-0505L", [
+        ("H Beam",          "150*150*10", 350,  1),
+        ("H Beam",          "150*150*10", 500,  1),
+        ("Plate_6t_Side",   "6",          150,  3),
+        ("Plate_9t_Wing",   "9",          200,  2),
+        ("Plate_c_有鑽孔",  "16",         500,  1),
+        ("EXP.BOLT",        "7/8\"",       -1,   4),
+    ])
+
+    # ── type_27 L75: L=500 H=500 M42=L ─────────────────────────────────────
+    # column = H - deduction(15) = 485; top = L = 500
+    _golden("27-L75-0505L", [
+        ("Angle",          "75*75*9",   485,  1),
+        ("Angle",          "75*75*9",   500,  1),
+        ("Plate_c_有鑽孔", "9",         260,  1),
+        ("EXP.BOLT",       "5/8\"",      -1,   4),
+    ])
+
+    print("v phase 5b golden cases type_27/42/43 OK")
+except Exception as e:
+    import traceback
+    print(f"X phase 5b golden cases FAILED: {e}")
+    traceback.print_exc()
+
 print("\n=== VALIDATION COMPLETE ===")
