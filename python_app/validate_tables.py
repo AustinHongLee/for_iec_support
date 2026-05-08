@@ -118,10 +118,10 @@ try:
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
         assert ws.cell(row=1, column=1).value == "型號", "project Excel header failed"
         assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
-        assert ws.cell(row=1, column=12).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=1, column=11).value == "總數量", "project Excel total section missing"
         assert ws.cell(row=2, column=2).value == 10, "project Excel quantity failed"
         assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
-        assert ws.cell(row=2, column=12).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=2, column=11).value == original_quantity * 10, "project Excel total quantity failed"
     finally:
         try:
             os.remove(path)
@@ -135,6 +135,8 @@ try:
         wb = openpyxl.load_workbook(path, data_only=True)
         assert wb.sheetnames == [
             "專案摘要",
+            "計算依據",
+            "計算說明",
             "長官統計",
             "重量分析",
             "材料合計",
@@ -270,7 +272,7 @@ try:
             "pipe_spec": '3"*SCH.40',
             "upper": 239,
             "lower": 500,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
             "m42": [
                 ("Plate_a_無鑽孔", 150, 150, "A36/SS400"),
                 ("Plate_d_有鑽孔", 290, 290, "SUS304"),
@@ -282,7 +284,7 @@ try:
             "pipe_spec": '3"*SCH.40',
             "upper": 239,
             "lower": 300,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
             "m42": [
                 ("Plate_a_無鑽孔", 150, 150, "A36/SS400"),
                 ("Plate_d_有鑽孔", 290, 290, "SUS304"),
@@ -294,7 +296,7 @@ try:
             "pipe_spec": '4"*SCH.40',
             "upper": 286,
             "lower": 1500,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔"],
             "m42": [("Plate_a_無鑽孔", 230, 230, "SUS304")],
             "warnings": 1,
         },
@@ -302,7 +304,7 @@ try:
             "pipe_spec": '4"*SCH.40',
             "upper": 286,
             "lower": 500,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
             "m42": [
                 ("Plate_a_無鑽孔", 230, 230, "A36/SS400"),
                 ("Plate_d_有鑽孔", 370, 370, "SUS304"),
@@ -314,7 +316,7 @@ try:
             "pipe_spec": '2"*SCH.40',
             "upper": 193,
             "lower": 400,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔", "Plate_d_有鑽孔", "EXP.BOLT"],
             "m42": [
                 ("Plate_a_無鑽孔", 150, 150, "A36/SS400"),
                 ("Plate_d_有鑽孔", 290, 290, "SUS304"),
@@ -326,7 +328,7 @@ try:
             "pipe_spec": '2"*SCH.40',
             "upper": 193,
             "lower": 300,
-            "names": ["Pipe", "Pipe", "Plate_a_無鑽孔", "Plate_e_無鑽孔"],
+            "names": ["管路", "管路", "Plate_a_無鑽孔", "Plate_e_無鑽孔"],
             "m42": [
                 ("Plate_a_無鑽孔", 150, 150, "A36/SS400"),
                 ("Plate_e_無鑽孔", 200, 200, "A36/SS400"),
@@ -379,7 +381,11 @@ try:
         return [entry.name for entry in result.entries]
 
     def _expect_steel_weight(entry):
-        expected_per_m = get_section_weight(entry.name, entry.spec)
+        # entry.name 已改為中文，需還原為英文 key 供 get_section_weight 查表
+        _ZH_TO_EN = {"角鋼": "Angle", "槽鐵": "Channel", "H型鋼": "H Beam",
+                     "I型鋼": "I Beam", "扁鋼": "Flat Bar", "圓鋼": "Round Bar"}
+        section_en = _ZH_TO_EN.get(entry.name, entry.name)
+        expected_per_m = get_section_weight(section_en, entry.spec)
         expected_unit_weight = round(entry.length / 1000 * expected_per_m, 2)
         expected_total_weight = round(expected_unit_weight * entry.quantity, 2)
         assert entry.weight_per_unit == expected_per_m, (
@@ -402,7 +408,7 @@ try:
 
     type10 = analyze_single("10-2B-05A")
     assert not type10.error, f"Type 10 should calculate: {type10.error}"
-    assert _h02_names(type10) == ["Pipe", "Pipe", "Plate_F", "ADJ.BOLT", "HEX NUT", "Plate_a_無鑽孔"], (
+    assert _h02_names(type10) == ["管路", "管路", "Plate_F", "ADJ.BOLT", "HEX NUT", "Plate_a_無鑽孔"], (
         f"Type 10 BOM sequence changed: {_h02_names(type10)}"
     )
     assert _h02_entry(type10, 1).length == 271, f"Type 10 main pipe length changed: {_h02_entry(type10, 1).length}"
@@ -430,14 +436,14 @@ try:
     assert _h02_entry(type10_high, 3).length == 260 and _h02_entry(type10_high, 3).width == 260 and _h02_entry(type10_high, 3).spec == "12" and _h02_entry(type10_high, 3).quantity == 2, "Type 10 6B Plate_F changed"
     assert _h02_entry(type10_high, 5).quantity == 16, "Type 10 6B hex nut changed"
     for entry in type10_high.entries:
-        if entry.name == "Pipe":
+        if entry.name == "管路":
             _expect_pipe_weight(entry)
         elif entry.category == "鋼板類":
             _expect_plate_weight(entry)
 
     type15 = analyze_single("15-2B-1005")
     assert not type15.error, f"Type 15 should calculate: {type15.error}"
-    assert _h02_names(type15) == ["Pipe", "Channel", "Plate_WING", "Plate_STOPPER", "Plate_BASE", "Plate_TOP"], (
+    assert _h02_names(type15) == ["管路", "槽鐵", "Plate_WING", "Plate_STOPPER", "Plate_BASE", "Plate_TOP"], (
         f"Type 15 BOM sequence changed: {_h02_names(type15)}"
     )
     assert _h02_entry(type15, 1).length == 382, f"Type 15 pipe length should be H-2F-channelHeight: {_h02_entry(type15, 1).length}"
@@ -458,9 +464,9 @@ try:
     assert any("H=3600mm" in warning for warning in type15_high.warnings), f"Type 15 H-limit warning missing: {type15_high.warnings}"
     assert _h02_entry(type15_high, 1).length == 3418, f"Type 15 6B pipe length changed: {_h02_entry(type15_high, 1).length}"
     for entry in type15_high.entries:
-        if entry.name == "Pipe":
+        if entry.name == "管路":
             _expect_pipe_weight(entry)
-        elif entry.name == "Channel":
+        elif entry.name == "槽鐵":
             _expect_steel_weight(entry)
         elif entry.category == "鋼板類":
             _expect_plate_weight(entry)
@@ -481,7 +487,7 @@ try:
 
     type14 = analyze_single("14-2B-1005")
     assert not type14.error, f"Type 14 should calculate: {type14.error}"
-    assert _h02_names(type14) == ["Pipe", "Channel", "Plate_WING", "Plate_STOPPER", "Plate_BASE", "Plate_TOP", "EXP.BOLT"], (
+    assert _h02_names(type14) == ["管路", "槽鐵", "Plate_WING", "Plate_STOPPER", "Plate_BASE", "Plate_TOP", "EXP.BOLT"], (
         f"Type 14 BOM sequence changed: {_h02_names(type14)}"
     )
     assert _h02_entry(type14, 1).length == 382, f"Type 14 pipe length should be H-2F-channelHeight: {_h02_entry(type14, 1).length}"
@@ -515,7 +521,7 @@ try:
 
     type16 = analyze_single("16-2B-05")
     assert not type16.error, f"Type 16 should calculate: {type16.error}"
-    assert _h02_names(type16) == ["Pipe", "Pipe", "Plate"], f"Type 16 BOM sequence changed: {_h02_names(type16)}"
+    assert _h02_names(type16) == ["管路", "管路", "Plate"], f"Type 16 BOM sequence changed: {_h02_names(type16)}"
     assert _h02_entry(type16, 1).length == 206, f"Type 16 main pipe length changed: {_h02_entry(type16, 1).length}"
     assert _h02_entry(type16, 1).material == "SUS304", f"Type 16 main pipe material changed: {_h02_entry(type16, 1).material}"
     assert _h02_entry(type16, 2).length == 670, f"Type 16 support pipe length changed: {_h02_entry(type16, 2).length}"
@@ -533,7 +539,7 @@ try:
     assert _h02_entry(type16_6b, 2).material == "A53Gr.B", f"Type 16 6B support pipe material changed: {_h02_entry(type16_6b, 2).material}"
     assert (_h02_entry(type16_6b, 3).length, _h02_entry(type16_6b, 3).width, _h02_entry(type16_6b, 3).spec) == (140, 140, "6"), "Type 16 6B plate changed"
     for entry in type16_6b.entries:
-        if entry.name == "Pipe":
+        if entry.name == "管路":
             _expect_pipe_weight(entry)
         elif entry.category == "鋼板類":
             _expect_plate_weight(entry)
@@ -549,25 +555,25 @@ try:
 
     type03 = analyze_single("03-1B-05L")
     assert not type03.error, f"Type 03 should calculate: {type03.error}"
-    assert type03.entries[0].name == "Angle", f"Type 03 first entry should be vertical angle: {type03.entries[0].name}"
+    assert type03.entries[0].name == "角鋼", f"Type 03 first entry should be vertical angle: {type03.entries[0].name}"
     assert type03.entries[0].length == 574.8, f"Type 03 vertical angle formula changed: {type03.entries[0].length}"
-    assert "LR elbow center=38.1" in type03.entries[0].remark, f"Type 03 vertical angle remark missing formula: {type03.entries[0].remark}"
+    assert "LR弓頭中心=38.1" in type03.entries[0].geometry.notes_zh or "LR elbow center=38.1" in type03.entries[0].remark, f"Type 03 vertical angle remark missing formula: {type03.entries[0].remark}"
     assert type03.entries[1].length == 130, f"Type 03 horizontal angle length changed: {type03.entries[1].length}"
     assert type03.entries[3].name == "Plate_c_有鑽孔", f"Type 03 M42 Type-L plate changed: {[entry.name for entry in type03.entries]}"
     assert type03.entries[4].name == "EXP.BOLT" and type03.entries[4].quantity == 4, f"Type 03 M42 Type-L bolt changed: {[entry.name for entry in type03.entries]}"
 
     type05 = analyze_single("05-L50-05L")
     assert not type05.error, f"Type 05 should calculate: {type05.error}"
-    assert type05.entries[0].name == "Angle", f"Type 05 first entry should be vertical angle: {type05.entries[0].name}"
+    assert type05.entries[0].name == "角鋼", f"Type 05 first entry should be vertical angle: {type05.entries[0].name}"
     assert type05.entries[0].length == 485, f"Type 05 vertical angle should subtract 15mm offset: {type05.entries[0].length}"
-    assert "top offset=15" in type05.entries[0].remark, f"Type 05 vertical angle remark missing formula: {type05.entries[0].remark}"
+    assert "頂端偏移=15" in type05.entries[0].geometry.notes_zh or "top offset=15" in type05.entries[0].remark, f"Type 05 vertical angle remark missing formula: {type05.entries[0].remark}"
     assert type05.entries[1].length == 130, f"Type 05 horizontal angle length changed: {type05.entries[1].length}"
     assert type05.entries[2].name == "Plate_c_有鑽孔", f"Type 05 M42 Type-L plate changed: {[entry.name for entry in type05.entries]}"
     assert type05.entries[3].name == "EXP.BOLT" and type05.entries[3].quantity == 4, f"Type 05 M42 Type-L bolt changed: {[entry.name for entry in type05.entries]}"
 
     type06 = analyze_single("06-L50-0510-0401")
     assert not type06.error, f"Type 06 should calculate: {type06.error}"
-    assert [entry.name for entry in type06.entries] == ["Angle", "Angle"], (
+    assert [entry.name for entry in type06.entries] == ["角鋼", "角鋼"], (
         f"Type 06 BOM sequence changed: {[entry.name for entry in type06.entries]}"
     )
     assert [entry.length for entry in type06.entries] == [500, 1000], (
@@ -579,10 +585,10 @@ try:
 
     type07 = analyze_single("07-2B-20J")
     assert not type07.error, f"Type 07 should calculate: {type07.error}"
-    assert type07.entries[0].name == "Pipe" and type07.entries[0].length == 271, (
+    assert type07.entries[0].name == "管路" and type07.entries[0].length == 271, (
         f"Type 07 Pipe B should be L+200: {type07.entries[0]}"
     )
-    assert type07.entries[1].name == "Pipe" and type07.entries[1].length == 1782, (
+    assert type07.entries[1].name == "管路" and type07.entries[1].length == 1782, (
         f"Type 07 Pipe C should be H-200-PlateF-M42: {type07.entries[1]}"
     )
     assert any("H值長是欲保留現場裁切預量" in warning for warning in type07.warnings), (
@@ -608,7 +614,7 @@ try:
 
     type26_a = analyze_single("26-L50-1005A")
     assert not type26_a.error, f"Type 26 Fig-A should calculate: {type26_a.error}"
-    assert [entry.name for entry in type26_a.entries] == ["Angle", "Angle", "Angle"], (
+    assert [entry.name for entry in type26_a.entries] == ["角鋼", "角鋼", "角鋼"], (
         f"Type 26 Fig-A BOM sequence changed: {[entry.name for entry in type26_a.entries]}"
     )
     assert [entry.length for entry in type26_a.entries] == [500, 500, 1000], (
@@ -620,7 +626,7 @@ try:
 
     type26_c = analyze_single("26-L50-1005C")
     assert not type26_c.error, f"Type 26 Fig-C should calculate: {type26_c.error}"
-    assert [entry.name for entry in type26_c.entries[:3]] == ["Angle", "Angle", "Angle"], (
+    assert [entry.name for entry in type26_c.entries[:3]] == ["角鋼", "角鋼", "角鋼"], (
         f"Type 26 Fig-C steel members changed: {[entry.name for entry in type26_c.entries]}"
     )
     assert [entry.length for entry in type26_c.entries[:3]] == [500, 500, 1000], (
@@ -658,19 +664,19 @@ try:
 
     retainer_default = analyze_single("52-1/2B-A")
     assert not retainer_default.error, f"Type 52 default HOPS/LOPS should calculate: {retainer_default.error}"
-    retainer_default_h = _entry_by_name(retainer_default, "H Beam")
+    retainer_default_h = _entry_by_name(retainer_default, "H型鋼")
     assert retainer_default_h.length == 150, (
         f"Type 52 without explicit LOPS should use D-80 table/default LOPS=150: {retainer_default_h.length}"
     )
 
     retainer_small = analyze_single("52-1/2B-A-150-200")
     assert not retainer_small.error, f"Type 52 small retainer should calculate: {retainer_small.error}"
-    retainer_h = _entry_by_name(retainer_small, "H Beam")
+    retainer_h = _entry_by_name(retainer_small, "H型鋼")
     assert retainer_h.length == 200, f"Type 52 explicit LOPS should override table/default LOPS: {retainer_h.length}"
     assert "width=100" in retainer_h.remark and "H=HOPS(150)" in retainer_h.remark, (
         f"Type 52 small MEMBER C remark should carry width/HOPS: {retainer_h.remark}"
     )
-    retainer_angle = _entry_by_name(retainer_small, "Angle")
+    retainer_angle = _entry_by_name(retainer_small, "角鋼")
     assert retainer_angle.quantity == 2, f"Type 52 should still add L40 retainer angles x2: {retainer_angle.quantity}"
 
     small = analyze_single("66-1.1/2B(P)-A-150-150")
@@ -679,7 +685,7 @@ try:
     small_details = get_pipe_details(1.5, "10S")
     small_od = small_details["od_mm"]
     small_t_sch10s = small_details["thickness_mm"]   # Phase 5: <=8" uses Sch10S wall
-    assert small_pad.length == 150, f"small Pad_52Type length should be LOPS+E*2: {small_pad.length}"
+    assert small_pad.length == 200, f"small Pad_52Type length should be LOPS+E*2 (E=25 for <2inch): {small_pad.length}"
     assert small_pad.width == round(small_od * math.pi / 3), f"small Pad_52Type 120-degree width changed: {small_pad.width}"
     assert small_pad.spec == str(small_t_sch10s), f"small Pad_52Type thickness should be Sch10S wall ({small_t_sch10s}mm): {small_pad.spec}"
     assert any("OD*pi/3" in warning for warning in small.warnings), f"small Pad_52Type practical width warning missing: {small.warnings}"
@@ -693,7 +699,7 @@ try:
     assert large_pad.width == round(large_od * math.pi / 3), f"large Pad_52Type 120-degree width changed: {large_pad.width}"
     assert large_pad.spec == str(large_t_sch10s), f"large Pad_52Type thickness should be Sch10S wall ({large_t_sch10s}mm): {large_pad.spec}"
 
-    h_beam = _entry_by_name(large, "H Beam")
+    h_beam = _entry_by_name(large, "H型鋼")
     assert h_beam.length == 300, f"H Beam length should be LOPS+50: {h_beam.length}"
 
     fb3 = _entry_by_name(large, "FB_52Type_3")
@@ -704,7 +710,7 @@ try:
 
     compact = analyze_single("66-14B(P)-100-300")
     assert not compact.error, f"Type 66 compact HOPS/LOPS format should calculate: {compact.error}"
-    compact_h_beam = _entry_by_name(compact, "H Beam")
+    compact_h_beam = _entry_by_name(compact, "H型鋼")
     compact_fb3 = _entry_by_name(compact, "FB_52Type_3")
     assert compact_h_beam.length == 350, f"compact Type 66 H Beam should use LOPS+50: {compact_h_beam.length}"
     assert compact_fb3.length == 100, f"compact Type 66 FB_52Type_3 should use HOPS: {compact_fb3.length}"
@@ -727,7 +733,7 @@ try:
         ("16", "16-2B-05"),
         ("20", "20-L50-05A"),
         ("21", "21-L50-05A"),
-        ("22", "22-L50-05AL"),
+        ("22", "22-L50-05(A)L"),
         ("22", "22-L75-12(A)X"),
         ("23", "23-L50-05A"),
         ("24", "24-L50-05"),
@@ -814,7 +820,7 @@ try:
     type28_names = [entry.name for entry in type28_l50.entries]
     type28_remarks = [entry.remark for entry in type28_l50.entries[:3]]
     type28_lengths = [entry.length for entry in type28_l50.entries[:3]]
-    assert type28_names[:3] == ["Angle", "Angle", "Angle"], f"Type 28 should split portal frame into three steel entries: {type28_names}"
+    assert type28_names[:3] == ["角鋼", "角鋼", "角鋼"], f"Type 28 should split portal frame into three steel entries: {type28_names}"
     assert type28_lengths == [500, 1000, 500], f"Type 28 left/top/right lengths changed: {type28_lengths}"
     assert type28_remarks == [
         "Left leg, H=500 (Angle:可U-bolt側掛)",
@@ -828,7 +834,7 @@ try:
     type30_names = [entry.name for entry in type30_a.entries]
     type30_lengths = [entry.length for entry in type30_a.entries]
     type30_remarks = [entry.remark for entry in type30_a.entries]
-    assert type30_names == ["Angle", "Angle"], f"Type 30 Fig-A should split into column + top beam: {type30_names}"
+    assert type30_names == ["角鋼", "角鋼"], f"Type 30 Fig-A should split into column + top beam: {type30_names}"
     assert type30_lengths == [500, 500], f"Type 30 Fig-A lengths changed: {type30_lengths}"
     assert type30_remarks == [
         "FIG-A, Column, H=500, L1=400, L2=100",
@@ -837,7 +843,7 @@ try:
 
     type30_b = analyze_single("30-L75-0505B-0401")
     assert not type30_b.error, f"Type 30 Fig-B should calculate: {type30_b.error}"
-    assert [entry.name for entry in type30_b.entries] == ["Angle", "Angle"], f"Type 30 Fig-B should split into column + top beam: {[entry.name for entry in type30_b.entries]}"
+    assert [entry.name for entry in type30_b.entries] == ["角鋼", "角鋼"], f"Type 30 Fig-B should split into column + top beam: {[entry.name for entry in type30_b.entries]}"
     assert [entry.length for entry in type30_b.entries] == [485, 500], f"Type 30 Fig-B lengths changed: {[entry.length for entry in type30_b.entries]}"
     assert [entry.remark for entry in type30_b.entries] == [
         "FIG-B, Column, H=500-15=485, L1=400, L2=100",
@@ -845,7 +851,7 @@ try:
     ], f"Type 30 Fig-B remarks changed: {[entry.remark for entry in type30_b.entries]}"
 
     type31 = priority_results["31-L50-1005"]
-    assert [entry.name for entry in type31.entries] == ["Angle", "Angle", "Angle"], f"Type 31 should split into left leg + top beam + right leg: {[entry.name for entry in type31.entries]}"
+    assert [entry.name for entry in type31.entries] == ["角鋼", "角鋼", "角鋼"], f"Type 31 should split into left leg + top beam + right leg: {[entry.name for entry in type31.entries]}"
     assert [entry.length for entry in type31.entries] == [500, 1000, 500], f"Type 31 lengths changed: {[entry.length for entry in type31.entries]}"
     assert [entry.remark for entry in type31.entries] == [
         "Left leg, H=500",
@@ -854,7 +860,7 @@ try:
     ], f"Type 31 remarks changed: {[entry.remark for entry in type31.entries]}"
 
     type32 = priority_results["32-L50-1005"]
-    assert [entry.name for entry in type32.entries] == ["Angle", "Angle", "Angle"], f"Type 32 should split into left leg + bottom beam + right leg: {[entry.name for entry in type32.entries]}"
+    assert [entry.name for entry in type32.entries] == ["角鋼", "角鋼", "角鋼"], f"Type 32 should split into left leg + bottom beam + right leg: {[entry.name for entry in type32.entries]}"
     assert [entry.length for entry in type32.entries] == [500, 1000, 500], f"Type 32 lengths changed: {[entry.length for entry in type32.entries]}"
     assert [entry.remark for entry in type32.entries] == [
         "Left leg, H=500",
@@ -863,7 +869,7 @@ try:
     ], f"Type 32 remarks changed: {[entry.remark for entry in type32.entries]}"
 
     type33 = priority_results["33-L50-1005"]
-    assert [entry.name for entry in type33.entries] == ["Angle", "Angle"], f"Type 33 should stay as column + bottom beam half-frame: {[entry.name for entry in type33.entries]}"
+    assert [entry.name for entry in type33.entries] == ["角鋼", "角鋼"], f"Type 33 should stay as column + bottom beam half-frame: {[entry.name for entry in type33.entries]}"
     assert [entry.length for entry in type33.entries] == [500, 1000], f"Type 33 lengths changed: {[entry.length for entry in type33.entries]}"
     assert [entry.remark for entry in type33.entries] == [
         "懸臂框H向(立柱), H=500",
@@ -871,7 +877,7 @@ try:
     ], f"Type 33 remarks changed: {[entry.remark for entry in type33.entries]}"
 
     type34 = priority_results["34-L50-1005"]
-    assert [entry.name for entry in type34.entries] == ["Angle", "Angle"], f"Type 34 should stay as column + top beam cantilever: {[entry.name for entry in type34.entries]}"
+    assert [entry.name for entry in type34.entries] == ["角鋼", "角鋼"], f"Type 34 should stay as column + top beam cantilever: {[entry.name for entry in type34.entries]}"
     assert [entry.length for entry in type34.entries] == [500, 1000], f"Type 34 lengths changed: {[entry.length for entry in type34.entries]}"
     assert [entry.remark for entry in type34.entries] == [
         "懸臂梁H向(立柱), H=500",
@@ -879,14 +885,14 @@ try:
     ], f"Type 34 remarks changed: {[entry.remark for entry in type34.entries]}"
 
     type35_a = priority_results["35-C125-05A"]
-    assert [entry.name for entry in type35_a.entries] == ["Channel"], f"Type 35 FIG-A should stay a single support rail entry: {[entry.name for entry in type35_a.entries]}"
+    assert [entry.name for entry in type35_a.entries] == ["槽鐵"], f"Type 35 FIG-A should stay a single support rail entry: {[entry.name for entry in type35_a.entries]}"
     assert [(entry.length, entry.quantity, entry.remark) for entry in type35_a.entries] == [
         (500, 1, "托條 FIG-A, H=500"),
     ], f"Type 35 FIG-A changed: {[(entry.length, entry.quantity, entry.remark) for entry in type35_a.entries]}"
 
     type35_b = analyze_single("35-C125-05B")
     assert not type35_b.error, f"Type 35 FIG-B should calculate: {type35_b.error}"
-    assert [entry.name for entry in type35_b.entries] == ["Channel"], f"Type 35 FIG-B should stay a single line with qty=2: {[entry.name for entry in type35_b.entries]}"
+    assert [entry.name for entry in type35_b.entries] == ["槽鐵"], f"Type 35 FIG-B should stay a single line with qty=2: {[entry.name for entry in type35_b.entries]}"
     assert [(entry.length, entry.quantity, entry.remark) for entry in type35_b.entries] == [
         (500, 2, "托條 FIG-B(雙條), H=500 ×2"),
     ], f"Type 35 FIG-B changed: {[(entry.length, entry.quantity, entry.remark) for entry in type35_b.entries]}"
@@ -898,13 +904,13 @@ try:
 
     type51_mid = priority_results["51-4B"]
     assert [(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_mid.entries] == [
-        ("Angle", "50*50*6", 125, 2),
+        ("角鋼", "50*50*6", 125, 2),
     ], f"Type 51 4-24in member path should use table H length: {[(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_mid.entries]}"
     assert type51_mid.entries[0].remark == "Member M, ×2, H=125mm, 兩側3mm gap, 長度≤梁寬(NOTE 2)", f"Type 51 mid-pipe remark changed: {type51_mid.entries[0].remark}"
 
     type51_large = priority_results["51-26B"]
     assert [(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_large.entries[:1]] == [
-        ("Channel", "125*65*6", 300, 2),
+        ("槽鐵", "125*65*6", 300, 2),
     ], f"Type 51 large-pipe channel path changed: {[(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_large.entries]}"
     assert len(type51_large.entries) == 2 and type51_large.entries[1].name == "PIPE PAD", f"Type 51 large-pipe D-91 pad missing: {[(entry.name, entry.spec) for entry in type51_large.entries]}"
     assert type51_large.entries[1].spec == "12" and type51_large.entries[1].length == 400 and type51_large.entries[1].width > 0, f"Type 51 large-pipe pad dimensions changed: {(type51_large.entries[1].spec, type51_large.entries[1].length, type51_large.entries[1].width)}"
@@ -916,7 +922,7 @@ try:
         (e.name, e.spec, e.length, e.width, e.quantity) for e in type53.entries
     ], "Type 53 should share Type 52 D-80 shoe geometry path"
     assert type52.entries[0].name == "Pad_52Type" and "length_rule=LOPS + E*2" in type52.entries[0].remark, f"Type 52 small-pipe pad remark missing rule: {type52.entries[0].remark}"
-    assert type52.entries[1].name == "Angle" and "CUT IN FIELD" in type52.entries[1].remark, f"Type 52 L40 remark missing field-cut note: {type52.entries[1].remark}"
+    assert type52.entries[1].name == "角鋼" and "CUT IN FIELD" in type52.entries[1].remark, f"Type 52 L40 remark missing field-cut note: {type52.entries[1].remark}"
 
     type52_large = priority_results["52-14B(P)-A(A)-130-500"]
     type53_large = priority_results["53-14B(P)-A(A)-130-500"]
@@ -947,7 +953,7 @@ try:
     type80_small = priority_results["80-2B(P)-A(A)-130-500"]
     assert [(entry.name, entry.spec, entry.length, entry.quantity, entry.material) for entry in type80_small.entries] == [
         ("REINFORCING_PAD", "9", 200, 1, "AS"),
-        ("H Beam", "200*100*5.5", 500, 1, "AS"),
+        ("H型鋼", "200*100*5.5", 500, 1, "AS"),
     ], f"Type 80 D-95 small-pipe model changed: {[(entry.name, entry.spec, entry.length, entry.quantity, entry.material) for entry in type80_small.entries]}"
     assert "HOPS=130, LOPS=500" in type80_small.entries[1].remark, f"Type 80 D-95 override metadata missing: {type80_small.entries[1].remark}"
 
@@ -958,7 +964,7 @@ try:
         ("SADDLE_ARC_PLATE", "16", 1, "AS"),
         ("STIFFENER_PLATE", "12", 4, "AS"),
         ("REINFORCING_PAD", "12", 1, "AS"),
-        ("Angle", "100*100*10", 2, "AS"),
+        ("角鋼", "100*100*10", 2, "AS"),
     ], f"Type 80 D-96 large-pipe model changed: {[(entry.name, entry.spec, entry.quantity, entry.material) for entry in type80_big.entries]}"
     assert any("NO.7 has PLATE 6 THK x6" in warning for warning in type80_big.warnings), f"Type 80 D-96 NO.7 warning missing: {type80_big.warnings}"
 
@@ -1478,7 +1484,7 @@ try:
         "Plate_a_無鑽孔",
         "Plate_d_有鑽孔",
         "EXP.BOLT",
-        "Angle",
+        "角鋼",
     ], "M-42A Type-V component sequence changed"
     assert [entry.material for entry in m42_type_v.entries] == [
         "A36/SS400",
@@ -1486,7 +1492,7 @@ try:
         "SUS304",
         "A36/SS400",
     ], "M-42A Type-V materials changed"
-    assert m42_type_v.entries[-1].name == "Angle" and m42_type_v.entries[-1].quantity == 2, "M-42A Type-V should include two L40 angles"
+    assert m42_type_v.entries[-1].name == "角鋼" and m42_type_v.entries[-1].quantity == 2, "M-42A Type-V should include two L40 angles"
 
     m42_type_n = AnalysisResult(fullstring="phase3A-m42-N")
     perform_action_by_letter(m42_type_n, "N", 2)
@@ -2349,7 +2355,7 @@ try:
         ("19", "19-2B"),
         ("20", "20-L50-05A"),
         ("21", "21-L50-05A"),
-        ("22", "22-L50-05AL"),
+        ("22", "22-L50-05(A)L"),
         ("23", "23-L50-05A"),
         ("24", "24-L50-05"),
         ("25", "25-L50-0505A"),
@@ -2481,8 +2487,8 @@ try:
     # ── type_42: 8B C125 H=500 FIG-A (θ=30°) ──────────────────────────────
     # G = g_coeff * 500 + g_offset → 722
     _golden("42-8B-C125-500 A", [
-        ("Channel",  "125*65*6", 500,  1),
-        ("Channel",  "125*65*6", 722,  1),
+        ("槽鐵",  "125*65*6", 500,  1),
+        ("槽鐵",  "125*65*6", 722,  1),
         ("TRUNNION", "4\"",       -1,   1),
         ("C/S SHIM", "6",        125,  1),
         ("M.BOLT",   '3/4"x50',  -1,   2),
@@ -2491,8 +2497,8 @@ try:
     # ── type_43: 8B C125 H=500 FIG-A (θ=30°) ──────────────────────────────
     # main_len = 500 + A; N = n_coeff * 500 + n_offset → 692
     _golden("43-8B-C125-500 A", [
-        ("Channel",          "125*65*6", 670,  1),
-        ("Channel",          "125*65*6", 692,  1),
+        ("槽鐵",          "125*65*6", 670,  1),
+        ("槽鐵",          "125*65*6", 692,  1),
         ("TRUNNION",         "4\"",       -1,   1),
         ("LUG PLATE TYPE-C", "10",       170,  1),
         ("LUG PLATE TYPE-E", "10",       145,  1),
@@ -2503,8 +2509,8 @@ try:
     # ── type_27 H150: L=500 H=500 M42=L ────────────────────────────────────
     # column = H - 150 = 350; top = L = 500
     _golden("27-H150-0505L", [
-        ("H Beam",          "150*150*10", 350,  1),
-        ("H Beam",          "150*150*10", 500,  1),
+        ("H型鋼",          "150*150*10", 350,  1),
+        ("H型鋼",          "150*150*10", 500,  1),
         ("Plate_6t_Side",   "6",          150,  3),
         ("Plate_9t_Wing",   "9",          200,  2),
         ("Plate_c_有鑽孔",  "16",         500,  1),
@@ -2514,8 +2520,8 @@ try:
     # ── type_27 L75: L=500 H=500 M42=L ─────────────────────────────────────
     # column = H - deduction(15) = 485; top = L = 500
     _golden("27-L75-0505L", [
-        ("Angle",          "75*75*9",   485,  1),
-        ("Angle",          "75*75*9",   500,  1),
+        ("角鋼",          "75*75*9",   485,  1),
+        ("角鋼",          "75*75*9",   500,  1),
         ("Plate_c_有鑽孔", "9",         260,  1),
         ("EXP.BOLT",       "5/8\"",      -1,   4),
     ])
@@ -2523,8 +2529,8 @@ try:
     # ── type_42 擴充: 4B L75 H=300 FIG-A (小管徑角鐵版) ────────────────────
     # Trunnion=2", G=438
     _golden("42-4B-L75-300 A", [
-        ("Angle",    "75*75*9",  300,  1),
-        ("Angle",    "75*75*9",  438,  1),
+        ("角鋼",    "75*75*9",  300,  1),
+        ("角鋼",    "75*75*9",  438,  1),
         ("TRUNNION", "2\"",       -1,   1),
         ("C/S SHIM", "6",         75,  1),
         ("M.BOLT",   '3/4"x50',  -1,   2),
@@ -2533,8 +2539,8 @@ try:
     # ── type_42 擴充: 16B C200 H=800 FIG-B (大管徑 θ=45°) ──────────────────
     # Trunnion=10", G=1331
     _golden("42-16B-C200-800 B", [
-        ("Channel",  "200*80*7.5", 800,   1),
-        ("Channel",  "200*80*7.5", 1331,  1),
+        ("槽鐵",  "200*80*7.5", 800,   1),
+        ("槽鐵",  "200*80*7.5", 1331,  1),
         ("TRUNNION", "10\"",        -1,    1),
         ("C/S SHIM", "6",          200,   1),
         ("M.BOLT",   '3/4"x50',    -1,    2),
@@ -2543,8 +2549,8 @@ try:
     # ── type_42 擴充: 24B C200 H=1000 FIG-B (最大管徑) ─────────────────────
     # Trunnion=14", G=1614
     _golden("42-24B-C200-1000 B", [
-        ("Channel",  "200*80*7.5", 1000,  1),
-        ("Channel",  "200*80*7.5", 1614,  1),
+        ("槽鐵",  "200*80*7.5", 1000,  1),
+        ("槽鐵",  "200*80*7.5", 1614,  1),
         ("TRUNNION", "14\"",         -1,   1),
         ("C/S SHIM", "6",           200,  1),
         ("M.BOLT",   '3/4"x50',     -1,   2),
@@ -2553,8 +2559,8 @@ try:
     # ── type_43 擴充: 4B L75 H=300 FIG-A → LUG TYPE-E (小管徑) ────────────
     # main=460, N=438; LUG-C T=9 L=160, LUG-E T=9 L=135
     _golden("43-4B-L75-300 A", [
-        ("Angle",            "75*75*9",  460,  1),
-        ("Angle",            "75*75*9",  438,  1),
+        ("角鋼",            "75*75*9",  460,  1),
+        ("角鋼",            "75*75*9",  438,  1),
         ("TRUNNION",         "2\"",       -1,   1),
         ("LUG PLATE TYPE-C", "9",        160,  1),
         ("LUG PLATE TYPE-E", "9",        135,  1),
@@ -2565,8 +2571,8 @@ try:
     # ── type_43 擴充: 16B C200 H=800 FIG-B → LUG TYPE-D (大管徑 θ=45°) ────
     # main=1020, N=1187; LUG-C T=12 L=220, LUG-D T=12 L=160
     _golden("43-16B-C200-800 B", [
-        ("Channel",          "200*80*7.5", 1020,  1),
-        ("Channel",          "200*80*7.5", 1187,  1),
+        ("槽鐵",          "200*80*7.5", 1020,  1),
+        ("槽鐵",          "200*80*7.5", 1187,  1),
         ("TRUNNION",         "10\"",         -1,   1),
         ("LUG PLATE TYPE-C", "12",          220,  1),
         ("LUG PLATE TYPE-D", "12",          160,  1),
@@ -2577,8 +2583,8 @@ try:
     # ── type_27 擴充: L50 最小規格 ──────────────────────────────────────────
     # column = 300-15=285; top=300; Plate_c T=9 L=180 (L50 C=30mm)
     _golden("27-L50-0303L", [
-        ("Angle",          "50*50*6",   285,  1),
-        ("Angle",          "50*50*6",   300,  1),
+        ("角鋼",          "50*50*6",   285,  1),
+        ("角鋼",          "50*50*6",   300,  1),
         ("Plate_c_有鑽孔", "9",         180,  1),
         ("EXP.BOLT",       "5/8\"",      -1,   4),
     ])
@@ -2586,8 +2592,8 @@ try:
     # ── type_27 擴充: H150 M42=P (NOTE4 valid variant) ──────────────────────
     # column = 600-150=450; top=400
     _golden("27-H150-0406P", [
-        ("H Beam",         "150*150*10", 450,  1),
-        ("H Beam",         "150*150*10", 400,  1),
+        ("H型鋼",         "150*150*10", 450,  1),
+        ("H型鋼",         "150*150*10", 400,  1),
         ("Plate_6t_Side",  "6",          150,  3),
         ("Plate_9t_Wing",  "9",          200,  2),
         ("Plate_c_有鑽孔", "16",         500,  1),
@@ -2597,8 +2603,8 @@ try:
     # ── type_27 擴充: L100 大尺寸 ───────────────────────────────────────────
     # column = 1000-15=985; top=400
     _golden("27-L100-0410L", [
-        ("Angle",          "100*100*10", 985,  1),
-        ("Angle",          "100*100*10", 400,  1),
+        ("角鋼",          "100*100*10", 985,  1),
+        ("角鋼",          "100*100*10", 400,  1),
         ("Plate_c_有鑽孔", "9",          260,  1),
         ("EXP.BOLT",       "5/8\"",       -1,   4),
     ])
@@ -2606,8 +2612,8 @@ try:
     # ── type_39: C125 H=500 FIG-A (標準, L=200 default) ────────────────────
     # main = 500+200=700; N=692; LUG-C T=10 L=170; LUG-E T=10 L=145
     _golden("39-C125-500 A", [
-        ("Channel",          "125*65*6", 700,  1),
-        ("Channel",          "125*65*6", 692,  1),
+        ("槽鐵",          "125*65*6", 700,  1),
+        ("槽鐵",          "125*65*6", 692,  1),
         ("LUG PLATE TYPE-C", "10",       170,  1),
         ("LUG PLATE TYPE-E", "10",       145,  1),
         ("K BOLT",           '3/4"x50',  -1,   2),
@@ -2616,8 +2622,8 @@ try:
     # ── type_39: C200 H=800 FIG-B (大型, θ=45°) ─────────────────────────────
     # main = 800+200=1000; N=1187; LUG-C T=12 L=220; LUG-D T=12 L=160
     _golden("39-C200-800 B", [
-        ("Channel",          "200*80*7.5", 1000,  1),
-        ("Channel",          "200*80*7.5", 1187,  1),
+        ("槽鐵",          "200*80*7.5", 1000,  1),
+        ("槽鐵",          "200*80*7.5", 1187,  1),
         ("LUG PLATE TYPE-C", "12",         220,  1),
         ("LUG PLATE TYPE-D", "12",         160,  1),
         ("K BOLT",           '3/4"x50',     -1,   2),
@@ -2626,30 +2632,31 @@ try:
     # ── type_39: L75 H=300 FIG-A (小角鐵版) ─────────────────────────────────
     # main = 300+200=500; N=438; LUG-C T=9 L=160; LUG-E T=9 L=135
     _golden("39-L75-300 A", [
-        ("Angle",            "75*75*9",  500,  1),
-        ("Angle",            "75*75*9",  438,  1),
+        ("角鋼",            "75*75*9",  500,  1),
+        ("角鋼",            "75*75*9",  438,  1),
         ("LUG PLATE TYPE-C", "9",        160,  1),
         ("LUG PLATE TYPE-E", "9",        135,  1),
         ("K BOLT",           '3/4"x50',  -1,   2),
     ])
 
     # ── type_56: 管線檔止 5 個尺寸分支 ──────────────────────────────────────
-    # ≤2-1/2": PL 100×100×6
+    # ≤2-1/2": PL 100×100×6 ×2
     _golden("56-2B", [
-        ("PLATE",     "6",  100,  1),
+        ("PLATE",     "6",  100,  2),
     ])
-    # 3"~4": FAB FROM 6t PLATE
+    # 3"~4": A×B×6t ×2 + D×B×E ×2
     _golden("56-4B", [
-        ("MEMBER C",  "6",   75,  1),
+        ("MEMBER C",   "6",   75,  2),
+        ("SIDE PLATE", "6",   75,  2),
     ])
-    # 5"~14": CUT FROM H型鋼
+    # 5"~14": CUT FROM H型鋼, MEMBER C ×2
     _golden("56-10B", [
-        ("MEMBER C",  "12", 200,  1),
+        ("MEMBER C",  "200*200*8", 200,  2),
     ])
-    # 16"~24": FAB FROM 12t PLATE + 側板×2
+    # 16"~24": A×B×12t ×4 + (D-2E)×B×12t ×2
     _golden("56-20B", [
-        ("MEMBER C",   "12", 300,  1),
-        ("SIDE PLATE", "12", 300,  2),
+        ("MEMBER C",   "12", 300,  4),
+        ("SIDE PLATE", "12", 276,  2),
     ])
     # 26"~42": 大型 + 鞍座
     _golden("56-36B", [

@@ -50,7 +50,7 @@ DIMENSIONS (Page 2, D-29):
 NOTE 2: "L" & "H" SHALL BE CUT TO SUIT IN FIELD.
 NOTE 3: FOR DIMENSIONAL DATA, SEE SH'T D-29.
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
@@ -174,7 +174,7 @@ def calculate(fullstring: str) -> AnalysisResult:
                 bolt_size=k_spec,
                 plate_role="lug_plate",
             )
-            result.entries[-1].remark = f"SEE M-34, {fig_tag}"
+            result.entries[-1].remark = f"參見 M-34，{fig_tag}"
 
         # K BOLT ×8 (兩片 lug plate, 每片四孔)
         if k_spec:
@@ -187,6 +187,6 @@ def calculate(fullstring: str) -> AnalysisResult:
                 unit_weight=0.1,
                 unit="PC",
             )
-            result.entries[-1].remark = f"M-34 K bolt, {fig_tag}"
+            result.entries[-1].remark = f"M-34 K型螺栓，{fig_tag}"
 
     return result

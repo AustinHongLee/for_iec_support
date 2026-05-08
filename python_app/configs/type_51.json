@@ -3,6 +3,10 @@
   "source": "data/type51_table.py",
   "migrated": "2026-04-29",
   "TYPE51_TABLE": {
+    "0.5": {
+      "member": null,
+      "H": 25
+    },
     "0.75": {
       "member": null,
       "H": 25

@@ -1,15 +1,15 @@
 """
 Type 51 計算器 — 管線鞍座承托支撐 (D-62, D-62A)
 格式: 51-{line_size}B
-  例: 51-2B, 51-12B, 51-36B
+  例: 51-1/2B, 51-2B, 51-12B, 51-36B
 
 三種結構:
-  ≤3": Flat Bar (H×50×9), 無 Member
+  1/2"~3": Flat Bar (H×50×9), 無 Member
   4"~24": 角鐵 Member "M" 兩側
   26"~42": 槽鋼 + 鞍座
 
 BOM:
-  小管 (≤3"): ① FLAT BAR (H×50×9)
+  小管 (1/2"~3"): ① FLAT BAR (H×50×9)
   中管 (4"~24"): ① Member M ×2, 每支長度 = 表內 H
   大管 (26"~42"): ① Member M ×2  (+ D-91 Rein. Pad / saddle 由圖面另計)
 """
@@ -42,7 +42,7 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     data = get_type51_data(line_size)
     if not data:
-        result.error = f"Type 51: 管徑 {part2} ({line_size}\") 不在範圍 (3/4\"~42\")"
+        result.error = f"Type 51: 管徑 {part2} ({line_size}\") 不在範圍 (1/2\"~42\")"
         return result
 
     member = data["member"]

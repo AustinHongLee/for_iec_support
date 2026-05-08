@@ -46,7 +46,7 @@ DIMENSIONS TABLE (D-35M):
 
 NOTE 1: "H" & "L" SHALL BE CUT TO SUIT IN FIELD.
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from data.steel_sections import get_section_details
@@ -104,19 +104,19 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ① 左腿 — H
     # ═══════════════════════════════════════════════════════
     add_steel_section_entry(result, section_type, section_dim, section_H)
-    result.entries[-1].remark = f"Left leg, H={section_H}"
+    set_remark(result.entries[-1], f"左立柱，H={section_H}", f"Left leg, H={section_H}")
 
     # ═══════════════════════════════════════════════════════
     # ② L 方向 — 底橫梁 ×1
     #    上方 = EXISTING STEEL (非 MEMBER)
     # ═══════════════════════════════════════════════════════
     add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = f"Bottom beam, L={section_L}"
+    set_remark(result.entries[-1], f"下橫梁，L={section_L}", f"Bottom beam, L={section_L}")
 
     # ═══════════════════════════════════════════════════════
     # ③ 右腿 — H
     # ═══════════════════════════════════════════════════════
     add_steel_section_entry(result, section_type, section_dim, section_H)
-    result.entries[-1].remark = f"Right leg, H={section_H}"
+    set_remark(result.entries[-1], f"右立柱，H={section_H}", f"Right leg, H={section_H}")
 
     return result

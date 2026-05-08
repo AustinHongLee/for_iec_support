@@ -120,6 +120,15 @@ class AnalysisEntry:
         return self.remark
 
 
+def set_remark(entry: "AnalysisEntry", zh: str, en: str = "") -> None:
+    """設定備註：zh 為中文顯示用，en 為英文版（保留於 remark 欄位供後續用）。
+    若未提供 en，則 remark 也存中文。
+    display_remark 會優先顯示 geometry.notes_zh（中文）。
+    """
+    entry.geometry.notes_zh = zh
+    entry.remark = en if en else zh
+
+
 @dataclass
 class AnalysisResult:
     """一筆支撐編碼的完整分析結果"""

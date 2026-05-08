@@ -2,6 +2,7 @@
 鋼材處理模組 - 對應 VBA: C_鋼材處理
 """
 from .models import AnalysisEntry, AnalysisResult
+from .component_roles import ComponentRole
 from .hardware_material import MaterialSpec
 from .material_identity import canonical_material_id
 from data.steel_sections import get_section_weight
@@ -13,6 +14,23 @@ _DEFAULT_STEEL_MATERIAL = MaterialSpec(
     source="core.steel.default_material",
     requires_review=True,
 )
+
+# 型鋼品名：英文 key → 中文顯示名稱
+_SECTION_NAME_ZH: dict[str, str] = {
+    "Angle":    "角鋼",
+    "Channel":  "槽鐵",
+    "H Beam":   "H型鋼",
+    "I Beam":   "I型鋼",
+    "Flat Bar": "扁鋼",
+    "Round Bar":"圓鋼",
+}
+
+_SECTION_ROLE: dict[str, ComponentRole] = {
+    "Angle":    ComponentRole.ANGLE,
+    "Channel":  ComponentRole.CHANNEL,
+    "H Beam":   ComponentRole.H_SECTION,
+    "I Beam":   ComponentRole.H_SECTION,
+}
 
 
 def _material_name_and_identity(
@@ -44,7 +62,7 @@ def add_steel_section_entry(result: AnalysisResult, section_type: str,
     weight_per_m = get_section_weight(section_type, section_dim)
 
     entry = AnalysisEntry()
-    entry.name = section_type
+    entry.name = _SECTION_NAME_ZH.get(section_type, section_type)
     entry.spec = section_dim
     entry.length = total_length
     entry.material = material_name
@@ -59,6 +77,9 @@ def add_steel_section_entry(result: AnalysisResult, section_type: str,
     entry.length_subtotal = round(entry.factor * total_length / 1000 * entry.quantity, 3)
     entry.qty_subtotal = entry.factor * entry.quantity
     entry.weight_output = round(entry.factor * entry.total_weight, 2)
-    entry.category = "管路類"
+    entry.category = "型鋼類"
+    role = _SECTION_ROLE.get(section_type)
+    if role:
+        entry.role = role.value
 
     result.add_entry(entry)

@@ -17,7 +17,7 @@ import os
 from math import pi
 from typing import Any
 
-from core.models import AnalysisResult
+from core.models import AnalysisResult, set_remark
 from core.parser import get_part, get_lookup_value, count_char
 from core.plate import add_plate_entry
 from core.steel import add_steel_section_entry
@@ -31,6 +31,12 @@ _SPEC_PATH = os.path.join(
 )
 
 _SPEC = None
+
+SEMI_ARCHIVED_TYPE_IDS: frozenset = frozenset({"54", "55", "67"})
+SEMI_ARCHIVED_WARNING = (
+    "Type {type_id} 為 clamp/gasket 系列，已暫定半封存/未完工建檔；"
+    "目前計算僅保留暫定幾何與重量參考，D-81/D-81A clamp、gasket 等細節需後續補齊"
+)
 
 
 def get_spec() -> dict:
@@ -101,8 +107,10 @@ def _resolve_sizing(spec: dict, pipe_size: float, pipe_details: dict) -> dict:
 # ── Expression evaluator ------------------------------------------------------
 
 def _make_eval_ns(ctx: dict, pipe_size: float, hops: int, lops: int,
+                  type_id: str,
                   pipe_details: dict) -> dict:
     return {
+        "type_id": type_id,
         "pipe_size": pipe_size,
         "HOPS": hops,
         "LOPS": lops,
@@ -191,6 +199,8 @@ def _parse_hops_lops(fullstring: str, pipe_size: float,
 def calculate(fullstring: str, type_id: str) -> AnalysisResult:
     spec = get_spec()
     result = AnalysisResult(fullstring=fullstring)
+    if type_id in SEMI_ARCHIVED_TYPE_IDS:
+        result.warnings.append(SEMI_ARCHIVED_WARNING.format(type_id=type_id))
 
     variant = spec["variants"][type_id]
     angle_wedge = variant["angle_wedge"]
@@ -198,6 +208,11 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
     pipe_size_str = _get_pipe_size_str(fullstring)
     pipe_size = get_lookup_value(pipe_size_str.replace("B", ""))
     pad_symbol = _get_pad_symbol(fullstring)
+    if type_id in {"54", "55"} and pad_symbol != "N/A":
+        result.warnings.append(
+            f"Type {type_id} 為 D-81 clamp + gasket 系列，不接受 (P)；已忽略 pad 標記"
+        )
+        pad_symbol = "N/A"
     material = "A36/SS400"
     if count_char(fullstring, "-") >= 2:
         material = _get_material(fullstring)
@@ -210,7 +225,13 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
         )
     default_lops = ctx["D"]
     hops, lops = _parse_hops_lops(fullstring, pipe_size, default_lops)
-    ns = _make_eval_ns(ctx, pipe_size, hops, lops, pipe_details)
+    ns = _make_eval_ns(ctx, pipe_size, hops, lops, type_id, pipe_details)
+
+    # E 值最低限制：2" 以下管徑 E 規格表原為 0，修正為 25mm
+    if pipe_size < 2 and ctx["E"] == 25:
+        result.warnings.append(
+            f"{pipe_size}" + '" 管徑 E 值依規格表應為 0，已修正為 25 mm（最低限值），請工程師確認'
+        )
 
     for comp in spec["components"]:
         if not _eval_cond(comp["when"], ns, angle_wedge, pad_symbol, ctx):
@@ -229,9 +250,12 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
             )
             add_plate_entry(result, pad_len, pad_w, pad_t, name,
                             plate_role="reinforcement_pad")
-            result.entries[-1].remark = (
-                "120deg pad; width=OD*pi/3; length_rule=" + length_rule + "; "
-                "t=SCH10S(" + str(pad_t) + "mm); HOPS=" + str(hops)
+            _en = ("120deg pad; width=OD*pi/3; length_rule=" + length_rule + "; "
+                   "t=SCH10S(" + str(pad_t) + "mm); HOPS=" + str(hops))
+            set_remark(
+                result.entries[-1],
+                f"120°弧形墊板；寬=OD×π/3；長度規則={length_rule}；板厚=SCH10S({pad_t}mm)；HOPS={hops}",
+                _en,
             )
 
         elif comp["id"] == "wedge":
@@ -247,10 +271,14 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
                                     beam_l, 1, material)
             member_width = c_spec.split("*")[1] if "*" in c_spec else str(ctx["A"])
             length_rule = "LOPS/D" if pipe_size <= 8 else "LOPS+25*2"
-            result.entries[-1].remark = (
-                "MEMBER C, CUT FROM H" + c_spec + "; width=" + str(member_width) + "; "
-                "L=" + length_rule + "; H=HOPS(" + str(hops) + "); "
-                "[deep logic] 1 purchased H-beam split in half = 2 supports"
+            _en = ("MEMBER C, CUT FROM H" + c_spec + "; width=" + str(member_width) + "; "
+                   "L=" + length_rule + "; H=HOPS(" + str(hops) + "); "
+                   "[deep logic] 1 purchased H-beam split in half = 2 supports")
+            set_remark(
+                result.entries[-1],
+                f"C構件，由H{c_spec}裁切；羼寬={member_width}；長度規則={length_rule}；H=HOPS({hops})；"
+                f"《購買逻輯》1支 H型鵋對分 = 2 組支撐",
+                _en,
             )
 
         elif comp["id"] in ("fab_bottom", "fab_web"):
@@ -265,12 +293,80 @@ def calculate(fullstring: str, type_id: str) -> AnalysisResult:
             remark = tmpl.replace("{A+70}", str(w)).replace("{LOPS+50}", str(beam_l))
             result.entries[-1].remark = remark
 
-        elif comp["id"] == "gusset":
-            d_t = ctx["B"]
-            d_b = _eval_expr(comp["width_expr"], ns)
-            d_l = round(_eval_expr(comp["length_expr"], ns))
+        elif comp["id"] in ("gusset", "type54_stopper"):
+            if "thickness_ref" in comp:
+                d_t = ctx[comp["thickness_ref"]]
+            else:
+                d_t = _eval_expr(comp["thickness"], ns)
+            if "width_expr" in comp:
+                d_b = _eval_expr(comp["width_expr"], ns)
+            else:
+                d_b = _eval_expr(comp["width"], ns)
+            if "length_expr" in comp:
+                d_l = round(_eval_expr(comp["length_expr"], ns))
+            else:
+                d_l = round(_eval_expr(comp["length"], ns))
             add_plate_entry(result, d_l, d_b, d_t, name,
-                            plate_qty=qty, plate_role="generic_plate")
+                            plate_qty=qty,
+                            plate_role=comp.get("role", "generic_plate"))
             result.entries[-1].remark = comp.get("remark", "")
 
     return result
+
+
+# ── Public context API (for Inventor parameter export) -----------------------
+
+#: Pipe Shoe type ids supported by this engine
+PIPE_SHOE_TYPE_IDS: frozenset = frozenset({"52", "53", "54", "55", "66", "67", "85"})
+
+
+def get_sizing_context(fullstring: str, type_id: str) -> "dict | None":
+    """回傳 Pipe Shoe 計算用的尺寸字典，供 Inventor 參數匯出使用。
+    若 type_id 不屬於 Pipe Shoe 家族則回傳 None。
+    """
+    spec = get_spec()
+    if type_id not in spec.get("variants", {}):
+        return None
+
+    pipe_size_str = _get_pipe_size_str(fullstring)
+    pipe_size = get_lookup_value(pipe_size_str.replace("B", ""))
+    pipe_details = get_pipe_details(pipe_size, "10S")
+    ctx = _resolve_sizing(spec, pipe_size, pipe_details)
+    default_lops = ctx["D"]
+    hops, lops = _parse_hops_lops(fullstring, pipe_size, default_lops)
+
+    c_spec = ctx["C"]
+    c_parts = c_spec.split("*") if "*" in c_spec else []
+
+    def _safe_int(lst, i):
+        try:
+            return int(lst[i])
+        except (IndexError, ValueError):
+            return 0
+
+    def _safe_float(lst, i):
+        try:
+            return float(lst[i])
+        except (IndexError, ValueError):
+            return 0.0
+
+    return {
+        "designation":   fullstring,
+        "type_id":       type_id,
+        "pipe_size_in":  pipe_size,
+        "pipe_size_str": pipe_size_str,
+        "OD_mm":         pipe_details["od_mm"],
+        "wall_mm":       pipe_details["thickness_mm"],
+        "HOPS_mm":       hops,
+        "LOPS_mm":       lops,
+        "E_mm":          ctx["E"],
+        "A_mm":          ctx["A"],
+        "B_mm":          ctx["B"],
+        "D_mm":          ctx["D"],
+        "pad_t_mm":      ctx["pad_t"],
+        "C_spec":        c_spec,
+        "is_fabricated": c_spec == "FB12",
+        "C_H_mm":        _safe_int(c_parts, 0) if c_spec != "FB12" else 0,
+        "C_B_mm":        _safe_int(c_parts, 1) if c_spec != "FB12" else 0,
+        "C_t_mm":        _safe_float(c_parts, -1) if c_spec != "FB12" else 12.0,
+    }

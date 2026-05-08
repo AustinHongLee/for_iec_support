@@ -6,6 +6,7 @@ Type 管理器面板
 import json
 import os
 import re
+import subprocess
 import sys
 
 import markdown
@@ -28,9 +29,11 @@ _CATALOG_PATH = os.path.join(
 )
 _APP_DIR = os.path.dirname(os.path.dirname(__file__))
 _PDF_DIR = os.path.join(_APP_DIR, "assets", "Type")
+_CP129_PDF_DIR = os.path.join(_APP_DIR, "assets", "Type_cp129_2026")
 _ICON_DIR = os.path.join(_APP_DIR, "assets", "Type_icon")
 _PREVIEW_DIR = os.path.join(_APP_DIR, "assets", "previews")
 _DOCS_DIR = os.path.join(_APP_DIR, "docs", "types")
+_DRAWING_INDEX_PATH = os.path.join(_APP_DIR, "configs", "drawing_index.json")
 
 try:
     from data.component_table_registry import (
@@ -55,15 +58,27 @@ except Exception:
             "coverage_ratio": 0.0,
         }
 
-# 狀態對應的中文與顏色
+# 狀態對應的中文與顏色。這裡是 UI 階段標籤，不代表工程驗證結論。
 STATUS_MAP = {
-    "documented":  ("已分析", "#4CAF50"),
-    "implemented": ("可計算", "#FF9800"),
-    "cataloged":   ("已建檔", "#2196F3"),
+    "implemented": ("可計算", "#2E7D32"),
+    "documented":  ("有文件", "#1976D2"),
+    "cataloged":   ("僅索引", "#607D8B"),
+    "semi_archived": ("半封存", "#616161"),
     "lookup_ready": ("可查表", "#2E7D32"),
     "partial_lookup": ("部分查表", "#F57C00"),
     "metadata_only": ("待轉錄", "#795548"),
-    "placeholder": ("預留",   "#9E9E9E"),
+    "placeholder": ("待整理", "#9E9E9E"),
+}
+
+STATUS_HELP = {
+    "implemented": "calculator 已接線，可產生 BOM；仍需依 warning / 備註判斷可信度。",
+    "documented": "已有圖面或規則文件整理，不代表 calculator 已接線。",
+    "cataloged": "只有型錄索引或 metadata，尚未完成計算規則。",
+    "semi_archived": "半封存/未完工建檔，暫不視為正式可計算型式。",
+    "lookup_ready": "M/N component table 已可查表。",
+    "partial_lookup": "M/N component table 只有部分欄位可查，需人工確認。",
+    "metadata_only": "已建 component module，但 PDF 尺寸/重量資料尚待轉錄。",
+    "placeholder": "待整理項目，尚未整理成可用資料。",
 }
 
 # 分類對應
@@ -81,6 +96,95 @@ CATEGORY_ORDER = [
     "special",
 ]
 
+_SUPPORTED_CALCULATOR_TYPES: set[str] | None = None
+_DRAWING_INDEX_CACHE: dict | None = None
+
+
+def _supported_calculator_types() -> set[str]:
+    global _SUPPORTED_CALCULATOR_TYPES
+    if _SUPPORTED_CALCULATOR_TYPES is not None:
+        return _SUPPORTED_CALCULATOR_TYPES
+    try:
+        from core.calculator import get_supported_types
+        _SUPPORTED_CALCULATOR_TYPES = set(get_supported_types())
+    except Exception:
+        _SUPPORTED_CALCULATOR_TYPES = set()
+    return _SUPPORTED_CALCULATOR_TYPES
+
+
+def _load_drawing_index() -> dict:
+    global _DRAWING_INDEX_CACHE
+    if _DRAWING_INDEX_CACHE is not None:
+        return _DRAWING_INDEX_CACHE
+    try:
+        with open(_DRAWING_INDEX_PATH, "r", encoding="utf-8") as f:
+            _DRAWING_INDEX_CACHE = json.load(f)
+    except Exception:
+        _DRAWING_INDEX_CACHE = {"types": {}}
+    return _DRAWING_INDEX_CACHE
+
+
+def _drawing_source_dir(index: dict) -> str:
+    source_dir = index.get("source_dir") or "assets/Type_cp129_2026"
+    if os.path.isabs(source_dir):
+        return source_dir
+    return os.path.join(_APP_DIR, source_dir)
+
+
+def _pdf_candidates(t: dict) -> list[tuple[str, str]]:
+    type_id = t.get("type_id", "")
+    candidates: list[tuple[str, str]] = []
+
+    index = _load_drawing_index()
+    record = index.get("types", {}).get(type_id)
+    if record:
+        source_dir = _drawing_source_dir(index)
+        ordered = []
+        primary = record.get("primary_pdf", "")
+        if primary:
+            ordered.append(primary)
+        for pdf in record.get("pdfs", []):
+            if pdf and pdf not in ordered:
+                ordered.append(pdf)
+        for pdf in ordered:
+            candidates.append((os.path.join(source_dir, pdf), f"CP-129: {pdf}"))
+
+    pdf_file = t.get("pdf_file", "")
+    if pdf_file:
+        candidates.append((os.path.join(_PDF_DIR, pdf_file), f"Legacy: {pdf_file}"))
+    if type_id:
+        candidates.append((os.path.join(_PDF_DIR, f"{type_id}.pdf"), f"Legacy: {type_id}.pdf"))
+
+    deduped: list[tuple[str, str]] = []
+    seen = set()
+    for path, label in candidates:
+        key = os.path.normcase(os.path.abspath(path))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append((path, label))
+    return deduped
+
+
+def _resolve_pdf_path(t: dict) -> tuple[str, str]:
+    for path, label in _pdf_candidates(t):
+        if os.path.exists(path):
+            return path, label
+    return "", ""
+
+
+def _pdf_missing_help(t: dict) -> str:
+    candidates = _pdf_candidates(t)
+    if not candidates:
+        return "無 PDF 檔"
+    lines = ["找不到可用 PDF，已嘗試:"]
+    lines.extend(f"- {path}" for path, _label in candidates)
+    lines.append("")
+    lines.append("新版 PDF 請放入:")
+    lines.append(_CP129_PDF_DIR)
+    lines.append("並執行 python_app/tools/build_drawing_index.py")
+    return "\n".join(lines)
+
 
 def load_catalog() -> list[dict]:
     """載入型錄 JSON"""
@@ -89,8 +193,12 @@ def load_catalog() -> list[dict]:
     with open(_CATALOG_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
     items = data.get("types", [])
+    supported_calculators = _supported_calculator_types()
     for item in items:
         type_id = item.get("type_id", "")
+        if item.get("category") in ("support", "support_cold"):
+            item["calculator_ready"] = type_id in supported_calculators
+
         doc_candidates = []
         if item.get("doc_file"):
             doc_candidates.append(item["doc_file"])
@@ -102,9 +210,9 @@ def load_catalog() -> list[dict]:
             doc_path = os.path.join(_DOCS_DIR, inferred_doc)
             if os.path.exists(doc_path):
                 item["doc_file"] = inferred_doc
-                if item.get("status") == "implemented":
-                    item["status"] = "documented"
                 break
+
+        _attach_data_update_info(item)
 
         if item.get("category") in ("component", "component_cold"):
             component_id = type_id
@@ -114,6 +222,109 @@ def load_catalog() -> list[dict]:
             item["component_table_status_zh"] = _component_table_status_zh(component_id)
             item["lookup_ready"] = item["component_table_status"] == "lookup_ready"
     return items
+
+
+def _type_config_path(type_id: str) -> str:
+    normalized = type_id.lower().replace("-", "_")
+    return os.path.join(os.path.dirname(_CATALOG_PATH), f"type_{normalized}.json")
+
+
+def _load_type_config_meta(type_id: str) -> dict:
+    path = _type_config_path(type_id)
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return {}
+    return {
+        "data_updated_at": data.get("data_updated_at", ""),
+        "data_update_note": data.get("data_update_note", ""),
+        "last_modified": data.get("last_modified", ""),
+        "migrated": data.get("migrated", ""),
+    }
+
+
+def _first_non_empty(*values) -> str:
+    for value in values:
+        if value:
+            return str(value)
+    return ""
+
+
+def _attach_data_update_info(item: dict) -> None:
+    config_meta = _load_type_config_meta(item.get("type_id", ""))
+    data_updated_at = _first_non_empty(
+        item.get("data_updated_at"),
+        config_meta.get("data_updated_at"),
+    )
+    last_modified = _first_non_empty(
+        item.get("last_modified"),
+        config_meta.get("last_modified"),
+    )
+    migrated = _first_non_empty(
+        item.get("migrated"),
+        config_meta.get("migrated"),
+    )
+    note = _first_non_empty(
+        item.get("data_update_note"),
+        config_meta.get("data_update_note"),
+    )
+
+    if data_updated_at:
+        date_value = data_updated_at
+        source_zh = "更新"
+        source_key = "data_updated_at"
+    elif last_modified:
+        date_value = last_modified
+        source_zh = "修改"
+        source_key = "last_modified"
+    elif migrated:
+        date_value = migrated
+        source_zh = "移轉"
+        source_key = "migrated"
+    else:
+        date_value = ""
+        source_zh = ""
+        source_key = ""
+
+    item["_data_date"] = date_value
+    item["_data_date_source"] = source_zh
+    item["_data_date_source_key"] = source_key
+    item["_data_update_note"] = note
+
+
+def _data_date_display(item: dict) -> str:
+    date_value = item.get("_data_date", "")
+    if not date_value:
+        return "—"
+    if item.get("_data_date_source_key") == "migrated":
+        return f"{date_value} 移"
+    return date_value
+
+
+def _data_date_detail(item: dict) -> str:
+    date_value = item.get("_data_date", "")
+    if not date_value:
+        return "資料日: 未紀錄"
+    source = item.get("_data_date_source", "")
+    return f"資料日: {date_value} {source}".rstrip()
+
+
+def _data_date_tooltip(item: dict) -> str:
+    date_value = item.get("_data_date", "")
+    if not date_value:
+        return "尚未紀錄此 Type 的資料更新日。"
+    source_key = item.get("_data_date_source_key", "")
+    source = item.get("_data_date_source", "")
+    note = item.get("_data_update_note", "")
+    lines = [f"{source}日期: {date_value}", f"來源欄位: {source_key}"]
+    if source_key == "migrated":
+        lines.append("此日期只代表 JSON/table 移轉日，不等於最新工程確認日。")
+    if note:
+        lines.append(f"說明: {note}")
+    return "\n".join(lines)
 
 
 def _component_table_status(component_id: str) -> str:
@@ -137,17 +348,29 @@ def _component_table_status_zh(component_id: str) -> str:
 
 
 def _display_status_key(item: dict) -> str:
+    if item.get("archive_status") == "semi_archived":
+        return "semi_archived"
     if item.get("category") in ("component", "component_cold"):
         component_status = item.get("component_table_status") or _component_table_status(
             item.get("type_id", "")
         )
         if component_status in ("lookup_ready", "partial_lookup", "metadata_only"):
             return component_status
+    if item.get("category") in ("support", "support_cold") and item.get("calculator_ready"):
+        return "implemented"
     return item.get("status", "placeholder")
 
 
 def _display_status(item: dict) -> tuple[str, str]:
     return STATUS_MAP.get(_display_status_key(item), ("未知", "#999"))
+
+
+def _display_status_help(item: dict) -> str:
+    key = _display_status_key(item)
+    help_text = STATUS_HELP.get(key, "未知狀態")
+    if key == "implemented" and item.get("status") != "implemented":
+        help_text += "\n備註: catalog 狀態尚未同步，但 calculator registry 已接線。"
+    return help_text
 
 
 # ─── Markdown → HTML 渲染 ─────────────────────────
@@ -309,8 +532,8 @@ class TypeManagerWidget(QWidget):
         self.filter_combo.addItem("全部", "")
         for cat_id in CATEGORY_ORDER:
             self.filter_combo.addItem(CATEGORY_ZH.get(cat_id, cat_id), cat_id)
-        self.filter_combo.addItem("可計算 + 已分析", "__runnable__")
-        self.filter_combo.addItem("僅已分析", "__documented__")
+        self.filter_combo.addItem("可計算 / 有文件", "__runnable__")
+        self.filter_combo.addItem("僅有文件", "__documented__")
         self.filter_combo.currentIndexChanged.connect(self._on_search)
         top_bar.addWidget(self.filter_combo)
 
@@ -321,7 +544,7 @@ class TypeManagerWidget(QWidget):
 
         # [左] 樹狀清單
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Type", "名稱", "狀態"])
+        self.tree.setHeaderLabels(["Type", "名稱", "階段", "資料日"])
         self.tree.setIconSize(QSize(28, 28))
         self.tree.setAlternatingRowColors(True)
         self.tree.setRootIsDecorated(True)
@@ -329,7 +552,7 @@ class TypeManagerWidget(QWidget):
         self.tree.currentItemChanged.connect(self._on_item_selected)
         self.tree.setFont(QFont("Microsoft JhengHei UI", 9))
 
-        # 欄位寬度: Type 固定, 名稱自適應填滿, 狀態固定
+        # 欄位寬度: Type 固定, 名稱自適應填滿, 階段/資料日固定
         header = self.tree.header()
         header.setFont(QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold))
         header.setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -337,8 +560,10 @@ class TypeManagerWidget(QWidget):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
         self.tree.setColumnWidth(0, 100)
-        self.tree.setColumnWidth(2, 74)
+        self.tree.setColumnWidth(2, 82)
+        self.tree.setColumnWidth(3, 104)
 
         # 狀態欄使用 badge delegate
         self._status_delegate = StatusBadgeDelegate(self.tree)
@@ -389,9 +614,16 @@ class TypeManagerWidget(QWidget):
     def _build_stat_bar(self, parent_layout: QVBoxLayout):
         """底部統計列"""
         total = len(self._catalog)
-        documented = sum(1 for t in self._catalog if t.get("status") == "documented")
-        implemented = sum(1 for t in self._catalog if t.get("status") == "implemented")
-        cataloged = sum(1 for t in self._catalog if t.get("status") == "cataloged")
+        documented = sum(1 for t in self._catalog if _display_status_key(t) == "documented")
+        implemented = sum(1 for t in self._catalog if _display_status_key(t) == "implemented")
+        semi_archived = sum(
+            1 for t in self._catalog if t.get("archive_status") == "semi_archived"
+        )
+        cataloged = sum(
+            1 for t in self._catalog
+            if t.get("status") == "cataloged"
+            and t.get("archive_status") != "semi_archived"
+        )
         placeholder = sum(1 for t in self._catalog if t.get("status") == "placeholder")
         coverage = get_component_table_coverage()
 
@@ -407,10 +639,11 @@ class TypeManagerWidget(QWidget):
 
         pairs = [
             (f"共 {total} 項", "#333"),
-            (f"已分析: {documented}", "#4CAF50"),
-            (f"可計算: {implemented}", "#FF9800"),
-            (f"已建檔: {cataloged}", "#2196F3"),
-            (f"預留: {placeholder}", "#9E9E9E"),
+            (f"可計算: {implemented}", "#2E7D32"),
+            (f"有文件: {documented}", "#1976D2"),
+            (f"僅索引: {cataloged}", "#607D8B"),
+            (f"半封存: {semi_archived}", "#616161"),
+            (f"待整理: {placeholder}", "#9E9E9E"),
             (f"M/N可查表: {coverage['lookup_ready']}", "#2E7D32"),
             (f"M/N部分查表: {coverage.get('partial_lookup', 0)}", "#F57C00"),
             (f"M/N待轉錄: {coverage['metadata_only']}", "#795548"),
@@ -480,6 +713,10 @@ class TypeManagerWidget(QWidget):
         self.lbl_drawing.setFont(QFont("Microsoft JhengHei UI", 9))
         self.lbl_drawing.setStyleSheet("color: #666;")
         info_row.addWidget(self.lbl_drawing)
+        self.lbl_data_date = QLabel("")
+        self.lbl_data_date.setFont(QFont("Microsoft JhengHei UI", 9))
+        self.lbl_data_date.setStyleSheet("color: #666;")
+        info_row.addWidget(self.lbl_data_date)
         info_row.addStretch()
         self.lbl_range = QLabel("")
         self.lbl_range.setFont(QFont("Microsoft JhengHei UI", 9))
@@ -711,9 +948,11 @@ class TypeManagerWidget(QWidget):
             cat_label = CATEGORY_ZH.get(cat_id, cat_id)
             if cat_id in ("component", "component_cold"):
                 run_count = sum(1 for t in items if _display_status_key(t) == "lookup_ready")
+                cat_count_label = f"可查表 {run_count}/{len(items)}"
             else:
-                run_count = sum(1 for t in items if t.get("status") in ("documented", "implemented"))
-            cat_node.setText(0, f"{cat_label}  ({run_count}/{len(items)})")
+                run_count = sum(1 for t in items if _display_status_key(t) == "implemented")
+                cat_count_label = f"可計算 {run_count}/{len(items)}"
+            cat_node.setText(0, f"{cat_label}  ({cat_count_label})")
             cat_node.setFont(0, QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold))
             cat_node.setForeground(0, QColor("#424242"))
             cat_node.setExpanded(True)
@@ -732,18 +971,18 @@ class TypeManagerWidget(QWidget):
                 # 儲存顏色供 StatusBadgeDelegate 使用
                 child.setData(2, Qt.ItemDataRole.UserRole + 1, status_color)
                 child.setData(0, Qt.ItemDataRole.UserRole, t)
+                child.setToolTip(2, _display_status_help(t))
+                child.setText(3, _data_date_display(t))
+                child.setTextAlignment(3, Qt.AlignmentFlag.AlignCenter)
+                child.setToolTip(3, _data_date_tooltip(t))
 
                 # 小圖示
                 icon = self._get_icon(t["type_id"])
                 if icon:
                     child.setIcon(0, icon)
 
-                # 已分析/可計算 粗體 + 預留灰色
-                if t.get("status") == "documented":
-                    bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
-                    child.setFont(0, bold_f)
-                    child.setFont(1, bold_f)
-                elif t.get("status") == "implemented":
+                # 可計算 / 可查表粗體，其餘階段降低視覺權重
+                if _display_status_key(t) == "implemented":
                     bold_f = QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold)
                     child.setFont(0, bold_f)
                     child.setFont(1, bold_f)
@@ -753,6 +992,8 @@ class TypeManagerWidget(QWidget):
                     child.setFont(1, bold_f)
                 elif t.get("status") == "placeholder":
                     child.setForeground(1, QColor("#999"))
+                elif _display_status_key(t) == "semi_archived":
+                    child.setForeground(1, QColor("#666"))
 
     # ══════════════════════════════════════════
     #  圖示
@@ -786,10 +1027,10 @@ class TypeManagerWidget(QWidget):
         for t in self._catalog:
             # 分類篩選
             if cat_filter == "__runnable__":
-                if t.get("status") not in ("documented", "implemented"):
+                if _display_status_key(t) not in ("documented", "implemented"):
                     continue
             elif cat_filter == "__documented__":
-                if t.get("status") != "documented":
+                if _display_status_key(t) != "documented":
                     continue
             elif cat_filter and t.get("category") != cat_filter:
                 continue
@@ -836,6 +1077,7 @@ class TypeManagerWidget(QWidget):
         # 狀態 badge
         status_zh, status_color = _display_status(t)
         self.lbl_status_badge.setText(f"  {status_zh}  ")
+        self.lbl_status_badge.setToolTip(_display_status_help(t))
         self.lbl_status_badge.setStyleSheet(
             f"background: {status_color}; color: white; border-radius: 4px; "
             f"font-size: 11px; font-weight: bold; padding: 2px 10px;"
@@ -844,6 +1086,8 @@ class TypeManagerWidget(QWidget):
         # 圖號 + 範圍
         dno = t.get("drawing_no", "")
         self.lbl_drawing.setText(f"圖號: {dno}" if dno else "")
+        self.lbl_data_date.setText(_data_date_detail(t))
+        self.lbl_data_date.setToolTip(_data_date_tooltip(t))
         rng = t.get("line_size_range", "")
         if t.get("category") in ("component", "component_cold"):
             table_status = t.get("component_table_status_zh", "")
@@ -855,11 +1099,12 @@ class TypeManagerWidget(QWidget):
         else:
             self.lbl_range.setText(f"適用範圍: {rng}" if rng else "")
 
-        # PDF 按鈕
-        pdf_file = t.get("pdf_file", "")
-        pdf_path = os.path.join(_PDF_DIR, pdf_file) if pdf_file else ""
-        self.btn_open_pdf.setEnabled(bool(pdf_file))
-        self.btn_open_pdf.setToolTip(pdf_path if pdf_file else "無 PDF 檔")
+        # PDF 按鈕：新版 CP-129 index 優先，舊 assets/Type fallback
+        pdf_path, pdf_label = _resolve_pdf_path(t)
+        self.btn_open_pdf.setEnabled(bool(pdf_path))
+        self.btn_open_pdf.setToolTip(
+            f"{pdf_label}\n{pdf_path}" if pdf_path else _pdf_missing_help(t)
+        )
 
         # 圖面預覽
         self._load_preview(t)
@@ -931,7 +1176,8 @@ class TypeManagerWidget(QWidget):
             os.path.join(_PREVIEW_DIR, f"{type_id}.png"),
             os.path.join(_PREVIEW_DIR, f"{type_id}.jpg"),
         ]
-        pdf_name = t.get("pdf_file", "")
+        pdf_path, _pdf_label = _resolve_pdf_path(t)
+        pdf_name = os.path.basename(pdf_path) if pdf_path else t.get("pdf_file", "")
         if pdf_name:
             base = os.path.splitext(pdf_name)[0]
             candidates.append(os.path.join(_PREVIEW_DIR, f"{base}.png"))
@@ -947,8 +1193,6 @@ class TypeManagerWidget(QWidget):
                     return
 
         # 2) 嘗試從 PDF 渲染第一頁
-        pdf_file = pdf_name or f"{type_id}.pdf"
-        pdf_path = os.path.join(_PDF_DIR, pdf_file)
         if os.path.exists(pdf_path):
             try:
                 doc = fitz.open(pdf_path)
@@ -973,8 +1217,9 @@ class TypeManagerWidget(QWidget):
         self.lbl_preview.setMinimumSize(400, 200)
         self.lbl_preview.setText(
             f"尚無 PDF 或預覽圖\n\n"
-            f"請將 PDF 放入: assets/Type/\n"
-            f"檔名: {pdf_file}"
+            f"新版 PDF 請放入: assets/Type_cp129_2026/\n"
+            f"搬入後執行: python_app/tools/build_drawing_index.py\n\n"
+            f"舊版 fallback: assets/Type/{t.get('pdf_file', f'{type_id}.pdf')}"
         )
         self.lbl_preview.setStyleSheet(
             "background: #FAFAFA; color: #AAA; font-size: 12px; padding: 16px;"
@@ -1017,15 +1262,12 @@ class TypeManagerWidget(QWidget):
         t = getattr(self, "_current_type", None)
         if not t:
             return
-        pdf_file = t.get("pdf_file", "")
-        if not pdf_file:
-            return
-        pdf_path = os.path.join(_PDF_DIR, pdf_file)
+        pdf_path, _pdf_label = _resolve_pdf_path(t)
         if not os.path.exists(pdf_path):
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.warning(
                 self, "找不到 PDF",
-                f"檔案不存在:\n{pdf_path}\n\n請確認 PDF 檔案已放入「單張-本案有關」資料夾。"
+                _pdf_missing_help(t)
             )
             return
 

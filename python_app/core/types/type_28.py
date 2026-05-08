@@ -54,7 +54,7 @@ NOTE 4: THIS TYPE SHALL BE USED WITH M-42. USE TYPE-L & P ONLY.
 VBA BUG: Section_Length_L 漏乘 * 100，導致 L 值差 100 倍。
          Python 版已修正，且採三件式結構表達。
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..m42 import perform_action_by_letter
@@ -131,13 +131,19 @@ def calculate(fullstring: str) -> AnalysisResult:
     usage_hint = "Channel:管置上方" if section_type == "Channel" else "Angle:可U-bolt側掛"
 
     add_steel_section_entry(result, section_type, section_dim, section_H)
-    result.entries[-1].remark = f"Left leg, H={section_H} ({usage_hint})"
+    set_remark(result.entries[-1],
+               f"左立柱，H={section_H}（{usage_hint}）",
+               f"Left leg, H={section_H} ({usage_hint})")
 
     add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = f"Top beam, L={section_L} ({usage_hint})"
+    set_remark(result.entries[-1],
+               f"上橫梁，L={section_L}（{usage_hint}）",
+               f"Top beam, L={section_L} ({usage_hint})")
 
     add_steel_section_entry(result, section_type, section_dim, section_H)
-    result.entries[-1].remark = f"Right leg, H={section_H} ({usage_hint})"
+    set_remark(result.entries[-1],
+               f"右立柱，H={section_H}（{usage_hint}）",
+               f"Right leg, H={section_H} ({usage_hint})")
 
     # ═══════════════════════════════════════════════════════
     # ④ M-42 下部組件 (底板 + 螺栓)

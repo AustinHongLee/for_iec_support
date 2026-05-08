@@ -17,10 +17,16 @@ from PyQt6.QtWidgets import (
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
     QListWidget, QListWidgetItem, QRadioButton, QButtonGroup,
-    QFrame, QScrollArea,
+    QFrame, QScrollArea, QTextBrowser,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QIcon
+from PyQt6.QtGui import QFont, QColor, QIcon, QImage, QPixmap
+
+try:
+    import fitz  # PyMuPDF
+    _FITZ_AVAILABLE = True
+except ImportError:
+    _FITZ_AVAILABLE = False
 
 from core.calculator import (
     analyze_single, get_supported_types,
@@ -30,9 +36,26 @@ from core.models import AnalysisResult
 from core.parser import get_type_code, get_part, get_lookup_value
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict
-from ui.type_manager import TypeManagerWidget
+from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
+
+# PDF/資源路徑
+_UI_DIR = os.path.dirname(os.path.abspath(__file__))
+_APP_DIR = os.path.dirname(_UI_DIR)
+_PDF_DIR = os.path.join(_APP_DIR, "assets", "Type")
+
+# 結果表格群組背景色 (header_row_color, body_row_color)
+_RESULT_GROUP_COLORS = [
+    ("#DAEAF8", "#EEF5FB"),   # 藍
+    ("#D5EDD5", "#EAF5EA"),   # 綠
+    ("#E5D5F0", "#F2EAF8"),   # 紫
+    ("#FDEFD5", "#FEF6EA"),   # 橘
+    ("#D5EDE8", "#EAF5F2"),   # 青
+    ("#F0D5D5", "#FAE8E8"),   # 粉
+    ("#E8E8D5", "#F5F5EA"),   # 黃綠
+    ("#D5D5ED", "#EAEAF5"),   # 薰衣草
+]
 
 
 class MainWindow(QMainWindow):
@@ -44,7 +67,147 @@ class MainWindow(QMainWindow):
         self._results = []
         self._project_result = None
         self._selected_index = -1
+        self._apply_stylesheet()
         self._init_ui()
+
+    # ══════════════════════════════════════════
+    #  全域樣式
+    # ══════════════════════════════════════════
+    def _apply_stylesheet(self):
+        self.setStyleSheet("""
+            QMainWindow, QDialog {
+                background-color: #F5F6FA;
+            }
+            QTabWidget::pane {
+                border: 1px solid #C8CDD5;
+                background: #FFFFFF;
+                border-radius: 0 4px 4px 4px;
+            }
+            QTabBar::tab {
+                padding: 7px 18px;
+                background: #E8ECF1;
+                color: #555;
+                border: 1px solid #C8CDD5;
+                border-bottom: none;
+                border-radius: 4px 4px 0 0;
+                font-size: 11px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background: #FFFFFF;
+                color: #1565C0;
+                font-weight: bold;
+                border-bottom: 2px solid #FFFFFF;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #DDE3EC;
+            }
+            QGroupBox {
+                font-weight: bold;
+                font-size: 11px;
+                color: #333;
+                border: 1px solid #C8CDD5;
+                border-radius: 6px;
+                margin-top: 14px;
+                padding-top: 6px;
+                background: #FFFFFF;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+                color: #1565C0;
+            }
+            QPushButton {
+                padding: 5px 12px;
+                border: 1px solid #B8C0CC;
+                border-radius: 4px;
+                background-color: #F0F2F5;
+                color: #333;
+                font-size: 11px;
+                min-height: 22px;
+            }
+            QPushButton:hover {
+                background-color: #E2E8F0;
+                border-color: #8898B0;
+            }
+            QPushButton:pressed {
+                background-color: #D0DAEA;
+            }
+            QPushButton:disabled {
+                color: #AAA;
+                background-color: #EAEAEA;
+                border-color: #D0D0D0;
+            }
+            QLineEdit, QComboBox {
+                border: 1px solid #C0C8D4;
+                border-radius: 4px;
+                padding: 4px 8px;
+                background: #FFFFFF;
+                color: #222;
+                selection-background-color: #BBDEFB;
+                font-size: 11px;
+            }
+            QLineEdit:focus, QComboBox:focus {
+                border-color: #1565C0;
+            }
+            QListWidget {
+                border: 1px solid #C0C8D4;
+                border-radius: 4px;
+                background: #FFFFFF;
+                outline: none;
+            }
+            QListWidget::item {
+                padding: 3px 6px;
+                border-bottom: 1px solid #EEF0F3;
+            }
+            QListWidget::item:selected {
+                background: #BBDEFB;
+                color: #0D47A1;
+                border-radius: 2px;
+            }
+            QListWidget::item:hover:!selected {
+                background: #E8F0F8;
+            }
+            QTableWidget {
+                border: 1px solid #C0C8D4;
+                border-radius: 4px;
+                gridline-color: #E4E8EE;
+                background: #FFFFFF;
+                alternate-background-color: #F8FAFB;
+                selection-background-color: #BBDEFB;
+                font-size: 11px;
+            }
+            QHeaderView::section {
+                background-color: #EEF2F8;
+                color: #2C3E60;
+                font-weight: bold;
+                font-size: 11px;
+                border: none;
+                border-right: 1px solid #D2D8E2;
+                border-bottom: 2px solid #1565C0;
+                padding: 5px 8px;
+            }
+            QScrollBar:vertical {
+                width: 10px;
+                background: #F0F2F5;
+            }
+            QScrollBar::handle:vertical {
+                background: #C0CBD8;
+                border-radius: 5px;
+                min-height: 20px;
+            }
+            QStatusBar {
+                color: #666;
+                font-size: 10px;
+                background: #F0F2F5;
+                border-top: 1px solid #D0D5DC;
+            }
+            QSplitter::handle {
+                background: #D0D5DC;
+                width: 2px;
+            }
+        """)
 
     # ══════════════════════════════════════════
     #  UI 初始化
@@ -196,7 +359,15 @@ class MainWindow(QMainWindow):
         self.result_table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents
         )
-        self.result_table.setAlternatingRowColors(True)
+        self.result_table.setAlternatingRowColors(False)
+        self.result_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows
+        )
+        self.result_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+        self.result_table.verticalHeader().setDefaultSectionSize(22)
+        self.result_table.verticalHeader().setVisible(False)
         layout.addWidget(self.result_table)
 
         # 匯出列
@@ -210,20 +381,26 @@ class MainWindow(QMainWindow):
         self.btn_export.clicked.connect(self._on_export)
         export_row.addWidget(self.btn_export)
         export_row.addStretch()
-        self.total_weight_label = QLabel("總重量: -- kg")
-        self.total_weight_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        self.total_weight_label = QLabel("  總重量: -- kg  ")
+        self.total_weight_label.setFont(QFont("Microsoft JhengHei UI", 12, QFont.Weight.Bold))
+        self.total_weight_label.setStyleSheet(
+            "color: #1565C0; background: #E3F0FF;"
+            "border: 2px solid #90C2F0; border-radius: 6px;"
+            "padding: 4px 12px;"
+        )
+        self.total_weight_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         export_row.addWidget(self.total_weight_label)
         layout.addLayout(export_row)
 
         return panel
 
     def _set_project_result_headers(self):
-        """Result table columns: single-support fields and project totals."""
-        self.result_table.setColumnCount(17)
+        """Result table columns: simplified 13-column pivot-friendly layout."""
+        self.result_table.setColumnCount(13)
         self.result_table.setHorizontalHeaderLabels([
-            "型號", "組數", "項次", "品名", "尺寸/規格", "長度(mm)", "寬度(mm)",
-            "材質", "單件數量", "單件長度小計", "單件重量",
-            "總數量", "總長度小計", "總重量", "單位", "屬性", "備註",
+            "型號", "組數", "項次", "品名", "規格",
+            "材質", "長度(mm)", "寬度(mm)",
+            "單件數量", "總數量", "總重(kg)", "屬性", "備註",
         ])
 
     # ══════════════════════════════════════════
@@ -423,7 +600,9 @@ class MainWindow(QMainWindow):
         row = self.item_list.currentRow()
         if row < 0:
             return
+        self.item_list.blockSignals(True)
         self.item_list.takeItem(row)
+        self.item_list.blockSignals(False)
         self._project_rows.pop(row)
         self._selected_index = -1
         self.side_panel.clear_panel()
@@ -454,6 +633,9 @@ class MainWindow(QMainWindow):
         self.side_panel.show_item(
             row, project_row.designation, project_row.overrides or {}
         )
+        # 若已有分析結果，一併顯示
+        if 0 <= row < len(self._results):
+            self.side_panel.update_result(self._results[row])
 
     def _on_override_changed(self, idx: int, overrides: dict):
         """Side Panel 發出覆寫變更"""
@@ -493,6 +675,10 @@ class MainWindow(QMainWindow):
             f"{self._project_result.total_support_count} 組 "
             f"(成功 {len(self._results) - error_count}, 錯誤 {error_count})"
         )
+
+        # 更新 side panel 的計算結果
+        if 0 <= self._selected_index < len(self._results):
+            self.side_panel.update_result(self._results[self._selected_index])
 
         # 啟用材料合計 Tab
         self.material_cutting_page.set_results_ready(True)
@@ -541,59 +727,107 @@ class MainWindow(QMainWindow):
         self.total_weight_label.setText(f"總重量: {total_weight:.2f} kg")
 
     def _display_project_results(self):
-        """Display paired single-support and project-scaled values."""
+        """Display project results in simplified 13-column flat layout with visual grouping."""
+        # 數字欄 (右對齊): 長度(6), 寬度(7), 單件數(8), 總數(9), 總重(10)
+        RIGHT_ALIGN = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        CENTER = Qt.AlignmentFlag.AlignCenter
+        LEFT = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        # col_idx → alignment
+        COL_ALIGN = {0: LEFT, 1: CENTER, 2: CENTER, 3: LEFT, 4: LEFT,
+                     5: CENTER, 6: RIGHT_ALIGN, 7: RIGHT_ALIGN, 8: CENTER, 9: CENTER,
+                     10: RIGHT_ALIGN, 11: CENTER, 12: LEFT}
+
         total_weight = 0.0
+        g_idx = 0  # 群組色輪 index
 
         for row_result in self._project_result.rows:
             input_row = row_result.input_row
             single_result = row_result.single_result
             scaled_result = row_result.scaled_result
+            hdr_color, body_color = _RESULT_GROUP_COLORS[g_idx % len(_RESULT_GROUP_COLORS)]
+            g_idx += 1
 
             if single_result.error:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                desc = QTableWidgetItem(input_row.designation)
-                desc.setForeground(QColor("red"))
-                self.result_table.setItem(row, 0, desc)
-                self.result_table.setItem(row, 1, QTableWidgetItem(str(input_row.quantity)))
-                err = QTableWidgetItem(f"錯誤: {single_result.error}")
-                err.setForeground(QColor("red"))
-                self.result_table.setItem(row, 3, err)
+                err_bg = QColor("#FDE8E8")
+                err_fg = QColor("#C62828")
+                for col in range(13):
+                    cell = QTableWidgetItem()
+                    cell.setBackground(err_bg)
+                    self.result_table.setItem(row, col, cell)
+                desc = self.result_table.item(row, 0)
+                desc.setText(input_row.designation)
+                desc.setForeground(err_fg)
+                desc.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
+                self.result_table.item(row, 1).setText(str(input_row.quantity))
+                err_cell = self.result_table.item(row, 3)
+                err_cell.setText(f"⚠ {single_result.error}")
+                err_cell.setForeground(err_fg)
                 continue
+
+            is_first = True
+            group_weight = 0.0
+            group_start_row = self.result_table.rowCount()
 
             for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                self.result_table.setItem(row, 0, QTableWidgetItem(
-                    input_row.designation if single_entry.item_no == 1 else ""
-                ))
-                self.result_table.setItem(row, 1, QTableWidgetItem(
-                    str(input_row.quantity) if single_entry.item_no == 1 else ""
-                ))
-                self.result_table.setItem(row, 2, QTableWidgetItem(str(single_entry.item_no)))
-                self.result_table.setItem(row, 3, QTableWidgetItem(single_entry.name))
-                self.result_table.setItem(row, 4, QTableWidgetItem(single_entry.spec))
-                self.result_table.setItem(row, 5, QTableWidgetItem(str(single_entry.length)))
-                self.result_table.setItem(row, 6, QTableWidgetItem(
-                    str(single_entry.width) if single_entry.width else ""
-                ))
-                self.result_table.setItem(row, 7, QTableWidgetItem(single_entry.material))
-                self.result_table.setItem(row, 8, QTableWidgetItem(str(single_entry.quantity)))
-                self.result_table.setItem(row, 9, QTableWidgetItem(
-                    f"{single_entry.length_subtotal:.3f}" if single_entry.length_subtotal else ""
-                ))
-                self.result_table.setItem(row, 10, QTableWidgetItem(f"{single_entry.weight_output:.2f}"))
-                self.result_table.setItem(row, 11, QTableWidgetItem(str(scaled_entry.quantity)))
-                self.result_table.setItem(row, 12, QTableWidgetItem(
-                    f"{scaled_entry.length_subtotal:.3f}" if scaled_entry.length_subtotal else ""
-                ))
-                self.result_table.setItem(row, 13, QTableWidgetItem(f"{scaled_entry.weight_output:.2f}"))
-                self.result_table.setItem(row, 14, QTableWidgetItem(single_entry.unit))
-                self.result_table.setItem(row, 15, QTableWidgetItem(single_entry.category))
-                self.result_table.setItem(row, 16, QTableWidgetItem(single_entry.display_remark))
-                total_weight += scaled_entry.weight_output
+                bg = QColor(hdr_color if is_first else body_color)
 
-        self.total_weight_label.setText(f"專案總重量: {total_weight:.2f} kg")
+                values = [
+                    input_row.designation if is_first else "",           # 0 型號
+                    str(input_row.quantity) if is_first else "",          # 1 組數
+                    str(single_entry.item_no),                            # 2 項次
+                    single_entry.name,                                    # 3 品名
+                    single_entry.spec,                                    # 4 規格
+                    single_entry.material,                                # 5 材質
+                    str(single_entry.length) if single_entry.length else "",  # 6 長度
+                    str(single_entry.width)  if single_entry.width  else "",  # 7 寬度
+                    str(single_entry.quantity),                           # 8 單件數量
+                    str(scaled_entry.quantity),                           # 9 總數量
+                    f"{scaled_entry.weight_output:.3f}",                  # 10 總重
+                    single_entry.category,                                # 11 屬性
+                    single_entry.display_remark,                          # 12 備註
+                ]
+                for col, val in enumerate(values):
+                    item = QTableWidgetItem(val)
+                    item.setBackground(bg)
+                    item.setTextAlignment(COL_ALIGN.get(col, LEFT))
+                    if col == 0 and is_first:
+                        item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
+                        item.setForeground(QColor("#1A3A6B"))
+                    elif col == 10:
+                        item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
+                    self.result_table.setItem(row, col, item)
+
+                group_weight += scaled_entry.weight_output
+                total_weight += scaled_entry.weight_output
+                is_first = False
+
+            # ── 群組小計列 ─────────────────────────────────────
+            sub_row = self.result_table.rowCount()
+            self.result_table.insertRow(sub_row)
+            sub_bg = QColor(hdr_color)
+            sub_label = QTableWidgetItem(
+                f"  {input_row.designation}  合計 ({input_row.quantity} 組)"
+            )
+            sub_label.setBackground(sub_bg)
+            sub_label.setForeground(QColor("#1A3A6B"))
+            sub_label.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
+            sub_label.setTextAlignment(LEFT)
+            self.result_table.setItem(sub_row, 0, sub_label)
+            for col in range(1, 13):
+                filler = QTableWidgetItem("")
+                filler.setBackground(sub_bg)
+                self.result_table.setItem(sub_row, col, filler)
+            sub_wt = self.result_table.item(sub_row, 10)
+            sub_wt.setText(f"{group_weight:.3f}")
+            sub_wt.setTextAlignment(RIGHT_ALIGN)
+            sub_wt.setForeground(QColor("#1A3A6B"))
+            self.result_table.setRowHeight(sub_row, 20)
+
+        self.total_weight_label.setText(f"  專案總重量:  {total_weight:.3f} kg  ")
 
     # ══════════════════════════════════════════
     #  匯出 / 設定
@@ -663,98 +897,546 @@ class MainWindow(QMainWindow):
 #  Side Panel — 單筆項目覆寫設定
 # ══════════════════════════════════════════════════
 class SidePanel(QGroupBox):
-    """右側設定面板: 顯示選中項目的查表值, 允許單筆覆寫"""
+    """右側面板：上半 PDF 圖面預覽（可縮放/滑動），下半計算明細與覆寫設定"""
 
     overrideChanged = pyqtSignal(int, dict)
+    _catalog_cache: list = []   # 類別層級快取，避免重複讀檔
+
+    # ── 常用按鈕樣式 ─────────────────────────────────────────
+    _ZOOM_BTN = (
+        "QPushButton { font-size: 13px; font-weight: bold; background: #EEEEEE; "
+        "border: 1px solid #CCC; color: #333; padding: 0; }"
+        "QPushButton:hover { background: #BDBDBD; }"
+    )
+    _ZOOM_FIT_BTN = (
+        "QPushButton { font-size: 10px; background: #EEEEEE; "
+        "border: 1px solid #CCC; color: #333; padding: 0 6px; }"
+        "QPushButton:hover { background: #BDBDBD; }"
+    )
 
     def __init__(self):
         super().__init__("項目設定")
         self._idx = -1
         self._overrides = {}
-        self._building = False   # 避免 build 時觸發 signal
-        self.setMinimumWidth(260)
+        self._building = False
+        self._preview_pixmap = None
+        self._zoom_level = 1.0
+        self._current_type_code = ""
+        # form widget refs (reset each show_item call)
+        self._rb_elbow = None
+        self._rb_tee = None
+        self._mat_combo = None
+        self._pipe_edit = None
+        self._sch_edit = None
+        self._l_edit = None
+        self._result_browser = None
+        self._btn_inventor = None
+        self._current_result = None
+        self._current_designation = ""
+        self.setMinimumWidth(280)
 
-        self._layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(4, 16, 4, 4)
+        outer.setSpacing(0)
 
-        self._placeholder = QLabel("← 點選左側項目\n   以檢視/覆寫設定")
+        # placeholder（未選中時顯示）
+        self._placeholder = QLabel("← 點選左側項目\n   以檢視詳情")
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._placeholder.setStyleSheet("color: #999; font-size: 12px;")
-        self._layout.addWidget(self._placeholder)
-        self._layout.addStretch()
+        outer.addWidget(self._placeholder)
 
-        # 動態元件容器
-        self._form_widgets = []
+        # 主分割器（垂直）
+        self._splitter = QSplitter(Qt.Orientation.Vertical)
+        self._splitter.setHandleWidth(5)
+        self._splitter.setStyleSheet(
+            "QSplitter::handle { background: #DDE3EC; }"
+        )
+        self._splitter.setVisible(False)
+        outer.addWidget(self._splitter)
 
+        self._build_pdf_panel()
+        self._build_detail_panel()
+        self._splitter.setSizes([400, 320])
+
+    # ══════════════════════════════════════════
+    #  PDF 預覽面板（上半）
+    # ══════════════════════════════════════════
+    def _build_pdf_panel(self):
+        pane = QWidget()
+        pane.setStyleSheet("background: white;")
+        vbox = QVBoxLayout(pane)
+        vbox.setContentsMargins(2, 2, 2, 2)
+        vbox.setSpacing(3)
+
+        # 縮放控制列
+        zrow = QHBoxLayout()
+        zrow.setSpacing(4)
+        lbl = QLabel("圖面預覽")
+        lbl.setFont(QFont("Microsoft JhengHei UI", 9, QFont.Weight.Bold))
+        lbl.setStyleSheet("color: #555;")
+        zrow.addWidget(lbl)
+        zrow.addStretch()
+
+        self._btn_zoom_out = QPushButton("－")
+        self._btn_zoom_out.setFixedSize(26, 24)
+        self._btn_zoom_out.setStyleSheet(self._ZOOM_BTN)
+
+        self._lbl_zoom_pct = QLabel("—")
+        self._lbl_zoom_pct.setFont(QFont("Consolas", 9))
+        self._lbl_zoom_pct.setStyleSheet("color: #555;")
+        self._lbl_zoom_pct.setFixedWidth(44)
+        self._lbl_zoom_pct.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self._btn_zoom_in = QPushButton("＋")
+        self._btn_zoom_in.setFixedSize(26, 24)
+        self._btn_zoom_in.setStyleSheet(self._ZOOM_BTN)
+
+        self._btn_zoom_fit = QPushButton("適合寬度")
+        self._btn_zoom_fit.setFixedHeight(24)
+        self._btn_zoom_fit.setStyleSheet(self._ZOOM_FIT_BTN)
+
+        zrow.addWidget(self._btn_zoom_out)
+        zrow.addWidget(self._lbl_zoom_pct)
+        zrow.addWidget(self._btn_zoom_in)
+        zrow.addWidget(self._btn_zoom_fit)
+        vbox.addLayout(zrow)
+
+        # 可捲動的圖片區
+        self._pdf_scroll = QScrollArea()
+        self._pdf_scroll.setWidgetResizable(False)
+        self._pdf_scroll.setStyleSheet(
+            "QScrollArea { background: white; border: 1px solid #E0E0E0; }"
+            "QScrollBar:vertical { width: 8px; } QScrollBar:horizontal { height: 8px; }"
+        )
+        self._lbl_pdf = QLabel("選擇項目後顯示圖面")
+        self._lbl_pdf.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_pdf.setMinimumSize(100, 80)
+        self._lbl_pdf.setStyleSheet(
+            "background: white; color: #AAA; font-size: 11px; padding: 12px;"
+        )
+        self._pdf_scroll.setWidget(self._lbl_pdf)
+        vbox.addWidget(self._pdf_scroll)
+
+        self._btn_zoom_in.clicked.connect(lambda: self._zoom_preview(0.15))
+        self._btn_zoom_out.clicked.connect(lambda: self._zoom_preview(-0.15))
+        self._btn_zoom_fit.clicked.connect(self._zoom_fit)
+
+        self._splitter.addWidget(pane)
+
+    # ══════════════════════════════════════════
+    #  計算明細 + 覆寫設定面板（下半）
+    # ══════════════════════════════════════════
+    def _build_detail_panel(self):
+        pane = QWidget()
+        pane.setStyleSheet("background: white;")
+        vbox = QVBoxLayout(pane)
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.setSpacing(0)
+
+        self._detail_scroll = QScrollArea()
+        self._detail_scroll.setWidgetResizable(True)
+        self._detail_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._detail_scroll.setStyleSheet(
+            "QScrollArea { background: white; } QScrollBar:vertical { width: 8px; }"
+        )
+        self._detail_content = QWidget()
+        self._detail_content.setStyleSheet("background: white;")
+        self._detail_layout = QVBoxLayout(self._detail_content)
+        self._detail_layout.setContentsMargins(8, 8, 8, 8)
+        self._detail_layout.setSpacing(8)
+        self._detail_layout.addStretch()
+
+        self._detail_scroll.setWidget(self._detail_content)
+        vbox.addWidget(self._detail_scroll)
+        self._splitter.addWidget(pane)
+
+        self._detail_widgets: list = []
+
+    # ══════════════════════════════════════════
+    #  PDF 渲染 / 縮放
+    # ══════════════════════════════════════════
+    def _load_pdf_for_type(self, type_code: str):
+        """根據 type_code 找 PDF 並渲染第一頁"""
+        self._preview_pixmap = None
+
+        cat_entry = self._get_catalog_entry(type_code)
+        pdf_file = cat_entry.get("pdf_file", "") or f"{type_code.zfill(2)}.pdf"
+
+        pdf_path = os.path.join(_PDF_DIR, pdf_file)
+        if _FITZ_AVAILABLE and os.path.exists(pdf_path):
+            try:
+                doc = fitz.open(pdf_path)
+                page = doc[0]
+                mat = fitz.Matrix(2.5, 2.5)
+                pix = page.get_pixmap(matrix=mat)
+                img = QImage(
+                    pix.samples, pix.width, pix.height,
+                    pix.stride, QImage.Format.Format_RGB888,
+                )
+                self._preview_pixmap = QPixmap.fromImage(img)
+                doc.close()
+                self._zoom_fit()
+                return
+            except Exception:
+                pass
+
+        # fallback
+        self._lbl_pdf.clear()
+        self._lbl_pdf.setMinimumSize(100, 80)
+        self._lbl_pdf.setText(
+            f"尚無此 Type 的 PDF\n({pdf_file})"
+            if _FITZ_AVAILABLE else
+            "PyMuPDF 未安裝，無法顯示 PDF 預覽"
+        )
+        self._lbl_pdf.setStyleSheet(
+            "background: #FAFAFA; color: #AAA; font-size: 11px; padding: 12px;"
+        )
+        self._lbl_zoom_pct.setText("—")
+
+    def _apply_zoom(self):
+        if not self._preview_pixmap:
+            return
+        new_w = int(self._preview_pixmap.width() * self._zoom_level)
+        scaled = self._preview_pixmap.scaledToWidth(
+            max(60, new_w), Qt.TransformationMode.SmoothTransformation
+        )
+        self._lbl_pdf.setPixmap(scaled)
+        self._lbl_pdf.resize(scaled.size())
+        self._lbl_pdf.setStyleSheet("background: white;")
+        self._lbl_zoom_pct.setText(f"{int(self._zoom_level * 100)}%")
+
+    def _zoom_preview(self, delta: float):
+        self._zoom_level = max(0.2, min(3.0, self._zoom_level + delta))
+        self._apply_zoom()
+
+    def _zoom_fit(self):
+        if not self._preview_pixmap:
+            return
+        avail = self._pdf_scroll.viewport().width() - 4
+        if avail <= 0:
+            avail = 270
+        self._zoom_level = max(0.2, min(3.0, avail / max(1, self._preview_pixmap.width())))
+        self._apply_zoom()
+
+    # ══════════════════════════════════════════
+    #  型錄查詢
+    # ══════════════════════════════════════════
+    @classmethod
+    def _get_catalog_entry(cls, type_code: str) -> dict:
+        if not cls._catalog_cache:
+            try:
+                cls._catalog_cache = load_catalog()
+            except Exception:
+                return {}
+        tc = type_code.lstrip("0") or "0"
+        for entry in cls._catalog_cache:
+            tid = entry.get("type_id", "")
+            if tid == type_code or tid.lstrip("0") == tc:
+                return entry
+        return {}
+
+    # ══════════════════════════════════════════
+    #  下半動態內容管理
+    # ══════════════════════════════════════════
+    def _clear_detail(self):
+        for w in self._detail_widgets:
+            self._detail_layout.removeWidget(w)
+            w.deleteLater()
+        self._detail_widgets.clear()
+        # 重置 form widget 參照
+        self._rb_elbow = None
+        self._rb_tee = None
+        self._mat_combo = None
+        self._pipe_edit = None
+        self._sch_edit = None
+        self._l_edit = None
+        self._result_browser = None
+        self._btn_inventor = None
+
+    def _add_dw(self, w: QWidget):
+        """插入在 stretch 之前"""
+        self._detail_layout.insertWidget(self._detail_layout.count() - 1, w)
+        self._detail_widgets.append(w)
+
+    def _add_sep(self):
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        self._add_dw(sep)
+
+    def _section_label(self, text: str) -> QLabel:
+        lbl = QLabel(text)
+        lbl.setStyleSheet(
+            "font-weight: bold; font-size: 11px; color: #1565C0; "
+            "padding: 4px 0 2px 0;"
+        )
+        return lbl
+
+    # ══════════════════════════════════════════
+    #  Public API
+    # ══════════════════════════════════════════
     def clear_panel(self):
         self._idx = -1
-        self._clear_form()
-        self._placeholder.show()
-
-    def _clear_form(self):
-        for w in self._form_widgets:
-            self._layout.removeWidget(w)
-            w.deleteLater()
-        self._form_widgets.clear()
+        self._current_type_code = ""
+        self._preview_pixmap = None
+        self._lbl_pdf.clear()
+        self._lbl_pdf.setText("選擇項目後顯示圖面")
+        self._lbl_pdf.setStyleSheet(
+            "background: white; color: #AAA; font-size: 11px; padding: 12px;"
+        )
+        self._lbl_zoom_pct.setText("—")
+        self._clear_detail()
+        self._splitter.setVisible(False)
+        self._placeholder.setVisible(True)
 
     def show_item(self, idx: int, item_text: str, current_overrides: dict):
         self._building = True
         self._idx = idx
         self._overrides = dict(current_overrides)
-        self._clear_form()
-        self._placeholder.hide()
+        self._current_designation = item_text
+        self._current_result = None
+        self._clear_detail()
+        self._placeholder.setVisible(False)
+        self._splitter.setVisible(True)
 
         type_code = get_type_code(item_text)
+        self._current_type_code = type_code
+
+        # ── 載入 PDF 預覽 ──
+        self._load_pdf_for_type(type_code)
 
         # ── 標題 ──
         title = QLabel(f"📌 {item_text}")
         title.setWordWrap(True)
-        title.setStyleSheet("font-weight: bold; font-size: 13px; padding: 4px;")
-        self._add_widget(title)
+        title.setStyleSheet("font-weight: bold; font-size: 13px; padding: 4px 0;")
+        self._add_dw(title)
 
         # ── Type 資訊 ──
+        cat = self._get_catalog_entry(type_code)
         config = load_config(type_code.replace("T", ""))
-        type_name = config.get("name", f"Type {type_code}") if config else f"Type {type_code}"
-        info = QLabel(f"Type: {type_code} — {type_name}")
-        info.setStyleSheet("color: #666; font-size: 11px; padding-bottom: 6px;")
-        self._add_widget(info)
+        type_name = (
+            cat.get("name_zh")
+            or (config.get("name") if config else "")
+            or f"Type {type_code}"
+        )
+        info_lbl = QLabel(f"Type {type_code}  ·  {type_name}")
+        info_lbl.setStyleSheet("color: #666; font-size: 11px; padding-bottom: 2px;")
+        self._add_dw(info_lbl)
 
-        self._add_separator()
+        self._add_sep()
 
-        # ── Type 01/01T: 接入方式 + 查表值 ──
+        # ── 覆寫設定 ──
+        self._add_dw(self._section_label("覆寫設定"))
         if type_code in ("01", "01T"):
-            self._build_type01_panel(item_text, type_code, current_overrides, config)
+            self._build_type01_form(item_text, type_code, current_overrides, config)
         else:
-            self._build_generic_panel(item_text, type_code, current_overrides)
+            self._build_generic_form(current_overrides)
 
         # ── 還原按鈕 ──
-        self._add_separator()
         btn_reset = QPushButton("↩ 還原為 Type 預設")
         btn_reset.clicked.connect(self._on_reset)
-        self._add_widget(btn_reset)
+        self._add_dw(btn_reset)
 
-        self._layout.addStretch()
-        self._form_widgets.append(self._layout.itemAt(self._layout.count() - 1))
+        self._add_sep()
+
+        # ── 計算邏輯 ──
+        self._add_dw(self._section_label("計算邏輯"))
+        calc_logic = cat.get("calc_logic", "")
+        if not calc_logic and config:
+            calc_logic = config.get("calc_logic", "")
+        calc_browser = QTextBrowser()
+        calc_browser.setFont(QFont("Consolas", 10))
+        calc_browser.setStyleSheet(
+            "QTextBrowser { border: 1px solid #E0E0E0; background: #FAFAFA; "
+            "color: #212121; padding: 8px; border-radius: 4px; }"
+        )
+        calc_browser.setMinimumHeight(70)
+        calc_browser.setMaximumHeight(220)
+        if calc_logic:
+            calc_browser.setPlainText(calc_logic)
+        else:
+            calc_browser.setHtml(
+                '<p style="color:#AAA; font-size:10pt;">（尚未填寫計算邏輯）</p>'
+            )
+        self._add_dw(calc_browser)
+
+        self._add_sep()
+
+        # ── 計算結果（等候 update_result 填入）──
+        self._add_dw(self._section_label("計算結果"))
+        self._result_browser = QTextBrowser()
+        self._result_browser.setFont(QFont("Microsoft JhengHei UI", 10))
+        self._result_browser.setStyleSheet(
+            "QTextBrowser { border: 1px solid #E0E0E0; background: #F8FFF8; "
+            "color: #222; padding: 8px; border-radius: 4px; }"
+        )
+        self._result_browser.setMinimumHeight(60)
+        self._result_browser.setHtml(
+            '<p style="color:#AAA; font-size:10pt;">'
+            '（尚未計算，請按「▶ 開始分析」）</p>'
+        )
+        self._add_dw(self._result_browser)
+
+        # ── Inventor 匯出（僅 Pipe Shoe 家族）────────────────────────────────
+        from core.pipe_shoe_engine import PIPE_SHOE_TYPE_IDS
+        if type_code in PIPE_SHOE_TYPE_IDS:
+            self._add_sep()
+            self._btn_inventor = QPushButton("📐 匯出 Inventor 參數 (CSV)")
+            self._btn_inventor.setEnabled(False)   # 計算完成後才啟用
+            self._btn_inventor.setToolTip(
+                "執行計算後可匯出 Inventor iLogic 可讀的 CSV 參數檔案"
+            )
+            self._btn_inventor.setStyleSheet(
+                "QPushButton { background: #1565C0; color: white; font-size: 10pt; "
+                "padding: 5px 10px; border-radius: 4px; border: none; }"
+                "QPushButton:hover  { background: #1976D2; }"
+                "QPushButton:disabled { background: #B0BEC5; color: #ECEFF1; }"
+            )
+            self._btn_inventor.clicked.connect(self._on_export_inventor)
+            self._add_dw(self._btn_inventor)
 
         self._building = False
 
-    def _build_type01_panel(self, item_text, type_code, overrides, config):
+    def update_result(self, result):
+        """分析完成後由 MainWindow 呼叫，填入計算結果"""
+        self._current_result = result
+        if self._result_browser is None:
+            return
+        if result is None or result.error:
+            msg = result.error if result else "無結果"
+            self._result_browser.setHtml(
+                f'<p style="color:#D32F2F; font-size:10pt;">錯誤: {msg}</p>'
+            )
+            if self._btn_inventor:
+                self._btn_inventor.setEnabled(False)
+            return
+
+        html = (
+            '<style>'
+            'table { border-collapse: collapse; width: 100%; font-size: 10pt; }'
+            'th { background: #E3F0FF; color: #1565C0; padding: 4px 6px;'
+            '     border-bottom: 2px solid #90C2F0; text-align: left; }'
+            'td { padding: 3px 6px; border-bottom: 1px solid #EEF0F3; vertical-align: top; }'
+            'tr:nth-child(even) td { background: #F8FAFB; }'
+            '.r { text-align: right; }'
+            '.c { text-align: center; }'
+            '</style>'
+        )
+        html += (
+            f'<p style="font-weight:bold; color:#333; margin-bottom:6px;">'
+            f'總重量: <span style="color:#1565C0;">{result.total_weight:.2f} kg</span></p>'
+        )
+        html += (
+            '<table><tr>'
+            '<th>#</th><th>品名</th><th>公式 / 備註</th>'
+            '<th>材質</th><th class="r">L(mm)</th>'
+            '<th class="c">數</th><th class="r">重(kg)</th>'
+            '</tr>'
+        )
+        for e in result.entries:
+            formula = (
+                (e.geometry.formula if e.geometry and e.geometry.formula else "")
+                or e.remark or "—"
+            )
+            html += (
+                f'<tr>'
+                f'<td class="c">{e.item_no}</td>'
+                f'<td>{e.name}</td>'
+                f'<td style="font-family:Consolas; font-size:9pt;">{formula}</td>'
+                f'<td>{e.material}</td>'
+                f'<td class="r">{e.length:.0f}</td>'
+                f'<td class="c">{e.quantity}</td>'
+                f'<td class="r">{e.weight_output:.3f}</td>'
+                f'</tr>'
+            )
+        html += '</table>'
+        if result.warnings:
+            html += (
+                '<p style="color:#E65100; font-size:9pt; margin-top:6px;">⚠ '
+                + '<br>'.join(result.warnings)
+                + '</p>'
+            )
+        self._result_browser.setHtml(html)
+
+        # 計算成功後啟用 Inventor 匯出按鈕
+        if self._btn_inventor:
+            self._btn_inventor.setEnabled(True)
+
+    # ══════════════════════════════════════════
+    #  Inventor 參數匯出
+    # ══════════════════════════════════════════
+    def _on_export_inventor(self):
+        """匯出 Pipe Shoe 計算結果為 Inventor iLogic CSV 參數檔案。"""
+        from PyQt6.QtWidgets import QFileDialog, QMessageBox
+        from core.pipe_shoe_engine import PIPE_SHOE_TYPE_IDS
+        from export.inventor_params import (
+            export_ilogic_snippet,
+            export_to_csv,
+            extract_params,
+        )
+
+        designation = self._current_designation
+        type_code = self._current_type_code
+
+        if type_code not in PIPE_SHOE_TYPE_IDS:
+            return
+
+        default_stem = designation.replace("/", "_").replace("-", "_")
+        csv_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "匯出 Inventor 參數 CSV",
+            f"{default_stem}_inventor.csv",
+            "CSV 檔案 (*.csv)",
+        )
+        if not csv_path:
+            return
+
+        try:
+            params = extract_params(designation, type_code)
+            if params is None:
+                QMessageBox.warning(self, "匯出失敗", "無法取得計算參數，請先執行分析。")
+                return
+
+            export_to_csv(params, csv_path)
+
+            vb_path = os.path.splitext(csv_path)[0] + "_iLogic_LoadParams.vb"
+            export_ilogic_snippet(vb_path, csv_path)
+
+            warn_html = (
+                "<br><br><b>⚠ 計算警告：</b><br>" + "<br>".join(params["warnings"])
+                if params["warnings"] else ""
+            )
+            QMessageBox.information(
+                self,
+                "匯出完成",
+                f"<b>CSV 參數檔案已儲存：</b><br>{csv_path}"
+                f"<br><br><b>iLogic 讀取範本：</b><br>{vb_path}"
+                f"<br><br>在 Inventor 中開啟 iLogic Rule Editor，"
+                f"貼入 .vb 檔的程式碼後執行即可套用參數。"
+                f"{warn_html}",
+            )
+        except Exception as exc:
+            QMessageBox.critical(self, "匯出錯誤", str(exc))
+
+    # ══════════════════════════════════════════
+    #  覆寫設定表單
+    # ══════════════════════════════════════════
+    def _build_type01_form(self, item_text, type_code, overrides, config):
         # 接入方式
         conn_group = QGroupBox("接入方式")
         conn_lay = QHBoxLayout(conn_group)
         self._rb_elbow = QRadioButton("Elbow (彎頭)")
         self._rb_tee = QRadioButton("Tee (三通)")
-
         effective_conn = overrides.get("connection")
         if effective_conn == "tee" or (not effective_conn and type_code == "01T"):
             self._rb_tee.setChecked(True)
         else:
             self._rb_elbow.setChecked(True)
-
         self._rb_elbow.toggled.connect(self._on_field_changed)
         self._rb_tee.toggled.connect(self._on_field_changed)
         conn_lay.addWidget(self._rb_elbow)
         conn_lay.addWidget(self._rb_tee)
-        self._add_widget(conn_group)
+        self._add_dw(conn_group)
 
         # 材質
         mat_group = QGroupBox("上段管材質")
@@ -767,45 +1449,41 @@ class SidePanel(QGroupBox):
         self._mat_combo.setEditable(True)
         self._mat_combo.setCurrentText(overrides.get("upper_material", ""))
         self._mat_combo.currentTextChanged.connect(self._on_field_changed)
-        mat_lay.addWidget(self._mat_combo)
-        hint = QLabel("空白=跟隨全域設定")
+        hint = QLabel("空白=跟隨全域")
         hint.setStyleSheet("color: #999; font-size: 10px;")
+        mat_lay.addWidget(self._mat_combo)
         mat_lay.addWidget(hint)
-        self._add_widget(mat_group)
+        self._add_dw(mat_group)
 
-        # 查表值
+        # 查表值覆寫
         part2 = get_part(item_text, 2)
         try:
             line_size = int(get_lookup_value(part2))
         except (ValueError, TypeError):
             line_size = 0
+        cfg_table = get_type_table_as_dict("01") or {}
+        row_data = cfg_table.get(line_size, {})
 
         table_group = QGroupBox("查表值 (留空=用 Config 預設)")
         form = QFormLayout(table_group)
 
-        # 從 config 讀預設
-        cfg_table = get_type_table_as_dict("01") or {}
-        row = cfg_table.get(line_size, {})
-        default_pipe = row.get("pipe_size", "?")
-        default_sch = row.get("schedule", "?")
-        default_L = row.get("L", "?")
-
         self._pipe_edit = QLineEdit(overrides.get("pipe_size", ""))
-        self._pipe_edit.setPlaceholderText(f"預設: {default_pipe}")
+        self._pipe_edit.setPlaceholderText(f"預設: {row_data.get('pipe_size', '?')}")
         self._pipe_edit.textChanged.connect(self._on_field_changed)
-        form.addRow(f"支撐管徑:", self._pipe_edit)
+        form.addRow("支撐管徑:", self._pipe_edit)
 
         self._sch_edit = QLineEdit(overrides.get("schedule", ""))
-        self._sch_edit.setPlaceholderText(f"預設: {default_sch}")
+        self._sch_edit.setPlaceholderText(f"預設: {row_data.get('schedule', '?')}")
         self._sch_edit.textChanged.connect(self._on_field_changed)
-        form.addRow(f"Schedule:", self._sch_edit)
+        form.addRow("Schedule:", self._sch_edit)
 
-        self._l_edit = QLineEdit(str(overrides["l_value"]) if overrides.get("l_value") else "")
-        self._l_edit.setPlaceholderText(f"預設: {default_L}")
+        self._l_edit = QLineEdit(
+            str(overrides["l_value"]) if overrides.get("l_value") else ""
+        )
+        self._l_edit.setPlaceholderText(f"預設: {row_data.get('L', '?')}")
         self._l_edit.textChanged.connect(self._on_field_changed)
-        form.addRow(f"L 值 (mm):", self._l_edit)
+        form.addRow("L 值 (mm):", self._l_edit)
 
-        # 顯示解析出的其他資訊 (唯讀)
         part3 = get_part(item_text, 3) or ""
         if part3:
             letter = part3[-1] if part3[-1].isalpha() else ""
@@ -817,10 +1495,9 @@ class SidePanel(QGroupBox):
             form.addRow("H 高度:", QLabel(f"{h_mm} mm"))
             form.addRow("M42 底板:", QLabel(f"代碼 {letter}" if letter else "無"))
 
-        self._add_widget(table_group)
+        self._add_dw(table_group)
 
-    def _build_generic_panel(self, item_text, type_code, overrides):
-        """其他 Type 的通用面板 (目前只有材質覆寫)"""
+    def _build_generic_form(self, overrides):
         mat_group = QGroupBox("上段管材質")
         mat_lay = QHBoxLayout(mat_group)
         self._mat_combo = QComboBox()
@@ -831,71 +1508,48 @@ class SidePanel(QGroupBox):
         self._mat_combo.setEditable(True)
         self._mat_combo.setCurrentText(overrides.get("upper_material", ""))
         self._mat_combo.currentTextChanged.connect(self._on_field_changed)
-        mat_lay.addWidget(self._mat_combo)
-        hint = QLabel("空白=跟隨全域設定")
+        hint = QLabel("空白=跟隨全域")
         hint.setStyleSheet("color: #999; font-size: 10px;")
+        mat_lay.addWidget(self._mat_combo)
         mat_lay.addWidget(hint)
-        self._add_widget(mat_group)
+        self._add_dw(mat_group)
 
-        # 未來擴充: 其他 Type 的自訂欄位
-
-    def _add_widget(self, w):
-        self._layout.insertWidget(self._layout.count() - 1, w)
-        self._form_widgets.append(w)
-
-    def _add_separator(self):
-        line = QFrame()
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setFrameShadow(QFrame.Shadow.Sunken)
-        self._add_widget(line)
-
+    # ══════════════════════════════════════════
+    #  欄位變更 / 還原
+    # ══════════════════════════════════════════
     def _on_field_changed(self):
-        """任何欄位變更, 收集覆寫並發信號"""
         if self._building or self._idx < 0:
             return
-
         overrides = {}
-
-        # 接入方式 (Type 01 only)
-        if hasattr(self, "_rb_tee") and self._rb_tee is not None:
-            if self._rb_tee.isChecked():
-                overrides["connection"] = "tee"
-            elif self._rb_elbow.isChecked():
-                overrides["connection"] = "elbow"
-
-        # 材質
-        if hasattr(self, "_mat_combo"):
+        if self._rb_tee is not None:
+            overrides["connection"] = "tee" if self._rb_tee.isChecked() else "elbow"
+        if self._mat_combo is not None:
             mat = self._mat_combo.currentText().strip()
             if mat:
                 overrides["upper_material"] = mat
-
-        # 查表值覆寫 (Type 01)
-        if hasattr(self, "_pipe_edit"):
+        if self._pipe_edit is not None:
             v = self._pipe_edit.text().strip()
             if v:
                 overrides["pipe_size"] = v
-        if hasattr(self, "_sch_edit"):
+        if self._sch_edit is not None:
             v = self._sch_edit.text().strip()
             if v:
                 overrides["schedule"] = v
-        if hasattr(self, "_l_edit"):
+        if self._l_edit is not None:
             v = self._l_edit.text().strip()
             if v:
                 try:
                     overrides["l_value"] = int(v)
                 except ValueError:
                     pass
-
         self._overrides = overrides
         self.overrideChanged.emit(self._idx, overrides)
 
     def _on_reset(self):
-        """還原為預設"""
         if self._idx < 0:
             return
         self._overrides = {}
         self.overrideChanged.emit(self._idx, {})
-        # 通知主視窗取得最新 item_text 刷新面板
         parent = self.parent()
         if parent and hasattr(parent, "parent"):
             mw = parent.parent()

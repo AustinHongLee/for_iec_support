@@ -184,9 +184,13 @@ class MaterialCuttingPage(QWidget):
 
         CATEGORY_COLORS = {
             "管路類": QColor("#E3F2FD"),
+            "型鋼類": QColor("#E8F5E9"),
             "鋼板類": QColor("#FFF3E0"),
-            "鋼材類": QColor("#E8F5E9"),
+            "鋼材類": QColor("#E8F5E9"),  # legacy alias
             "螺栓類": QColor("#F3E5F5"),
+            "管夾類": QColor("#FCE4EC"),
+            "墊片類": QColor("#F1F8E9"),
+            "彈簧類": QColor("#EDE7F6"),
         }
 
         for ln in self._summary.lines:

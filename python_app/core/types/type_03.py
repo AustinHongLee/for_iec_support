@@ -12,7 +12,8 @@ Type 03 計算器
   2. U-bolt (依管徑, SUS304, 1 SET)
   3. M42 底板 (依字母, 用角鐵尺寸 L75*75*9 查表)
 """
-from ..models import AnalysisResult, AnalysisEntry
+from ..models import AnalysisResult, AnalysisEntry, set_remark
+from ..component_roles import ComponentRole
 from ..parser import get_part, get_lookup_value
 from ..steel import add_steel_section_entry
 from ..m42 import perform_action_by_letter
@@ -51,9 +52,12 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 1. 角鐵 L-75×75×9, 垂直段
     vertical_length = _vertical_angle_length(h, size_val)
     add_steel_section_entry(result, "Angle", "75*75*9", vertical_length)
-    result.entries[-1].remark = (
-        f"H={h} + LR elbow center={round(size_val * 25.4 * _LR_ELBOW_RADIUS_FACTOR, 1)} "
-        f"+ clearance={_ELBOW_TOP_CLEARANCE_MM} + OD/2={round(get_pipe_od(size_val) / 2, 1)}"
+    set_remark(
+        result.entries[-1],
+        f"H={h} + LR彎頭中心={round(size_val * 25.4 * _LR_ELBOW_RADIUS_FACTOR, 1)}"
+        f" + 間隙={_ELBOW_TOP_CLEARANCE_MM} + OD/2={round(get_pipe_od(size_val) / 2, 1)}",
+        f"H={h} + LR elbow center={round(size_val * 25.4 * _LR_ELBOW_RADIUS_FACTOR, 1)}"
+        f" + clearance={_ELBOW_TOP_CLEARANCE_MM} + OD/2={round(get_pipe_od(size_val) / 2, 1)}",
     )
 
     # 2. 角鐵 L-75×75×9, 水平段 (固定 130mm)
@@ -84,5 +88,6 @@ def _add_ubolt_entry(result: AnalysisResult, pipe_size: str):
     entry.qty_subtotal = 1
     entry.weight_output = 1
     entry.weight_per_unit = 1
-    entry.category = "管路類"
+    entry.category = "螺栓類"
+    entry.role = ComponentRole.U_BOLT.value
     result.add_entry(entry)

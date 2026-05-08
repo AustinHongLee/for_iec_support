@@ -207,6 +207,6 @@ def calculate(fullstring: str) -> AnalysisResult:
     # ⑤ K BOLT — 3/4"x50, ×2 SET (DETAIL Y + DETAIL Z 各一)
     # ═══════════════════════════════════════════════════════
     add_bolt_set(result, "K BOLT", '3/4"x50', 2)
-    result.entries[-1].remark = f"DETAIL Y + DETAIL Z 各 1 SET"
+    result.entries[-1].remark = f"DETAIL Y + DETAIL Z 各 1 SET（K BOLT）"
 
     return result

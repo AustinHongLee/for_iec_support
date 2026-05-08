@@ -214,7 +214,7 @@ def optimize_from_summary(summary_line) -> Optional[CuttingPlan]:
             label=f"#{i+1}",
         ))
 
-    stock_type = "pipe" if "Pipe" in summary_line.name else "steel"
+    stock_type = "pipe" if "管路" in summary_line.name else "steel"
 
     plan = optimize_cutting(pieces, stock_type=stock_type)
     plan.name = summary_line.name

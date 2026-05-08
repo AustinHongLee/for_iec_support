@@ -23,7 +23,7 @@ from data.stock_lengths import (
 
 
 # ── 品名分類判斷 ──────────────────────────────────────────────
-_LINEAR_NAMES = {"Pipe", "Angle"}
+_LINEAR_NAMES = {"管路", "角鋼"}
 _PLATE_NAMES = {"Plate"}
 
 def _classify_entry(entry: AnalysisEntry) -> str:
@@ -45,9 +45,13 @@ def _classify_entry(entry: AnalysisEntry) -> str:
     base = entry.name.split("_")[0].strip()
     if base in _LINEAR_NAMES:
         return "linear"
-    if base.startswith("Plate"):
+    if base.startswith("Plate") or base == "鋼板":
         return "plate"
-    # 鋼材 section (H, C, L) 也是線性
+    # 中文型鋼品名也是線性
+    _LINEAR_ZH = {"H型鋼", "槽鐵", "I型鋼", "扁鋼", "圓鋼"}
+    if base in _LINEAR_ZH and entry.unit == "M":
+        return "linear"
+    # 英文舊版 fallback (向後相容)
     if any(base.startswith(p) for p in ("H", "C", "L")) and entry.unit == "M":
         return "linear"
     return "piece"
@@ -178,7 +182,17 @@ def aggregate(
 
         summary.lines.append(ln)
 
-    _CATEGORY_ORDER = {"管路類": 0, "鋼板類": 1, "鋼材類": 2, "螺栓類": 3, "": 9}
+    _CATEGORY_ORDER = {
+        "管路類": 0,
+        "型鋼類": 1,
+        "鋼材類": 1,  # legacy alias
+        "鋼板類": 2,
+        "螺栓類": 3,
+        "管夾類": 4,
+        "墊片類": 5,
+        "彈簧類": 6,
+        "": 9,
+    }
     summary.lines.sort(key=lambda x: (
         _CATEGORY_ORDER.get(x.category, 9), x.name, x.spec, x.material
     ))
@@ -196,7 +210,7 @@ def _aggregate_linear(ln: SummaryLine, items: List[Tuple[AnalysisEntry, str]]):
             ln.piece_count += 1
     ln.total_weight = sum(e.weight_output for e, _ in items if e.length > 0)
 
-    if "Pipe" in ln.name:
+    if "管路" in ln.name:
         ln.stock_length = STOCK_LENGTH_PIPE
         ln.purchase_unit = "根"
     else:
@@ -204,7 +218,7 @@ def _aggregate_linear(ln: SummaryLine, items: List[Tuple[AnalysisEntry, str]]):
         ln.purchase_unit = "根"
 
     effective = get_effective_stock_length(
-        "pipe" if "Pipe" in ln.name else "steel"
+        "pipe" if "管路" in ln.name else "steel"
     )
     if effective > 0:
         ln.purchase_qty = math.ceil(ln.total_length_mm / effective)

@@ -39,7 +39,7 @@
     ],
 
     "E_by_size": [
-      { "lt": 2, "v": 0 },
+      { "lt": 2, "v": 25 },
       { "else": true, "v": 50 }
     ],
 
@@ -71,7 +71,7 @@
       "spec":   "40*40*5",
       "length": 150,
       "qty":    2,
-      "remark": "L40x40x5 side guide, CUT IN FIELD, length provisional=150"
+      "remark": "L40×40×5 側向導引，現場裁切，暂定長=150mm [L40x40x5 side guide, CUT IN FIELD, length provisional=150]"
     },
     {
       "id":     "beam",
@@ -81,7 +81,7 @@
       "spec_ref": "C",
       "length_expr": "LOPS if pipe_size <= 8 else LOPS+25*2",
       "_length_comment": "<=8: LOPS or D; 10~14: LOPS + 25*2",
-      "remark_template": "CUT FROM H{C}; L=LOPS+25*2; [deep logic] 1 purchased H-beam split in half = 2 supports"
+      "remark_template": "由H{C}裁切；長=LOPS+25×2；《購買逻輯》1支H型鵋對分=2組支撐 [CUT FROM H{C}; L=LOPS+25*2; 1 purchased H-beam split in half = 2 supports]"
     },
     {
       "id":       "fab_bottom",
@@ -93,7 +93,7 @@
       "_width_comment": "16~24: main fabricated 12t bottom plate width = table A",
       "length_expr": "LOPS+50",
       "_length_comment": "LOPS + 25*2",
-      "remark_template": "T-bottom plate: W=A, L={LOPS+50}(=LOPS+25*2), t=12"
+      "remark_template": "T形底板：W=A，L={LOPS+50}(=LOPS+25×2)，t=12mm [T-bottom plate: W=A, L={LOPS+50}(=LOPS+25*2), t=12]"
     },
     {
       "id":       "fab_web",
@@ -104,19 +104,30 @@
       "width_expr": "HOPS",
       "length_expr": "LOPS+50",
       "_length_comment": "LOPS + 25*2",
-      "remark_template": "T-vertical plate: W=HOPS, L={LOPS+50}(=LOPS+25*2), t=12"
+      "remark_template": "T形腹板：W=HOPS，L={LOPS+50}(=LOPS+25×2)，t=12mm [T-vertical plate: W=HOPS, L={LOPS+50}(=LOPS+25*2), t=12]"
     },
     {
       "id":       "gusset",
       "name":     "FB_52Type_3",
-      "when":     "pipe_size >= 10",
+      "when":     "pipe_size >= 10 and not (type_id == '54' and pipe_size <= 14)",
       "role":     "generic_plate",
       "thickness_ref": "B",
       "length_expr":   "HOPS",
       "width_expr":    "A",
       "_width_comment": "10~24: reinforcing flat bar width = table A",
       "qty":           4,
-      "remark": "height=HOPS for calculation only, not fabrication height; width=A; qty=4"
+      "remark": "高度=HOPS（僅用於計算，非實際制作高）；寬度=A；數量=4 [height=HOPS for calculation only, not fabrication height; width=A; qty=4]"
+    },
+    {
+      "id":       "type54_stopper",
+      "name":     "檔板_54Type",
+      "when":     "type_id == '54' and pipe_size >= 10 and pipe_size <= 14",
+      "role":     "stopper_plate",
+      "thickness": 12,
+      "length":    40,
+      "width":     40,
+      "qty":       4,
+      "remark": "TYPE-54 10\"~14\" 檔板；40×40×12t，數量=4；右上倒角圖面未標尺寸，重量計算不扣除，僅紀錄外形需求 [TYPE-54 10\"~14\" stopper plate; 40x40x12t qty=4; top-right chamfer not dimensioned, ignored for weight]"
     }
   ]
 }

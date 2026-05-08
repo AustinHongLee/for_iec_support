@@ -15,14 +15,15 @@
 
 Type 21 的落地版，有 base plate + M42 下部構件。U-bolt NOT FURNISHED。
 
-Member M (Angle) H段+L段 + M42(L/P only)。Fig.A=L300, Fig.B=L500, Fig.C=自L。焊接於 base plate，接地面/基礎。
+Member M (Angle) H段+L段 + M42 下部構件。Fig.A=L300, Fig.B=L500, Fig.C=自L。焊接於 base plate，接地面/基礎。
 
 ---
 
 ## 編碼格式
 
 ```text
-22-{M}-{HH}{Fig}{M42} or 22-{M}-{HH}C{M42}-{LL}
+22-{M}-{HH}({Fig}){M42}
+22-{M}-{HH}(C){M42}-{LL}
 ```
 
 ---
@@ -30,7 +31,7 @@ Member M (Angle) H段+L段 + M42(L/P only)。Fig.A=L300, Fig.B=L500, Fig.C=自L�
 ## 核心運算邏輯
 
 ```text
-2+M42 components: Member(H) + Member(L) + M42 lower. Members: L50(H≤1000), L65(H≤1000), L75(H≤1500).
+2+M42 components: Member(H) + Member(L) + M42 lower. Members: L50(H≤1000), L65(H≤1000), L75(H≤1500). Parser 嚴格要求 HH(Fig)M42；只有 Fig.C 可追加 -LL。
 ```
 
 ---

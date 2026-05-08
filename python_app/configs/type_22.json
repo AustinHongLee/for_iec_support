@@ -2,6 +2,8 @@
   "type_id": "22",
   "source": "data/type22_table.py",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-05-07",
+  "data_update_note": "修正 designation parser: 嚴格使用 22-{M}-{HH}({Fig}){M42}，Fig.C 才允許 -{LL}",
   "FIG_L_MAP": {
     "A": 300,
     "B": 500,
@@ -13,7 +15,27 @@
     "L75": 1500
   },
   "ALLOWED_M42_LETTERS": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "J",
+    "K",
     "L",
-    "P"
+    "M",
+    "N",
+    "P",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y"
   ]
 }

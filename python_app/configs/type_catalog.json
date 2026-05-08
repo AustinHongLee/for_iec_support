@@ -857,9 +857,9 @@
       "category": "support",
       "pdf_file": "22.pdf",
       "brief": "Type 21 的落地版，有 base plate + M42 下部構件。U-bolt NOT FURNISHED。",
-      "description": "Member M (Angle) H段+L段 + M42(L/P only)。Fig.A=L300, Fig.B=L500, Fig.C=自L。焊接於 base plate，接地面/基礎。",
-      "calc_logic": "2+M42 components: Member(H) + Member(L) + M42 lower. Members: L50(H≤1000), L65(H≤1000), L75(H≤1500).",
-      "designation": "22-{M}-{HH}{Fig}{M42} or 22-{M}-{HH}C{M42}-{LL}",
+      "description": "Member M (Angle) H段+L段 + M42 下部構件。Fig.A=L300, Fig.B=L500, Fig.C=自L。焊接於 base plate，接地面/基礎。",
+      "calc_logic": "2+M42 components: Member(H) + Member(L) + M42 lower. Members: L50(H≤1000), L65(H≤1000), L75(H≤1500). Parser 嚴格要求 HH(Fig)M42；只有 Fig.C 可追加 -LL。",
+      "designation": "22-{M}-{HH}({Fig}){M42} or 22-{M}-{HH}(C){M42}-{LL}",
       "status": "implemented",
       "line_size_range": ""
     },
@@ -1339,7 +1339,11 @@
       "description": "專為Alloy Steel/Stainless Steel管線設計的隔離型固定支撐(MAX 750°F)。NON-ASBESTOS GASKET(M-47)隔離管線與支撐結構，防電位差腐蝕。Clamp夾固(DETAIL SEE D-81，非D-80)。≤8\"簡易型; 10\"~24\"加PL 12t。L40×40×5兩側。FIXED SUPPORT(錨定點)。Designation無材質碼(材質已隱含於Type定義)。",
       "calc_logic": "No calculation for frame; shoe/clamp from D-81; HOPS from D-80A TABLE A; no TABLE B in designation",
       "designation": "54-{size}B-{TABLE_A}-{HOPS}-{LOPS}",
-      "status": "documented",
+      "status": "cataloged",
+      "archive_status": "semi_archived",
+      "requires_review": true,
+      "missing": ["D-81 clamp 明細", "M-47 gasket 明細", "Type 54 專屬重量/幾何規則"],
+      "trust_notes": "半封存/未完工建檔：隸屬 clamp/gasket 級別，暫不視為正式可計算型式；現有 calculator 僅供暫定幾何與重量參考。",
       "line_size_range": "3/4\"~24\""
     },
     {
@@ -1354,7 +1358,11 @@
       "description": "在 TYPE-54 (D-81 Clamp+Shoe+Gasket) 基礎上加裝 Guide 角鐵，形成隔離+固定+導向三合一系統。D-66 涵蓋 3/4\"~24\"（L40×40×5 Guide, D-81 Shoe+Clamp），D-66A 涵蓋 26\"~42\"（L50×50×6 Guide piece NO.7, D-81A Shoe+Clamp）。Guide 分擔橫向荷重避免集中在 Clamp bolt。材質限定 AS/SS (MAX. 750°F)。FIXED support。",
       "calc_logic": "Shoe/Clamp/Gasket from D-81(<=24\")/D-81A(26\"~42\"); Guide: L40x40x5(<=24\"), L50x50x6(26\"~42\"); HOPS from D-80A TABLE A; LOPS from D-81/D-81A; No TABLE B, no (P) — AS/SS implied; TYPE-A(insul<=100), TYPE-B(insul>100<=150) for 26\"~42\"",
       "designation": "55-{size}B-{TABLE_A}-{HOPS}-{LOPS}",
-      "status": "documented",
+      "status": "cataloged",
+      "archive_status": "semi_archived",
+      "requires_review": true,
+      "missing": ["D-81/D-81A clamp 明細", "M-47 gasket 明細", "Guide/Clamp 專屬重量對應"],
+      "trust_notes": "半封存/未完工建檔：隸屬 clamp/gasket 級別，暫不視為正式可計算型式；現有 calculator 僅供暫定幾何與重量參考。",
       "line_size_range": "3/4\"~42\""
     },
     {
@@ -1518,7 +1526,11 @@
       "description": "在 TYPE-66 (D-80) 管鞍座基礎上加入 Pipe Clamp 和 Non-Asbestos Gasket，形成隔離型夾持固定系統。D-81 涵蓋 1/2\"~24\"（PCL-A 系列 Clamp, SEE M-4），D-81A 涵蓋 26\"~42\"（6 件組裝, Clamp SEE M-56, Gasket 1.5t SEE M-47）。三種結構型態：簡易鞍座(≤8\")、含側板鞍座(10\"~24\")、多件組裝(26\"~42\")。材質限定 AS/SS (MAX. 750°F)。HOPS 由 D-80A TABLE A 查得。FIXED support。",
       "calc_logic": "HOPS from D-80A TABLE A (insul thickness); LOPS: D=80(<=2-1/2\"), D=180(3\"~8\"), calculated(10\"+); Shoe: CUT H200x100x5.5x8(<=8\"), CUT H200x200x8x12(10\"~14\"), FAB 12t(16\"~24\"); D-81A: TYPE-A(insul<=100), TYPE-B(insul>100<=150); No TABLE B (AS/SS implied)",
       "designation": "67-{size}B-{TABLE_A}-{HOPS}-{LOPS}",
-      "status": "documented",
+      "status": "cataloged",
+      "archive_status": "semi_archived",
+      "requires_review": true,
+      "missing": ["D-81/D-81A clamp 明細", "M-47 gasket 明細", "大尺寸 clamp/gasket 組裝重量"],
+      "trust_notes": "半封存/未完工建檔：隸屬 clamp/gasket 級別，暫不視為正式可計算型式；現有 calculator 僅供暫定幾何與重量參考。",
       "line_size_range": "1/2\"~42\""
     },
     {

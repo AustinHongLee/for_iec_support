@@ -4,17 +4,17 @@ Bridge module (auto-generated 2026-04-29): interface 不變，底層讀 JSON。
 原始資料備份: data/_pre_json_backup/type22_table.py
   Type 22 查詢表 - 落地式懸臂 U-bolt 支撐 (Ground Cantilever Support)
   來源: TYPE-22 圖面表格
-  
-  格式: 22-{M}-{HH}{Fig}{M42}         (Fig = A/B)
-        22-{M}-{HH}C{M42}-{LL}        (Fig = C, LL=L/100)
-    例: 22-L50-05AL     → L50, H=500, Fig.A, M42=L
-        22-L50-05CL-07  → L50, H=500, Fig.C, M42=L, L=700
-  
+
+  格式: 22-{M}-{HH}({Fig}){M42}
+        22-{M}-{HH}(C){M42}-{LL}      (Fig = C only, LL=L/100)
+    例: 22-L50-05(A)L     → L50, H=500, Fig.A, M42=L
+        22-L50-05(C)L-07  → L50, H=500, Fig.C, M42=L, L=700
+
   Note 1: U-BOLT (D-68) NOT FURNISHED
   Note 2: DIMENSION "H" SHALL BE CUT TO SUIT IN FIELD.
   Note 3: H counted from lowest point of paving if no foundation.
-  Note 4: USE WITH M-42, TYPE L & P ONLY.
-  
+  現行 parser 嚴格要求括號 Fig；M42 字母放在括號後，例如 12(A)X。
+
   構件:
     1. MEMBER "M" (H段): 垂直, 長度 H
     2. MEMBER "M" (L段): 水平, 長度 L (300/500/自定)

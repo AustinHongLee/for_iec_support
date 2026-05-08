@@ -45,7 +45,7 @@ VBA NOTE: VBA 中 Section_Length_H/L 變量名互換,
           但因加法交換律 (L+H = H+L), 總長數值相同。
           Python 版採結構件拆分：Column + Top beam。
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from data.steel_sections import get_section_details
@@ -135,9 +135,13 @@ def calculate(fullstring: str) -> AnalysisResult:
 
     section_dim = full_size[1:]  # 去掉前綴字母
     add_steel_section_entry(result, section_type, section_dim, effective_H)
-    result.entries[-1].remark = f"FIG-{fig}, Column, {h_formula}{l1l2_tag}"
+    set_remark(result.entries[-1],
+               f"FIG-{fig}，立柱，{h_formula}{l1l2_tag}",
+               f"FIG-{fig}, Column, {h_formula}{l1l2_tag}")
 
     add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = f"FIG-{fig}, Top beam, L={section_L}{l1l2_tag}"
+    set_remark(result.entries[-1],
+               f"FIG-{fig}，上橫梁，L={section_L}{l1l2_tag}",
+               f"FIG-{fig}, Top beam, L={section_L}{l1l2_tag}")
 
     return result

@@ -30,7 +30,8 @@ Note 6: M42 底座類型 A,B,E,G 時，H 從地坪最低點起算
 
 VBA 對照: VBA 未實作 Type 13 (僅有註解佔位)
 """
-from ..models import AnalysisResult, AnalysisEntry
+from ..models import AnalysisResult, AnalysisEntry, set_remark
+from ..component_roles import ComponentRole
 from ..parser import get_part, get_lookup_value
 from ..pipe import add_pipe_entry
 from ..plate import add_plate_entry
@@ -159,13 +160,18 @@ def _add_pipe_clamp_entry(result: AnalysisResult, line_size: float):
     entry.qty_subtotal = 1
     entry.weight_output = unit_w
     entry.weight_per_unit = unit_w
-    entry.category = "管路類"
+    entry.category = "管夾類"
+    entry.role = ComponentRole.CLAMP.value
     if clamp_item:
-        entry.remark = f'SEE M-4, rod {clamp_item["rod_size_a"]}; weight estimated'
+        set_remark(entry,
+                   f'參見 M-4，跿指徑={clamp_item["rod_size_a"]}；重量為估算值',
+                   f'SEE M-4, rod {clamp_item["rod_size_a"]}; weight estimated')
         if not clamp_item.get("weight_ready"):
             result.warnings.append("M-4 clamp 無 source unit-weight 欄，PIPE CLAMP 重量使用集中估算規則")
     else:
-        entry.remark = "M-4 lookup failed; weight estimated by core.component_rules"
+        set_remark(entry,
+                   "M-4 查表失敗；重量依集中規則估算",
+                   "M-4 lookup failed; weight estimated by core.component_rules")
         result.warnings.append("M-4 table lookup failed，PIPE CLAMP 重量使用集中估算規則")
     result.add_entry(entry)
 
@@ -199,7 +205,8 @@ def _add_non_asbestos_sheet_entry(result: AnalysisResult, line_size: float):
     entry.qty_subtotal = 1
     entry.weight_output = weight
     entry.weight_per_unit = weight
-    entry.category = "管路類"
+    entry.category = "墊片類"
+    entry.role = ComponentRole.GASKET.value
     if gasket_item:
         entry.remark = gasket_item["thickness_source"]
     result.add_entry(entry)

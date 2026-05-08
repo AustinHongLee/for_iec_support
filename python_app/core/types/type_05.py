@@ -6,7 +6,7 @@ Type 05 計算器
 PDF 限制: 管徑≤2", H≤1500mm, M42僅允許 D/L/P/R
 垂直型鋼下料長: H×100 - 15mm top offset
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..m42 import perform_action_by_letter
@@ -53,7 +53,9 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 1. 角鐵 垂直段 (H 扣除圖面上方 15mm offset)
     vertical_length = h - _TOP_OFFSET_MM
     add_steel_section_entry(result, section_type, section_dim, vertical_length)
-    result.entries[-1].remark = f"H={h} - top offset={_TOP_OFFSET_MM}"
+    set_remark(result.entries[-1],
+               f"H={h} - 頂端偏移={_TOP_OFFSET_MM}",
+               f"H={h} - top offset={_TOP_OFFSET_MM}")
 
     # 2. 角鐵 水平段 (固定 130mm)
     add_steel_section_entry(result, section_type, section_dim, 130)

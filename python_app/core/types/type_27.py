@@ -44,7 +44,7 @@ NOTE 2: "H" & "L" SHALL BE CUT TO SUIT IN FIELD.
 NOTE 3: IF THE FOUNDATION IS NOT USED, "H" = FROM LOWEST POINT OF PAVING.
 NOTE 4: THIS TYPE SHALL BE USED WITH M-42. USE TYPE-L & P ONLY.
 """
-from ..models import AnalysisResult
+from ..models import AnalysisResult, set_remark
 from ..parser import get_part
 from ..steel import add_steel_section_entry
 from ..plate import add_plate_entry
@@ -143,11 +143,11 @@ def calculate(fullstring: str) -> AnalysisResult:
         #    H150 版為多結構體：落地立柱 + 頂部承管，不能合併成單一 member。
         column_length = section_H - 150
         add_steel_section_entry(result, section_type, section_dim, column_length)
-        result.entries[-1].remark = "Column"
+        set_remark(result.entries[-1], "立柱", "Column")
 
         # ② H Beam — 頂部承管
         add_steel_section_entry(result, section_type, section_dim, section_L)
-        result.entries[-1].remark = "Top support beam"
+        set_remark(result.entries[-1], "上支撐梁", "Top support beam")
 
         # ③ 6t side plates ×3 — "3 SIDES TYP." 6V
         #    柱-板接合處補強/封邊, 把 H 型鋼頂端轉成承載面
@@ -184,11 +184,15 @@ def calculate(fullstring: str) -> AnalysisResult:
         #    15mm = ELEV 圖面標示 15 TYP (頂端焊接接合偏移)
         effective_H = section_H - _TOP_PLATE_DEDUCTION
         add_steel_section_entry(result, section_type, section_dim, effective_H)
-        result.entries[-1].remark = f"Column, H={section_H}-15={effective_H}{l1l2_tag}"
+        set_remark(result.entries[-1],
+                   f"立柱，H={section_H}-15={effective_H}{l1l2_tag}",
+                   f"Column, H={section_H}-15={effective_H}{l1l2_tag}")
 
         # ② MEMBER "M" — 角鐵版頂部承管
         add_steel_section_entry(result, section_type, section_dim, section_L)
-        result.entries[-1].remark = f"Top support beam, L={section_L}{l1l2_tag}"
+        set_remark(result.entries[-1],
+                   f"上支撐梁，L={section_L}{l1l2_tag}",
+                   f"Top support beam, L={section_L}{l1l2_tag}")
 
     # ═══════════════════════════════════════════════════════
     # M-42 下部組件 (底板 + 螺栓) — 所有 MEMBER 共通

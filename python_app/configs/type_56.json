@@ -2,6 +2,8 @@
   "type_id": "56",
   "source": "data/type56_table.py",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-05-06",
+  "data_update_note": "依最新 D-67 判讀重整 Type 56 plate/member 分支與 3~24in BOM 數量",
   "TYPE56_TABLE_1": {
     "0.75": {
       "A": null,

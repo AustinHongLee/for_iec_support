@@ -49,6 +49,7 @@ class ComponentRole(str, Enum):
     U_BOLT              = "u_bolt"
 
     # ── 其他 ─────────────────────────────────────────────────
+    GASKET              = "gasket"
     PU_BLOCK            = "pu_block"
     CLAMP               = "clamp"
     UNKNOWN             = "unknown"             # 尚未分類
@@ -90,6 +91,7 @@ ROLE_AGGREGATE_TYPE: dict[ComponentRole, str] = {
     ComponentRole.NUT:              "piece",
     ComponentRole.WASHER:           "piece",
     ComponentRole.U_BOLT:           "piece",
+    ComponentRole.GASKET:           "piece",
     ComponentRole.PU_BLOCK:         "piece",
     ComponentRole.CLAMP:            "piece",
     ComponentRole.UNKNOWN:          "piece",
@@ -124,6 +126,7 @@ ROLE_DISPLAY_NAME: dict[ComponentRole, dict[str, str]] = {
     ComponentRole.NUT:              {"zh": "螺帽",     "en": "Nut"},
     ComponentRole.WASHER:           {"zh": "墊圈",     "en": "Washer"},
     ComponentRole.U_BOLT:           {"zh": "U型螺栓",  "en": "U-Bolt"},
+    ComponentRole.GASKET:           {"zh": "墊片",     "en": "Gasket"},
     ComponentRole.PU_BLOCK:         {"zh": "PU塊",    "en": "PU Block"},
     ComponentRole.CLAMP:            {"zh": "管夾",     "en": "Clamp"},
     ComponentRole.UNKNOWN:          {"zh": "未分類",   "en": "Unknown"},

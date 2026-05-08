@@ -17,9 +17,9 @@ HEADERS = [
 ]
 
 PROJECT_HEADERS = [
-    "型號", "組數", "項次", "品名", "尺寸/規格", "長度(mm)", "寬度(mm)",
-    "材質", "單件數量", "單件長度小計", "單件重量",
-    "總數量", "總長度小計", "總重量", "單位", "屬性", "備註",
+    "型號", "組數", "項次", "品名", "規格", "材質",
+    "長度(mm)", "寬度(mm)",
+    "單件數量", "單件重量(kg)", "總數量", "總重量(kg)", "屬性", "備註",
 ]
 
 SUMMARY_HEADERS = [
@@ -183,7 +183,7 @@ def export_to_excel(results: List[AnalysisResult], filepath: str):
 
 
 def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
-    """匯出 project-aware 分析結果，保留單件欄區與專案總數欄區。"""
+    """匯出 project-aware 分析結果（平坦表格，每列填滿型號/組數）。"""
     import openpyxl
 
     wb = openpyxl.Workbook()
@@ -207,23 +207,20 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
             continue
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
-            ws.cell(row=row, column=1, value=input_row.designation if single_entry.item_no == 1 else "")
-            ws.cell(row=row, column=2, value=input_row.quantity if single_entry.item_no == 1 else "")
+            ws.cell(row=row, column=1, value=input_row.designation)   # 每列填滿
+            ws.cell(row=row, column=2, value=input_row.quantity)       # 每列填滿
             ws.cell(row=row, column=3, value=single_entry.item_no)
             ws.cell(row=row, column=4, value=single_entry.name)
             ws.cell(row=row, column=5, value=single_entry.spec)
-            ws.cell(row=row, column=6, value=single_entry.length)
-            ws.cell(row=row, column=7, value=single_entry.width if single_entry.width else "")
-            ws.cell(row=row, column=8, value=single_entry.material)
+            ws.cell(row=row, column=6, value=single_entry.material)
+            ws.cell(row=row, column=7, value=single_entry.length)
+            ws.cell(row=row, column=8, value=single_entry.width if single_entry.width else "")
             ws.cell(row=row, column=9, value=single_entry.quantity)
-            ws.cell(row=row, column=10, value=single_entry.length_subtotal if single_entry.length_subtotal else "")
-            ws.cell(row=row, column=11, value=single_entry.weight_output)
-            ws.cell(row=row, column=12, value=scaled_entry.quantity)
-            ws.cell(row=row, column=13, value=scaled_entry.length_subtotal if scaled_entry.length_subtotal else "")
-            ws.cell(row=row, column=14, value=scaled_entry.weight_output)
-            ws.cell(row=row, column=15, value=single_entry.unit)
-            ws.cell(row=row, column=16, value=single_entry.category)
-            ws.cell(row=row, column=17, value=single_entry.display_remark)
+            ws.cell(row=row, column=10, value=single_entry.weight_output)
+            ws.cell(row=row, column=11, value=scaled_entry.quantity)
+            ws.cell(row=row, column=12, value=scaled_entry.weight_output)
+            ws.cell(row=row, column=13, value=single_entry.category)
+            ws.cell(row=row, column=14, value=single_entry.display_remark)
             row += 1
 
     _format_sheet(ws, PROJECT_HEADERS)
@@ -237,10 +234,13 @@ def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
 
     Sheets:
       1. 專案摘要
-      2. 重量分析
-      3. 材料合計
-      4. 下料明細
-      5. 下料圖示
+      2. 計算依據  (Flat pivot-friendly table)
+      3. 計算說明  (Static manager/client reference page)
+      4. 長官統計
+      5. 重量分析
+      6. 材料合計
+      7. 下料明細
+      8. 下料圖示
     """
     import openpyxl
 
@@ -249,6 +249,8 @@ def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
 
     wb = openpyxl.Workbook()
     _write_project_summary_sheet(wb.active, project, summary, cutting_plans)
+    _write_calculation_basis_sheet(wb.create_sheet("計算依據"), project)
+    _write_calc_reference_sheet(wb.create_sheet("計算說明"), project)
     _write_leader_procurement_sheet(wb.create_sheet("長官統計"), project)
     _write_project_weight_sheet(wb.create_sheet("重量分析"), project)
     _write_material_summary_sheet(wb.create_sheet("材料合計"), summary)
@@ -471,7 +473,7 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
 
 
 def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
-    _setup_sheet(ws, "重量分析明細", "Q1")
+    _setup_sheet(ws, "重量分析明細", "N1")
     _write_headers(ws, 3, PROJECT_HEADERS)
 
     row = 4
@@ -490,21 +492,18 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             values = [
-                input_row.designation if single_entry.item_no == 1 else "",
-                input_row.quantity if single_entry.item_no == 1 else "",
+                input_row.designation,                                  # 型號 - 每列填滿
+                input_row.quantity,                                     # 組數 - 每列填滿
                 single_entry.item_no,
                 single_entry.name,
                 single_entry.spec,
+                single_entry.material,
                 single_entry.length,
                 single_entry.width if single_entry.width else "",
-                single_entry.material,
-                single_entry.quantity,
-                single_entry.length_subtotal if single_entry.length_subtotal else "",
-                single_entry.weight_output,
-                scaled_entry.quantity,
-                scaled_entry.length_subtotal if scaled_entry.length_subtotal else "",
-                scaled_entry.weight_output,
-                single_entry.unit,
+                single_entry.quantity,                                   # 單件數量
+                single_entry.weight_output,                             # 單件重量(kg)
+                scaled_entry.quantity,                                  # 總數量
+                scaled_entry.weight_output,                             # 總重量(kg)
                 single_entry.category,
                 single_entry.display_remark,
             ]
@@ -514,10 +513,10 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
 
     last_row = max(row - 1, 3)
     _apply_table_style(ws, 3, last_row, len(PROJECT_HEADERS))
-    _format_number_columns(ws, 4, last_row, [6, 7, 10, 11, 13, 14], "0.00")
+    _format_number_columns(ws, 4, last_row, [7, 8, 10, 12], "0.00")
     ws.freeze_panes = "A4"
-    ws.auto_filter.ref = f"A3:Q{last_row}"
-    _set_widths(ws, [18, 8, 8, 16, 20, 12, 12, 14, 10, 14, 12, 10, 14, 12, 8, 10, 36])
+    ws.auto_filter.ref = f"A3:N{last_row}"
+    _set_widths(ws, [20, 8, 8, 16, 22, 14, 12, 12, 10, 14, 10, 14, 10, 36])
 
 
 def _write_material_summary_sheet(ws, summary: MaterialSummary):
@@ -669,3 +668,318 @@ def _write_cutting_visual_sheet(ws, plans: list[CuttingPlan]):
     _set_widths(ws, [28, 10, 10, 12])
     ws.column_dimensions[get_column_letter(5 + VISUAL_SLOT_COUNT)].width = 54
     ws.freeze_panes = "A5"
+
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  計算依據 Sheet  (Pivot-friendly flat table)
+# ══════════════════════════════════════════════════════════════════════
+
+_CALC_BASIS_HEADERS = [
+    "型號", "組數", "可信度", "來源依據",
+    "項次", "品名", "規格", "材質", "屬性",
+    "單件數量", "計算式", "單件重(kg)", "單組重(kg)", "合計重(kg)",
+]
+
+_CONFIDENCE_FILL = {
+    "精確": "C6EFCE",   # 綠
+    "推導": "BDD7EE",   # 藍
+    "估算": "FFEB9C",   # 黃
+    "未知": "FFC7CE",   # 紅
+}
+
+_STANDARDS_TABLE = [
+    ("管道重量",    "ASME B36.10M / JIS G3454",     "以管徑及 Schedule 查表取 kg/m，再乘以長度(m)"),
+    ("不鏽鋼管道",  "ASME B36.19M / JIS G3459",     "SUS 系列管道；查表值已含不鏽鋼密度修正"),
+    ("角鋼/槽鋼",   "JIS G3192 / CNS 2948",          "H 型鋼、角鋼、槽鋼查表取 kg/m，再乘以長度(m)"),
+    ("鋼板",        "密度公式計算",                   "W = L × W × t(mm) × ρ ÷ 10⁶  [ρ = 7,850 kg/m³ (CS) / 7,930 kg/m³ (SUS)]"),
+    ("膨脹螺栓",    "HILTI/RAWL 產品目錄",            "以管徑查標準五金組合重量（保守估算，不含埋入砂漿）"),
+    ("自訂五金",    "工程判斷 / 廠商目錄",            "由計算程式依規格查表，如有疑義請參閱備註欄"),
+    ("係數說明",    "factor = 1.0 (一般)",            "熱浸鍍鋅塗裝：+6%；特殊接頭：依廠商資料"),
+    ("重量加總",    "單件重 × 組數 = 合計重",        "各項次合計後得本頁最右欄「合計重(kg)」"),
+]
+
+
+def _weight_formula_str(entry) -> str:
+    """從 AnalysisEntry 欄位重建人類可讀的計算式。"""
+    qty = entry.quantity
+    uw = entry.unit_weight
+
+    if entry.unit == "M" and entry.weight_per_unit and entry.weight_per_unit > 0:
+        wpm = entry.weight_per_unit
+        return (
+            f"{qty}件 × {entry.length:.0f}mm ÷ 1,000"
+            f" × {wpm:.3f} kg/m"
+            f" = {uw:.3f} kg"
+        )
+
+    if entry.unit == "PC" and entry.width and entry.width > 0:
+        try:
+            t = float(entry.spec)
+            density = 7.93 if "304" in entry.material else 7.85
+            return (
+                f"{qty}件 × {entry.length:.0f}×{entry.width:.0f}×{t:.0f}mm"
+                f" × {density:.2f} t/m³"
+                f" = {uw:.3f} kg"
+            )
+        except (ValueError, TypeError):
+            return (
+                f"{qty}件 × {entry.length:.0f}×{entry.width:.0f}mm"
+                f" × t×ρ = {uw:.3f} kg"
+            )
+
+    if entry.unit in ("SET", "EA", "KG"):
+        per = round(uw / qty, 3) if qty else uw
+        return f"{qty} {entry.unit} @ {per:.3f} kg/{entry.unit} = {uw:.3f} kg"
+
+    return f"{qty} × {uw:.3f} kg = {round(uw * qty, 3):.3f} kg"
+
+
+def _confidence_label(meta: dict) -> str:
+    return meta.get("truth_level", "未知")
+
+
+def _source_label(meta: dict) -> str:
+    labels = meta.get("source_labels") or meta.get("sources") or []
+    return " / ".join(str(s) for s in labels[:3]) if labels else "未知來源"
+
+
+def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
+    """
+    計算依據 — 純 Flat 表，每行都填所有欄位，適合樞紐分析。
+    Row 1: 大標題 (合併儲存格，僅裝飾用，不在資料範圍內)
+    Row 2: 空白
+    Row 3: 欄位標題
+    Row 4+: 資料列 (一支料件一列)
+    """
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    styles = _styles()
+    ws.sheet_view.showGridLines = False
+
+    # ── 標題列 (裝飾用，不影響樞紐範圍) ──────────────────────────
+    n_cols = len(_CALC_BASIS_HEADERS)
+    from openpyxl.utils import get_column_letter
+    last_col_letter = get_column_letter(n_cols)
+    ws.merge_cells(f"A1:{last_col_letter}1")
+    ws["A1"] = "重量計算依據（逐項明細）"
+    ws["A1"].font = styles["title_font"]
+    ws["A1"].fill = styles["title_fill"]
+    ws["A1"].alignment = styles["center"]
+    ws.row_dimensions[1].height = 28
+
+    # ── 欄位標題 (row 3) ──────────────────────────────────────────
+    HEADER_ROW = 3
+    _write_headers(ws, HEADER_ROW, _CALC_BASIS_HEADERS)
+
+    # ── 資料列 ────────────────────────────────────────────────────
+    data_row = HEADER_ROW + 1
+
+    for row_result in project.rows:
+        inp = row_result.input_row
+        single = row_result.single_result
+        scaled = row_result.scaled_result
+
+        meta = single.meta or {}
+        confidence = _confidence_label(meta)
+        source = _source_label(meta)
+        conf_color = _CONFIDENCE_FILL.get(confidence, "FFC7CE")
+        conf_fill = PatternFill("solid", fgColor=conf_color)
+
+        if single.error:
+            # 錯誤列：填入型號、組數、錯誤說明
+            vals = [inp.designation, inp.quantity, "錯誤", single.error] + [""] * (n_cols - 4)
+            for col, val in enumerate(vals, 1):
+                cell = ws.cell(row=data_row, column=col, value=val)
+                cell.fill = PatternFill("solid", fgColor="FFC7CE")
+                cell.border = styles["border"]
+            data_row += 1
+            continue
+
+        for s_entry, sc_entry in zip(single.entries, scaled.entries):
+            formula_str = _weight_formula_str(s_entry)
+            single_unit_w = round(s_entry.unit_weight, 3)
+            single_group_w = round(s_entry.weight_output, 3)   # 單組重 = unit_weight × quantity(件)
+            total_w = round(sc_entry.weight_output, 3)          # 合計重 = single_group_w × 組數
+
+            vals = [
+                inp.designation,          # 型號
+                inp.quantity,             # 組數
+                confidence,               # 可信度
+                source,                   # 來源依據
+                s_entry.item_no,          # 項次
+                s_entry.name,             # 品名
+                s_entry.spec,             # 規格
+                s_entry.material,         # 材質
+                getattr(s_entry, "category", ""),  # 屬性
+                s_entry.quantity,         # 單件數量
+                formula_str,              # 計算式
+                single_unit_w,            # 單件重(kg)
+                single_group_w,           # 單組重(kg)
+                total_w,                  # 合計重(kg)
+            ]
+            for col, val in enumerate(vals, 1):
+                cell = ws.cell(row=data_row, column=col, value=val)
+                cell.border = styles["border"]
+                cell.alignment = Alignment(
+                    vertical="center",
+                    wrap_text=(col == 11),  # 計算式欄 wrap
+                )
+                if col == 3:   # 可信度欄著色
+                    cell.fill = conf_fill
+            ws.row_dimensions[data_row].height = 15
+            data_row += 1
+
+    last_data_row = data_row - 1
+
+    # ── 凍結 & 篩選 ──────────────────────────────────────────────
+    ws.freeze_panes = f"A{HEADER_ROW + 1}"
+    if last_data_row >= HEADER_ROW + 1:
+        ws.auto_filter.ref = f"A{HEADER_ROW}:{last_col_letter}{last_data_row}"
+
+    # ── 欄寬 ─────────────────────────────────────────────────────
+    col_widths = [20, 8, 10, 18, 7, 14, 16, 14, 10, 10, 46, 13, 13, 14]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  計算說明 Sheet  (Static manager/client reference page)
+# ══════════════════════════════════════════════════════════════════════
+
+def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
+    """
+    計算說明 — 給長官或客戶看的靜態說明頁。
+    包含：
+      · 引用標準表
+      · 可信度圖例
+      · 各支撐小計彙整表
+      · 全案合計
+    """
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    styles = _styles()
+    ws.sheet_view.showGridLines = False
+
+    row = 1
+
+    # ── 大標題 ────────────────────────────────────────────────────
+    ws.merge_cells(f"A{row}:F{row}")
+    ws[f"A{row}"] = "重量計算依據說明書"
+    ws[f"A{row}"].font = styles["title_font"]
+    ws[f"A{row}"].fill = styles["title_fill"]
+    ws[f"A{row}"].alignment = styles["center"]
+    ws.row_dimensions[row].height = 28
+    row += 1
+
+    # ── 計算標準對照表 ────────────────────────────────────────────
+    ws.merge_cells(f"A{row}:F{row}")
+    sec = ws[f"A{row}"]
+    sec.value = "▌ 計算標準與假設"
+    sec.font = styles["section_font"]
+    sec.fill = styles["section_fill"]
+    sec.alignment = Alignment(horizontal="left", vertical="center")
+    row += 1
+
+    std_headers = ["計算項目", "引用標準 / 依據", "計算方式說明"]
+    for col, h in enumerate(std_headers, 1):
+        cell = ws.cell(row=row, column=col, value=h)
+        cell.fill = styles["subheader_fill"]
+        cell.font = styles["bold_font"]
+        cell.alignment = styles["center"]
+        cell.border = styles["border"]
+    row += 1
+
+    for item, standard, desc in _STANDARDS_TABLE:
+        for col, val in enumerate([item, standard, desc], 1):
+            cell = ws.cell(row=row, column=col, value=val)
+            cell.border = styles["border"]
+            cell.alignment = Alignment(vertical="center", wrap_text=(col == 3))
+        ws.row_dimensions[row].height = 18
+        row += 1
+
+    row += 1  # 空一列
+
+    # ── 可信度圖例 ────────────────────────────────────────────────
+    ws.cell(row=row, column=1, value="可信度說明：").font = styles["bold_font"]
+    legends = [
+        ("精確 — 直接查表", "C6EFCE"),
+        ("推導 — 公式計算", "BDD7EE"),
+        ("估算 — 工程假設", "FFEB9C"),
+        ("未知 — 需複核",   "FFC7CE"),
+    ]
+    for col_off, (label, color) in enumerate(legends, 2):
+        cell = ws.cell(row=row, column=col_off, value=label)
+        cell.fill = PatternFill("solid", fgColor=color)
+        cell.border = styles["border"]
+        cell.alignment = styles["center"]
+    row += 2
+
+    # ── 各支撐彙整表 ─────────────────────────────────────────────
+    ws.merge_cells(f"A{row}:F{row}")
+    sec2 = ws[f"A{row}"]
+    sec2.value = "▌ 各支撐重量彙整"
+    sec2.font = styles["section_font"]
+    sec2.fill = styles["section_fill"]
+    sec2.alignment = Alignment(horizontal="left", vertical="center")
+    row += 1
+
+    summ_headers = ["型號", "組數", "可信度", "單組重(kg)", "合計重(kg)", "備註"]
+    for col, h in enumerate(summ_headers, 1):
+        cell = ws.cell(row=row, column=col, value=h)
+        cell.fill = styles["subheader_fill"]
+        cell.font = styles["bold_font"]
+        cell.alignment = styles["center"]
+        cell.border = styles["border"]
+    row += 1
+
+    grand_total = 0.0
+
+    for row_result in project.rows:
+        inp = row_result.input_row
+        single = row_result.single_result
+        scaled = row_result.scaled_result
+
+        meta = single.meta or {}
+        confidence = _confidence_label(meta)
+        conf_color = _CONFIDENCE_FILL.get(confidence, "FFC7CE")
+
+        if single.error:
+            for col, val in enumerate([inp.designation, inp.quantity, "錯誤", "", "", single.error], 1):
+                cell = ws.cell(row=row, column=col, value=val)
+                cell.fill = PatternFill("solid", fgColor="FFC7CE")
+                cell.border = styles["border"]
+        else:
+            single_total = round(single.total_weight, 3)
+            scaled_total = round(scaled.total_weight, 3)
+            grand_total += scaled_total
+            remark = ""
+            vals = [inp.designation, inp.quantity, confidence, single_total, scaled_total, remark]
+            for col, val in enumerate(vals, 1):
+                cell = ws.cell(row=row, column=col, value=val)
+                cell.border = styles["border"]
+                cell.alignment = styles["center"]
+                if col == 3:
+                    cell.fill = PatternFill("solid", fgColor=conf_color)
+        row += 1
+
+    # ── 全案合計列 ───────────────────────────────────────────────
+    grand_fill = PatternFill("solid", fgColor="1F4E78")
+    grand_font = Font(bold=True, color="FFFFFF")
+    for col in range(1, 7):
+        cell = ws.cell(row=row, column=col)
+        cell.fill = grand_fill
+        cell.font = grand_font
+        cell.border = styles["border"]
+        cell.alignment = styles["center"]
+    ws.cell(row=row, column=1, value="■ 全案合計總重")
+    ws.cell(row=row, column=5, value=round(grand_total, 3))
+    ws.cell(row=row, column=5).number_format = "0.000"
+
+    # ── 欄寬 ─────────────────────────────────────────────────────
+    col_widths = [22, 8, 12, 14, 14, 36]
+    from openpyxl.utils import get_column_letter
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    # 標準表第3欄較長
+    ws.column_dimensions["C"].width = max(14, ws.column_dimensions["C"].width)

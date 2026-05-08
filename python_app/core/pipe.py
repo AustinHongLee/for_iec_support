@@ -44,7 +44,7 @@ def add_pipe_entry(result: AnalysisResult, pipe_size, pipe_thickness: str,
     details = get_pipe_details(size_val, schedule, material_name)
 
     entry = AnalysisEntry()
-    entry.name = "Pipe"
+    entry.name = "管路"
     entry.spec = f'{size_str}"*{pipe_thickness}'
     entry.length = pipe_length
     entry.material = material_name
