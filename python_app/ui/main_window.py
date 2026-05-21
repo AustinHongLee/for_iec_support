@@ -17,10 +17,10 @@ from PyQt6.QtWidgets import (
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
     QListWidget, QListWidgetItem, QRadioButton, QButtonGroup,
-    QFrame, QScrollArea, QTextBrowser,
+    QFrame, QScrollArea, QTextBrowser, QInputDialog,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QIcon, QImage, QPixmap
+from PyQt6.QtGui import QFont, QColor, QIcon, QImage, QPixmap, QShortcut, QKeySequence
 
 try:
     import fitz  # PyMuPDF
@@ -238,6 +238,32 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(self.main_tabs)
         self.statusBar().showMessage("就緒 — 新增支撐編碼後按「開始分析」")
+        self._install_shortcuts()
+
+    def _install_shortcuts(self):
+        """Keyboard shortcuts for high-volume input work."""
+        self._shortcuts = [
+            QShortcut(
+                QKeySequence("Delete"),
+                self.item_list,
+                activated=self._on_delete_item,
+            ),
+            QShortcut(
+                QKeySequence("F2"),
+                self.item_list,
+                activated=self._on_edit_current_item,
+            ),
+            QShortcut(
+                QKeySequence("Ctrl+Return"),
+                self,
+                activated=self._on_batch_paste,
+            ),
+            QShortcut(
+                QKeySequence("Ctrl+Enter"),
+                self,
+                activated=self._on_batch_paste,
+            ),
+        ]
 
     def _build_analysis_page(self) -> QWidget:
         """建構分析頁面 (原始三面板)"""
@@ -310,6 +336,7 @@ class MainWindow(QMainWindow):
         # 清單
         self.item_list = QListWidget()
         self.item_list.currentRowChanged.connect(self._on_item_selected)
+        self.item_list.itemChanged.connect(self._on_item_check_changed)
         self.item_list.setFont(QFont("Consolas", 10))
         layout.addWidget(self.item_list)
 
@@ -415,13 +442,15 @@ class MainWindow(QMainWindow):
         self.add_input.clear()
         self.add_input.setFocus()
 
-    def _add_item_to_list(self, text: str):
+    def _add_item_to_list(self, text: str, invalidate: bool = True):
         idx = len(self._project_rows)
         self._project_rows.append(ProjectInputRow(designation=text))
         item_widget = QListWidgetItem(text)
         item_widget.setCheckState(Qt.CheckState.Checked)
         self._update_item_display(idx, item_widget)
         self.item_list.addItem(item_widget)
+        if invalidate:
+            self._invalidate_analysis_outputs("輸入清單已變更，請重新分析")
 
     def _update_item_display(self, idx: int, item_widget: QListWidgetItem = None):
         """更新清單顯示文字 (有覆寫時加標記)"""
@@ -451,6 +480,7 @@ class MainWindow(QMainWindow):
 
     def _refresh_item_list_display(self):
         """Refresh all list labels and checkbox states from project rows."""
+        self.item_list.blockSignals(True)
         for idx, row in enumerate(self._project_rows):
             item_widget = self.item_list.item(idx)
             if item_widget is None:
@@ -459,6 +489,7 @@ class MainWindow(QMainWindow):
                 Qt.CheckState.Checked if row.enabled else Qt.CheckState.Unchecked
             )
             self._update_item_display(idx, item_widget)
+        self.item_list.blockSignals(False)
 
     def _on_batch_paste(self):
         """批次貼上多筆"""
@@ -473,14 +504,50 @@ class MainWindow(QMainWindow):
             "01-2B-05A\n01-3B-08B\n05-L50-05L\n16-4B-08"
         )
         lay.addWidget(text_edit)
+        count_label = QLabel("已輸入 0 筆")
+        count_label.setStyleSheet("color: #666; font-size: 12px;")
+        lay.addWidget(count_label)
         btn = QPushButton("加入清單")
         btn.clicked.connect(dlg.accept)
         lay.addWidget(btn)
+
+        def parse_lines() -> list[str]:
+            return [
+                line.strip()
+                for line in text_edit.toPlainText().splitlines()
+                if line.strip()
+            ]
+
+        def duplicate_count(lines: list[str]) -> int:
+            seen = {row.designation.casefold() for row in self._project_rows}
+            pasted = set()
+            duplicates = 0
+            for line in lines:
+                key = line.casefold()
+                if key in seen or key in pasted:
+                    duplicates += 1
+                pasted.add(key)
+            return duplicates
+
+        def update_count():
+            lines = parse_lines()
+            dupes = duplicate_count(lines)
+            if dupes:
+                count_label.setText(f"已輸入 {len(lines)} 筆；其中 {dupes} 筆重複")
+                count_label.setStyleSheet("color: #E65100; font-size: 12px;")
+            else:
+                count_label.setText(f"已輸入 {len(lines)} 筆")
+                count_label.setStyleSheet("color: #666; font-size: 12px;")
+
+        text_edit.textChanged.connect(update_count)
         if dlg.exec():
-            for line in text_edit.toPlainText().split("\n"):
-                line = line.strip()
-                if line:
-                    self._add_item_to_list(line)
+            lines = parse_lines()
+            if not lines:
+                return
+            for line in lines:
+                self._add_item_to_list(line, invalidate=False)
+            self._invalidate_analysis_outputs("批次貼上已加入清單，請重新分析")
+            self.statusBar().showMessage(f"已加入 {len(lines)} 筆支撐編碼")
 
     def _on_load_file(self):
         filepath, _ = QFileDialog.getOpenFileName(
@@ -488,12 +555,16 @@ class MainWindow(QMainWindow):
             "文字檔 (*.txt);;CSV (*.csv);;所有檔案 (*)"
         )
         if filepath:
+            added = 0
             with open(filepath, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
-                        self._add_item_to_list(line)
-            self.statusBar().showMessage(f"已載入: {filepath}")
+                        self._add_item_to_list(line, invalidate=False)
+                        added += 1
+            if added:
+                self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
+            self.statusBar().showMessage(f"已載入 {added} 筆: {filepath}")
 
     def _on_set_quantities(self):
         """Two-stage quantity editor: designation list stays unchanged."""
@@ -596,20 +667,93 @@ class MainWindow(QMainWindow):
         self.btn_export.setEnabled(False)
         self.total_weight_label.setText("總重量: -- kg")
         self.material_cutting_page.set_results_ready(False)
+        self.material_cutting_page.clear_outputs()
+        self.side_panel.mark_result_stale()
+
+    def _invalidate_analysis_outputs(self, message: str = ""):
+        """Invalidate analysis/material outputs after input rows change."""
+        had_outputs = (
+            bool(self._results)
+            or self._project_result is not None
+            or self.result_table.rowCount() > 0
+        )
+        self._clear_analysis_outputs()
+        if message:
+            suffix = "，已清除舊結果" if had_outputs else ""
+            self.statusBar().showMessage(f"{message}{suffix}")
+
+    def _on_item_check_changed(self, item: QListWidgetItem):
+        row = self.item_list.row(item)
+        if row < 0 or row >= len(self._project_rows):
+            return
+        enabled = item.checkState() == Qt.CheckState.Checked
+        if self._project_rows[row].enabled == enabled:
+            return
+        self._project_rows[row] = replace(self._project_rows[row], enabled=enabled)
+        self._invalidate_analysis_outputs("啟用項目已變更，請重新分析")
+
+    def _on_edit_current_item(self):
+        row = self.item_list.currentRow()
+        if row < 0 or row >= len(self._project_rows):
+            return
+        old_designation = self._project_rows[row].designation
+        new_designation, accepted = QInputDialog.getText(
+            self,
+            "編輯支撐編碼",
+            "支撐編碼:",
+            text=old_designation,
+        )
+        if not accepted:
+            return
+        new_designation = new_designation.strip()
+        if not new_designation or new_designation == old_designation:
+            return
+        overrides = self._project_rows[row].overrides
+        if get_type_code(new_designation) != get_type_code(old_designation):
+            overrides = None
+        self._project_rows[row] = replace(
+            self._project_rows[row],
+            designation=new_designation,
+            overrides=overrides,
+        )
+        self._update_item_display(row)
+        self.side_panel.show_item(
+            row,
+            new_designation,
+            self._project_rows[row].overrides or {},
+        )
+        self._invalidate_analysis_outputs("支撐編碼已編輯，請重新分析")
 
     def _on_delete_item(self):
         row = self.item_list.currentRow()
         if row < 0:
             return
+        deleted_designation = self._project_rows[row].designation
         self.item_list.blockSignals(True)
         self.item_list.takeItem(row)
         self.item_list.blockSignals(False)
         self._project_rows.pop(row)
         self._selected_index = -1
-        self.side_panel.clear_panel()
         self._refresh_item_list_display()
+        self._invalidate_analysis_outputs("輸入清單已變更，請重新分析")
+        if self._project_rows:
+            self.item_list.setCurrentRow(min(row, len(self._project_rows) - 1))
+        else:
+            self.side_panel.clear_panel()
+        self.statusBar().showMessage(f"已刪除 {deleted_designation}，請重新分析")
 
     def _on_clear_all(self):
+        if not self._project_rows and not self._results:
+            return
+        reply = QMessageBox.question(
+            self,
+            "確認全部清除",
+            "確定要清除所有支撐編碼與目前分析結果嗎？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
         self.item_list.clear()
         self._project_rows.clear()
         self._clear_analysis_outputs()
@@ -643,11 +787,15 @@ class MainWindow(QMainWindow):
         # 移除空值
         clean = {k: v for k, v in overrides.items() if v}
         if 0 <= idx < len(self._project_rows):
+            old_clean = self._project_rows[idx].overrides or {}
+            if old_clean == clean:
+                return
             self._project_rows[idx] = replace(
                 self._project_rows[idx],
                 overrides=clean or None,
             )
-        self._update_item_display(idx)
+            self._update_item_display(idx)
+            self._invalidate_analysis_outputs("覆寫設定已變更，請重新分析")
 
     # ══════════════════════════════════════════
     #  分析
@@ -1189,6 +1337,17 @@ class SidePanel(QGroupBox):
         self._clear_detail()
         self._splitter.setVisible(False)
         self._placeholder.setVisible(True)
+
+    def mark_result_stale(self):
+        """Clear only the calculated-detail area when inputs changed."""
+        self._current_result = None
+        if self._btn_inventor:
+            self._btn_inventor.setEnabled(False)
+        if self._result_browser is not None:
+            self._result_browser.setHtml(
+                '<p style="color:#AAA; font-size:10pt;">'
+                '（輸入已變更，請重新執行分析）</p>'
+            )
 
     def show_item(self, idx: int, item_text: str, current_overrides: dict):
         self._building = True

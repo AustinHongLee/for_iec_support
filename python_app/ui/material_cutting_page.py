@@ -118,6 +118,15 @@ class MaterialCuttingPage(QWidget):
         """主視窗分析完成後呼叫，啟用按鈕"""
         self.btn_generate.setEnabled(ready)
 
+    def clear_outputs(self):
+        """Clear stale material summary/cutting outputs after inputs change."""
+        self._summary = None
+        self._cutting_plans = []
+        self.summary_table.setRowCount(0)
+        self.cutting_table.setRowCount(0)
+        self.btn_export.setEnabled(False)
+        self.lbl_status.setText("")
+
     def generate(self, results: List[AnalysisResult]):
         """從分析結果產生材料合計 + 下料方案"""
         valid = [r for r in results if not r.error]
