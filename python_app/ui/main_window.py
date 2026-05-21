@@ -47,14 +47,10 @@ _PDF_DIR = os.path.join(_APP_DIR, "assets", "Type")
 
 # 結果表格群組背景色 (header_row_color, body_row_color)
 _RESULT_GROUP_COLORS = [
-    ("#DAEAF8", "#EEF5FB"),   # 藍
-    ("#D5EDD5", "#EAF5EA"),   # 綠
-    ("#E5D5F0", "#F2EAF8"),   # 紫
-    ("#FDEFD5", "#FEF6EA"),   # 橘
-    ("#D5EDE8", "#EAF5F2"),   # 青
-    ("#F0D5D5", "#FAE8E8"),   # 粉
-    ("#E8E8D5", "#F5F5EA"),   # 黃綠
-    ("#D5D5ED", "#EAEAF5"),   # 薰衣草
+    ("#E2EDF8", "#FAFCFE"),   # blue-gray
+    ("#E8EEF5", "#FFFFFF"),   # cool gray
+    ("#E5F0F4", "#FBFDFE"),   # steel blue
+    ("#EDF1F6", "#FFFFFF"),   # neutral gray
 ]
 
 
@@ -90,7 +86,7 @@ class MainWindow(QMainWindow):
                 border: 1px solid #C8CDD5;
                 border-bottom: none;
                 border-radius: 4px 4px 0 0;
-                font-size: 11px;
+                font-size: 12px;
                 margin-right: 2px;
             }
             QTabBar::tab:selected {
@@ -104,12 +100,12 @@ class MainWindow(QMainWindow):
             }
             QGroupBox {
                 font-weight: bold;
-                font-size: 11px;
+                font-size: 12px;
                 color: #333;
                 border: 1px solid #C8CDD5;
                 border-radius: 6px;
-                margin-top: 14px;
-                padding-top: 6px;
+                margin-top: 18px;
+                padding: 12px 8px 8px 8px;
                 background: #FFFFFF;
             }
             QGroupBox::title {
@@ -117,6 +113,7 @@ class MainWindow(QMainWindow):
                 left: 10px;
                 padding: 0 5px;
                 color: #1565C0;
+                font-size: 12px;
             }
             QPushButton {
                 padding: 5px 12px;
@@ -124,8 +121,8 @@ class MainWindow(QMainWindow):
                 border-radius: 4px;
                 background-color: #F0F2F5;
                 color: #333;
-                font-size: 11px;
-                min-height: 22px;
+                font-size: 12px;
+                min-height: 24px;
             }
             QPushButton:hover {
                 background-color: #E2E8F0;
@@ -146,7 +143,7 @@ class MainWindow(QMainWindow):
                 background: #FFFFFF;
                 color: #222;
                 selection-background-color: #BBDEFB;
-                font-size: 11px;
+                font-size: 12px;
             }
             QLineEdit:focus, QComboBox:focus {
                 border-color: #1565C0;
@@ -185,7 +182,7 @@ class MainWindow(QMainWindow):
                 font-size: 11px;
                 border: none;
                 border-right: 1px solid #D2D8E2;
-                border-bottom: 2px solid #1565C0;
+                border-bottom: 1px solid #BBDEFB;
                 padding: 5px 8px;
             }
             QScrollBar:vertical {
@@ -199,7 +196,7 @@ class MainWindow(QMainWindow):
             }
             QStatusBar {
                 color: #666;
-                font-size: 10px;
+                font-size: 12px;
                 background: #F0F2F5;
                 border-top: 1px solid #D0D5DC;
             }
@@ -251,7 +248,7 @@ class MainWindow(QMainWindow):
         toolbar = QHBoxLayout()
         supported = get_supported_types()
         info_label = QLabel(f"已支援 Type: {', '.join(supported)}")
-        info_label.setStyleSheet("color: #555; font-size: 11px;")
+        info_label.setStyleSheet("color: #555; font-size: 12px;")
         toolbar.addWidget(info_label)
         toolbar.addStretch()
 
@@ -341,9 +338,13 @@ class MainWindow(QMainWindow):
         # 分析按鈕
         self.btn_analyze = QPushButton("▶ 開始分析")
         self.btn_analyze.setStyleSheet(
-            "QPushButton { background-color: #4CAF50; color: white; "
-            "padding: 8px; font-size: 14px; border-radius: 4px; }"
-            "QPushButton:hover { background-color: #45a049; }"
+            "QPushButton { background-color: #1976D2; color: white; "
+            "border: 1px solid #1565C0; padding: 8px; "
+            "font-size: 14px; font-weight: bold; border-radius: 4px; }"
+            "QPushButton:hover { background-color: #1565C0; }"
+            "QPushButton:pressed { background-color: #0D47A1; }"
+            "QPushButton:disabled { background-color: #B0BEC5; "
+            "border-color: #90A4AE; color: #ECEFF1; }"
         )
         self.btn_analyze.clicked.connect(self._on_analyze)
         layout.addWidget(self.btn_analyze)
@@ -384,8 +385,8 @@ class MainWindow(QMainWindow):
         self.total_weight_label = QLabel("  總重量: -- kg  ")
         self.total_weight_label.setFont(QFont("Microsoft JhengHei UI", 12, QFont.Weight.Bold))
         self.total_weight_label.setStyleSheet(
-            "color: #1565C0; background: #E3F0FF;"
-            "border: 2px solid #90C2F0; border-radius: 6px;"
+            "color: #0D47A1; background: #EAF4FF;"
+            "border: 1px solid #BBDEFB; border-radius: 6px;"
             "padding: 4px 12px;"
         )
         self.total_weight_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
