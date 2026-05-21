@@ -382,12 +382,15 @@ class MainWindow(QMainWindow):
         panel = QGroupBox("分析結果")
         layout = QVBoxLayout(panel)
 
+        layout.addWidget(self._build_result_summary_bar())
+
         self.result_table = QTableWidget()
         self._set_project_result_headers()
         self.result_table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents
         )
         self.result_table.setAlternatingRowColors(False)
+        self.result_table.setWordWrap(False)
         self.result_table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows
         )
@@ -409,18 +412,78 @@ class MainWindow(QMainWindow):
         self.btn_export.clicked.connect(self._on_export)
         export_row.addWidget(self.btn_export)
         export_row.addStretch()
-        self.total_weight_label = QLabel("  總重量: -- kg  ")
-        self.total_weight_label.setFont(QFont("Microsoft JhengHei UI", 12, QFont.Weight.Bold))
-        self.total_weight_label.setStyleSheet(
-            "color: #0D47A1; background: #EAF4FF;"
-            "border: 1px solid #BBDEFB; border-radius: 6px;"
-            "padding: 4px 12px;"
-        )
-        self.total_weight_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        export_row.addWidget(self.total_weight_label)
         layout.addLayout(export_row)
 
         return panel
+
+    def _build_result_summary_bar(self):
+        bar = QFrame()
+        bar.setObjectName("resultSummaryBar")
+        bar.setStyleSheet(
+            "QFrame#resultSummaryBar {"
+            "background: #F8FBFE;"
+            "border: 1px solid #D6E2EF;"
+            "border-radius: 4px;"
+            "}"
+            "QLabel { background: transparent; }"
+        )
+
+        row = QHBoxLayout(bar)
+        row.setContentsMargins(10, 6, 10, 6)
+        row.setSpacing(12)
+
+        self.total_weight_label = self._make_summary_value_label(
+            "-- kg", "#0D47A1", 13, True
+        )
+        self.summary_success_label = self._make_summary_value_label("--", "#1B5E20")
+        self.summary_error_label = self._make_summary_value_label("--", "#546E7A")
+        self.summary_support_label = self._make_summary_value_label("--", "#263238")
+
+        row.addLayout(self._make_summary_metric("總重量", self.total_weight_label))
+        row.addWidget(self._make_summary_separator())
+        row.addLayout(self._make_summary_metric("成功項目", self.summary_success_label))
+        row.addWidget(self._make_summary_separator())
+        row.addLayout(self._make_summary_metric("錯誤項目", self.summary_error_label))
+        row.addWidget(self._make_summary_separator())
+        row.addLayout(self._make_summary_metric("支撐組數", self.summary_support_label))
+        row.addStretch()
+        return bar
+
+    def _make_summary_metric(self, title: str, value_label: QLabel):
+        metric = QHBoxLayout()
+        metric.setContentsMargins(0, 0, 0, 0)
+        metric.setSpacing(5)
+
+        title_label = QLabel(title)
+        title_label.setFont(QFont("Microsoft JhengHei UI", 12))
+        title_label.setStyleSheet(
+            "color: #607080; font-weight: normal; background: transparent;"
+        )
+        metric.addWidget(title_label)
+        metric.addWidget(value_label)
+        return metric
+
+    def _make_summary_value_label(
+        self,
+        text: str,
+        color: str,
+        size: int = 12,
+        bold: bool = True,
+    ):
+        label = QLabel(text)
+        weight = QFont.Weight.Bold if bold else QFont.Weight.Normal
+        label.setFont(QFont("Microsoft JhengHei UI", size, weight))
+        label.setStyleSheet(f"color: {color}; background: transparent;")
+        label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        return label
+
+    def _make_summary_separator(self):
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setFrameShadow(QFrame.Shadow.Plain)
+        sep.setStyleSheet("color: #D6E2EF; background: #D6E2EF;")
+        sep.setFixedHeight(20)
+        return sep
 
     def _set_project_result_headers(self):
         """Result table columns: simplified 13-column pivot-friendly layout."""
@@ -659,13 +722,47 @@ class MainWindow(QMainWindow):
         total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
         self.statusBar().showMessage(f"已更新組數，啟用項目合計 {total_supports} 組")
 
+    def _set_result_summary(
+        self,
+        *,
+        total_weight: float | None = None,
+        total_precision: int = 3,
+        success_count: int | None = None,
+        error_count: int | None = None,
+        support_count: int | None = None,
+        reset: bool = False,
+    ):
+        if reset or total_weight is not None:
+            text = "-- kg" if total_weight is None else f"{total_weight:.{total_precision}f} kg"
+            self.total_weight_label.setText(text)
+
+        if reset or success_count is not None:
+            text = "--" if success_count is None else str(success_count)
+            self.summary_success_label.setText(text)
+
+        if reset or error_count is not None:
+            if error_count is None:
+                text = "--"
+                color = "#546E7A"
+            else:
+                text = str(error_count)
+                color = "#C62828" if error_count else "#546E7A"
+            self.summary_error_label.setText(text)
+            self.summary_error_label.setStyleSheet(
+                f"color: {color}; background: transparent;"
+            )
+
+        if reset or support_count is not None:
+            text = "--" if support_count is None else f"{support_count} 組"
+            self.summary_support_label.setText(text)
+
     def _clear_analysis_outputs(self):
         """Clear stale analysis/material outputs after project inputs change."""
         self._results.clear()
         self._project_result = None
         self.result_table.setRowCount(0)
         self.btn_export.setEnabled(False)
-        self.total_weight_label.setText("總重量: -- kg")
+        self._set_result_summary(reset=True)
         self.material_cutting_page.set_results_ready(False)
         self.material_cutting_page.clear_outputs()
         self.side_panel.mark_result_stale()
@@ -819,10 +916,16 @@ class MainWindow(QMainWindow):
         self.btn_export.setEnabled(True)
 
         error_count = sum(1 for r in self._results if r.error)
+        success_count = len(self._results) - error_count
+        self._set_result_summary(
+            success_count=success_count,
+            error_count=error_count,
+            support_count=self._project_result.total_support_count,
+        )
         self.statusBar().showMessage(
             f"分析完成: {len(self._results)} 筆 / "
             f"{self._project_result.total_support_count} 組 "
-            f"(成功 {len(self._results) - error_count}, 錯誤 {error_count})"
+            f"(成功 {success_count}, 錯誤 {error_count})"
         )
 
         # 更新 side panel 的計算結果
@@ -873,7 +976,7 @@ class MainWindow(QMainWindow):
                 self.result_table.setItem(row, 11, QTableWidgetItem(entry.category))
                 total_weight += entry.weight_output
 
-        self.total_weight_label.setText(f"總重量: {total_weight:.2f} kg")
+        self._set_result_summary(total_weight=total_weight, total_precision=2)
 
     def _display_project_results(self):
         """Display project results in simplified 13-column flat layout with visual grouping."""
@@ -899,6 +1002,7 @@ class MainWindow(QMainWindow):
             if single_result.error:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
+                self.result_table.setRowHeight(row, 24)
                 err_bg = QColor("#FDE8E8")
                 err_fg = QColor("#C62828")
                 for col in range(13):
@@ -954,12 +1058,15 @@ class MainWindow(QMainWindow):
                 total_weight += scaled_entry.weight_output
                 is_first = False
 
+            if group_start_row < self.result_table.rowCount():
+                self.result_table.setRowHeight(group_start_row, 24)
+
             # ── 群組小計列 ─────────────────────────────────────
             sub_row = self.result_table.rowCount()
             self.result_table.insertRow(sub_row)
-            sub_bg = QColor(hdr_color)
+            sub_bg = QColor(hdr_color).darker(104)
             sub_label = QTableWidgetItem(
-                f"  {input_row.designation}  合計 ({input_row.quantity} 組)"
+                f"小計  {input_row.designation} ({input_row.quantity} 組)"
             )
             sub_label.setBackground(sub_bg)
             sub_label.setForeground(QColor("#1A3A6B"))
@@ -974,9 +1081,10 @@ class MainWindow(QMainWindow):
             sub_wt.setText(f"{group_weight:.3f}")
             sub_wt.setTextAlignment(RIGHT_ALIGN)
             sub_wt.setForeground(QColor("#1A3A6B"))
-            self.result_table.setRowHeight(sub_row, 20)
+            sub_wt.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
+            self.result_table.setRowHeight(sub_row, 22)
 
-        self.total_weight_label.setText(f"  專案總重量:  {total_weight:.3f} kg  ")
+        self._set_result_summary(total_weight=total_weight, total_precision=3)
 
     # ══════════════════════════════════════════
     #  匯出 / 設定
