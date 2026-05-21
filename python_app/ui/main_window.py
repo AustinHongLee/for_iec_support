@@ -265,6 +265,16 @@ class MainWindow(QMainWindow):
                 self,
                 activated=self._on_batch_paste,
             ),
+            QShortcut(
+                QKeySequence("Ctrl+F"),
+                self,
+                activated=self._focus_result_filter,
+            ),
+            QShortcut(
+                QKeySequence("Escape"),
+                self.result_filter_input,
+                activated=self.result_filter_input.clear,
+            ),
         ]
 
     def _build_analysis_page(self) -> QWidget:
@@ -385,6 +395,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(panel)
 
         layout.addWidget(self._build_result_summary_bar())
+        layout.addLayout(self._build_result_filter_row())
 
         self.result_table = QTableWidget()
         self._set_project_result_headers()
@@ -417,6 +428,31 @@ class MainWindow(QMainWindow):
         layout.addLayout(export_row)
 
         return panel
+
+    def _build_result_filter_row(self):
+        row = QHBoxLayout()
+        row.setSpacing(6)
+
+        label = QLabel("搜尋:")
+        label.setStyleSheet("color: #607080; font-size: 12px;")
+        row.addWidget(label)
+
+        self.result_filter_input = QLineEdit()
+        self.result_filter_input.setPlaceholderText("型號 / 品名 / 規格 / 材質 / 備註")
+        self.result_filter_input.setClearButtonEnabled(True)
+        self.result_filter_input.textChanged.connect(self._apply_result_filter)
+        row.addWidget(self.result_filter_input, 1)
+
+        self.result_filter_count_label = QLabel("顯示 0 列")
+        self.result_filter_count_label.setMinimumWidth(86)
+        self.result_filter_count_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.result_filter_count_label.setStyleSheet(
+            "color: #607080; font-size: 12px;"
+        )
+        row.addWidget(self.result_filter_count_label)
+        return row
 
     def _build_result_summary_bar(self):
         bar = QFrame()
@@ -724,6 +760,62 @@ class MainWindow(QMainWindow):
         total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
         self.statusBar().showMessage(f"已更新組數，啟用項目合計 {total_supports} 組")
 
+    def _focus_result_filter(self):
+        self.result_filter_input.setFocus()
+        self.result_filter_input.selectAll()
+
+    def _set_result_row_group(self, row: int, group_key: str):
+        item = self.result_table.item(row, 0)
+        if item is None:
+            item = QTableWidgetItem("")
+            self.result_table.setItem(row, 0, item)
+        item.setData(Qt.ItemDataRole.UserRole, group_key)
+
+    def _result_row_group(self, row: int) -> str:
+        item = self.result_table.item(row, 0)
+        if item is not None:
+            group_key = item.data(Qt.ItemDataRole.UserRole)
+            if group_key:
+                return str(group_key)
+        return f"row:{row}"
+
+    def _result_row_text(self, row: int) -> str:
+        values = []
+        for col in range(self.result_table.columnCount()):
+            item = self.result_table.item(row, col)
+            if item and item.text():
+                values.append(item.text())
+        return " ".join(values).casefold()
+
+    def _apply_result_filter(self):
+        if not hasattr(self, "result_table"):
+            return
+        query = self.result_filter_input.text().strip().casefold()
+        terms = [term for term in query.split() if term]
+        row_count = self.result_table.rowCount()
+
+        if not terms:
+            for row in range(row_count):
+                self.result_table.setRowHidden(row, False)
+            self.result_filter_count_label.setText(f"顯示 {row_count} 列")
+            return
+
+        row_groups = [self._result_row_group(row) for row in range(row_count)]
+        matched_groups = set()
+        for row, group_key in enumerate(row_groups):
+            row_text = self._result_row_text(row)
+            if all(term in row_text for term in terms):
+                matched_groups.add(group_key)
+
+        visible_count = 0
+        for row, group_key in enumerate(row_groups):
+            is_visible = group_key in matched_groups
+            self.result_table.setRowHidden(row, not is_visible)
+            if is_visible:
+                visible_count += 1
+
+        self.result_filter_count_label.setText(f"顯示 {visible_count}/{row_count} 列")
+
     def _set_result_summary(
         self,
         *,
@@ -763,6 +855,7 @@ class MainWindow(QMainWindow):
         self._results.clear()
         self._project_result = None
         self.result_table.setRowCount(0)
+        self._apply_result_filter()
         self.btn_export.setEnabled(False)
         self._set_result_summary(reset=True)
         self.material_cutting_page.set_results_ready(False)
@@ -963,7 +1056,8 @@ class MainWindow(QMainWindow):
             self._display_project_results()
             return
 
-        for result in self._results:
+        for result_index, result in enumerate(self._results):
+            group_key = f"legacy:{result_index}"
             if result.error:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
@@ -973,6 +1067,7 @@ class MainWindow(QMainWindow):
                 err = QTableWidgetItem(f"錯誤: {result.error}")
                 err.setForeground(QColor("red"))
                 self.result_table.setItem(row, 2, err)
+                self._set_result_row_group(row, group_key)
                 continue
 
             for entry in result.entries:
@@ -994,9 +1089,11 @@ class MainWindow(QMainWindow):
                 self.result_table.setItem(row, 9, QTableWidgetItem(f"{entry.weight_output:.2f}"))
                 self.result_table.setItem(row, 10, QTableWidgetItem(entry.unit))
                 self.result_table.setItem(row, 11, QTableWidgetItem(entry.category))
+                self._set_result_row_group(row, group_key)
                 total_weight += entry.weight_output
 
         self._set_result_summary(total_weight=total_weight, total_precision=2)
+        self._apply_result_filter()
 
     def _display_project_results(self):
         """Display project results in simplified 13-column flat layout with visual grouping."""
@@ -1012,10 +1109,11 @@ class MainWindow(QMainWindow):
         total_weight = 0.0
         g_idx = 0  # 群組色輪 index
 
-        for row_result in self._project_result.rows:
+        for result_index, row_result in enumerate(self._project_result.rows):
             input_row = row_result.input_row
             single_result = row_result.single_result
             scaled_result = row_result.scaled_result
+            group_key = f"project:{result_index}"
             hdr_color, body_color = _RESULT_GROUP_COLORS[g_idx % len(_RESULT_GROUP_COLORS)]
             g_idx += 1
 
@@ -1037,6 +1135,7 @@ class MainWindow(QMainWindow):
                 err_cell = self.result_table.item(row, 3)
                 err_cell.setText(f"⚠ {single_result.error}")
                 err_cell.setForeground(err_fg)
+                self._set_result_row_group(row, group_key)
                 continue
 
             is_first = True
@@ -1073,6 +1172,7 @@ class MainWindow(QMainWindow):
                     elif col == 10:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                     self.result_table.setItem(row, col, item)
+                self._set_result_row_group(row, group_key)
 
                 group_weight += scaled_entry.weight_output
                 total_weight += scaled_entry.weight_output
@@ -1103,8 +1203,10 @@ class MainWindow(QMainWindow):
             sub_wt.setForeground(QColor("#1A3A6B"))
             sub_wt.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
             self.result_table.setRowHeight(sub_row, 22)
+            self._set_result_row_group(sub_row, group_key)
 
         self._set_result_summary(total_weight=total_weight, total_precision=3)
+        self._apply_result_filter()
 
     # ══════════════════════════════════════════
     #  匯出 / 設定
