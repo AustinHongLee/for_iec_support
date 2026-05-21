@@ -11,7 +11,7 @@ import json
 import os
 from dataclasses import replace
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QPushButton, QTableWidget, QTableWidgetItem,
     QFileDialog, QLabel, QSplitter, QGroupBox, QMessageBox,
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
@@ -20,7 +20,9 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QTextBrowser, QInputDialog,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QIcon, QImage, QPixmap, QShortcut, QKeySequence
+from PyQt6.QtGui import (
+    QCursor, QFont, QColor, QIcon, QImage, QPixmap, QShortcut, QKeySequence,
+)
 
 try:
     import fitz  # PyMuPDF
@@ -897,43 +899,61 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════
     #  分析
     # ══════════════════════════════════════════
+    def _set_analyze_busy(self, busy: bool):
+        self.btn_analyze.setEnabled(not busy)
+        self.btn_analyze.setText("分析中..." if busy else "▶ 開始分析")
+
     def _on_analyze(self):
         if not self._project_rows:
             QMessageBox.warning(self, "提示", "請先新增支撐編碼")
             return
 
-        # 同步 checkbox 狀態
-        for i in range(self.item_list.count()):
-            w = self.item_list.item(i)
-            self._project_rows[i] = replace(
-                self._project_rows[i],
-                enabled=w.checkState() == Qt.CheckState.Checked,
+        self._set_analyze_busy(True)
+        QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        self.statusBar().showMessage("分析中...")
+        QApplication.processEvents()
+        error_message = ""
+        try:
+            # 同步 checkbox 狀態
+            for i in range(self.item_list.count()):
+                w = self.item_list.item(i)
+                self._project_rows[i] = replace(
+                    self._project_rows[i],
+                    enabled=w.checkState() == Qt.CheckState.Checked,
+                )
+
+            self._project_result = analyze_project_rows(self._project_rows)
+            self._results = [row.scaled_result for row in self._project_result.rows]
+            self._display_results()
+            self.btn_export.setEnabled(True)
+
+            error_count = sum(1 for r in self._results if r.error)
+            success_count = len(self._results) - error_count
+            self._set_result_summary(
+                success_count=success_count,
+                error_count=error_count,
+                support_count=self._project_result.total_support_count,
+            )
+            self.statusBar().showMessage(
+                f"分析完成: {len(self._results)} 筆 / "
+                f"{self._project_result.total_support_count} 組 "
+                f"(成功 {success_count}, 錯誤 {error_count})"
             )
 
-        self._project_result = analyze_project_rows(self._project_rows)
-        self._results = [row.scaled_result for row in self._project_result.rows]
-        self._display_results()
-        self.btn_export.setEnabled(True)
+            # 更新 side panel 的計算結果
+            if 0 <= self._selected_index < len(self._results):
+                self.side_panel.update_result(self._results[self._selected_index])
 
-        error_count = sum(1 for r in self._results if r.error)
-        success_count = len(self._results) - error_count
-        self._set_result_summary(
-            success_count=success_count,
-            error_count=error_count,
-            support_count=self._project_result.total_support_count,
-        )
-        self.statusBar().showMessage(
-            f"分析完成: {len(self._results)} 筆 / "
-            f"{self._project_result.total_support_count} 組 "
-            f"(成功 {success_count}, 錯誤 {error_count})"
-        )
-
-        # 更新 side panel 的計算結果
-        if 0 <= self._selected_index < len(self._results):
-            self.side_panel.update_result(self._results[self._selected_index])
-
-        # 啟用材料合計 Tab
-        self.material_cutting_page.set_results_ready(True)
+            # 啟用材料合計 Tab
+            self.material_cutting_page.set_results_ready(True)
+        except Exception as exc:
+            self.statusBar().showMessage("分析失敗")
+            error_message = str(exc)
+        finally:
+            QApplication.restoreOverrideCursor()
+            self._set_analyze_busy(False)
+        if error_message:
+            QMessageBox.critical(self, "分析錯誤", error_message)
 
     def _display_results(self):
         self.result_table.setRowCount(0)
@@ -1089,6 +1109,10 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════
     #  匯出 / 設定
     # ══════════════════════════════════════════
+    def _set_export_busy(self, busy: bool):
+        self.btn_export.setEnabled(False if busy else bool(self._results))
+        self.btn_export.setText("匯出中..." if busy else "匯出結果")
+
     def _on_export(self):
         if not self._results:
             return
@@ -1105,6 +1129,13 @@ class MainWindow(QMainWindow):
         )
         if not filepath:
             return
+        self._set_export_busy(True)
+        QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        self.statusBar().showMessage("匯出中...")
+        QApplication.processEvents()
+        success_message = ""
+        warning_message = ""
+        error_message = ""
         try:
             if ext == ".xlsx":
                 from export.excel_export import (
@@ -1121,14 +1152,26 @@ class MainWindow(QMainWindow):
             else:
                 from export.pdf_export import export_to_pdf
                 export_to_pdf(self._results, filepath)
-            QMessageBox.information(self, "匯出成功", f"已匯出至:\n{filepath}")
+            success_message = f"已匯出至:\n{filepath}"
             self.statusBar().showMessage(f"已匯出: {filepath}")
         except ImportError as e:
-            QMessageBox.warning(self, "缺少套件",
+            self.statusBar().showMessage("匯出失敗: 缺少套件")
+            warning_message = (
                 f"匯出失敗，請安裝必要套件:\n{e}\n\n"
-                "pip install openpyxl reportlab")
+                "pip install openpyxl reportlab"
+            )
         except Exception as e:
-            QMessageBox.critical(self, "匯出錯誤", str(e))
+            self.statusBar().showMessage("匯出失敗")
+            error_message = str(e)
+        finally:
+            QApplication.restoreOverrideCursor()
+            self._set_export_busy(False)
+        if success_message:
+            QMessageBox.information(self, "匯出成功", success_message)
+        elif warning_message:
+            QMessageBox.warning(self, "缺少套件", warning_message)
+        elif error_message:
+            QMessageBox.critical(self, "匯出錯誤", error_message)
 
     def _on_generate_material(self):
         """材料合計 Tab 按下產生按鈕"""
@@ -1153,6 +1196,19 @@ class MainWindow(QMainWindow):
 # ══════════════════════════════════════════════════
 #  Side Panel — 單筆項目覆寫設定
 # ══════════════════════════════════════════════════
+class PdfPreviewScrollArea(QScrollArea):
+    zoomRequested = pyqtSignal(float)
+
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            delta_y = event.angleDelta().y()
+            if delta_y:
+                self.zoomRequested.emit(0.15 if delta_y > 0 else -0.15)
+                event.accept()
+                return
+        super().wheelEvent(event)
+
+
 class SidePanel(QGroupBox):
     """右側面板：上半 PDF 圖面預覽（可縮放/滑動），下半計算明細與覆寫設定"""
 
@@ -1259,7 +1315,7 @@ class SidePanel(QGroupBox):
         vbox.addLayout(zrow)
 
         # 可捲動的圖片區
-        self._pdf_scroll = QScrollArea()
+        self._pdf_scroll = PdfPreviewScrollArea()
         self._pdf_scroll.setWidgetResizable(False)
         self._pdf_scroll.setStyleSheet(
             "QScrollArea { background: white; border: 1px solid #E0E0E0; }"
@@ -1277,6 +1333,7 @@ class SidePanel(QGroupBox):
         self._btn_zoom_in.clicked.connect(lambda: self._zoom_preview(0.15))
         self._btn_zoom_out.clicked.connect(lambda: self._zoom_preview(-0.15))
         self._btn_zoom_fit.clicked.connect(self._zoom_fit)
+        self._pdf_scroll.zoomRequested.connect(self._zoom_preview)
 
         self._splitter.addWidget(pane)
 
