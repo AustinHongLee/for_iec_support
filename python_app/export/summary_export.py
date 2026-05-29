@@ -53,7 +53,7 @@ def export_summary_and_cutting(
 # ═══════════════════════════════════════════════════════
 
 _SUMMARY_HEADERS = [
-    "品名", "規格", "材質", "屬性",
+    "品名", "規格", "材質", "屬性", "物件類別", "製造方式",
     "需求總長(mm)", "需求件數", "總重(kg)",
     "原料長度(mm)", "建議採購量", "單位",
     "來源編碼",
@@ -67,7 +67,7 @@ def _write_summary_sheet(ws, summary: MaterialSummary):
     ws.title = "材料合計表"
 
     # 標題
-    ws.merge_cells("A1:K1")
+    ws.merge_cells("A1:M1")
     title_cell = ws.cell(row=1, column=1, value="材料合計表 — 採購清單")
     title_cell.font = Font(bold=True, size=14)
     title_cell.alignment = Alignment(horizontal="center")
@@ -100,40 +100,42 @@ def _write_summary_sheet(ws, summary: MaterialSummary):
         ws.cell(row=row, column=2, value=ln.spec)
         ws.cell(row=row, column=3, value=ln.material)
         ws.cell(row=row, column=4, value=ln.category)
+        ws.cell(row=row, column=5, value=ln.item_class)
+        ws.cell(row=row, column=6, value=ln.manufacturing_type)
 
         if ln.aggregate_type == "linear":
-            ws.cell(row=row, column=5, value=round(ln.total_length_mm, 1))
-            ws.cell(row=row, column=6, value=ln.piece_count)
+            ws.cell(row=row, column=7, value=round(ln.total_length_mm, 1))
+            ws.cell(row=row, column=8, value=ln.piece_count)
         elif ln.aggregate_type == "plate":
-            ws.cell(row=row, column=5, value="-")
-            ws.cell(row=row, column=6, value=ln.total_qty)
+            ws.cell(row=row, column=7, value="-")
+            ws.cell(row=row, column=8, value=ln.total_qty)
         else:
-            ws.cell(row=row, column=5, value="-")
-            ws.cell(row=row, column=6, value=ln.total_qty)
+            ws.cell(row=row, column=7, value="-")
+            ws.cell(row=row, column=8, value=ln.total_qty)
 
-        ws.cell(row=row, column=7, value=round(ln.total_weight, 2))
+        ws.cell(row=row, column=9, value=round(ln.total_weight, 2))
 
         if ln.stock_length > 0:
-            ws.cell(row=row, column=8, value=round(ln.stock_length, 0))
+            ws.cell(row=row, column=10, value=round(ln.stock_length, 0))
         else:
-            ws.cell(row=row, column=8, value="-")
+            ws.cell(row=row, column=10, value="-")
 
-        ws.cell(row=row, column=9, value=ln.purchase_qty)
-        ws.cell(row=row, column=10, value=ln.purchase_unit)
+        ws.cell(row=row, column=11, value=ln.purchase_qty)
+        ws.cell(row=row, column=12, value=ln.purchase_unit)
 
         sources = ", ".join(ln.source_fullstrings[:5])
         if len(ln.source_fullstrings) > 5:
             sources += f" ...+{len(ln.source_fullstrings) - 5}"
-        ws.cell(row=row, column=11, value=sources)
+        ws.cell(row=row, column=13, value=sources)
         row += 1
 
     # 合計行
     row += 1
-    ws.cell(row=row, column=6, value="合計總重:").font = Font(bold=True)
-    ws.cell(row=row, column=7, value=round(summary.total_weight, 2)).font = Font(bold=True)
+    ws.cell(row=row, column=8, value="合計總重:").font = Font(bold=True)
+    ws.cell(row=row, column=9, value=round(summary.total_weight, 2)).font = Font(bold=True)
 
     # 欄寬
-    widths = [14, 18, 12, 8, 14, 10, 10, 12, 10, 6, 40]
+    widths = [14, 18, 12, 8, 14, 14, 14, 10, 10, 12, 10, 6, 40]
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[chr(64 + i)].width = w
 

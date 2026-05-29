@@ -7,6 +7,7 @@ IEC 管架支撐分析工具
   中: 結果表格
   右: Side Panel (選中項目的設定, 可單筆覆寫)
 """
+import csv
 import json
 import os
 from dataclasses import replace
@@ -53,6 +54,18 @@ _RESULT_GROUP_COLORS = [
     ("#E8EEF5", "#FFFFFF"),   # cool gray
     ("#E5F0F4", "#FBFDFE"),   # steel blue
     ("#EDF1F6", "#FFFFFF"),   # neutral gray
+]
+
+_RESULT_HEADERS = [
+    "型號", "項次", "品名", "規格", "材質",
+    "長度(mm)", "寬度(mm)", "單件數量", "組數", "總數量",
+    "單組重(kg)", "總重(kg)", "屬性", "物件類別", "製造方式",
+    "計算說明", "零件ID", "庫存ID",
+]
+
+_RESULT_COLUMN_WIDTHS = [
+    110, 48, 150, 230, 95,
+    78, 78, 74, 48, 74, 86, 86, 82, 112, 112, 300, 260, 96,
 ]
 
 
@@ -360,19 +373,25 @@ class MainWindow(QMainWindow):
         btn_qty = QPushButton("設定組數...")
         btn_qty.clicked.connect(self._on_set_quantities)
         btn_row1.addWidget(btn_qty)
-        btn_load = QPushButton("從檔案載入...")
-        btn_load.clicked.connect(self._on_load_file)
-        btn_row1.addWidget(btn_load)
         layout.addLayout(btn_row1)
 
         btn_row2 = QHBoxLayout()
+        btn_load = QPushButton("從檔案載入...")
+        btn_load.clicked.connect(self._on_load_file)
+        btn_row2.addWidget(btn_load)
+        btn_save_list = QPushButton("儲存清單...")
+        btn_save_list.clicked.connect(self._on_save_file)
+        btn_row2.addWidget(btn_save_list)
+        layout.addLayout(btn_row2)
+
+        btn_row3 = QHBoxLayout()
         btn_del = QPushButton("刪除選中")
         btn_del.clicked.connect(self._on_delete_item)
-        btn_row2.addWidget(btn_del)
+        btn_row3.addWidget(btn_del)
         btn_clear = QPushButton("全部清除")
         btn_clear.clicked.connect(self._on_clear_all)
-        btn_row2.addWidget(btn_clear)
-        layout.addLayout(btn_row2)
+        btn_row3.addWidget(btn_clear)
+        layout.addLayout(btn_row3)
 
         # 分析按鈕
         self.btn_analyze = QPushButton("▶ 開始分析")
@@ -399,11 +418,10 @@ class MainWindow(QMainWindow):
 
         self.result_table = QTableWidget()
         self._set_project_result_headers()
-        self.result_table.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.ResizeToContents
-        )
+        self._apply_result_table_column_layout()
         self.result_table.setAlternatingRowColors(False)
         self.result_table.setWordWrap(False)
+        self.result_table.setTextElideMode(Qt.TextElideMode.ElideRight)
         self.result_table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows
         )
@@ -438,7 +456,7 @@ class MainWindow(QMainWindow):
         row.addWidget(label)
 
         self.result_filter_input = QLineEdit()
-        self.result_filter_input.setPlaceholderText("型號 / 品名 / 規格 / 材質 / 備註")
+        self.result_filter_input.setPlaceholderText("型號 / 品名 / 規格 / 材質 / 零件ID / 庫存ID / 說明")
         self.result_filter_input.setClearButtonEnabled(True)
         self.result_filter_input.textChanged.connect(self._apply_result_filter)
         row.addWidget(self.result_filter_input, 1)
@@ -524,13 +542,23 @@ class MainWindow(QMainWindow):
         return sep
 
     def _set_project_result_headers(self):
-        """Result table columns: simplified 13-column pivot-friendly layout."""
-        self.result_table.setColumnCount(13)
-        self.result_table.setHorizontalHeaderLabels([
-            "型號", "組數", "項次", "品名", "規格",
-            "材質", "長度(mm)", "寬度(mm)",
-            "單件數量", "總數量", "總重(kg)", "屬性", "備註",
-        ])
+        """Result table columns: human BOM + machine IDs without overloading notes."""
+        self.result_table.setColumnCount(len(_RESULT_HEADERS))
+        self.result_table.setHorizontalHeaderLabels(_RESULT_HEADERS)
+
+    def _apply_result_table_column_layout(self):
+        header = self.result_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setStretchLastSection(False)
+        for col, width in enumerate(_RESULT_COLUMN_WIDTHS):
+            self.result_table.setColumnWidth(col, width)
+
+    def _result_item(self, value) -> QTableWidgetItem:
+        text = "" if value is None else str(value)
+        item = QTableWidgetItem(text)
+        if text:
+            item.setToolTip(text)
+        return item
 
     # ══════════════════════════════════════════
     #  清單操作
@@ -543,11 +571,28 @@ class MainWindow(QMainWindow):
         self.add_input.clear()
         self.add_input.setFocus()
 
-    def _add_item_to_list(self, text: str, invalidate: bool = True):
+    def _add_item_to_list(
+        self,
+        text: str,
+        invalidate: bool = True,
+        *,
+        quantity: int = 1,
+        enabled: bool = True,
+        overrides: dict | None = None,
+    ):
         idx = len(self._project_rows)
-        self._project_rows.append(ProjectInputRow(designation=text))
+        self._project_rows.append(
+            ProjectInputRow(
+                designation=text,
+                quantity=quantity,
+                enabled=enabled,
+                overrides=overrides or None,
+            )
+        )
         item_widget = QListWidgetItem(text)
-        item_widget.setCheckState(Qt.CheckState.Checked)
+        item_widget.setCheckState(
+            Qt.CheckState.Checked if enabled else Qt.CheckState.Unchecked
+        )
         self._update_item_display(idx, item_widget)
         self.item_list.addItem(item_widget)
         if invalidate:
@@ -655,17 +700,162 @@ class MainWindow(QMainWindow):
             self, "載入支撐清單", "",
             "文字檔 (*.txt);;CSV (*.csv);;所有檔案 (*)"
         )
-        if filepath:
-            added = 0
-            with open(filepath, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        self._add_item_to_list(line, invalidate=False)
-                        added += 1
-            if added:
-                self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
-            self.statusBar().showMessage(f"已載入 {added} 筆: {filepath}")
+        if not filepath:
+            return
+
+        try:
+            rows = self._read_project_rows_file(filepath)
+        except Exception as exc:
+            QMessageBox.critical(self, "載入失敗", str(exc))
+            return
+
+        if not rows:
+            QMessageBox.information(self, "載入支撐清單", "檔案內沒有可載入的支撐編碼。")
+            return
+
+        replace_existing = False
+        if self._project_rows:
+            choice = QMessageBox.question(
+                self,
+                "載入支撐清單",
+                "要取代目前清單嗎？\n\n選「否」會將檔案內容追加到目前清單後方。",
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Yes,
+            )
+            if choice == QMessageBox.StandardButton.Cancel:
+                return
+            replace_existing = choice == QMessageBox.StandardButton.Yes
+
+        if replace_existing:
+            self._project_rows.clear()
+            self.item_list.clear()
+
+        for row in rows:
+            self._add_item_to_list(
+                row.designation,
+                invalidate=False,
+                quantity=row.quantity,
+                enabled=row.enabled,
+                overrides=row.overrides or None,
+            )
+        self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
+        action = "取代並載入" if replace_existing else "追加載入"
+        self.statusBar().showMessage(f"已{action} {len(rows)} 筆: {filepath}")
+
+    def _on_save_file(self):
+        if not self._project_rows:
+            QMessageBox.warning(self, "提示", "目前沒有支撐清單可儲存")
+            return
+
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "儲存支撐清單",
+            "support_list.csv",
+            "CSV (*.csv);;所有檔案 (*)",
+        )
+        if not filepath:
+            return
+        if not os.path.splitext(filepath)[1]:
+            filepath += ".csv"
+
+        try:
+            with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
+                writer = csv.DictWriter(
+                    f,
+                    fieldnames=["enabled", "designation", "quantity", "overrides_json"],
+                )
+                writer.writeheader()
+                for row in self._project_rows:
+                    writer.writerow({
+                        "enabled": "1" if row.enabled else "0",
+                        "designation": row.designation,
+                        "quantity": row.quantity,
+                        "overrides_json": json.dumps(
+                            row.overrides or {},
+                            ensure_ascii=False,
+                            sort_keys=True,
+                        ),
+                    })
+        except Exception as exc:
+            QMessageBox.critical(self, "儲存失敗", str(exc))
+            return
+
+        self.statusBar().showMessage(f"已儲存 {len(self._project_rows)} 筆清單: {filepath}")
+
+    def _read_project_rows_file(self, filepath: str) -> list[ProjectInputRow]:
+        with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
+            text = f.read()
+        if not text.strip():
+            return []
+
+        lines = [line for line in text.splitlines() if line.strip()]
+        first = lines[0].lower()
+        if "," in lines[0] and ("designation" in first or "型號" in first):
+            return self._read_project_rows_csv(lines)
+        return self._read_project_rows_text(lines)
+
+    def _read_project_rows_csv(self, lines: list[str]) -> list[ProjectInputRow]:
+        rows: list[ProjectInputRow] = []
+        reader = csv.DictReader(lines)
+        for idx, raw in enumerate(reader, start=2):
+            designation = (
+                raw.get("designation")
+                or raw.get("型號")
+                or raw.get("編碼")
+                or ""
+            ).strip()
+            if not designation:
+                continue
+            quantity_text = raw.get("quantity") or raw.get("組數") or "1"
+            enabled_text = raw.get("enabled") or raw.get("啟用") or "1"
+            overrides_text = raw.get("overrides_json") or raw.get("overrides") or ""
+            rows.append(
+                ProjectInputRow(
+                    designation=designation,
+                    quantity=self._parse_list_quantity(quantity_text, idx),
+                    enabled=self._parse_list_enabled(enabled_text),
+                    overrides=self._parse_list_overrides(overrides_text, idx),
+                )
+            )
+        return rows
+
+    def _read_project_rows_text(self, lines: list[str]) -> list[ProjectInputRow]:
+        rows: list[ProjectInputRow] = []
+        for idx, line in enumerate(lines, start=1):
+            parts = [part.strip() for part in next(csv.reader([line]))]
+            if not parts or not parts[0]:
+                continue
+            quantity = self._parse_list_quantity(parts[1], idx) if len(parts) >= 2 and parts[1] else 1
+            rows.append(ProjectInputRow(designation=parts[0], quantity=quantity))
+        return rows
+
+    def _parse_list_quantity(self, text: str, row_number: int) -> int:
+        try:
+            value = int(str(text).strip())
+        except ValueError as exc:
+            raise ValueError(f"第 {row_number} 列組數不是整數: {text!r}") from exc
+        if value <= 0:
+            raise ValueError(f"第 {row_number} 列組數必須大於 0")
+        return value
+
+    @staticmethod
+    def _parse_list_enabled(text: str) -> bool:
+        return str(text).strip().lower() not in {"0", "false", "no", "n", "否", "停用"}
+
+    @staticmethod
+    def _parse_list_overrides(text: str, row_number: int) -> dict | None:
+        text = str(text or "").strip()
+        if not text:
+            return None
+        try:
+            overrides = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"第 {row_number} 列 overrides_json 不是有效 JSON") from exc
+        if not isinstance(overrides, dict):
+            raise ValueError(f"第 {row_number} 列 overrides_json 必須是 JSON object")
+        return overrides or None
 
     def _on_set_quantities(self):
         """Two-stage quantity editor: designation list stays unchanged."""
@@ -1061,10 +1251,10 @@ class MainWindow(QMainWindow):
             if result.error:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                desc = QTableWidgetItem(result.fullstring)
+                desc = self._result_item(result.fullstring)
                 desc.setForeground(QColor("red"))
                 self.result_table.setItem(row, 0, desc)
-                err = QTableWidgetItem(f"錯誤: {result.error}")
+                err = self._result_item(f"錯誤: {result.error}")
                 err.setForeground(QColor("red"))
                 self.result_table.setItem(row, 2, err)
                 self._set_result_row_group(row, group_key)
@@ -1073,22 +1263,28 @@ class MainWindow(QMainWindow):
             for entry in result.entries:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                self.result_table.setItem(row, 0, QTableWidgetItem(
-                    result.fullstring if entry.item_no == 1 else ""
-                ))
-                self.result_table.setItem(row, 1, QTableWidgetItem(str(entry.item_no)))
-                self.result_table.setItem(row, 2, QTableWidgetItem(entry.name))
-                self.result_table.setItem(row, 3, QTableWidgetItem(entry.spec))
-                self.result_table.setItem(row, 4, QTableWidgetItem(str(entry.length)))
-                self.result_table.setItem(row, 5, QTableWidgetItem(
-                    str(entry.width) if entry.width else ""
-                ))
-                self.result_table.setItem(row, 6, QTableWidgetItem(entry.material))
-                self.result_table.setItem(row, 7, QTableWidgetItem(str(entry.quantity)))
-                self.result_table.setItem(row, 8, QTableWidgetItem(f"{entry.unit_weight:.2f}"))
-                self.result_table.setItem(row, 9, QTableWidgetItem(f"{entry.weight_output:.2f}"))
-                self.result_table.setItem(row, 10, QTableWidgetItem(entry.unit))
-                self.result_table.setItem(row, 11, QTableWidgetItem(entry.category))
+                values = [
+                    result.fullstring if entry.item_no == 1 else "",
+                    str(entry.item_no),
+                    entry.name,
+                    entry.display_spec,
+                    entry.material,
+                    str(entry.length) if entry.length else "",
+                    str(entry.width) if entry.width else "",
+                    str(entry.quantity),
+                    "1",
+                    str(entry.quantity),
+                    f"{entry.weight_output:.3f}",
+                    f"{entry.weight_output:.3f}",
+                    entry.category,
+                    entry.item_class,
+                    entry.manufacturing_type,
+                    entry.display_remark,
+                    entry.part_key,
+                    entry.stock_id,
+                ]
+                for col, value in enumerate(values):
+                    self.result_table.setItem(row, col, self._result_item(value))
                 self._set_result_row_group(row, group_key)
                 total_weight += entry.weight_output
 
@@ -1096,15 +1292,18 @@ class MainWindow(QMainWindow):
         self._apply_result_filter()
 
     def _display_project_results(self):
-        """Display project results in simplified 13-column flat layout with visual grouping."""
-        # 數字欄 (右對齊): 長度(6), 寬度(7), 單件數(8), 總數(9), 總重(10)
+        """Display project results in a flat layout with visual grouping."""
+        # 數字欄 (右對齊): 長度/寬度、數量、重量
         RIGHT_ALIGN = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         CENTER = Qt.AlignmentFlag.AlignCenter
         LEFT = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         # col_idx → alignment
-        COL_ALIGN = {0: LEFT, 1: CENTER, 2: CENTER, 3: LEFT, 4: LEFT,
-                     5: CENTER, 6: RIGHT_ALIGN, 7: RIGHT_ALIGN, 8: CENTER, 9: CENTER,
-                     10: RIGHT_ALIGN, 11: CENTER, 12: LEFT}
+        COL_ALIGN = {
+            0: LEFT, 1: CENTER, 2: LEFT, 3: LEFT, 4: CENTER,
+            5: RIGHT_ALIGN, 6: RIGHT_ALIGN, 7: CENTER, 8: CENTER,
+            9: CENTER, 10: RIGHT_ALIGN, 11: RIGHT_ALIGN, 12: CENTER,
+            13: CENTER, 14: CENTER, 15: LEFT, 16: LEFT, 17: LEFT,
+        }
 
         total_weight = 0.0
         g_idx = 0  # 群組色輪 index
@@ -1123,7 +1322,7 @@ class MainWindow(QMainWindow):
                 self.result_table.setRowHeight(row, 24)
                 err_bg = QColor("#FDE8E8")
                 err_fg = QColor("#C62828")
-                for col in range(13):
+                for col in range(self.result_table.columnCount()):
                     cell = QTableWidgetItem()
                     cell.setBackground(err_bg)
                     self.result_table.setItem(row, col, cell)
@@ -1131,8 +1330,8 @@ class MainWindow(QMainWindow):
                 desc.setText(input_row.designation)
                 desc.setForeground(err_fg)
                 desc.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
-                self.result_table.item(row, 1).setText(str(input_row.quantity))
-                err_cell = self.result_table.item(row, 3)
+                self.result_table.item(row, 8).setText(str(input_row.quantity))
+                err_cell = self.result_table.item(row, 2)
                 err_cell.setText(f"⚠ {single_result.error}")
                 err_cell.setForeground(err_fg)
                 self._set_result_row_group(row, group_key)
@@ -1149,27 +1348,32 @@ class MainWindow(QMainWindow):
 
                 values = [
                     input_row.designation if is_first else "",           # 0 型號
-                    str(input_row.quantity) if is_first else "",          # 1 組數
-                    str(single_entry.item_no),                            # 2 項次
-                    single_entry.name,                                    # 3 品名
-                    single_entry.spec,                                    # 4 規格
-                    single_entry.material,                                # 5 材質
-                    str(single_entry.length) if single_entry.length else "",  # 6 長度
-                    str(single_entry.width)  if single_entry.width  else "",  # 7 寬度
-                    str(single_entry.quantity),                           # 8 單件數量
+                    str(single_entry.item_no),                            # 1 項次
+                    single_entry.name,                                    # 2 品名
+                    single_entry.display_spec,                            # 3 規格
+                    single_entry.material,                                # 4 材質
+                    str(single_entry.length) if single_entry.length else "",  # 5 長度
+                    str(single_entry.width)  if single_entry.width  else "",  # 6 寬度
+                    str(single_entry.quantity),                           # 7 單件數量
+                    str(input_row.quantity),                              # 8 組數
                     str(scaled_entry.quantity),                           # 9 總數量
-                    f"{scaled_entry.weight_output:.3f}",                  # 10 總重
-                    single_entry.category,                                # 11 屬性
-                    single_entry.display_remark,                          # 12 備註
+                    f"{single_entry.weight_output:.3f}",                  # 10 單組重
+                    f"{scaled_entry.weight_output:.3f}",                  # 11 總重
+                    single_entry.category,                                # 12 屬性
+                    single_entry.item_class,                              # 13 物件類別
+                    single_entry.manufacturing_type,                      # 14 製造方式
+                    single_entry.display_remark,                          # 15 計算說明
+                    single_entry.part_key,                                # 16 零件ID
+                    single_entry.stock_id,                                # 17 庫存ID
                 ]
                 for col, val in enumerate(values):
-                    item = QTableWidgetItem(val)
+                    item = self._result_item(val)
                     item.setBackground(bg)
                     item.setTextAlignment(COL_ALIGN.get(col, LEFT))
                     if col == 0 and is_first:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                         item.setForeground(QColor("#1A3A6B"))
-                    elif col == 10:
+                    elif col == 11:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                     self.result_table.setItem(row, col, item)
                 self._set_result_row_group(row, group_key)
@@ -1193,11 +1397,11 @@ class MainWindow(QMainWindow):
             sub_label.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
             sub_label.setTextAlignment(LEFT)
             self.result_table.setItem(sub_row, 0, sub_label)
-            for col in range(1, 13):
+            for col in range(1, self.result_table.columnCount()):
                 filler = QTableWidgetItem("")
                 filler.setBackground(sub_bg)
                 self.result_table.setItem(sub_row, col, filler)
-            sub_wt = self.result_table.item(sub_row, 10)
+            sub_wt = self.result_table.item(sub_row, 11)
             sub_wt.setText(f"{group_weight:.3f}")
             sub_wt.setTextAlignment(RIGHT_ALIGN)
             sub_wt.setForeground(QColor("#1A3A6B"))

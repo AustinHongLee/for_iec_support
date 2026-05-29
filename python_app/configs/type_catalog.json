@@ -1412,14 +1412,14 @@
     {
       "type_id": "59",
       "name_en": "Lug Plate Support",
-      "name_zh": "吊耳板支撐",
+      "name_zh": "翼形角板支撐",
       "drawing_no": "D-70",
       "category": "support",
       "pdf_file": "59.pdf",
       "doc_file": "type_59.md",
-      "brief": "Lug plate support for shoe or bare pipe",
-      "description": "FIG-A: 保溫管配D-63 shoe; FIG-B: 裸管配D-68 U-bolt",
-      "calc_logic": "BOM: 2 lug plates + shoe/U-bolt ref",
+      "brief": "D-70 Detail Z 翼形角板支撐，BOM 永遠只有 TYPE 59 翼形角板",
+      "description": "Type 59 僅產生 D-70 Detail Z 翼形角板，不追加 D-63 shoe reference、D-68/M-26 U-bolt 或 finished hex nuts。Lug Plate 依管徑分 small/medium/large 三組；10\"~14\" 為2片，其餘為1片。Detail Z 以 A/B/P25/C/t 完整放樣，重量採淨面積模型。",
+      "calc_logic": "Lug Plate 規格 A x B x P25 x C x t；淨面積 = A*B - (B-C)*(A-25)/2，再乘 t 與材料密度。FIG A/B 僅保留於既有輸入格式，不影響 BOM 項目。",
       "designation": "59-{size}B-{FIG}{mat?}",
       "status": "documented",
       "line_size_range": "2-1/2 & smaller, 3~14"

@@ -8,7 +8,7 @@ Phase 1 變更 (2026-04-29):
   - 呼叫方可透過 plate_role 參數指定 ComponentRole，預設 GENERIC_PLATE
 """
 from .models import AnalysisEntry, AnalysisResult, HolePattern, GeometryHints
-from .component_roles import ComponentRole
+from .component_roles import ComponentRole, item_class_for, manufacturing_type_for
 from .hardware_material import MaterialSpec
 from .material_identity import canonical_material_id
 
@@ -22,7 +22,11 @@ _DEFAULT_PLATE_MATERIAL = MaterialSpec(
 
 MATERIAL_DENSITY = {
     "A36/SS400": 7.85,
+    "A283 Gr.C": 7.85,
+    "A516-60": 7.85,
+    "A387-22": 7.85,
     "SUS304": 7.93,
+    "A240-304": 7.93,
     "AS": 7.82,
 }
 
@@ -57,6 +61,13 @@ def add_plate_entry(
     plate_role: str = "",          # Phase 1: ComponentRole 值，例如 "lug_plate"
     formula: str = "",             # Phase 1: 長度計算公式追溯
     notes_zh: str = "",            # Phase 1: 中文備註
+    shape_spec: str = "",           # 放樣/裁切用完整規格，例如 "150x100x25x50x12t"
+    shape_kind: str = "",           # 輪廓分類，例如 "wing"
+    gross_area_mm2: float = 0,       # 毛坯/外接矩形面積
+    cutout_area_mm2: float = 0,      # 扣除面積
+    net_area_mm2: float = 0,         # 實際算重淨面積；0 時採 plate_a × plate_b
+    item_class: str = "",            # 主結構 / 加工品 / 配件語意；空白時依板件類別推導
+    manufacturing_type: str = "",    # 製造方式；空白時依板件類別/shape_kind 推導
 ):
     """
     新增鋼板項目到結果
@@ -66,6 +77,10 @@ def add_plate_entry(
       plate_role  — ComponentRole 的值字串，預設從 plate_name legacy 推導
       formula     — 長度公式追溯（例如 "H - 15"）
       notes_zh    — 中文備註（取代 remark 字串拼裝）
+      shape_spec  — 放樣/裁切用完整規格；空白時採 length × width × thickness
+      shape_kind  — 輪廓分類；供 part key / CAD / procurement 管控
+      net_area_mm2 — 非矩形板實際算重面積；空白時採 plate_a × plate_b
+      item_class / manufacturing_type — 採購/製造語意層；空白時依板件類別推導
     """
     material_name, canonical_id = _material_name_and_identity(
         material,
@@ -73,7 +88,9 @@ def add_plate_entry(
     )
 
     density = MATERIAL_DENSITY.get(material_name, 7.85)
-    weight = plate_a / 1000 * plate_b / 1000 * plate_thickness * density
+    gross_area = gross_area_mm2 or plate_a * plate_b
+    weight_area = net_area_mm2 or gross_area
+    weight = weight_area * plate_thickness * density / 1_000_000
 
     # ── Phase 1: 結構化螺孔資訊 ───────────────────────────────
     hole_pattern = None
@@ -99,6 +116,11 @@ def add_plate_entry(
         formula=formula,
         holes=hole_pattern,
         notes_zh=notes_zh,
+        shape_spec=shape_spec,
+        shape_kind=shape_kind,
+        gross_area_mm2=gross_area,
+        cutout_area_mm2=cutout_area_mm2,
+        net_area_mm2=weight_area,
     )
 
     entry = AnalysisEntry()
@@ -117,6 +139,15 @@ def add_plate_entry(
     entry.qty_subtotal = entry.factor * plate_qty
     entry.weight_output = round(entry.factor * entry.total_weight, 2)
     entry.category = "鋼板類"
+    entry.item_class = item_class or item_class_for("", category=entry.category)
+    entry.manufacturing_type = (
+        manufacturing_type
+        or manufacturing_type_for(
+            "",
+            category=entry.category,
+            shape_kind=shape_kind,
+        )
+    )
     entry.remark = remark           # 向後相容保留
     entry.role = resolved_role      # Phase 1 新增
     entry.geometry = geometry       # Phase 1 新增

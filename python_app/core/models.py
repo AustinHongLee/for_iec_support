@@ -21,6 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from .component_roles import item_class_for, manufacturing_type_for
 from .truth import default_unknown_meta
 
 
@@ -54,11 +55,21 @@ class GeometryHints:
     formula  : 長度計算公式追溯，例如 "H - 15" / "H + A"
     holes    : 螺孔分布（None 表示無孔）
     notes_zh : 工程師看的中文說明（Phase 3 取代 remark）
+    shape_spec : 放樣/裁切用的完整輪廓規格；空白時使用 length x width x thickness
+    shape_kind : 輪廓分類，例如 "wing"；供 part key / CAD / procurement 管控使用
+    gross_area_mm2 : 外接矩形/毛坯面積
+    cutout_area_mm2: 扣除面積，例如缺角三角形
+    net_area_mm2   : 實際算重淨面積；0 表示使用 length x width
     """
     role: str = ""
     formula: str = ""
     holes: Optional[HolePattern] = None
     notes_zh: str = ""
+    shape_spec: str = ""
+    shape_kind: str = ""
+    gross_area_mm2: float = 0.0
+    cutout_area_mm2: float = 0.0
+    net_area_mm2: float = 0.0
 
 
 # ── 主要 dataclass ───────────────────────────────────────────
@@ -83,12 +94,23 @@ class AnalysisEntry:
     weight_output: float = 0.0
     category: str = ""
     remark: str = ""                    # 備註 (R欄) — Phase 3 前仍保留
+    part_key: str = ""                  # 人/程式可讀的零件識別，例如 59_lug_plate_wing_a150...
+    stock_id: str = ""                  # 採購/庫存用短碼，依材料與幾何生成
+    item_class: str = ""                # primary_structure / fabricated_part / accessory / reference_only
+    manufacturing_type: str = ""        # raw_cut / plate_cut / shaped_plate / purchased / not_furnished
 
     # ── Phase 0 新增欄位（optional，向後相容）────────────────
     role: str = ""                      # ComponentRole 的值，例如 "lug_plate"
     geometry: GeometryHints = field(default_factory=GeometryHints)
 
     # ── Phase 2 新增 property ────────────────────────────────
+    @property
+    def display_spec(self) -> str:
+        """UI / export 顯示用規格；內部 spec 仍保留計算用原始值。"""
+        shape_spec = getattr(self.geometry, "shape_spec", "") if self.geometry else ""
+        shape_spec = str(shape_spec).strip()
+        return shape_spec or self.spec
+
     @property
     def display_remark(self) -> str:
         """
@@ -145,6 +167,15 @@ class AnalysisResult:
             entry.item_no = self.entries[-1].item_no + 1
         else:
             entry.item_no = 1
+        if not entry.item_class:
+            entry.item_class = item_class_for(entry.role, category=entry.category)
+        if not entry.manufacturing_type:
+            shape_kind = getattr(entry.geometry, "shape_kind", "") if entry.geometry else ""
+            entry.manufacturing_type = manufacturing_type_for(
+                entry.role,
+                category=entry.category,
+                shape_kind=shape_kind,
+            )
         self.entries.append(entry)
 
     @property

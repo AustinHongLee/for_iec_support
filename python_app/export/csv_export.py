@@ -8,7 +8,8 @@ from core.models import AnalysisResult
 HEADERS = [
     "材料描述欄", "項次", "品名", "尺寸/規格", "長度", "寬度",
     "材質", "數量", "每米重", "單重", "總重小計", "單位",
-    "係數", "長度小計", "數量小計", "總重合計", "屬性", "備註"
+    "係數", "長度小計", "數量小計", "總重合計", "屬性",
+    "物件類別", "製造方式", "零件ID", "庫存ID", "計算說明"
 ]
 
 
@@ -26,7 +27,7 @@ def export_to_csv(results: List[AnalysisResult], filepath: str):
             for entry in result.entries:
                 writer.writerow([
                     result.fullstring if entry.item_no == 1 else "",
-                    entry.item_no, entry.name, entry.spec,
+                    entry.item_no, entry.name, entry.display_spec,
                     entry.length, entry.width if entry.width else "",
                     entry.material, entry.quantity,
                     entry.weight_per_unit if entry.weight_per_unit else "",
@@ -35,5 +36,9 @@ def export_to_csv(results: List[AnalysisResult], filepath: str):
                     entry.length_subtotal if entry.length_subtotal else "",
                     entry.qty_subtotal if entry.qty_subtotal else "",
                     entry.weight_output, entry.category,
+                    entry.item_class,
+                    entry.manufacturing_type,
+                    entry.part_key,
+                    entry.stock_id,
                     entry.display_remark,
                 ])

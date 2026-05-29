@@ -1,17 +1,68 @@
 """
-Type 59 計算器 — Lug Plate Support for Shoe / Bare Pipe
+Type 59 計算器 — Detail Z wing lug plate
 圖號: D-70
 格式: 59-{size}B-{FIG}{material_symbol?}
 例: 59-6B-A, 59-14B-B(S)
-FIG-A: insulated pipe, 配 D-63 shoe (NOT FURNISHED)
-FIG-B: bare pipe, 配 D-68 U-bolt (M-26 U-bolt + 4 finished hex nuts)
+
+Type 59 BOM 永遠只產生 TYPE 59 翼形角板。FIG 仍保留在輸入格式中，
+但不會追加 U-bolt、finished hex nut 或 shoe reference。
 """
+from math import sqrt
+from hashlib import sha1
+
 from ..models import AnalysisResult
 from ..parser import get_part, extract_parts, parse_pipe_size
 from ..plate import add_plate_entry
-from ..bolt import add_custom_entry
 from data.type59_table import get_type59_dims, get_type59_material
-from data.m26_table import get_m26_by_line_size
+
+
+_LUG_DISPLAY_NAME = "TYPE 59 翼形角板"
+_LUG_SHAPE_KIND = "wing"
+
+
+def _fmt_dim(value) -> str:
+    return f"{float(value):g}"
+
+
+def _dim_token(value) -> str:
+    return _fmt_dim(value).replace(".", "p")
+
+
+def _lug_part_key(dims: dict, thickness: float) -> str:
+    return (
+        "59_lug_plate_wing"
+        f"_a{_dim_token(dims['A'])}"
+        f"_b{_dim_token(dims['B'])}"
+        "_p25"
+        f"_c{_dim_token(dims['C'])}"
+        f"_t{_dim_token(thickness)}"
+    )
+
+
+def _lug_stock_id(part_key: str, material: str) -> str:
+    seed = f"{part_key}|material={material}"
+    digest = sha1(seed.encode("utf-8")).hexdigest()[:8].upper()
+    return f"PL-{digest}"
+
+
+def _lug_net_geometry(dims: dict) -> dict[str, float]:
+    a = float(dims["A"])
+    b = float(dims["B"])
+    c = float(dims["C"])
+    cut_base = b - c
+    cut_height = a - 25
+    cut_hypotenuse = sqrt(cut_base**2 + cut_height**2)
+    gross_area = a * b
+    cutout_area = cut_base * cut_height / 2
+    net_area = gross_area - cutout_area
+    return {
+        "gross_area": gross_area,
+        "cut_base": cut_base,
+        "cut_height": cut_height,
+        "cut_hypotenuse": cut_hypotenuse,
+        "cutout_area": cutout_area,
+        "net_area": net_area,
+    }
 
 
 def calculate(fullstring: str) -> AnalysisResult:
@@ -28,19 +79,13 @@ def calculate(fullstring: str) -> AnalysisResult:
     size_str = parse_pipe_size(part2)
 
     # part3 = "A" or "B(S)" or "A(A)" etc.
-    fig = "A"
+    # FIG is kept only for legacy designation compatibility; BOM is always lug plate only.
     mat_symbol = ""
     if part3:
         p3 = part3.strip()
         if "(" in p3:
-            fig_part, paren = extract_parts(p3)
-            fig = fig_part.upper() if fig_part else "A"
+            _, paren = extract_parts(p3)
             mat_symbol = paren  # e.g. "(S)"
-        else:
-            fig = p3.upper()
-
-    if fig not in ("A", "B"):
-        fig = "A"
 
     # ── 查表 ──
     dims = get_type59_dims(size_str)
@@ -67,51 +112,45 @@ def calculate(fullstring: str) -> AnalysisResult:
     # 板片數量：D=None → 1片（小/中管徑）；D≠None → 2片（大管徑）
     plate_qty = dims["plate_qty"]
 
-    # ① Lug Plate ×plate_qty (A×B×thickness)
+    # Detail Z is an irregular lug plate: A high, B base, 25 toe, C top flat, t thick.
+    # Net weight is the A x B gross rectangle minus the missing right triangle.
+    lug_shape_spec = (
+        f"A{_fmt_dim(dims['A'])} x B{_fmt_dim(dims['B'])}"
+        f" x P25 x C{_fmt_dim(dims['C'])} x t{_fmt_dim(thickness)}"
+    )
+    geom = _lug_net_geometry(dims)
+    area_formula = (
+        f"{_fmt_dim(dims['A'])}×{_fmt_dim(dims['B'])}"
+        f" - ({_fmt_dim(dims['B'])}-{_fmt_dim(dims['C'])})"
+        f"×({_fmt_dim(dims['A'])}-25)/2"
+    )
+    part_key = _lug_part_key(dims, thickness)
+    stock_id = _lug_stock_id(part_key, material)
+
+    # ① Lug Plate ×plate_qty (net area from gross rectangle minus missing triangle)
     add_plate_entry(
         result,
         dims["A"],
         dims["B"],
         thickness,
-        "LUG PLATE",
+        _LUG_DISPLAY_NAME,
         material,
         plate_qty,
+        plate_role="lug_plate",
+        formula=area_formula,
+        notes_zh=(
+            f"淨面積 {area_formula} = {_fmt_dim(geom['net_area'])} mm2; "
+            f"缺角三角形 底{_fmt_dim(geom['cut_base'])} 高{_fmt_dim(geom['cut_height'])} "
+            f"斜邊{geom['cut_hypotenuse']:.1f} mm"
+        ),
+        shape_spec=lug_shape_spec,
+        shape_kind=_LUG_SHAPE_KIND,
+        gross_area_mm2=geom["gross_area"],
+        cutout_area_mm2=geom["cutout_area"],
+        net_area_mm2=geom["net_area"],
     )
-
-    # ② 中間件 (依 FIG)
-    if fig == "A":
-        # D-63 shoe — NOT FURNISHED, 只記 remark
-        result.warnings.append("FIG-A: Pipe Shoe (D-63) NOT FURNISHED, 需另行計算")
-    else:
-        # FIG-B: D-68 points to the M-26 U-bolt family.
-        m26 = get_m26_by_line_size(size_str)
-        if m26 is None:
-            result.error = f"Type 59 / M-26 查表失敗: 管徑 {size_str}\" 不在 U-bolt 查表範圍"
-            return result
-        add_custom_entry(
-            result,
-            "U-BOLT",
-            m26["type"],
-            "Carbon Steel",
-            1,
-            1,
-            "SET",
-            remark=(
-                f'D-68 / M-26, rod={m26["rod_size_a"]}, '
-                f'B/C/D/E={m26["B"]}/{m26["C"]}/{m26["D"]}/{m26["E"]}, '
-                f'load650/750={m26["load_650f_kg"]}/{m26["load_750f_kg"]}kg, '
-                "unit weight placeholder"
-            ),
-        )
-        add_custom_entry(
-            result,
-            "FINISHED HEX NUT",
-            m26["rod_size_a"],
-            "Carbon Steel",
-            4,
-            0,
-            "PC",
-            remark="M-26 note 1: four finished hex nuts, nut weight included in U-bolt set placeholder",
-        )
+    result.entries[-1].part_key = part_key
+    result.entries[-1].stock_id = stock_id
+    result.entries[-1].remark = lug_shape_spec
 
     return result

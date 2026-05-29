@@ -2,6 +2,8 @@
   "type_id": "59",
   "source": "data/type59_table.py",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-05-29",
+  "data_update_note": "D-70 Detail Z Lug Plate 更新為完整放樣規格 A x B x P25 x C x t，並以淨面積 A*B - (B-C)*(A-25)/2 計算真實重量；Type 59 BOM 永遠只有 TYPE 59 翼形角板，不追加 U-bolt 或 finished hex nut。",
   "TYPE59_DIMS": {
     "small": {
       "A": 80,

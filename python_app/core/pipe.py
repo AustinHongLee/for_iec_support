@@ -2,6 +2,7 @@
 管道計算模組 - 對應 VBA: B_管道計算相關函數
 """
 from .models import AnalysisEntry, AnalysisResult
+from .component_roles import ComponentRole, item_class_for, manufacturing_type_for
 from .hardware_material import MaterialSpec
 from data.pipe_table import get_pipe_details
 
@@ -59,5 +60,8 @@ def add_pipe_entry(result: AnalysisResult, pipe_size, pipe_thickness: str,
     entry.length_subtotal = round(entry.quantity * entry.factor * pipe_length / 1000, 3)
     entry.weight_output = entry.factor * entry.total_weight
     entry.category = "管路類"
+    entry.role = ComponentRole.PIPE.value
+    entry.item_class = item_class_for(entry.role, category=entry.category)
+    entry.manufacturing_type = manufacturing_type_for(entry.role, category=entry.category)
 
     result.add_entry(entry)

@@ -2,6 +2,12 @@
 螺栓處理模組 - 對應 VBA: D_螺栓處理 + X_M42底板程序 的 AddBoltEntry
 """
 from .models import AnalysisEntry, AnalysisResult
+from .component_roles import (
+    ComponentRole,
+    item_class_for,
+    manufacturing_type_for,
+    role_from_legacy_name,
+)
 from .hardware_material import MaterialSpec
 from .material_identity import canonical_material_id
 from data.m42_table import resolve_m42_data
@@ -69,15 +75,20 @@ def add_bolt_entry(
     entry.qty_subtotal = entry.factor * quantity
     entry.weight_output = round(entry.factor * entry.total_weight, 2)
     entry.category = "螺栓類"
+    entry.role = ComponentRole.EXPANSION_BOLT.value
+    entry.item_class = item_class_for(entry.role, category=entry.category)
+    entry.manufacturing_type = manufacturing_type_for(entry.role, category=entry.category)
 
     result.add_entry(entry)
 
 
 def add_custom_entry(result: AnalysisResult, name: str, spec: str,
                      material: str | MaterialSpec, quantity: int, unit_weight: float,
-                     unit: str = "SET", remark: str = "", category: str = "螺栓類"):
+                     unit: str = "SET", remark: str = "", category: str = "螺栓類",
+                     role: str = "", item_class: str = "", manufacturing_type: str = ""):
     """新增自訂項目 (Machine Bolt, Washer, Spring 等)"""
     material_name, canonical_id = _material_name_and_identity(material)
+    inferred_role = role or role_from_legacy_name(name).value
     entry = AnalysisEntry()
     entry.name = name
     entry.spec = spec
@@ -93,5 +104,12 @@ def add_custom_entry(result: AnalysisResult, name: str, spec: str,
     entry.weight_output = round(entry.factor * entry.total_weight, 2)
     entry.category = category
     entry.remark = remark
+    if inferred_role != ComponentRole.UNKNOWN.value:
+        entry.role = inferred_role
+    entry.item_class = item_class or item_class_for(entry.role, category=entry.category)
+    entry.manufacturing_type = (
+        manufacturing_type
+        or manufacturing_type_for(entry.role, category=entry.category)
+    )
 
     result.add_entry(entry)

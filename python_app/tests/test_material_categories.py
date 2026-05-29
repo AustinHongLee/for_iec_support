@@ -16,11 +16,23 @@ def test_core_material_helpers_assign_distinct_categories():
     add_bolt_entry(result, "2B", 4)
 
     categories = {entry.name: entry.category for entry in result.entries}
+    item_classes = {entry.name: entry.item_class for entry in result.entries}
+    manufacturing = {entry.name: entry.manufacturing_type for entry in result.entries}
     assert categories["管路"] == "管路類"
     assert categories["角鋼"] == "型鋼類"
     assert categories["槽鐵"] == "型鋼類"
     assert categories["Plate"] == "鋼板類"
     assert categories["EXP.BOLT"] == "螺栓類"
+    assert item_classes["管路"] == "primary_structure"
+    assert item_classes["角鋼"] == "primary_structure"
+    assert item_classes["槽鐵"] == "primary_structure"
+    assert item_classes["Plate"] == "fabricated_part"
+    assert item_classes["EXP.BOLT"] == "accessory"
+    assert manufacturing["管路"] == "raw_cut"
+    assert manufacturing["角鋼"] == "raw_cut"
+    assert manufacturing["槽鐵"] == "raw_cut"
+    assert manufacturing["Plate"] == "plate_cut"
+    assert manufacturing["EXP.BOLT"] == "purchased"
 
 
 def test_type03_angle_and_ubolt_categories():
@@ -32,6 +44,10 @@ def test_type03_angle_and_ubolt_categories():
     assert angle_entries
     assert {entry.category for entry in angle_entries} == {"型鋼類"}
     assert ubolt.category == "螺栓類"
+    assert {entry.item_class for entry in angle_entries} == {"primary_structure"}
+    assert {entry.manufacturing_type for entry in angle_entries} == {"raw_cut"}
+    assert ubolt.item_class == "accessory"
+    assert ubolt.manufacturing_type == "purchased"
 
 
 def test_type13_clamp_and_gasket_categories():
@@ -44,3 +60,9 @@ def test_type13_clamp_and_gasket_categories():
     assert clamp.category == "管夾類"
     assert gasket.category == "墊片類"
     assert pipe.category == "管路類"
+    assert clamp.item_class == "accessory"
+    assert gasket.item_class == "accessory"
+    assert pipe.item_class == "primary_structure"
+    assert clamp.manufacturing_type == "purchased"
+    assert gasket.manufacturing_type == "purchased"
+    assert pipe.manufacturing_type == "raw_cut"

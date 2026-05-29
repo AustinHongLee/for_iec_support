@@ -2,38 +2,60 @@
 
 這份檔案定義 Codex / Claude / 人工判讀在並行協作時的引用優先順序。
 
+> 2026-05-29 更新：本 repo 內有大量歷史 handoff / report / planning Markdown。Markdown 預設只當背景脈絡；除非已由目前 code/config/tests/PDF 支撐，否則不可當成現行計算真相。
+
 ## 核心原則
 
 1. 任何列在 `coordination/IN_PROGRESS.md` 且標記為 `unstable` 的檔案，都不是可靠參考。
 2. 不要把「正在施工中的檔案」當作設計真相。
-3. 若 `docs` 與 `code` 不一致，要先在 `WORKLOG.md` 記錄衝突，再決定以哪一邊為準。
+3. 若 `docs` 與 `code/config/tests/PDF` 不一致，先以 `code/config/tests/PDF` 判定現行行為，再記錄衝突。
+4. `coordination/*.md`、`*_REPORT.md`、`*_HANDOFF.md`、`WORKLOG.md`、`IN_PROGRESS.md` 都是歷史/流程文件，不是計算規則來源。
+5. `docs/types/*.md` 是 Type 總覽 UI 說明；它可輔助閱讀，但不能覆蓋 calculator、table、config 與 tests。
 
 ## 參考優先順序
+
+### 現行已實作行為
+
+優先順序：
+
+1. 目前對話中的人工指示
+2. `core/types/type_XX.py` 與相關 runtime code
+3. `configs/type_XX.json`、`data/*.py`、shared spec JSON
+4. `tests/` 與 `validate_tables.py`
+5. 原始 PDF / 圖面，用來確認工程意圖
+6. `docs/types/type_XX.md`
+7. `type_catalog.json` 摘要欄位
 
 ### 工程圖面解釋
 
 優先順序：
 
-1. 原始 PDF 圖面
-2. 經人工或 Codex 判讀後的 `docs/types/type_XX.md`
-3. `type_catalog.json` 摘要欄位
-
-### 已實作行為
-
-優先順序：
-
-1. `core/types/type_XX.py`
-2. `data/*.py`
-3. `docs/types/type_XX.md`
-4. `type_catalog.json`
+1. 目前對話中的人工確認
+2. 原始 PDF 圖面
+3. 已落地的 `configs/type_XX.json` / `data/*.py`
+4. 已落地的 `core/types/type_XX.py`
+5. `docs/types/type_XX.md`
+6. `type_catalog.json`
 
 ### 新 Type / 待實作 Type
 
 優先順序：
 
 1. 原始 PDF 圖面
-2. `docs/types/type_XX.md` 中的 `Calculator Handoff`
-3. `type_catalog.json`
+2. `docs/types/type_XX.md` 中的 `Calculator Handoff`，但必須重新驗證
+3. `type_catalog.json`，僅作搜尋/索引輔助
+
+### Markdown 檔案權威等級
+
+| 檔案/資料夾 | 權威等級 | 說明 |
+|---|---|---|
+| `docs/types/*.md` | 中低 | UI 說明，可 stale；回答計算前要驗 code/config/tests |
+| `docs/TYPE_DEFINITION_CONTRACT.md` | 中 | 架構規則，不是逐 Type 數值真相 |
+| `docs/COMPONENT_TABLE_STATUS.md` | 中 | readiness 摘要，需對 `data/component_table_registry.py` |
+| `docs/M42_BASE_SUPPORT_RULES.md` | 中高 | 人工確認的 M42/M43 判讀筆記 |
+| `docs/STEEL_PLATE_NAMING_PLAN.md` | 低 | 設計討論稿，未必已實作 |
+| `coordination/*.md` | 低 | 歷史協作紀錄 |
+| `*_REPORT.md`, `*_HANDOFF.md` | 低 | 時間切片與交接，不是現行規則 |
 
 ## 協作規則
 

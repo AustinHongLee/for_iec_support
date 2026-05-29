@@ -109,6 +109,26 @@ try:
     import openpyxl
     from export.excel_export import export_project_to_excel, export_project_workbook
 
+    def _stat_value(ws, label: str):
+        for row_index in range(1, ws.max_row + 1):
+            if ws.cell(row=row_index, column=2).value == label:
+                return ws.cell(row=row_index, column=5).value
+        raise AssertionError(f"stat label not found: {label}")
+
+    def _has_cell_value(ws, column: int, value: str) -> bool:
+        return any(
+            ws.cell(row=row_index, column=column).value == value
+            for row_index in range(1, ws.max_row + 1)
+        )
+
+    def _sheet_contains_text(ws, text: str) -> bool:
+        return any(
+            text in str(cell.value)
+            for row in ws.iter_rows()
+            for cell in row
+            if cell.value is not None
+        )
+
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
     try:
@@ -117,11 +137,12 @@ try:
         ws = wb.active
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
         assert ws.cell(row=1, column=1).value == "型號", "project Excel header failed"
-        assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
-        assert ws.cell(row=1, column=11).value == "總數量", "project Excel total section missing"
-        assert ws.cell(row=2, column=2).value == 10, "project Excel quantity failed"
-        assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
-        assert ws.cell(row=2, column=11).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=1, column=8).value == "單件數量", "project Excel single section missing"
+        assert ws.cell(row=1, column=9).value == "組數", "project Excel group quantity missing"
+        assert ws.cell(row=1, column=10).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=2, column=9).value == 10, "project Excel quantity failed"
+        assert ws.cell(row=2, column=8).value == original_quantity, "project Excel single quantity failed"
+        assert ws.cell(row=2, column=10).value == original_quantity * 10, "project Excel total quantity failed"
     finally:
         try:
             os.remove(path)
@@ -135,9 +156,10 @@ try:
         wb = openpyxl.load_workbook(path, data_only=True)
         assert wb.sheetnames == [
             "專案摘要",
-            "計算依據",
-            "計算說明",
-            "長官統計",
+            "重量明細表",
+            "計算標準與假設",
+            "支撐分類統計",
+            "支撐統計明細",
             "重量分析",
             "材料合計",
             "下料明細",
@@ -145,15 +167,31 @@ try:
         ], f"project package workbook sheets changed: {wb.sheetnames}"
         ws_summary = wb["專案摘要"]
         assert ws_summary.cell(row=1, column=1).value == "專案材料統計總覽", "project package summary title failed"
+        ws_detail = wb["重量明細表"]
+        assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
+        assert ws_detail.cell(row=3, column=9).value == "單件數量", "weight detail single qty header failed"
+        assert ws_detail.cell(row=3, column=10).value == "組數", "weight detail group qty header failed"
+        assert ws_detail.cell(row=3, column=11).value == "總數量", "weight detail total qty header failed"
+        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 18)], "weight detail should not expose confidence header"
+        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 18)], "weight detail should not expose source header"
         ws_weight = wb["重量分析"]
         assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
-        assert ws_weight.cell(row=4, column=2).value == 10, "project package quantity failed"
+        assert ws_weight.cell(row=4, column=9).value == 10, "project package quantity failed"
         ws_material = wb["材料合計"]
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
-        assert ws_material.cell(row=4, column=9).value == original_quantity * 12, "project package material purchase qty failed"
-        ws_leader = wb["長官統計"]
-        assert ws_leader.cell(row=1, column=1).value == "長官急件統計", "leader procurement sheet title failed"
-        assert ws_leader.cell(row=16, column=4).value == 12, "leader procurement CS <=15kg support count failed"
+        assert ws_material.cell(row=4, column=11).value == original_quantity * 12, "project package material purchase qty failed"
+        ws_leader = wb["支撐分類統計"]
+        assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
+        assert _stat_value(ws_leader, "CS 管支撐製裝 <= 15 kg/組") == 12, "leader procurement CS <=15kg support count failed"
+        assert _has_cell_value(ws_leader, 2, "51-1.1/2B"), "leader procurement grouped source trace missing"
+        assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should not list no-hit categories"
+        ws_leader_detail = wb["支撐統計明細"]
+        assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
+        assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
+        assert any(
+            ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "leader detail should include source designation"
         ws_visual = wb["下料圖示"]
         assert ws_visual.cell(row=1, column=1).value == "下料圖示", "project package cutting visual title failed"
     finally:
@@ -166,16 +204,33 @@ try:
         ProjectInputRow("57-1/2B-A", 2),
         ProjectInputRow("52-1/2B-A-150-200", 3),
         ProjectInputRow("66-10B(P)-A-150-250", 4),
+        ProjectInputRow("59-1.1/2B-B(S)", 5),
     ])
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
     try:
         export_project_workbook(leader_project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
-        ws_leader = wb["長官統計"]
-        assert ws_leader.cell(row=4, column=4).value == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
-        assert ws_leader.cell(row=8, column=4).value == 3, "leader procurement <=4in pipe shoe HDG count failed"
-        assert ws_leader.cell(row=9, column=4).value == 4, "leader procurement 5~10in pipe shoe HDG count failed"
+        ws_leader = wb["支撐分類統計"]
+        assert _stat_value(ws_leader, 'U-Bolt & Band <= 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
+        assert _stat_value(ws_leader, 'PIPE SHOE <= 4" 熱浸鍍鋅') == 3, "leader procurement <=4in pipe shoe HDG count failed"
+        assert _stat_value(ws_leader, 'PIPE SHOE 5"~10" 熱浸鍍鋅') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
+        assert _stat_value(ws_leader, "SUS304 管支撐製裝 <= 15 kg/組") == 5, "leader procurement SUS304 <=15kg support count failed"
+        assert _has_cell_value(ws_leader, 2, "57-1/2B-A"), "leader procurement U-Bolt source trace missing"
+        assert _has_cell_value(ws_leader, 2, "59-1.1/2B-B(S)"), "leader procurement SUS304 support source trace missing"
+        assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
+        ws_leader_detail = wb["支撐統計明細"]
+        assert any(
+            ws_leader_detail.cell(row=r, column=4).value == "57-1/2B-A"
+            and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "leader detail U-Bolt source row missing"
+        assert any(
+            ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
+            and ws_leader_detail.cell(row=r, column=2).value == "SUS304 Support"
+            and ws_leader_detail.cell(row=r, column=1).value == "命中"
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "leader detail should include SUS304 support fabrication rows"
     finally:
         try:
             os.remove(path)
@@ -238,8 +293,20 @@ try:
         )
 
     def _expect_plate_weight(entry):
-        density = {"A36/SS400": 7.85, "SUS304": 7.93, "AS": 7.82}.get(entry.material, 7.85)
-        raw_weight = entry.length / 1000 * entry.width / 1000 * float(entry.spec) * density
+        density = {
+            "A36/SS400": 7.85,
+            "A283 Gr.C": 7.85,
+            "A516-60": 7.85,
+            "A387-22": 7.85,
+            "SUS304": 7.93,
+            "A240-304": 7.93,
+            "AS": 7.82,
+        }.get(entry.material, 7.85)
+        geometry = getattr(entry, "geometry", None)
+        area_mm2 = getattr(geometry, "net_area_mm2", 0) if geometry else 0
+        if not area_mm2:
+            area_mm2 = entry.length * entry.width
+        raw_weight = area_mm2 * float(entry.spec) * density / 1_000_000
         expected_unit_weight = round(raw_weight, 2)
         expected_total_weight = round(raw_weight * entry.quantity, 2)
         expected_output = round(entry.factor * expected_total_weight, 2)
@@ -943,12 +1010,13 @@ try:
     assert not type57_fixed.error and "M-26, FIXED" in type57_fixed.entries[0].remark, f"Type 57 fixed mode failed: {type57_fixed.error or type57_fixed.entries[0].remark}"
 
     type59_b = priority_results["59-1.1/2B-B(S)"]
-    assert [(entry.name, entry.spec, entry.material, entry.quantity) for entry in type59_b.entries] == [
-        ("LUG PLATE", "6", "A240-304", 1),
-        ("U-BOLT", "UB-1 1/2B", "Carbon Steel", 1),
-        ("FINISHED HEX NUT", '3/8"', "Carbon Steel", 4),
-    ], f"Type 59 Fig-B should use D-70 lug plate + M-26 U-bolt/nuts: {[(entry.name, entry.spec, entry.material, entry.quantity) for entry in type59_b.entries]}"
-    assert "D-68 / M-26" in type59_b.entries[1].remark and "B/C/D/E=51/60/58/68" in type59_b.entries[1].remark, f"Type 59 M-26 metadata missing: {type59_b.entries[1].remark}"
+    assert [(entry.name, entry.display_spec, entry.material, entry.quantity) for entry in type59_b.entries] == [
+        ("TYPE 59 翼形角板", "A80 x B55 x P25 x C15 x t6", "A240-304", 1),
+    ], f"Type 59 should only output D-70 wing lug plate: {[(entry.name, entry.display_spec, entry.material, entry.quantity) for entry in type59_b.entries]}"
+    type59_lug = type59_b.entries[0]
+    assert type59_lug.spec == "6" and type59_lug.part_key == "59_lug_plate_wing_a80_b55_p25_c15_t6", f"Type 59 lug identity changed: {(type59_lug.spec, type59_lug.part_key)}"
+    assert type59_lug.stock_id.startswith("PL-") and len(type59_lug.stock_id) == 11, f"Type 59 lug stock id invalid: {type59_lug.stock_id}"
+    assert type59_b.warnings == [], f"Type 59 should not emit shoe/U-bolt warnings: {type59_b.warnings}"
 
     type80_small = priority_results["80-2B(P)-A(A)-130-500"]
     assert [(entry.name, entry.spec, entry.length, entry.quantity, entry.material) for entry in type80_small.entries] == [

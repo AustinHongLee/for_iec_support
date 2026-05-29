@@ -55,6 +55,28 @@ class ComponentRole(str, Enum):
     UNKNOWN             = "unknown"             # 尚未分類
 
 
+class ItemClass(str, Enum):
+    """採購/製造語意層，不取代 category 或 role。"""
+
+    PRIMARY_STRUCTURE = "primary_structure"     # 管線、型鋼主體、trunnion 等承載骨架
+    FABRICATED_PART = "fabricated_part"         # 需切割、鑽孔、放樣、焊接的加工件
+    ACCESSORY = "accessory"                     # 外購標準件、五金、彈簧、墊片等
+    REFERENCE_ONLY = "reference_only"           # 圖面參照但不供貨/不列 BOM
+    UNKNOWN = "unknown"
+
+
+class ManufacturingType(str, Enum):
+    """製造/取得方式。"""
+
+    RAW_CUT = "raw_cut"                         # 管材/型鋼原料裁切
+    PLATE_CUT = "plate_cut"                     # 矩形/一般板件切割
+    SHAPED_PLATE = "shaped_plate"               # 異形板、需放樣輪廓
+    MACHINED = "machined"                       # 孔加工、局部機加工
+    PURCHASED = "purchased"                     # 外購標準件
+    NOT_FURNISHED = "not_furnished"
+    UNKNOWN = "unknown"
+
+
 # ── 聚合類型映射 ─────────────────────────────────────────────
 #   供 material_summary._classify_entry 使用
 #   取代原本的字串前綴比對
@@ -96,6 +118,140 @@ ROLE_AGGREGATE_TYPE: dict[ComponentRole, str] = {
     ComponentRole.CLAMP:            "piece",
     ComponentRole.UNKNOWN:          "piece",
 }
+
+
+# ── 採購/製造語意映射 ───────────────────────────────────────
+
+ROLE_ITEM_CLASS: dict[ComponentRole, ItemClass] = {
+    ComponentRole.PIPE:             ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.COLUMN:           ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.TOP_BEAM:         ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.DIAGONAL_BRACE:   ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.TRUNNION:         ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.ANGLE:            ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.CHANNEL:          ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.H_SECTION:        ItemClass.PRIMARY_STRUCTURE,
+
+    ComponentRole.FLAT_BAR:         ItemClass.FABRICATED_PART,
+    ComponentRole.BASE_PLATE:       ItemClass.FABRICATED_PART,
+    ComponentRole.LUG_PLATE:        ItemClass.FABRICATED_PART,
+    ComponentRole.SHIM_PLATE:       ItemClass.FABRICATED_PART,
+    ComponentRole.COVER_PLATE:      ItemClass.FABRICATED_PART,
+    ComponentRole.WING_PLATE:       ItemClass.FABRICATED_PART,
+    ComponentRole.STOPPER_PLATE:    ItemClass.FABRICATED_PART,
+    ComponentRole.SIDE_PLATE:       ItemClass.FABRICATED_PART,
+    ComponentRole.TOP_PLATE:        ItemClass.FABRICATED_PART,
+    ComponentRole.SADDLE_PLATE:     ItemClass.FABRICATED_PART,
+    ComponentRole.REINFORCEMENT_PAD:ItemClass.FABRICATED_PART,
+    ComponentRole.GENERIC_PLATE:    ItemClass.FABRICATED_PART,
+
+    ComponentRole.EXPANSION_BOLT:   ItemClass.ACCESSORY,
+    ComponentRole.MACHINE_BOLT:     ItemClass.ACCESSORY,
+    ComponentRole.K_BOLT:           ItemClass.ACCESSORY,
+    ComponentRole.NUT:              ItemClass.ACCESSORY,
+    ComponentRole.WASHER:           ItemClass.ACCESSORY,
+    ComponentRole.U_BOLT:           ItemClass.ACCESSORY,
+    ComponentRole.GASKET:           ItemClass.ACCESSORY,
+    ComponentRole.PU_BLOCK:         ItemClass.ACCESSORY,
+    ComponentRole.CLAMP:            ItemClass.ACCESSORY,
+    ComponentRole.UNKNOWN:          ItemClass.UNKNOWN,
+}
+
+
+ROLE_MANUFACTURING_TYPE: dict[ComponentRole, ManufacturingType] = {
+    ComponentRole.PIPE:             ManufacturingType.RAW_CUT,
+    ComponentRole.COLUMN:           ManufacturingType.RAW_CUT,
+    ComponentRole.TOP_BEAM:         ManufacturingType.RAW_CUT,
+    ComponentRole.DIAGONAL_BRACE:   ManufacturingType.RAW_CUT,
+    ComponentRole.TRUNNION:         ManufacturingType.RAW_CUT,
+    ComponentRole.ANGLE:            ManufacturingType.RAW_CUT,
+    ComponentRole.CHANNEL:          ManufacturingType.RAW_CUT,
+    ComponentRole.H_SECTION:        ManufacturingType.RAW_CUT,
+    ComponentRole.FLAT_BAR:         ManufacturingType.RAW_CUT,
+
+    ComponentRole.BASE_PLATE:       ManufacturingType.PLATE_CUT,
+    ComponentRole.LUG_PLATE:        ManufacturingType.PLATE_CUT,
+    ComponentRole.SHIM_PLATE:       ManufacturingType.PLATE_CUT,
+    ComponentRole.COVER_PLATE:      ManufacturingType.PLATE_CUT,
+    ComponentRole.WING_PLATE:       ManufacturingType.PLATE_CUT,
+    ComponentRole.STOPPER_PLATE:    ManufacturingType.PLATE_CUT,
+    ComponentRole.SIDE_PLATE:       ManufacturingType.PLATE_CUT,
+    ComponentRole.TOP_PLATE:        ManufacturingType.PLATE_CUT,
+    ComponentRole.SADDLE_PLATE:     ManufacturingType.PLATE_CUT,
+    ComponentRole.REINFORCEMENT_PAD:ManufacturingType.PLATE_CUT,
+    ComponentRole.GENERIC_PLATE:    ManufacturingType.PLATE_CUT,
+
+    ComponentRole.EXPANSION_BOLT:   ManufacturingType.PURCHASED,
+    ComponentRole.MACHINE_BOLT:     ManufacturingType.PURCHASED,
+    ComponentRole.K_BOLT:           ManufacturingType.PURCHASED,
+    ComponentRole.NUT:              ManufacturingType.PURCHASED,
+    ComponentRole.WASHER:           ManufacturingType.PURCHASED,
+    ComponentRole.U_BOLT:           ManufacturingType.PURCHASED,
+    ComponentRole.GASKET:           ManufacturingType.PURCHASED,
+    ComponentRole.PU_BLOCK:         ManufacturingType.PURCHASED,
+    ComponentRole.CLAMP:            ManufacturingType.PURCHASED,
+    ComponentRole.UNKNOWN:          ManufacturingType.UNKNOWN,
+}
+
+
+CATEGORY_ITEM_CLASS: dict[str, ItemClass] = {
+    "管路類": ItemClass.PRIMARY_STRUCTURE,
+    "型鋼類": ItemClass.PRIMARY_STRUCTURE,
+    "鋼板類": ItemClass.FABRICATED_PART,
+    "螺栓類": ItemClass.ACCESSORY,
+    "管夾類": ItemClass.ACCESSORY,
+    "墊片類": ItemClass.ACCESSORY,
+    "彈簧類": ItemClass.ACCESSORY,
+}
+
+
+CATEGORY_MANUFACTURING_TYPE: dict[str, ManufacturingType] = {
+    "管路類": ManufacturingType.RAW_CUT,
+    "型鋼類": ManufacturingType.RAW_CUT,
+    "鋼板類": ManufacturingType.PLATE_CUT,
+    "螺栓類": ManufacturingType.PURCHASED,
+    "管夾類": ManufacturingType.PURCHASED,
+    "墊片類": ManufacturingType.PURCHASED,
+    "彈簧類": ManufacturingType.PURCHASED,
+}
+
+
+def _role_or_none(role: str | ComponentRole | None) -> ComponentRole | None:
+    if isinstance(role, ComponentRole):
+        return role
+    if not role:
+        return None
+    try:
+        return ComponentRole(str(role))
+    except ValueError:
+        return None
+
+
+def item_class_for(
+    role: str | ComponentRole | None = "",
+    *,
+    category: str = "",
+) -> str:
+    cr = _role_or_none(role)
+    if cr is not None:
+        return ROLE_ITEM_CLASS.get(cr, ItemClass.UNKNOWN).value
+    return CATEGORY_ITEM_CLASS.get(category, ItemClass.UNKNOWN).value
+
+
+def manufacturing_type_for(
+    role: str | ComponentRole | None = "",
+    *,
+    category: str = "",
+    shape_kind: str = "",
+) -> str:
+    cr = _role_or_none(role)
+    if cr is not None:
+        if shape_kind and ROLE_AGGREGATE_TYPE.get(cr) == "plate":
+            return ManufacturingType.SHAPED_PLATE.value
+        return ROLE_MANUFACTURING_TYPE.get(cr, ManufacturingType.UNKNOWN).value
+    if shape_kind and category == "鋼板類":
+        return ManufacturingType.SHAPED_PLATE.value
+    return CATEGORY_MANUFACTURING_TYPE.get(category, ManufacturingType.UNKNOWN).value
 
 
 # ── 顯示名稱 (供 UI 與 export 使用) ──────────────────────────
@@ -185,10 +341,26 @@ LEGACY_NAME_MAP: dict[str, ComponentRole] = {
     # bolts
     "exp.bolt":             ComponentRole.EXPANSION_BOLT,
     "expansion bolt":       ComponentRole.EXPANSION_BOLT,
+    "adj.bolt":             ComponentRole.MACHINE_BOLT,
+    "anchor bolt":          ComponentRole.EXPANSION_BOLT,
+    "m.bolt":               ComponentRole.MACHINE_BOLT,
+    "m.b.":                 ComponentRole.MACHINE_BOLT,
+    "m.b.(full threaded)":  ComponentRole.MACHINE_BOLT,
     "mach.bolt":            ComponentRole.MACHINE_BOLT,
     "machine bolt":         ComponentRole.MACHINE_BOLT,
     "k-bolt":               ComponentRole.K_BOLT,
     "k bolt":               ComponentRole.K_BOLT,
+    "hex nut":              ComponentRole.NUT,
+    "nut":                  ComponentRole.NUT,
+    "washer":               ComponentRole.WASHER,
+    "u.bolt":               ComponentRole.U_BOLT,
+    "u-bolt":               ComponentRole.U_BOLT,
+    "u bolt":               ComponentRole.U_BOLT,
+    "pipe clamp":           ComponentRole.CLAMP,
+    "riser clamp type-a":   ComponentRole.CLAMP,
+    "riser clamp type-b":   ComponentRole.CLAMP,
+    "non-asbestos":         ComponentRole.GASKET,
+    "gasket":               ComponentRole.GASKET,
 }
 
 

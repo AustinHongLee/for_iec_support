@@ -2,7 +2,7 @@
 鋼材處理模組 - 對應 VBA: C_鋼材處理
 """
 from .models import AnalysisEntry, AnalysisResult
-from .component_roles import ComponentRole
+from .component_roles import ComponentRole, item_class_for, manufacturing_type_for
 from .hardware_material import MaterialSpec
 from .material_identity import canonical_material_id
 from data.steel_sections import get_section_weight
@@ -30,6 +30,7 @@ _SECTION_ROLE: dict[str, ComponentRole] = {
     "Channel":  ComponentRole.CHANNEL,
     "H Beam":   ComponentRole.H_SECTION,
     "I Beam":   ComponentRole.H_SECTION,
+    "Flat Bar": ComponentRole.FLAT_BAR,
 }
 
 
@@ -81,5 +82,7 @@ def add_steel_section_entry(result: AnalysisResult, section_type: str,
     role = _SECTION_ROLE.get(section_type)
     if role:
         entry.role = role.value
+    entry.item_class = item_class_for(entry.role, category=entry.category)
+    entry.manufacturing_type = manufacturing_type_for(entry.role, category=entry.category)
 
     result.add_entry(entry)

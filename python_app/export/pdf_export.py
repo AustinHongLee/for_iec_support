@@ -36,7 +36,7 @@ def export_to_pdf(results: List[AnalysisResult], filepath: str):
         for entry in result.entries:
             data.append([
                 result.fullstring if entry.item_no == 1 else "",
-                str(entry.item_no), entry.name, entry.spec,
+                str(entry.item_no), entry.name, entry.display_spec,
                 str(entry.length), entry.material,
                 str(entry.quantity), f"{entry.unit_weight:.2f}",
                 f"{entry.weight_output:.2f}", entry.unit, entry.category,

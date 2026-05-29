@@ -57,6 +57,12 @@ def _classify_entry(entry: AnalysisEntry) -> str:
     return "piece"
 
 
+def _plate_shape_spec(entry: AnalysisEntry) -> str:
+    geometry = getattr(entry, "geometry", None)
+    shape_spec = getattr(geometry, "shape_spec", "") if geometry else ""
+    return str(shape_spec).strip()
+
+
 @dataclass
 class SummaryLine:
     """合計表中的一行"""
@@ -64,6 +70,8 @@ class SummaryLine:
     spec: str = ""
     material: str = ""
     category: str = ""
+    item_class: str = ""
+    manufacturing_type: str = ""
     aggregate_type: str = ""
 
     # 線性材料
@@ -136,8 +144,10 @@ def aggregate(
         source_label = source_labels[index] if source_labels is not None else r.fullstring
         for entry in r.entries:
             if _classify_entry(entry) == "plate":
+                shape_spec = _plate_shape_spec(entry)
                 key = (entry.name, entry.material,
-                       round(entry.length, 1), round(entry.width, 1), entry.spec)
+                       round(entry.length, 1), round(entry.width, 1), entry.spec,
+                       shape_spec)
             else:
                 key = (entry.name, entry.spec, entry.material)
             groups[key].append((entry, source_label))
@@ -153,8 +163,8 @@ def aggregate(
 
         if agg_type == "plate":
             name, material = key[0], key[1]
-            pl_l, pl_w, pl_t_str = key[2], key[3], key[4]
-            spec = f"{pl_l:.0f}x{pl_w:.0f}x{pl_t_str}t"
+            pl_l, pl_w, pl_t_str, shape_spec = key[2], key[3], key[4], key[5]
+            spec = shape_spec or f"{pl_l:.0f}x{pl_w:.0f}x{pl_t_str}t"
         else:
             name, spec, material = key[0], key[1], key[2]
 
@@ -163,6 +173,8 @@ def aggregate(
             spec=spec,
             material=material,
             category=first.category,
+            item_class=first.item_class,
+            manufacturing_type=first.manufacturing_type,
             aggregate_type=agg_type,
             weight_per_unit=first.weight_per_unit,
             source_fullstrings=fullstrings,

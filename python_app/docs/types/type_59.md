@@ -1,4 +1,4 @@
-# TYPE-59 — Lug Plate Support for Shoe / Bare Pipe
+# TYPE-59 — D-70 Detail Z 翼形角板
 
 | 項目 | 內容 |
 |------|------|
@@ -7,23 +7,20 @@
 | 適用範圍 | 2 1/2" & smaller, 3"~8", 10"~14" |
 | 圖面頁數 | 1 |
 | 狀態 | ✅ 已分析 |
+| 資料日 | 2026-05-29 |
 
 ---
 
 ## 系統本質
 
-TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
+TYPE-59 是一個以 D-70 Detail Z 翼形角板作為側向固定件的支撐介面。
 
-它有兩種使用情境：
+現行計算規則收斂為一件事：
 
-- `FIG-A`: 用在 insulated pipe，圖面直接指定 `PIPE SHOE (D-63) (NOT FURNISHED)`
-- `FIG-B`: 用在 bare pipe，改成 `U-BOLT (D-68 / M-26)`，並依 M-26 note 配 4 顆 finished hex nuts
-
-也就是說，它不是獨立 shoe，而是：
-
-- 左右兩塊 lug plate
-- 中間搭配 shoe 或 U-bolt
-- 依主管材質決定 lug plate 材料符號
+- BOM 永遠只產生 `TYPE 59 翼形角板`
+- `FIG-A` / `FIG-B` 只保留為既有編碼欄位，不會追加 `D-63 shoe`、`D-68 / M-26 U-bolt` 或 `finished hex nut`
+- 依 line size group 建立 lug plate；`10"~14"` 為 2 片，其餘為 1 片
+- 依材料尾碼決定 lug plate 材質
 
 ---
 
@@ -37,17 +34,13 @@ TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
 
 - `59` = Type 編號
 - `14B` = line size
-- `A` = figure no.
+- `A` = figure no.，保留在輸入格式中，但不影響 BOM 項目
 - `(S)` = 材料符號，來自 `TABLE A`
 
-圖面明確註記：
+calculator 端採這個規則：
 
-- `TABLE A` 的材料符號只在 `FIG.B` 使用
-
-所以 calculator 端應該採這個規則：
-
-- `FIG-A` 可不帶材料尾碼
-- `FIG-B` 若有尾碼 `(A)/(S)/(R)`，則 lug plate 材料跟著切換
+- `FIG-A` / `FIG-B` 都只會產生翼形角板
+- 若有尾碼 `(A)/(S)/(R)`，則 lug plate 材料跟著切換
 
 ---
 
@@ -55,10 +48,8 @@ TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
 
 | 構件 | 來源 | 說明 |
 |------|------|------|
-| Lug Plate ×2 | 本圖 | 由 `A/B/C/D/T` 查表決定尺寸 |
-| Pipe Shoe | `D-63` | 僅 `FIG-A`，且圖面標 `NOT FURNISHED` |
-| U-bolt | `D-68 / M-26` | 僅 `FIG-B`，U-bolt 規格與 rod size 由 M-26 決定 |
-| Finished hex nut | `M-26` | 僅 `FIG-B`，4 PCS |
+| Lug Plate | 本圖 | 由 `A/B/C/D/T` 查表決定尺寸；顯示規格為 `A x B x P25 x C x t` |
+| FIG A/B | 編碼欄位 | 保留輸入相容性，不產生 BOM 差異 |
 | Shim | 現場調整 | `C/S SHIM IN FIELD (TYP.)` |
 
 ---
@@ -73,13 +64,32 @@ TYPE-59 是一個「兩側 lug plate 夾持」的支撐介面。
 | `3"~8"` | 150 | 100 | 50 | — | 12 |
 | `10"~14"` | 150 | 130 | 50 | 120 | 12 |
 
-另外有一個 `FOR STAINLESS STEEL ONLY` 欄位，表示不鏽鋼情境下有額外尺寸或厚度要求。
+另外有一個 `FOR STAINLESS STEEL ONLY` 欄位，現行 calculator 將其作為不鏽鋼板厚 `S_T`：
 
-如果 Claude 要先把 calculator 寫出來，建議第一版：
+| 管徑群組 | 一般 T | 不鏽鋼 T | 片數 |
+|------|------|------|------|
+| `2 1/2" & smaller` | 9 | 6 | 1 |
+| `3"~8"` | 12 | 9 | 1 |
+| `10"~14"` | 12 | — | 2 |
 
-- 先完成 `A/B/C/D/T`
-- `FOR STAINLESS STEEL ONLY` 先存在 table 中
-- 若實作時還不確定如何影響 BOM，可先只保留為 metadata / remark
+---
+
+## Detail Z 淨面積算重模型
+
+Detail Z 不是單純 `A x B x t` 矩形板，而是外接矩形扣掉右上缺角三角形：
+
+```text
+毛面積 = A * B
+缺角三角形 = (B - C) * (A - 25) / 2
+淨面積 = A * B - (B - C) * (A - 25) / 2
+重量 = 淨面積 * t * density / 1,000,000
+```
+
+缺角斜邊同時保留在計算說明：
+
+```text
+斜邊 = sqrt((B - C)^2 + (A - 25)^2)
+```
 
 ---
 
@@ -108,8 +118,8 @@ calculator 可以直接把 `(A)/(S)/(R)` 映射成 plate material。
 
 | FIG | 構件 |
 |------|------|
-| `A` | Lug Plate ×2 + `D-63 shoe` reference (not furnished) |
-| `B` | Lug Plate ×2 + U-bolt (`D-68 / M-26`) + finished hex nut ×4 |
+| `A` | `TYPE 59 翼形角板` × plate_qty |
+| `B` | `TYPE 59 翼形角板` × plate_qty |
 
 ### 建議資料表
 
@@ -124,9 +134,9 @@ TYPE59_TABLE = {
 ### 實作重點
 
 - `line size` 不是逐一列尺寸，而是先落到 3 個 group
-- `FIG-A` / `FIG-B` 決定中間件是 `shoe` 或 `U-bolt + finished hex nut`
-- `shoe` 在 BOM 是否計入，要跟專案既有「NOT FURNISHED」慣例一致
-- `material_symbol` 只影響 lug plate material，不改幾何
+- `FIG-A` / `FIG-B` 不決定中間件，Type 59 不產生 shoe / U-bolt / nut
+- `material_symbol` 影響 lug plate material；不鏽鋼 small/medium 同時改用 `S_T`
+- lug plate 重量採 Detail Z 淨面積，不再用外接矩形重量
 
 ---
 
@@ -142,4 +152,4 @@ TYPE59_TABLE = {
 
 ## 給 Claude 的一句話摘要
 
-> TYPE-59 = 依 line size group 建 lug plate；`FIG-A` 配 `D-63 shoe`，`FIG-B` 配 `D-68 / M-26 U-bolt + finished hex nut x4`，材料尾碼只影響 plate material。
+> TYPE-59 = 依 line size group 建 Detail Z 翼形角板；規格顯示 `A x B x P25 x C x t`，重量以 `A*B - (B-C)*(A-25)/2` 淨面積計；BOM 永遠只有 `TYPE 59 翼形角板`，不追加 U-bolt 或 finished hex nut。
