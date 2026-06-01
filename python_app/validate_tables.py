@@ -107,7 +107,6 @@ try:
     import os
     import tempfile
     import openpyxl
-    from openpyxl.utils import get_column_letter
     from export.excel_export import export_project_to_excel, export_project_workbook
 
     def _stat_value(ws, label: str):
@@ -130,20 +129,14 @@ try:
             if cell.value is not None
         )
 
-    def _chart_anchor(chart) -> str | None:
-        marker = getattr(getattr(chart, "anchor", None), "_from", None)
-        if marker is None:
-            return None
-        return f"{get_column_letter(marker.col + 1)}{marker.row + 1}"
-
-    def _assert_visible_chart(ws, anchor: str, last_print_col: str) -> None:
-        charts_by_anchor = {_chart_anchor(chart): chart for chart in ws._charts}
-        assert anchor in charts_by_anchor, f"{ws.title} chart anchor missing: {anchor}"
-        chart = charts_by_anchor[anchor]
+    def _assert_visible_chart(ws, last_print_col: str) -> None:
+        assert ws._charts, f"{ws.title} chart missing"
+        chart = ws._charts[0]
         assert chart.visible_cells_only is False, f"{ws.title} chart should plot hidden helper cells"
         assert ws.column_dimensions["AA"].hidden, f"{ws.title} chart helper label column should be hidden"
         assert ws.column_dimensions["AB"].hidden, f"{ws.title} chart helper value column should be hidden"
         assert f"$A$1:${last_print_col}$" in str(ws.print_area), f"{ws.title} print area should include chart zone"
+        assert ws.page_setup.orientation == "portrait", f"{ws.title} should be portrait for A4 print"
 
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
@@ -153,12 +146,14 @@ try:
         ws = wb.active
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
         assert ws.cell(row=1, column=1).value == "型號", "project Excel header failed"
-        assert ws.cell(row=1, column=8).value == "單件數量", "project Excel single section missing"
-        assert ws.cell(row=1, column=9).value == "組數", "project Excel group quantity missing"
-        assert ws.cell(row=1, column=10).value == "總數量", "project Excel total section missing"
-        assert ws.cell(row=2, column=9).value == 10, "project Excel quantity failed"
-        assert ws.cell(row=2, column=8).value == original_quantity, "project Excel single quantity failed"
-        assert ws.cell(row=2, column=10).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=1, column=2).value == "Type", "project Excel type header missing"
+        assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
+        assert ws.cell(row=1, column=10).value == "組數", "project Excel group quantity missing"
+        assert ws.cell(row=1, column=11).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=2, column=2).value == "51", "project Excel type value failed"
+        assert ws.cell(row=2, column=10).value == 10, "project Excel quantity failed"
+        assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
+        assert ws.cell(row=2, column=11).value == original_quantity * 10, "project Excel total quantity failed"
     finally:
         try:
             os.remove(path)
@@ -183,27 +178,38 @@ try:
         ], f"project package workbook sheets changed: {wb.sheetnames}"
         ws_summary = wb["專案摘要"]
         assert ws_summary.cell(row=1, column=1).value == "專案材料統計總覽", "project package summary title failed"
+        assert "$A$1:$I$" in str(ws_summary.print_area), "project summary should be A4 portrait width"
+        assert _sheet_contains_text(ws_summary, "使用 Type 統計"), "project summary should show used Type list"
+        assert _sheet_contains_text(ws_summary, "Type 51"), "project summary should include Type 51"
+        assert not _sheet_contains_text(ws_summary, "Workbook 索引"), "project summary should not use old workbook index wording"
+        assert not _sheet_contains_text(ws_summary, "資料量"), "project summary index should not expose confusing data-volume labels"
         ws_detail = wb["重量明細表"]
         assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
-        assert ws_detail.cell(row=3, column=9).value == "單件數量", "weight detail single qty header failed"
-        assert ws_detail.cell(row=3, column=10).value == "組數", "weight detail group qty header failed"
-        assert ws_detail.cell(row=3, column=11).value == "總數量", "weight detail total qty header failed"
-        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 18)], "weight detail should not expose confidence header"
-        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 18)], "weight detail should not expose source header"
-        _assert_visible_chart(wb["計算標準與假設"], "H4", "R")
+        assert ws_detail.cell(row=3, column=2).value == "Type", "weight detail type header missing"
+        assert ws_detail.cell(row=4, column=2).value == "51", "weight detail type value failed"
+        assert ws_detail.cell(row=3, column=10).value == "單件數量", "weight detail single qty header failed"
+        assert ws_detail.cell(row=3, column=11).value == "組數", "weight detail group qty header failed"
+        assert ws_detail.cell(row=3, column=12).value == "總數量", "weight detail total qty header failed"
+        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 19)], "weight detail should not expose confidence header"
+        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 19)], "weight detail should not expose source header"
+        ws_calc = wb["計算標準與假設"]
+        assert "$A$1:$F$" in str(ws_calc.print_area), "calc reference should remain A4 portrait width"
+        assert _sheet_contains_text(ws_calc, "Type 計算資料狀態彙整"), "calc reference should summarize by Type"
+        assert not ws_calc._charts, "calc reference should not use dashboard charts"
         ws_weight = wb["重量分析"]
         assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
-        assert ws_weight.cell(row=4, column=9).value == 10, "project package quantity failed"
+        assert ws_weight.cell(row=3, column=2).value == "Type", "project package weight type header missing"
+        assert ws_weight.cell(row=4, column=10).value == 10, "project package quantity failed"
         ws_material = wb["材料合計"]
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
         assert ws_material.cell(row=4, column=11).value == original_quantity * 12, "project package material purchase qty failed"
-        _assert_visible_chart(ws_material, "O4", "Y")
+        _assert_visible_chart(ws_material, "M")
         ws_leader = wb["支撐分類統計"]
         assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
         assert _stat_value(ws_leader, "CS 管支撐製裝 <= 15 kg/組") == 12, "leader procurement CS <=15kg support count failed"
         assert _has_cell_value(ws_leader, 2, "51-1.1/2B"), "leader procurement grouped source trace missing"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should not list no-hit categories"
-        _assert_visible_chart(ws_leader, "K4", "U")
+        _assert_visible_chart(ws_leader, "I")
         ws_leader_detail = wb["支撐統計明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"

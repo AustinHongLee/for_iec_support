@@ -3,6 +3,7 @@
 from typing import List
 
 from core.models import AnalysisResult
+from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
 from .headers import HEADERS, PROJECT_HEADERS
@@ -79,31 +80,33 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
 
         if single_result.error:
             ws.cell(row=row, column=1, value=input_row.designation)
-            ws.cell(row=row, column=2, value="Error")
-            ws.cell(row=row, column=3, value=single_result.error)
-            ws.cell(row=row, column=9, value=input_row.quantity)
+            ws.cell(row=row, column=2, value=get_type_code(input_row.designation))
+            ws.cell(row=row, column=3, value="Error")
+            ws.cell(row=row, column=4, value=single_result.error)
+            ws.cell(row=row, column=10, value=input_row.quantity)
             row += 1
             continue
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             ws.cell(row=row, column=1, value=input_row.designation)   # 每列填滿
-            ws.cell(row=row, column=2, value=single_entry.item_no)
-            ws.cell(row=row, column=3, value=single_entry.name)
-            ws.cell(row=row, column=4, value=single_entry.display_spec)
-            ws.cell(row=row, column=5, value=single_entry.material)
-            ws.cell(row=row, column=6, value=single_entry.length)
-            ws.cell(row=row, column=7, value=single_entry.width if single_entry.width else "")
-            ws.cell(row=row, column=8, value=single_entry.quantity)
-            ws.cell(row=row, column=9, value=input_row.quantity)
-            ws.cell(row=row, column=10, value=scaled_entry.quantity)
-            ws.cell(row=row, column=11, value=single_entry.weight_output)
-            ws.cell(row=row, column=12, value=scaled_entry.weight_output)
-            ws.cell(row=row, column=13, value=single_entry.category)
-            ws.cell(row=row, column=14, value=single_entry.item_class)
-            ws.cell(row=row, column=15, value=single_entry.manufacturing_type)
-            ws.cell(row=row, column=16, value=single_entry.part_key)
-            ws.cell(row=row, column=17, value=single_entry.stock_id)
-            ws.cell(row=row, column=18, value=single_entry.display_remark)
+            ws.cell(row=row, column=2, value=get_type_code(input_row.designation))
+            ws.cell(row=row, column=3, value=single_entry.item_no)
+            ws.cell(row=row, column=4, value=single_entry.name)
+            ws.cell(row=row, column=5, value=single_entry.display_spec)
+            ws.cell(row=row, column=6, value=single_entry.material)
+            ws.cell(row=row, column=7, value=single_entry.length)
+            ws.cell(row=row, column=8, value=single_entry.width if single_entry.width else "")
+            ws.cell(row=row, column=9, value=single_entry.quantity)
+            ws.cell(row=row, column=10, value=input_row.quantity)
+            ws.cell(row=row, column=11, value=scaled_entry.quantity)
+            ws.cell(row=row, column=12, value=single_entry.weight_output)
+            ws.cell(row=row, column=13, value=scaled_entry.weight_output)
+            ws.cell(row=row, column=14, value=single_entry.category)
+            ws.cell(row=row, column=15, value=single_entry.item_class)
+            ws.cell(row=row, column=16, value=single_entry.manufacturing_type)
+            ws.cell(row=row, column=17, value=single_entry.part_key)
+            ws.cell(row=row, column=18, value=single_entry.stock_id)
+            ws.cell(row=row, column=19, value=single_entry.display_remark)
             row += 1
 
     _format_sheet(ws, PROJECT_HEADERS)

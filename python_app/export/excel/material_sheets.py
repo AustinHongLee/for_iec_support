@@ -69,6 +69,8 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
         },
         widths=[16, 22, 16, 10, 14, 14, 14, 12, 12, 12, 12, 8, 46],
     )
+    total_row = row
+    chart_bottom = total_row
     if last_row >= 4:
         add_color_scale(ws, f"I4:I{last_row}", "weight")
         chart_start = 4
@@ -84,15 +86,15 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
             ws,
             Reference(ws, min_col=label_col, min_row=chart_start + 1, max_row=chart_start + len(top_lines)),
             Reference(ws, min_col=value_col, min_row=chart_start, max_row=chart_start + len(top_lines)),
-            "O4",
+            f"A{total_row + 3}",
             "teal",
             "材料重量 Top 8 (kg)",
             horizontal=True,
         )
+        chart_bottom = total_row + 18
         for col in (label_col, value_col):
             ws.column_dimensions[get_column_letter(col)].hidden = True
 
-    total_row = row
     write_grand_total_band(
         ws,
         total_row,
@@ -103,4 +105,4 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
         fmt=NUMFMT["WEIGHT_KG"],
         label_col=8,
     )
-    set_print_layout(ws, title_rows="3:3", area=f"A1:Y{total_row}", footer_title="材料合計")
+    set_print_layout(ws, orientation="portrait", title_rows="3:3", area=f"A1:M{chart_bottom}", footer_title="材料合計")

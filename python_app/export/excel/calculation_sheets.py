@@ -1,12 +1,12 @@
 """Renderers for calculation-basis and reference sheets."""
 
+from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
-from .headers import _CALC_BASIS_HEADERS, _CONFIDENCE_FILL, _STANDARDS_TABLE
+from .headers import _CALC_BASIS_HEADERS, _STANDARDS_TABLE
 from .styles import (
     NUMFMT,
     add_color_scale,
-    add_doughnut_chart,
     apply_confidence_fill,
     freeze_and_filter,
     set_print_layout,
@@ -111,8 +111,8 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         scaled = row_result.scaled_result
 
         if single.error:
-            vals = [inp.designation, "錯誤", single.error] + [""] * (n_cols - 3)
-            vals[9] = inp.quantity
+            vals = [inp.designation, get_type_code(inp.designation), "錯誤", single.error] + [""] * (n_cols - 4)
+            vals[10] = inp.quantity
             vals[-1] = "明細"
             for col, val in enumerate(vals, 1):
                 cell = ws.cell(row=data_row, column=col, value=val)
@@ -130,7 +130,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
             total_w = round(sc_entry.weight_output, 3)
 
             vals = [
-                inp.designation, s_entry.item_no, s_entry.name,
+                inp.designation, get_type_code(inp.designation), s_entry.item_no, s_entry.name,
                 s_entry.display_spec, s_entry.material,
                 s_entry.length if s_entry.length else "",
                 s_entry.width if s_entry.width else "",
@@ -147,19 +147,19 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.border = styles["border"]
                 if data_row % 2 == 0:
                     cell.fill = alt_fill
-                if col in (9, 10, 11):
+                if col in (10, 11, 12):
                     cell.fill = qty_fill
                 cell.alignment = Alignment(
                     vertical="center",
-                    horizontal="right" if col in (6, 7, 9, 10, 11, 12, 13, 14) else "left",
-                    wrap_text=(col == 15),
-                    indent=1 if col in (1, 3, 4, 5, 8) else 0,
+                    horizontal="right" if col in (7, 8, 10, 11, 12, 13, 14, 15) else "left",
+                    wrap_text=(col == 16),
+                    indent=1 if col in (1, 4, 5, 6, 9) else 0,
                 )
-                if col in (9, 10, 11):
+                if col in (10, 11, 12):
                     cell.number_format = NUMFMT["QTY_INT"]
-                elif col in (6, 7):
+                elif col in (7, 8):
                     cell.number_format = NUMFMT["LEN_MM"]
-                elif col in (12, 13, 14):
+                elif col in (13, 14, 15):
                     cell.number_format = NUMFMT["WEIGHT_KG3"]
             ws.row_dimensions[data_row].height = 16
             data_row += 1
@@ -172,10 +172,11 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.font = styles["bold_font"]
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             ws.cell(row=data_row, column=1, value=f"小計 {inp.designation}")
-            ws.cell(row=data_row, column=10, value=inp.quantity)
-            ws.cell(row=data_row, column=14, value=round(scaled.total_weight, 3))
-            ws.cell(row=data_row, column=10).number_format = NUMFMT["QTY_INT"]
-            ws.cell(row=data_row, column=14).number_format = NUMFMT["WEIGHT_KG3"]
+            ws.cell(row=data_row, column=2, value=get_type_code(inp.designation))
+            ws.cell(row=data_row, column=11, value=inp.quantity)
+            ws.cell(row=data_row, column=15, value=round(scaled.total_weight, 3))
+            ws.cell(row=data_row, column=11).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=data_row, column=15).number_format = NUMFMT["WEIGHT_KG3"]
             ws.cell(row=data_row, column=n_cols, value="小計")
             ws.row_dimensions[data_row].height = 18
             data_row += 1
@@ -186,28 +187,26 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         data_row,
         n_cols,
         "全案合計",
-        14,
+        15,
         round(project.total_weight, 3),
         fmt=NUMFMT["WEIGHT_KG3"],
     )
-    ws.cell(row=data_row, column=10, value=project.total_support_count)
-    ws.cell(row=data_row, column=10).number_format = NUMFMT["QTY_INT"]
+    ws.cell(row=data_row, column=11, value=project.total_support_count)
+    ws.cell(row=data_row, column=11).number_format = NUMFMT["QTY_INT"]
     ws.cell(row=data_row, column=n_cols, value="合計")
     last_data_row = data_row
 
     freeze_and_filter(ws, HEADER_ROW, filter_last_row, last_col_letter, autofilter=True)
     if filter_last_row >= HEADER_ROW + 1:
-        add_color_scale(ws, f"N{HEADER_ROW + 1}:N{filter_last_row}", "weight")
+        add_color_scale(ws, f"O{HEADER_ROW + 1}:O{filter_last_row}", "weight")
 
-    _set_widths(ws, [20, 7, 18, 22, 14, 10, 10, 10, 10, 8, 10, 12, 13, 13, 50, 14, 14, 8])
+    _set_widths(ws, [20, 8, 7, 18, 22, 14, 10, 10, 10, 10, 8, 10, 12, 13, 13, 50, 14, 14, 8])
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
 
 
 def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     """計算標準與假設 — 給長官或客戶看的靜態說明頁。"""
     from openpyxl.styles import Alignment, PatternFill
-    from openpyxl.chart import Reference
-    from openpyxl.utils import get_column_letter
 
     styles = _styles()
 
@@ -267,10 +266,10 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     ws.row_dimensions[row].height = 22
     row += 2
 
-    _section_header(ws, row, "各支撐重量彙整", span_cols=6)
+    _section_header(ws, row, "Type 計算資料狀態彙整", span_cols=6)
     row += 1
 
-    summ_headers = ["型號", "組數", "資料狀態", "單組重(kg)", "合計重(kg)", "備註"]
+    summ_headers = ["Type", "型號列數", "支撐組數", "資料狀態", "合計重(kg)", "代表型號 / 備註"]
     for col, h in enumerate(summ_headers, 1):
         cell = ws.cell(row=row, column=col, value=h)
         cell.fill = styles["subheader_fill"]
@@ -280,38 +279,82 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     ws.row_dimensions[row].height = 24
     row += 1
 
-    grand_total = 0.0
-    confidence_counts = {"精確": 0, "推導": 0, "估算": 0, "未知": 0, "錯誤": 0}
+    def status_label(counts: dict[str, int]) -> str:
+        active = [f"{key} {value}" for key, value in counts.items() if value]
+        return " / ".join(active) if active else "未知"
+
+    def worst_status(counts: dict[str, int]) -> str:
+        for key in ("錯誤", "未知", "估算", "推導", "精確"):
+            if counts.get(key):
+                return key
+        return "未知"
+
+    type_stats: dict[str, dict] = {}
 
     for row_result in project.rows:
         inp = row_result.input_row
         single = row_result.single_result
         scaled = row_result.scaled_result
-
+        type_id = get_type_code(inp.designation) or "未解析"
         meta = single.meta or {}
         confidence = _confidence_label(meta)
-
+        stat = type_stats.setdefault(type_id, {
+            "rows": 0,
+            "support_count": 0,
+            "total_weight": 0.0,
+            "status_counts": {"精確": 0, "推導": 0, "估算": 0, "未知": 0, "錯誤": 0},
+            "examples": [],
+            "errors": [],
+        })
+        stat["rows"] += 1
+        stat["support_count"] += inp.quantity
+        if inp.designation not in stat["examples"] and len(stat["examples"]) < 3:
+            stat["examples"].append(inp.designation)
         if single.error:
-            confidence_counts["錯誤"] += 1
-            for col, val in enumerate([inp.designation, inp.quantity, "錯誤", "", "", single.error], 1):
-                cell = ws.cell(row=row, column=col, value=val)
-                cell.fill = PatternFill("solid", fgColor="FCE4D6")
-                cell.border = styles["border"]
-                cell.alignment = styles["center"]
+            stat["status_counts"]["錯誤"] += 1
+            stat["errors"].append(single.error)
         else:
-            confidence_counts[confidence if confidence in confidence_counts else "未知"] += 1
-            single_total = round(single.total_weight, 3)
             scaled_total = round(scaled.total_weight, 3)
-            grand_total += scaled_total
-            vals = [inp.designation, inp.quantity, confidence, single_total, scaled_total, ""]
-            for col, val in enumerate(vals, 1):
-                cell = ws.cell(row=row, column=col, value=val)
-                cell.border = styles["border"]
-                cell.alignment = styles["center"]
-                if col in (4, 5):
-                    cell.number_format = NUMFMT["WEIGHT_KG3"]
-                if col == 3:
-                    apply_confidence_fill(cell, confidence)
+            stat["total_weight"] += scaled_total
+            stat["status_counts"][confidence if confidence in stat["status_counts"] else "未知"] += 1
+
+    def type_sort_key(item: tuple[str, dict]) -> tuple[int, str]:
+        key = item[0].rstrip("C")
+        return (int(key) if key.isdigit() else 9999, item[0])
+
+    for type_id, stat in sorted(type_stats.items(), key=type_sort_key):
+        status = status_label(stat["status_counts"])
+        note = "、".join(stat["examples"])
+        if stat["rows"] > len(stat["examples"]):
+            note += f" 等 {stat['rows']} 列"
+        if stat["errors"]:
+            note = f"{note}；錯誤：{stat['errors'][0]}"
+        vals = [
+            f"Type {type_id}",
+            stat["rows"],
+            stat["support_count"],
+            status,
+            round(stat["total_weight"], 3),
+            note,
+        ]
+        for col, val in enumerate(vals, 1):
+            cell = ws.cell(row=row, column=col, value=val)
+            cell.border = styles["border"]
+            cell.alignment = Alignment(
+                vertical="center",
+                horizontal="right" if col in (2, 3, 5) else "left",
+                wrap_text=(col == 6),
+                indent=1 if col in (1, 4, 6) else 0,
+            )
+            if col == 4:
+                worst = worst_status(stat["status_counts"])
+                if worst == "錯誤":
+                    cell.fill = PatternFill("solid", fgColor="FCE4D6")
+                else:
+                    apply_confidence_fill(cell, worst)
+            if col == 5:
+                cell.number_format = NUMFMT["WEIGHT_KG3"]
+        ws.row_dimensions[row].height = 24
         row += 1
 
     write_grand_total_band(
@@ -320,33 +363,10 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
         6,
         "■ 全案合計總重",
         5,
-        round(grand_total, 3),
+        round(project.total_weight, 3),
         fmt=NUMFMT["WEIGHT_KG3"],
     )
 
-    chart_row = 4
-    label_col = 27
-    value_col = 28
-    ws.cell(row=chart_row, column=label_col, value="資料狀態")
-    ws.cell(row=chart_row, column=value_col, value="筆數")
-    out_row = chart_row + 1
-    for label, count in confidence_counts.items():
-        if count:
-            ws.cell(row=out_row, column=label_col, value=label)
-            ws.cell(row=out_row, column=value_col, value=count)
-            out_row += 1
-    if out_row > chart_row + 1:
-        add_doughnut_chart(
-            ws,
-            Reference(ws, min_col=label_col, min_row=chart_row + 1, max_row=out_row - 1),
-            Reference(ws, min_col=value_col, min_row=chart_row, max_row=out_row - 1),
-            "H4",
-            ["conf_exact", "conf_derive", "conf_estimate", "conf_unknown", "bad_mark"],
-            "資料狀態分佈",
-        )
-    for col in (label_col, value_col):
-        ws.column_dimensions[get_column_letter(col)].hidden = True
-
-    col_widths = [22, 8, 12, 14, 14, 36]
+    col_widths = [14, 10, 10, 18, 14, 54]
     _set_widths(ws, col_widths)
-    set_print_layout(ws, title_rows=None, area=f"A1:R{row}", footer_title="計算標準與假設")
+    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:F{row}", footer_title="計算標準與假設")

@@ -1,5 +1,6 @@
 """Renderers for project weight detail sheets."""
 
+from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
 from .headers import PROJECT_HEADERS
@@ -19,7 +20,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
     _setup_sheet(
         ws,
         "重量分析明細",
-        "R1",
+        "S1",
         subtitle=(
             f"工程審查明細    支撐 {project.total_support_count} 組    "
             f"型號列 {len(project.rows)}    全案總重 {project.total_weight:,.2f} kg"
@@ -36,9 +37,10 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
 
         if single_result.error:
             ws.cell(row=row, column=1, value=input_row.designation)
-            ws.cell(row=row, column=2, value="Error")
-            ws.cell(row=row, column=3, value=single_result.error)
-            ws.cell(row=row, column=9, value=input_row.quantity)
+            ws.cell(row=row, column=2, value=get_type_code(input_row.designation))
+            ws.cell(row=row, column=3, value="Error")
+            ws.cell(row=row, column=4, value=single_result.error)
+            ws.cell(row=row, column=10, value=input_row.quantity)
             error_rows.append(row)
             row += 1
             continue
@@ -46,6 +48,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             values = [
                 input_row.designation,                                  # 型號 - 每列填滿
+                get_type_code(input_row.designation),
                 single_entry.item_no,
                 single_entry.name,
                 single_entry.display_spec,
@@ -76,22 +79,22 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            6: NUMFMT["LEN_MM"],
             7: NUMFMT["LEN_MM"],
-            8: NUMFMT["QTY_INT"],
+            8: NUMFMT["LEN_MM"],
             9: NUMFMT["QTY_INT"],
             10: NUMFMT["QTY_INT"],
-            11: NUMFMT["WEIGHT_KG"],
+            11: NUMFMT["QTY_INT"],
             12: NUMFMT["WEIGHT_KG"],
+            13: NUMFMT["WEIGHT_KG"],
         },
-        widths=[20, 8, 16, 22, 14, 12, 12, 10, 8, 10, 14, 14, 10, 14, 14, 28, 12, 34],
+        widths=[20, 8, 8, 16, 22, 14, 12, 12, 10, 8, 10, 14, 14, 10, 14, 14, 28, 12, 34],
     )
     for error_row in error_rows:
         for col in range(1, len(PROJECT_HEADERS) + 1):
             cell = ws.cell(row=error_row, column=col)
             cell.fill = styles["bad_fill"]
             cell.border = styles["border"]
-        apply_status_fill(ws.cell(row=error_row, column=2), "錯誤", set_font=True)
+        apply_status_fill(ws.cell(row=error_row, column=3), "錯誤", set_font=True)
     if last_row >= 4:
-        add_color_scale(ws, f"L4:L{last_row}", "weight")
-    set_print_layout(ws, title_rows="3:3", area=f"A1:R{last_row}", footer_title="重量分析")
+        add_color_scale(ws, f"M4:M{last_row}", "weight")
+    set_print_layout(ws, title_rows="3:3", area=f"A1:S{last_row}", footer_title="重量分析")
