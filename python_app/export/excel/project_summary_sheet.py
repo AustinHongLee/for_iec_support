@@ -281,8 +281,11 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     for idx, (name, purpose, count) in enumerate(workbook_index, start=1):
         rr = idx_header_row + idx
         ws.cell(rr, 1, idx).alignment = styles["center"]
-        ws.cell(rr, 2, name).alignment = Alignment(horizontal="left", vertical="center", indent=1)
-        ws.cell(rr, 2).font = styles["bold_font"]
+        name_cell = ws.cell(rr, 2, name)
+        name_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        name_cell.font = Font(name="Microsoft JhengHei", bold=True, color="1F3864", underline="single")
+        name_cell.hyperlink = f"#'{name}'!A1"
+        name_cell.style = "Hyperlink"
         ws.merge_cells(start_row=rr, start_column=3, end_row=rr, end_column=11)
         ws.cell(rr, 3, purpose).alignment = Alignment(horizontal="left", vertical="center", indent=1)
         ws.cell(rr, 12, count).alignment = styles["center"]

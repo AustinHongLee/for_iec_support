@@ -90,7 +90,13 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         f"錯誤項目 {len(project.errors)}    "
         f"全案總重 {project.total_weight:,.3f} kg"
     )
-    _setup_sheet(ws, "IEC 管架支撐 - 重量明細表", f"{last_col_letter}1", subtitle=subtitle)
+    _setup_sheet(
+        ws,
+        "IEC 管架支撐 - 重量明細表",
+        f"{last_col_letter}1",
+        subtitle=subtitle,
+        audience="工程 / 採購",
+    )
 
     HEADER_ROW = 3
     _write_headers(ws, HEADER_ROW, _CALC_BASIS_HEADERS)
@@ -202,8 +208,13 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
 
     styles = _styles()
 
-    _setup_sheet(ws, "計算標準與假設", "F1",
-                 subtitle="本頁列示重量計算依據與資料狀態判讀依據")
+    _setup_sheet(
+        ws,
+        "計算標準與假設",
+        "F1",
+        subtitle="本頁列示重量計算依據與資料狀態判讀依據",
+        audience="主管 / 業主 / 客戶",
+    )
 
     row = 4
     _section_header(ws, row, "計算標準與假設", span_cols=6)

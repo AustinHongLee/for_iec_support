@@ -21,7 +21,13 @@ def _write_cutting_detail_sheet(ws, plans: list[CuttingPlan]):
     from openpyxl.styles import Alignment
 
     styles = _styles()
-    _setup_sheet(ws, "下料明細", "I1")
+    _setup_sheet(
+        ws,
+        "下料明細",
+        "I1",
+        subtitle=f"每根原料切割順序與餘料    線性材料 {len(plans)} 種",
+        audience="採購 / 製造",
+    )
 
     row = 3
     if not plans:

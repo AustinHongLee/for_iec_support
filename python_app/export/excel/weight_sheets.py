@@ -16,7 +16,16 @@ from .styles import (
 
 def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
     styles = _styles()
-    _setup_sheet(ws, "重量分析明細", "R1")
+    _setup_sheet(
+        ws,
+        "重量分析明細",
+        "R1",
+        subtitle=(
+            f"工程審查明細    支撐 {project.total_support_count} 組    "
+            f"型號列 {len(project.rows)}    全案總重 {project.total_weight:,.2f} kg"
+        ),
+        audience="工程 / 審查",
+    )
     error_rows: list[int] = []
 
     row = 4

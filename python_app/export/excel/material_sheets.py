@@ -14,7 +14,13 @@ from .styles import (
 
 
 def _write_material_summary_sheet(ws, summary: MaterialSummary):
-    _setup_sheet(ws, "材料合計與採購清單", "M1")
+    _setup_sheet(
+        ws,
+        "材料合計與採購清單",
+        "M1",
+        subtitle=f"採購/製造清單    材料 {len(summary.lines)} 項    全案總重 {summary.total_weight:,.2f} kg",
+        audience="採購 / 製造",
+    )
 
     row = 4
     for ln in summary.lines:

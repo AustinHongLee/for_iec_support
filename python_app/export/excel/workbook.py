@@ -43,6 +43,7 @@ def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
     _write_cutting_detail_sheet(wb.create_sheet("下料明細"), cutting_plans)
     _write_cutting_visual_sheet(wb.create_sheet("下料圖示"), cutting_plans)
 
+    _polish_workbook(wb)
     wb.save(filepath)
 
 
@@ -53,3 +54,29 @@ def _build_cutting_plans(summary: MaterialSummary) -> list[CuttingPlan]:
         if plan and plan.total_pieces > 0:
             plans.append(plan)
     return plans
+
+
+def _polish_workbook(wb) -> None:
+    """Apply workbook-level visual cues after all sheets are rendered."""
+    tab_colors = {
+        "專案摘要": "1F3864",
+        "重量明細表": "2E5395",
+        "計算標準與假設": "DEE3EE",
+        "支撐分類統計": "BF8F00",
+        "支撐統計明細": "ED7D31",
+        "重量分析": "4472C4",
+        "材料合計": "70AD47",
+        "下料明細": "A9D18E",
+        "下料圖示": "4472C4",
+    }
+    for ws in wb.worksheets:
+        ws.sheet_view.zoomScale = 90 if ws.title in {"重量明細表", "支撐統計明細"} else 100
+        ws.sheet_view.zoomScaleNormal = ws.sheet_view.zoomScale
+        color = tab_colors.get(ws.title)
+        if color:
+            ws.sheet_properties.tabColor = color
+
+    wb.active = 0
+    wb.properties.title = "IEC 管架支撐材料/重量分析"
+    wb.properties.subject = "Project material and weight analysis export"
+    wb.properties.creator = "IEC Support Analyzer"
