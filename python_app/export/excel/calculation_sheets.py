@@ -325,8 +325,8 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     )
 
     chart_row = 4
-    label_col = 11
-    value_col = 12
+    label_col = 27
+    value_col = 28
     ws.cell(row=chart_row, column=label_col, value="資料狀態")
     ws.cell(row=chart_row, column=value_col, value="筆數")
     out_row = chart_row + 1
@@ -349,4 +349,4 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
 
     col_widths = [22, 8, 12, 14, 14, 36]
     _set_widths(ws, col_widths)
-    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:F{row}", footer_title="計算標準與假設")
+    set_print_layout(ws, title_rows=None, area=f"A1:R{row}", footer_title="計算標準與假設")

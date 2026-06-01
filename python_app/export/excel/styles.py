@@ -639,6 +639,7 @@ def add_doughnut_chart(ws, labels_ref, data_ref, anchor: str, palette: list[str]
         chart = DoughnutChart()
         chart.title = title
         chart.holeSize = 55
+        chart.visible_cells_only = False
         chart.add_data(data_ref, titles_from_data=True)
         chart.set_categories(labels_ref)
         chart.dataLabels = DataLabelList()
@@ -665,6 +666,7 @@ def add_bar_chart(ws, labels_ref, data_ref, anchor: str, color: str, title: str,
         chart = BarChart()
         chart.type = "bar" if horizontal else "col"
         chart.title = title
+        chart.visible_cells_only = False
         chart.add_data(data_ref, titles_from_data=True)
         chart.set_categories(labels_ref)
         chart.legend = None

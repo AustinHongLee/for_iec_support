@@ -471,8 +471,8 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
     last_row = max(row - 1, 4)
     if active_rows:
         chart_row = 4
-        label_col = 13
-        value_col = 14
+        label_col = 27
+        value_col = 28
         ws.cell(row=chart_row, column=label_col, value="統計項目")
         ws.cell(row=chart_row, column=value_col, value="數量")
         ranked = sorted(active_rows, key=lambda stat_row: float(stat_value(stat_row) or 0), reverse=True)[:8]
@@ -492,7 +492,7 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
             ws.column_dimensions[get_column_letter(col)].hidden = True
     ws.freeze_panes = "A4"
     _set_widths(ws, [12, 24, 8, 10, 12, 8, 38, 24, 42])
-    set_print_layout(ws, title_rows=None, area=f"A1:I{last_row}", footer_title="支撐分類統計")
+    set_print_layout(ws, title_rows=None, area=f"A1:U{last_row}", footer_title="支撐分類統計")
 
 
 def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):

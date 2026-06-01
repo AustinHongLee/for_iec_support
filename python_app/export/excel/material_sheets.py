@@ -72,8 +72,8 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
     if last_row >= 4:
         add_color_scale(ws, f"I4:I{last_row}", "weight")
         chart_start = 4
-        label_col = 20
-        value_col = 21
+        label_col = 27
+        value_col = 28
         ws.cell(row=chart_start, column=label_col, value="材料")
         ws.cell(row=chart_start, column=value_col, value="總重")
         top_lines = sorted(summary.lines, key=lambda ln: ln.total_weight, reverse=True)[:8]
@@ -103,4 +103,4 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
         fmt=NUMFMT["WEIGHT_KG"],
         label_col=8,
     )
-    set_print_layout(ws, title_rows="3:3", area=f"A1:M{total_row}", footer_title="材料合計")
+    set_print_layout(ws, title_rows="3:3", area=f"A1:Y{total_row}", footer_title="材料合計")
