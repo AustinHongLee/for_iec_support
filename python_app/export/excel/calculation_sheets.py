@@ -6,6 +6,7 @@ from .headers import _CALC_BASIS_HEADERS, _CONFIDENCE_FILL, _STANDARDS_TABLE
 from .styles import (
     NUMFMT,
     add_color_scale,
+    add_doughnut_chart,
     apply_confidence_fill,
     freeze_and_filter,
     set_print_layout,
@@ -205,6 +206,8 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
 def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     """計算標準與假設 — 給長官或客戶看的靜態說明頁。"""
     from openpyxl.styles import Alignment, PatternFill
+    from openpyxl.chart import Reference
+    from openpyxl.utils import get_column_letter
 
     styles = _styles()
 
@@ -278,6 +281,7 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     row += 1
 
     grand_total = 0.0
+    confidence_counts = {"精確": 0, "推導": 0, "估算": 0, "未知": 0, "錯誤": 0}
 
     for row_result in project.rows:
         inp = row_result.input_row
@@ -288,12 +292,14 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
         confidence = _confidence_label(meta)
 
         if single.error:
+            confidence_counts["錯誤"] += 1
             for col, val in enumerate([inp.designation, inp.quantity, "錯誤", "", "", single.error], 1):
                 cell = ws.cell(row=row, column=col, value=val)
                 cell.fill = PatternFill("solid", fgColor="FCE4D6")
                 cell.border = styles["border"]
                 cell.alignment = styles["center"]
         else:
+            confidence_counts[confidence if confidence in confidence_counts else "未知"] += 1
             single_total = round(single.total_weight, 3)
             scaled_total = round(scaled.total_weight, 3)
             grand_total += scaled_total
@@ -317,6 +323,29 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
         round(grand_total, 3),
         fmt=NUMFMT["WEIGHT_KG3"],
     )
+
+    chart_row = 4
+    label_col = 11
+    value_col = 12
+    ws.cell(row=chart_row, column=label_col, value="資料狀態")
+    ws.cell(row=chart_row, column=value_col, value="筆數")
+    out_row = chart_row + 1
+    for label, count in confidence_counts.items():
+        if count:
+            ws.cell(row=out_row, column=label_col, value=label)
+            ws.cell(row=out_row, column=value_col, value=count)
+            out_row += 1
+    if out_row > chart_row + 1:
+        add_doughnut_chart(
+            ws,
+            Reference(ws, min_col=label_col, min_row=chart_row + 1, max_row=out_row - 1),
+            Reference(ws, min_col=value_col, min_row=chart_row, max_row=out_row - 1),
+            "H4",
+            ["conf_exact", "conf_derive", "conf_estimate", "conf_unknown", "bad_mark"],
+            "資料狀態分佈",
+        )
+    for col in (label_col, value_col):
+        ws.column_dimensions[get_column_letter(col)].hidden = True
 
     col_widths = [22, 8, 12, 14, 14, 36]
     _set_widths(ws, col_widths)

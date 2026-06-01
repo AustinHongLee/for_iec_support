@@ -3,11 +3,15 @@
 COLORS = {
     "ink": "1F3864",
     "ink2": "2E5395",
+    "royal": "3A5BA0",
+    "teal": "2E7D8A",
+    "grey": "808080",
     "nav_sub": "DEE3EE",
     "section": "D9E1F2",
     "canvas": "F2F4F8",
     "zebra": "F7F9FC",
     "accent": "BF8F00",
+    "gold2": "E8B923",
     "subtotal": "FFF2CC",
     "card_border": "D0D7E2",
     "grid": "BFBFBF",
@@ -53,6 +57,27 @@ ROW_H = {
     "kpi_value": 34,
     "kpi_note": 16,
     "total": 24,
+}
+
+GRAD = {
+    "title": ("ink", "ink2", "royal"),
+    "plan": ("ink", "ink2"),
+}
+
+GLYPH = {
+    "總重": "◆",
+    "數量": "●",
+    "良好": "▲",
+    "警示": "⚠",
+    "重點": "★",
+    "資訊": "◇",
+    "方塊": "■",
+}
+
+TAB_COLORS = {
+    "manager": COLORS["ink"],
+    "procurement": COLORS["teal"],
+    "engineering": COLORS["grey"],
 }
 
 
@@ -158,7 +183,7 @@ def _setup_sheet(
     cell = ws["A1"]
     cell.value = title
     cell.font = styles["title_font"]
-    cell.fill = styles["title_fill"]
+    cell.fill = make_gradient_fill(GRAD["title"])
     cell.alignment = styles["center"]
     ws.row_dimensions[1].height = ROW_H["title"]
 
@@ -174,6 +199,25 @@ def _setup_sheet(
 
     if freeze_title:
         ws.freeze_panes = "A3"
+
+
+def make_gradient_fill(stops: tuple[str, ...] | list[str], degree: int = 30):
+    """Return an openpyxl gradient fill from color tokens or literal hex values."""
+    from openpyxl.styles import GradientFill
+
+    colors = [COLORS.get(stop, stop) for stop in stops]
+    return GradientFill(degree=degree, stop=colors)
+
+
+def set_tab_color(ws, group: str) -> None:
+    color = TAB_COLORS.get(group, COLORS.get(group, group))
+    if color:
+        ws.sheet_properties.tabColor = color
+
+
+def make_title_band(ws, title: str, merge_to: str = "K1", subtitle: str = "", **kwargs):
+    """Compatibility wrapper for rich title bands."""
+    _setup_sheet(ws, title, merge_to=merge_to, subtitle=subtitle, **kwargs)
 
 
 def Alignment_for_subtitle():
@@ -209,8 +253,12 @@ def _section_header(ws, row: int, text: str, span_cols: int = 1):
     cell = ws.cell(row=row, column=1, value=f"▌ {text}")
     cell.font = styles["section_font"]
     cell.fill = styles["section_fill"]
-    from openpyxl.styles import Alignment
+    from openpyxl.styles import Alignment, Border, Side
     cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    thick = Side(style="thick", color=COLORS["accent"])
+    thin = Side(style="thin", color=COLORS["grid"])
+    for col in range(1, span_cols + 1):
+        ws.cell(row=row, column=col).border = Border(left=thin, right=thin, top=thin, bottom=thick)
     ws.row_dimensions[row].height = ROW_H["section"]
 
 
@@ -235,7 +283,11 @@ def _kpi_card(ws, row: int, col: int, label: str, value, unit: str = "",
 
     # 卡片邊框
     side = Side(style="thin", color=COLORS["card_border"])
-    border = Border(left=side, right=side, top=side, bottom=side)
+    accent_side = Side(
+        style="thick",
+        color=COLORS["bad_mark"] if tone == "bad" else COLORS["warn_mark"] if tone == "warn" else COLORS["accent"] if accent else COLORS["ink2"],
+    )
+    border = Border(left=accent_side, right=side, top=side, bottom=side)
     tone_fill = {
         "bad": styles["bad_fill"],
         "warn": styles["warn_fill"],
@@ -247,7 +299,7 @@ def _kpi_card(ws, row: int, col: int, label: str, value, unit: str = "",
     lcell = ws.cell(row=row, column=col, value=label)
     lcell.font = styles["kpi_label_font"]
     lcell.fill = styles["kpi_label_fill"]
-    lcell.alignment = Alignment(horizontal="center", vertical="center")
+    lcell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
     lcell.border = border
     ws.row_dimensions[row].height = ROW_H["kpi_label"]
 
@@ -278,7 +330,7 @@ def _kpi_card(ws, row: int, col: int, label: str, value, unit: str = "",
     ncell = ws.cell(row=row + 2, column=col, value=note)
     ncell.font = styles["kpi_note_font"]
     ncell.fill = styles["kpi_value_fill"]
-    ncell.alignment = Alignment(horizontal="center", vertical="center")
+    ncell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
     ncell.border = border
     ws.row_dimensions[row + 2].height = ROW_H["kpi_note"]
 
@@ -536,3 +588,106 @@ def write_kpi_strip(ws, row: int, specs: list[dict]):
     """Write KPI cards in 3-column slots from a list of spec dictionaries."""
     for index, spec in enumerate(specs):
         _kpi_card(ws, row, 1 + index * 3, **spec)
+
+
+def write_kpi_card_v2(
+    ws,
+    row: int,
+    col: int,
+    glyph: str,
+    label: str,
+    value,
+    unit: str,
+    accent: str,
+    note: str,
+    *,
+    big_color: str | None = None,
+    value_format: str | None = None,
+):
+    """Write a bolder KPI card with a glyph and accent strip."""
+    token_color = COLORS.get(accent, accent)
+    _kpi_card(
+        ws,
+        row,
+        col,
+        f"{glyph}  {label}",
+        value,
+        unit,
+        note=note,
+        accent=token_color == COLORS["accent"],
+        value_format=value_format,
+    )
+    from openpyxl.styles import Font, Side, Border
+
+    value_cell = ws.cell(row=row + 1, column=col)
+    if big_color:
+        value_cell.font = Font(name="Calibri", bold=True, color=COLORS.get(big_color, big_color), size=24)
+    thick = Side(style="thick", color=token_color)
+    for r in range(row, row + 3):
+        cell = ws.cell(row=r, column=col)
+        old = cell.border
+        cell.border = Border(left=thick, right=old.right, top=old.top, bottom=old.bottom)
+
+
+def add_doughnut_chart(ws, labels_ref, data_ref, anchor: str, palette: list[str], title: str):
+    """Add a native Excel doughnut chart and return it."""
+    try:
+        from openpyxl.chart import DoughnutChart
+        from openpyxl.chart.label import DataLabelList
+        from openpyxl.chart.marker import DataPoint
+
+        chart = DoughnutChart()
+        chart.title = title
+        chart.holeSize = 55
+        chart.add_data(data_ref, titles_from_data=True)
+        chart.set_categories(labels_ref)
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showPercent = True
+        chart.height = 7
+        chart.width = 10.5
+        if chart.series:
+            for idx, color in enumerate(palette):
+                point = DataPoint(idx=idx)
+                point.graphicalProperties.solidFill = COLORS.get(color, color)
+                chart.series[0].data_points.append(point)
+        ws.add_chart(chart, anchor)
+        return chart
+    except Exception:
+        return None
+
+
+def add_bar_chart(ws, labels_ref, data_ref, anchor: str, color: str, title: str, horizontal: bool = True):
+    """Add a native Excel bar chart and return it."""
+    try:
+        from openpyxl.chart import BarChart
+        from openpyxl.chart.label import DataLabelList
+
+        chart = BarChart()
+        chart.type = "bar" if horizontal else "col"
+        chart.title = title
+        chart.add_data(data_ref, titles_from_data=True)
+        chart.set_categories(labels_ref)
+        chart.legend = None
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showVal = True
+        chart.height = 7
+        chart.width = 11
+        if chart.series:
+            chart.series[0].graphicalProperties.solidFill = COLORS.get(color, color)
+        ws.add_chart(chart, anchor)
+        return chart
+    except Exception:
+        return None
+
+
+def apply_icon_set(ws, cell_range: str, kind: str = "3TrafficLights1", thresholds: list[int] | None = None):
+    """Add a semantic icon set to a numeric range."""
+    try:
+        from openpyxl.formatting.rule import IconSetRule
+
+        ws.conditional_formatting.add(
+            cell_range,
+            IconSetRule(kind, "percent", thresholds or [0, 40, 70], showValue=True),
+        )
+    except Exception:
+        pass

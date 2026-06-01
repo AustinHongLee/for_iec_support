@@ -5,6 +5,8 @@ from core.material_summary import MaterialSummary
 from core.project_aggregation import ProjectAnalysisResult
 
 from .styles import (
+    COLORS,
+    GLYPH,
     NUMFMT,
     _add_data_bar,
     _kpi_card,
@@ -12,8 +14,80 @@ from .styles import (
     _set_widths,
     _setup_sheet,
     _styles,
+    add_bar_chart,
+    add_doughnut_chart,
     set_print_layout,
+    write_kpi_card_v2,
 )
+
+
+def _write_summary_charts(ws, top_mats, top5, total_weight: float) -> None:
+    """Write hidden chart sources and visible native charts for the dashboard."""
+    from openpyxl.chart import Reference
+    from openpyxl.utils import get_column_letter
+
+    palette = [
+        COLORS["ink"],
+        COLORS["ink2"],
+        COLORS["royal"],
+        COLORS["accent"],
+        COLORS["gold2"],
+        COLORS["grey"],
+    ]
+
+    # Hidden material distribution source: Top 5 + Other.
+    mat_start = 66
+    mat_label_col = 16
+    mat_value_col = 17
+    ws.cell(row=mat_start, column=mat_label_col, value="材料")
+    ws.cell(row=mat_start, column=mat_value_col, value="總重")
+    chart_mats = top_mats[:5]
+    used_weight = 0.0
+    row = mat_start + 1
+    for line in chart_mats:
+        ws.cell(row=row, column=mat_label_col, value=line.name)
+        ws.cell(row=row, column=mat_value_col, value=round(line.total_weight, 2))
+        used_weight += line.total_weight
+        row += 1
+    other_weight = max(0.0, total_weight - used_weight)
+    if other_weight:
+        ws.cell(row=row, column=mat_label_col, value="其他")
+        ws.cell(row=row, column=mat_value_col, value=round(other_weight, 2))
+        row += 1
+    if row > mat_start + 1:
+        add_doughnut_chart(
+            ws,
+            Reference(ws, min_col=mat_label_col, min_row=mat_start + 1, max_row=row - 1),
+            Reference(ws, min_col=mat_value_col, min_row=mat_start, max_row=row - 1),
+            "B20",
+            palette,
+            "材料重量分佈 (kg)",
+        )
+
+    # Hidden heavy-support source.
+    sup_start = 66
+    sup_label_col = 19
+    sup_value_col = 20
+    ws.cell(row=sup_start, column=sup_label_col, value="型號")
+    ws.cell(row=sup_start, column=sup_value_col, value="累計重")
+    row = sup_start + 1
+    for row_result in top5:
+        ws.cell(row=row, column=sup_label_col, value=row_result.input_row.designation)
+        ws.cell(row=row, column=sup_value_col, value=round(row_result.scaled_result.total_weight, 2))
+        row += 1
+    if row > sup_start + 1:
+        add_bar_chart(
+            ws,
+            Reference(ws, min_col=sup_label_col, min_row=sup_start + 1, max_row=row - 1),
+            Reference(ws, min_col=sup_value_col, min_row=sup_start, max_row=row - 1),
+            "H20",
+            "accent",
+            "重型支撐 Top 5 (kg)",
+            horizontal=True,
+        )
+
+    for col in range(mat_label_col, sup_value_col + 1):
+        ws.column_dimensions[get_column_letter(col)].hidden = True
 
 
 def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: MaterialSummary, plans: list[CuttingPlan]):
@@ -85,64 +159,67 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     _section_header(ws, 4, "關鍵指標", span_cols=12)
 
     row_kpi_1 = 5
-    _kpi_card(ws, row_kpi_1, 1, "支撐總組數",
-              project.total_support_count, "組",
-              note="本批設計含支撐總數", accent=True, value_format=NUMFMT["QTY_INT"])
-    _kpi_card(ws, row_kpi_1, 4, "材料種類",
-              len(summary.lines), "項",
-              note="合計表獨立材料品項", value_format=NUMFMT["QTY_INT"])
-    _kpi_card(ws, row_kpi_1, 7, "專案總重",
-              round(summary.total_weight, 2), "kg",
-              note="全案累計總重", accent=True, value_format=NUMFMT["WEIGHT_KG"])
-    _kpi_card(ws, row_kpi_1, 10, "平均單組重",
-              round(avg_unit_weight, 2), "kg/組",
-              note=f"成功項 {len(successful_rows)} 組之均值", value_format=NUMFMT["WEIGHT_KG"])
+    write_kpi_card_v2(ws, row_kpi_1, 1, GLYPH["數量"], "支撐總組數",
+                      project.total_support_count, "組", "ink2",
+                      "本批設計含支撐總數", big_color="ink", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_1, 4, GLYPH["資訊"], "材料種類",
+                      len(summary.lines), "項", "royal",
+                      "合計表獨立材料品項", big_color="royal", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_1, 7, GLYPH["總重"], "專案總重",
+                      round(summary.total_weight, 2), "kg", "accent",
+                      "全案累計總重", big_color="accent", value_format=NUMFMT["WEIGHT_KG"])
+    write_kpi_card_v2(ws, row_kpi_1, 10, GLYPH["重點"], "平均單組重",
+                      round(avg_unit_weight, 2), "kg/組", "teal",
+                      f"成功項 {len(successful_rows)} 組之均值", big_color="teal", value_format=NUMFMT["WEIGHT_KG"])
 
     # === R9~R11 第二列 KPI =======================================
     row_kpi_2 = 9
-    _kpi_card(ws, row_kpi_2, 1, "下料材料",
-              len(plans), "種",
-              note="需切割的線性材料種類", value_format=NUMFMT["QTY_INT"])
-    _kpi_card(ws, row_kpi_2, 4, "建議原料根數",
-              total_bars, "根",
-              note="依下料規劃所需原料數", accent=True, value_format=NUMFMT["QTY_INT"])
-    _kpi_card(ws, row_kpi_2, 7, "下料段數",
-              total_cut_pieces, "段",
-              note="所有原料切割段累計", value_format=NUMFMT["QTY_INT"])
-    _kpi_card(ws, row_kpi_2, 10, "平均使用率",
-              round(avg_util, 1) / 100 if avg_util else 0, "",
-              note="原料切割平均利用率", accent=True, value_format=NUMFMT["PCT"])
+    write_kpi_card_v2(ws, row_kpi_2, 1, GLYPH["方塊"], "下料材料",
+                      len(plans), "種", "info_mark",
+                      "需切割的線性材料種類", big_color="info_mark", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_2, 4, GLYPH["重點"], "建議原料根數",
+                      total_bars, "根", "accent",
+                      "依下料規劃所需原料數", big_color="accent", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_2, 7, GLYPH["數量"], "下料段數",
+                      total_cut_pieces, "段", "royal",
+                      "所有原料切割段累計", big_color="royal", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_2, 10, GLYPH["良好"], "平均使用率",
+                      round(avg_util, 1) / 100 if avg_util else 0, "", "ok_mark",
+                      "原料切割平均利用率", big_color="ok_mark", value_format=NUMFMT["PCT"])
 
     # === R13~R17 品質與異常 KPI ==================================
     quality_section_row = 13
     _section_header(ws, quality_section_row, "品質與異常", span_cols=12)
     row_kpi_3 = quality_section_row + 1
-    _kpi_card(ws, row_kpi_3, 1, "錯誤項目",
-              len(project.errors), "項",
-              note="重量分析失敗項目", value_format=NUMFMT["QTY_INT"],
-              tone="bad" if project.errors else "neutral")
-    _kpi_card(ws, row_kpi_3, 4, "需確認分類",
-              confirm_count, "筆",
-              note="支撐統計明細需確認", value_format=NUMFMT["QTY_INT"],
-              tone="warn" if confirm_count else "neutral")
-    _kpi_card(ws, row_kpi_3, 7, "資料健康度",
-              1 if not project.errors and confirm_count == 0 else 0, "",
-              note="1=無錯誤且無需確認", value_format=NUMFMT["QTY_INT"],
-              accent=not project.errors and confirm_count == 0)
+    write_kpi_card_v2(ws, row_kpi_3, 1, GLYPH["警示"], "錯誤項目",
+                      len(project.errors), "項", "bad_mark" if project.errors else "ink2",
+                      "重量分析失敗項目", big_color="bad_mark" if project.errors else "ink", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_3, 4, GLYPH["警示"], "需確認分類",
+                      confirm_count, "筆", "warn_mark" if confirm_count else "ink2",
+                      "支撐統計明細需確認", big_color="warn_mark" if confirm_count else "ink", value_format=NUMFMT["QTY_INT"])
+    write_kpi_card_v2(ws, row_kpi_3, 7, GLYPH["良好"], "資料健康度",
+                      1 if not project.errors and confirm_count == 0 else 0, "", "ok_mark",
+                      "1=無錯誤且無需確認", big_color="ok_mark", value_format=NUMFMT["QTY_INT"])
     ws.merge_cells(start_row=row_kpi_3 + 3, start_column=1, end_row=row_kpi_3 + 3, end_column=12)
     guide = ws.cell(row=row_kpi_3 + 3, column=1, value="→ 詳見「支撐統計明細」與「重量明細表」")
     guide.font = styles["kpi_note_font"]
     guide.alignment = Alignment(horizontal="left", vertical="center", indent=1)
-
-    # === Top 5 重型支撐 ===================================
-    top_section_row = 19
-    _section_header(ws, top_section_row, "重型支撐 Top 5（依單組重）", span_cols=12)
 
     top5 = sorted(
         successful_rows,
         key=lambda r: r.single_result.total_weight,
         reverse=True,
     )[:5]
+    top_mats = sorted(summary.lines, key=lambda ln: ln.total_weight, reverse=True)[:8]
+
+    # === 原生圖表區 ===================================
+    chart_section_row = 19
+    _section_header(ws, chart_section_row, "材料重量分佈 ＆ 重型支撐 Top 5", span_cols=12)
+    _write_summary_charts(ws, top_mats, top5, summary.total_weight)
+
+    # === Top 5 重型支撐資料表 ===================================
+    top_section_row = 36
+    _section_header(ws, top_section_row, "重型支撐 Top 5（依單組重）", span_cols=12)
 
     top5_headers = ["排名", "型號", "組數", "單組重 (kg)", "累計重 (kg)", "佔比"]
     header_row = top_section_row + 1
@@ -197,7 +274,6 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     mat_section_row = header_row + 7
     _section_header(ws, mat_section_row, "材料重量分佈 Top 8（依總重）", span_cols=12)
 
-    top_mats = sorted(summary.lines, key=lambda ln: ln.total_weight, reverse=True)[:8]
     mat_headers = ["#", "品名", "規格", "材質", "總重 (kg)", "佔比"]
     mat_header_row = mat_section_row + 1
     for col, h in enumerate(mat_headers, 1):

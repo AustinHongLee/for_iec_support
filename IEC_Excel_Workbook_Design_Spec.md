@@ -461,7 +461,64 @@ python -c "import openpyxl; wb=openpyxl.load_workbook('OUT.xlsx'); print(wb.shee
 - 不改 sheet 名稱與順序（§4 內標 optional 者除外，且 optional 預設不執行）。
 - 不改 public API（`excel_export.py` re-export 全保留；現有 helper 簽章不刪不改）。
 - 不引入任何非 openpyxl 依賴（不裝 xlsxwriter/pandas styler 等）。
-- 不做需要 Excel macro/VBA、巢狀真實圖表物件、或外部圖片資產的功能（data bar / color scale / 色塊條 已足夠）。
+- **（本批已解禁圖表，見 §8）** 原生 openpyxl 圖表（`DoughnutChart`/`BarChart`/`PieChart`）為 in-scope。仍不做：Excel macro/VBA、外部圖片資產（公司 logo 除外，如需另議）、3D/動畫、或任何需手動操作 Excel 才能產生的效果。
 - 不改 legacy `simple_exports.py` 的黃底單表輸出（屬相容面；對齊主題色標為 future optional，本批不動）。
 - 不為手機/響應式做特別處理（桌面 + 列印導向）。
-```
+
+---
+
+## 8. 華麗 Visual Layer — Bold（本批採用：Bold + 原生圖表 + 全 9 張）
+
+> 本層是 §1–§7 的**加法**：在既有「深靛 + 琥珀」系統上補「深度與層次」（漸層、原生圖表、icon set、符號字、分頁色），但**數字、表格、計算一律不動**，審查專業維持。
+> 參考實作見隨附 `IEC_Excel_華麗_reference_demo.py`（已實際 render 驗證；可直接抄 helper 寫法與圖表建法）。
+
+### 8.0 方向
+- 程度 **Bold**；範圍 **全 9 張**；圖表 **解禁**（openpyxl 原生 `DoughnutChart`/`BarChart`）。
+- 鐵則：圖表 / icon / 漸層只是「呈現既有彙總值」，**不重算、不手動**。
+
+### 8.1 新增 token / helper（補進 `styles.py`，全部加法、不動既有簽章）
+
+| 名稱 | 用途 | 行為 |
+|---|---|---|
+| `make_gradient_fill(stops, degree=30)` + `GRAD` dict | 漸層填滿 | 回 `GradientFill(degree, stop=[...])`；標題 `[ink,ink2,royal]`、plan band `[ink,ink2]` |
+| `GLYPH` dict | 語意符號字 | `{總重:◆, 數量:●, 良好:▲, 警示:⚠, 重點:★, 資訊:◇, 方塊:■}`，用於 KPI/區塊/狀態 |
+| `TAB_COLORS` + `set_tab_color(ws, group)` | 分頁色分群 | 主管=`ink 1F3864`、採購=`teal 2E7D8A`、工程=`grey 808080` |
+| `make_title_band(ws, title, …, gradient=True)` | 升級標題列 | `_setup_sheet` 基礎上標題列改 `make_gradient_fill`；其餘不變 |
+| `write_kpi_card_v2(ws,r,c,glyph,label,value,unit,accent,note,big_color)` | 華麗 KPI 卡 | 粗強調色**左邊條** + 符號字 + 24pt 大數字 + note；accent 決定左條色（總重金/數量靛/良好綠/異常紅）|
+| `add_doughnut_chart(ws,labels_ref,data_ref,anchor,palette,title)` | 甜甜圈 | 包 `DoughnutChart`，`holeSize=55`、`showPercent`、逐 datapoint 上 palette 色 |
+| `add_bar_chart(ws,labels_ref,data_ref,anchor,color,title,horizontal=True)` | 長條 | 包 `BarChart`，`showVal`、單色 accent、`legend=None` |
+| `apply_icon_set(ws,range,kind='3TrafficLights1',thresholds=[0,40,70])` | icon set | 包 `IconSetRule`（紅綠燈/箭頭/評等）|
+| `_section_header(…)`（升級）| 區塊標題 | 既有 ▌標題列**加粗琥珀底框**（thick `accent`）|
+
+### 8.2 圖表資料來源約定（重要）
+- 每張要放圖的 sheet，在**右側隱藏欄區（col 20+，`column_dimensions[..].hidden=True`）**寫圖表來源（labels + values），值取自既有彙總（`summary.lines` / `project.rows`），**不重算**。
+- `Reference` 指向隱藏區；`ws.add_chart(chart, anchor)` 錨定可視區。
+- 隱藏來源區 **不可** 落在 `print_area` 或 `auto_filter.ref` 內。
+- Chart palette 固定：`[ink, ink2, royal, accent, gold2 E8B923, grey BFBFBF]`。
+
+### 8.3 Per-sheet 華麗 additions（全 9 張；皆加法，疊在 §4 之上）
+
+| Sheet | 漸層 / 分頁 | 原生圖表 | Icon / Color scale | 其他華麗 |
+|---|---|---|---|---|
+| **專案摘要** | 漸層 masthead；tab 主管靛 | 甜甜圈(材料分佈 Top6+其他) + 橫條(重型支撐 Top5) | 下料健康度 icon set + data bar | KPI v2 卡(符號+左條，需確認紅)；區塊金底線。**＝ demo 那張** |
+| **重量明細表** | 漸層標題；tab 工程灰 | —（明細表免）| 總重欄 color scale，僅明細列 | 表頭底 medium accent；小計暖色保留 |
+| **計算標準與假設** | 漸層標題；tab 主管靛 | 甜甜圈(資料可信度占比：精確/推導/估算/未知) | — | 圖例色塊加質感邊框；客戶頁置中 |
+| **支撐分類統計** | 漸層標題；tab 採購teal | 橫條(各分類計入數量 Top) | 狀態欄 icon set(紅綠燈) | 區塊 header 加 accent；命中/需確認/未納入符號 |
+| **支撐統計明細** | 漸層標題；tab 工程灰 | —（免）| 狀態欄 icon set + 整列 FormulaRule 著色 | R2 狀態圖例 |
+| **重量分析** | 漸層標題；tab 工程灰 | —（免）| 總重欄 color scale；錯誤列紅 | 表頭 accent；數字格式統一(§2.5) |
+| **材料合計** | 漸層標題；tab 採購teal | 甜甜圈(材質別 CS/SUS 重量占比) 或 橫條(Top材料) | 總重欄 color scale | 合計列深靛橫幅；建議採購量強調 |
+| **下料明細** | 漸層標題 + plan band 漸層；tab 採購teal | —（免）| 餘料狀態 icon；使用率 color scale | plan 摘要做成 mini KPI strip |
+| **下料圖示** | 漸層標題；tab 採購teal | （可選）每材料原生 stacked bar，標 optional | 使用率欄 icon set + color scale | **slot 邊框改白→連續長條**；加比例尺列 |
+
+### 8.4 Implementation order 補充（接 §5）
+- **步驟 0（先做）**：§8.1 helper 加進 `styles.py`（直接參考 `IEC_Excel_華麗_reference_demo.py`）。驗證：import 不報錯、跑一次匯出可開。
+- **步驟 9 之後**：每張 sheet 在 §5 原樣式改完後**再疊華麗層**，順序：漸層 + 分頁色 → icon / color scale → 圖表。
+- **圖表先在專案摘要單張驗證**（Excel/soffice 開得起來、圖出得來、隱藏來源區不入 print/filter），確認後才推其餘有圖 sheet。
+
+### 8.5 QA 補充（接 §6）
+- 每張有圖 sheet：`len(ws._charts)` 數量正確；Excel/soffice 開啟圖表正常顯示。
+- 圖表來源隱藏欄 **不在** `print_area` / `auto_filter.ref` 內，且 `hidden=True` 生效。
+- 漸層：`load_workbook` 不報錯；render 無破圖/純黑。
+- Icon set / color scale 範圍不含表頭與合計列。
+- `tabColor` 分群正確（主管/採購/工程一眼分得出）。
+- 圖表數值 == 既有彙總值（抽查甜甜圈各段、長條各條）。

@@ -7,6 +7,7 @@ from .headers import LEADER_DETAIL_HEADERS, LEADER_GROUP_DETAIL_HEADERS, LEADER_
 from .models import LeaderHitDetail, LeaderStatRow
 from .styles import (
     NUMFMT,
+    add_bar_chart,
     apply_report_table,
     apply_status_fill,
     set_print_layout,
@@ -346,6 +347,9 @@ def _leader_procurement_stats(
 
 
 def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
+    from openpyxl.chart import Reference
+    from openpyxl.utils import get_column_letter
+
     styles = _styles()
     rows = _leader_stat_template()
     stats, _, details = _leader_procurement_stats(project)
@@ -465,6 +469,27 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
         row += 1
 
     last_row = max(row - 1, 4)
+    if active_rows:
+        chart_row = 4
+        label_col = 13
+        value_col = 14
+        ws.cell(row=chart_row, column=label_col, value="統計項目")
+        ws.cell(row=chart_row, column=value_col, value="數量")
+        ranked = sorted(active_rows, key=lambda stat_row: float(stat_value(stat_row) or 0), reverse=True)[:8]
+        for offset, stat_row in enumerate(ranked, start=1):
+            ws.cell(row=chart_row + offset, column=label_col, value=stat_row.label)
+            ws.cell(row=chart_row + offset, column=value_col, value=stat_value(stat_row))
+        add_bar_chart(
+            ws,
+            Reference(ws, min_col=label_col, min_row=chart_row + 1, max_row=chart_row + len(ranked)),
+            Reference(ws, min_col=value_col, min_row=chart_row, max_row=chart_row + len(ranked)),
+            "K4",
+            "accent",
+            "支撐分類 Top",
+            horizontal=True,
+        )
+        for col in (label_col, value_col):
+            ws.column_dimensions[get_column_letter(col)].hidden = True
     ws.freeze_panes = "A4"
     _set_widths(ws, [12, 24, 8, 10, 12, 8, 38, 24, 42])
     set_print_layout(ws, title_rows=None, area=f"A1:I{last_row}", footer_title="支撐分類統計")

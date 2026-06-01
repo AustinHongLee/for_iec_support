@@ -7,6 +7,7 @@ from .styles import (
     COLORS,
     NUMFMT,
     add_color_scale,
+    apply_icon_set,
     apply_status_fill,
     set_print_layout,
     _apply_table_style,
@@ -104,6 +105,7 @@ def _write_cutting_detail_sheet(ws, plans: list[CuttingPlan]):
             ws.cell(row=r, column=7).alignment = styles["right"]
         if row - 1 >= header_row + 1:
             add_color_scale(ws, f"G{header_row + 1}:G{row - 1}", "util")
+            apply_icon_set(ws, f"G{header_row + 1}:G{row - 1}", "3TrafficLights1")
         row += 1
 
     ws.freeze_panes = "A3"
@@ -168,6 +170,7 @@ def _write_cutting_visual_sheet(ws, plans: list[CuttingPlan]):
     last_row = max(row - 1, 5)
     if last_row >= 5:
         add_color_scale(ws, f"C5:C{last_row}", "util")
+        apply_icon_set(ws, f"C5:C{last_row}", "3TrafficLights1")
     from openpyxl.utils import get_column_letter
     for col in range(5, 5 + VISUAL_SLOT_COUNT):
         ws.column_dimensions[get_column_letter(col)].width = 2.2

@@ -6,6 +6,7 @@ from .headers import SUMMARY_HEADERS
 from .styles import (
     NUMFMT,
     add_color_scale,
+    add_bar_chart,
     apply_report_table,
     set_print_layout,
     write_grand_total_band,
@@ -14,6 +15,9 @@ from .styles import (
 
 
 def _write_material_summary_sheet(ws, summary: MaterialSummary):
+    from openpyxl.chart import Reference
+    from openpyxl.utils import get_column_letter
+
     _setup_sheet(
         ws,
         "材料合計與採購清單",
@@ -67,6 +71,26 @@ def _write_material_summary_sheet(ws, summary: MaterialSummary):
     )
     if last_row >= 4:
         add_color_scale(ws, f"I4:I{last_row}", "weight")
+        chart_start = 4
+        label_col = 20
+        value_col = 21
+        ws.cell(row=chart_start, column=label_col, value="材料")
+        ws.cell(row=chart_start, column=value_col, value="總重")
+        top_lines = sorted(summary.lines, key=lambda ln: ln.total_weight, reverse=True)[:8]
+        for offset, line in enumerate(top_lines, start=1):
+            ws.cell(row=chart_start + offset, column=label_col, value=f"{line.name} {line.spec}")
+            ws.cell(row=chart_start + offset, column=value_col, value=round(line.total_weight, 2))
+        add_bar_chart(
+            ws,
+            Reference(ws, min_col=label_col, min_row=chart_start + 1, max_row=chart_start + len(top_lines)),
+            Reference(ws, min_col=value_col, min_row=chart_start, max_row=chart_start + len(top_lines)),
+            "O4",
+            "teal",
+            "材料重量 Top 8 (kg)",
+            horizontal=True,
+        )
+        for col in (label_col, value_col):
+            ws.column_dimensions[get_column_letter(col)].hidden = True
 
     total_row = row
     write_grand_total_band(
