@@ -223,8 +223,10 @@ try:
         ws_leader_detail = wb["查核-支撐明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
+        assert ws_leader_detail.cell(row=3, column=5).value == "Type", "leader detail type header failed"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
+            and ws_leader_detail.cell(row=r, column=5).value == "51"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail should classify Type 51 as CS fabrication"
@@ -269,18 +271,21 @@ try:
         assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
+            and ws_leader_detail.cell(row=r, column=5).value == "59"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=10).value)
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=11).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 <=15kg support should be listed under CS fabrication detail"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "10-6B-16"
+            and ws_leader_detail.cell(row=r, column=5).value == "10"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 > 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=10).value)
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=11).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 >15kg support should be listed under CS fabrication detail"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "57-1/2B-A"
+            and ws_leader_detail.cell(row=r, column=5).value == "57"
             and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"

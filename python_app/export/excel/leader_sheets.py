@@ -478,7 +478,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
     styles = _styles()
     _, _, details = _leader_procurement_stats(project)
 
-    _setup_sheet(ws, "支撐統計明細（製表者查核）", "L1")
+    _setup_sheet(ws, "支撐統計明細（製表者查核）", "M1")
     ws.cell(
         row=2,
         column=1,
@@ -488,7 +488,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
-    ws.merge_cells("A2:L2")
+    ws.merge_cells("A2:M2")
 
     row = 4
     if not details:
@@ -502,6 +502,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 detail.category,
                 detail.label,
                 detail.designation,
+                _parse_designation_type(detail.designation),
                 detail.project_qty,
                 "" if detail.pipe_size is None else detail.pipe_size,
                 round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
@@ -515,13 +516,13 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = styles["border"]
                 cell.alignment = styles["wrap"]
-                if col in (5, 6, 7):
+                if col in (6, 7, 8):
                     cell.alignment = styles["right"]
                 if col == 1:
                     apply_status_fill(cell, detail.status)
                     cell.alignment = styles["center"]
-            ws.cell(row=row, column=6).number_format = NUMFMT["PIPE_IN"]
-            ws.cell(row=row, column=7).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=7).number_format = NUMFMT["PIPE_IN"]
+            ws.cell(row=row, column=8).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
             row += 1
 
     last_row = max(row - 1, 3)
@@ -532,12 +533,12 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            5: NUMFMT["QTY_INT"],
-            6: NUMFMT["PIPE_IN"],
-            7: NUMFMT["WEIGHT_KG3"],
+            6: NUMFMT["QTY_INT"],
+            7: NUMFMT["PIPE_IN"],
+            8: NUMFMT["WEIGHT_KG3"],
         },
-        widths=[10, 16, 34, 22, 8, 10, 12, 8, 36, 22, 52, 42],
+        widths=[10, 16, 34, 22, 8, 8, 10, 12, 8, 36, 22, 52, 42],
     )
     for data_row in range(4, last_row + 1):
         apply_status_fill(ws.cell(row=data_row, column=1), ws.cell(row=data_row, column=1).value)
-    set_print_layout(ws, title_rows="3:3", area=f"A1:L{last_row}", footer_title="支撐統計明細")
+    set_print_layout(ws, title_rows="3:3", area=f"A1:M{last_row}", footer_title="支撐統計明細")
