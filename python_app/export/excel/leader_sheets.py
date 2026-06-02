@@ -22,14 +22,14 @@ def _leader_stat_template() -> list[LeaderStatRow]:
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band >= 8" 熱浸鍍鋅', "組", "uband_hdg_ge8", '明細含 U-Bolt/Band，管徑 >= 8"，材質非 SUS304'),
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band <= 6" (SUS304)', "組", "uband_304_le6", '明細含 U-Bolt/Band，管徑 <= 6"，材質含 304'),
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band >= 8" (SUS304)', "組", "uband_304_ge8", '明細含 U-Bolt/Band，管徑 >= 8"，材質含 304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE <= 4" 熱浸鍍鋅', "組", "shoe_hdg_le4", 'Type 51/52/53/54/55/66/67/80/85，管徑 <= 4"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 5"~10" 熱浸鍍鋅', "組", "shoe_hdg_5_10", 'Type 51/52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 12"~24" 熱浸鍍鋅', "組", "shoe_hdg_12_24", 'Type 51/52/53/54/55/66/67/80/85，管徑 12"~24"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE >= 26" 熱浸鍍鋅', "組", "shoe_hdg_ge26", 'Type 51/52/53/54/55/66/67/80/85，管徑 >= 26"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE <= 4" 熱浸鍍鋅', "組", "shoe_hdg_le4", 'Type 52/53/54/55/66/67/80/85，管徑 <= 4"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 5"~10" 熱浸鍍鋅', "組", "shoe_hdg_5_10", 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 12"~24" 熱浸鍍鋅', "組", "shoe_hdg_12_24", 'Type 52/53/54/55/66/67/80/85，管徑 12"~24"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE >= 26" 熱浸鍍鋅', "組", "shoe_hdg_ge26", 'Type 52/53/54/55/66/67/80/85，管徑 >= 26"，整組不含 SUS304'),
         LeaderStatRow("Cold Support", "保冷支撐座（長春帶料）", "組", "cold_support", "Type 代碼尾碼為 C 的保冷支撐"),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE <= 4" (SUS304)', "組", "shoe_304_le4", 'Type 51/52/53/54/55/66/67/80/85，管徑 <= 4"，整組任一明細材質含 304'),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 5"~10" (SUS304)', "組", "shoe_304_5_10", 'Type 51/52/53/54/55/66/67/80/85，管徑 5"~10"，整組任一明細材質含 304'),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 12"~24" (SUS304)', "組", "shoe_304_12_24", 'Type 51/52/53/54/55/66/67/80/85，管徑 12"~24"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE <= 4" (SUS304)', "組", "shoe_304_le4", 'Type 52/53/54/55/66/67/80/85，管徑 <= 4"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 5"~10" (SUS304)', "組", "shoe_304_5_10", 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 12"~24" (SUS304)', "組", "shoe_304_12_24", 'Type 52/53/54/55/66/67/80/85，管徑 12"~24"，整組任一明細材質含 304'),
         LeaderStatRow("CS Support", "CS 管支撐製裝 <= 15 kg/組", "組", "cs_support_le15", "製裝分類不因 SUS304 另分；單組總重 <= 15 kg，按支撐組數統計"),
         LeaderStatRow("CS Support", "CS 管支撐製裝 > 15 kg/組", "KG", "cs_support_gt15", "製裝分類不因 SUS304 另分；單組總重 > 15 kg，按總重量統計"),
     ]
@@ -86,7 +86,7 @@ def _leader_procurement_stats(
     stats = {row.key: 0.0 for row in template}
     sources = {row.key: [] for row in template}
     details: list[LeaderHitDetail] = []
-    pipe_shoe_types = {"51", "52", "53", "54", "55", "66", "67", "80", "85"}
+    pipe_shoe_types = {"52", "53", "54", "55", "66", "67", "80", "85"}
     ubolt_contract_types = {"57", "58"}
 
     def material_label(is_304: bool) -> str:

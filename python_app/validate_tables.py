@@ -216,8 +216,8 @@ try:
         ws_leader = wb["長官-支撐分類"]
         assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
         assert _sheet_contains_text(ws_leader, "二、管支撐(連工帶料，含油漆)"), "leader summary fixed title missing"
-        assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 12, "leader procurement Type 51 pipe shoe count failed"
-        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 0, "pipe shoe rows should not be counted as CS fabrication"
+        assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 0, "Type 51 should not be counted as Pipe Shoe"
+        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 12, "Type 51 should be counted as CS fabrication by support count"
         assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
@@ -225,14 +225,14 @@ try:
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
-            and ws_leader_detail.cell(row=r, column=3).value == 'PIPE SHOE <= 4" 熱浸鍍鋅'
+            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
             for r in range(4, ws_leader_detail.max_row + 1)
-        ), "leader detail should classify Type 51 as pipe shoe"
+        ), "leader detail should classify Type 51 as CS fabrication"
         assert not any(
             ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
-            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("CS 管支撐製裝")
+            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("PIPE SHOE")
             for r in range(4, ws_leader_detail.max_row + 1)
-        ), "Type 51 pipe shoe should not be double counted as CS fabrication"
+        ), "Type 51 should not be classified as Pipe Shoe"
         ws_visual = wb["下料圖示"]
         assert ws_visual.cell(row=1, column=1).value == "下料圖示", "project package cutting visual title failed"
     finally:
