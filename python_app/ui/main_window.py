@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         # 新增列
         add_row = QHBoxLayout()
         self.add_input = QLineEdit()
-        self.add_input.setPlaceholderText("輸入編碼, e.g. 01-2B-05A")
+        self.add_input.setPlaceholderText("型號，或 流水號 數量 單位 型號")
         self.add_input.setFont(QFont("Consolas", 11))
         self.add_input.returnPressed.connect(self._on_add_item)
         add_row.addWidget(self.add_input)
@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
         btn_batch = QPushButton("批次貼上...")
         btn_batch.clicked.connect(self._on_batch_paste)
         btn_row1.addWidget(btn_batch)
-        btn_qty = QPushButton("設定組數...")
+        btn_qty = QPushButton("流水號/組數...")
         btn_qty.clicked.connect(self._on_set_quantities)
         btn_row1.addWidget(btn_qty)
         layout.addLayout(btn_row1)
@@ -579,7 +579,22 @@ class MainWindow(QMainWindow):
         text = self.add_input.text().strip()
         if not text:
             return
-        self._add_item_to_list(text)
+        try:
+            rows = self._read_project_rows_text([text])
+        except ValueError as exc:
+            QMessageBox.warning(self, "輸入格式錯誤", str(exc))
+            return
+        if not rows:
+            return
+        row = rows[0]
+        self._add_item_to_list(
+            row.designation,
+            quantity=row.quantity,
+            enabled=row.enabled,
+            overrides=row.overrides or None,
+            serial=row.serial,
+            unit=row.unit,
+        )
         self.add_input.clear()
         self.add_input.setFocus()
 
@@ -949,32 +964,57 @@ class MainWindow(QMainWindow):
     def _read_project_rows_text(self, lines: list[str]) -> list[ProjectInputRow]:
         rows: list[ProjectInputRow] = []
         for idx, line in enumerate(lines, start=1):
-            parts = [part.strip() for part in next(csv.reader([line]))]
+            parts = self._split_project_row_parts(line)
             if not parts or not parts[0]:
                 continue
-            if len(parts) >= 4 and self._looks_like_list_quantity(parts[1]):
-                rows.append(
-                    ProjectInputRow(
-                        designation=parts[3],
-                        quantity=self._parse_list_quantity(parts[1], idx),
-                        serial=parts[0],
-                        unit=parts[2] or "組",
-                    )
-                )
+            if self._looks_like_project_header(parts):
                 continue
-            if len(parts) >= 3:
-                rows.append(
-                    ProjectInputRow(
-                        designation=parts[1],
-                        quantity=self._parse_list_quantity(parts[2], idx),
-                        serial=parts[0],
-                        unit=parts[3] if len(parts) >= 4 and parts[3] else "組",
-                    )
-                )
-                continue
-            quantity = self._parse_list_quantity(parts[1], idx) if len(parts) >= 2 and parts[1] else 1
-            rows.append(ProjectInputRow(designation=parts[0], quantity=quantity))
+            rows.append(self._project_row_from_text_parts(parts, idx))
         return rows
+
+    def _split_project_row_parts(self, line: str) -> list[str]:
+        text = str(line or "").strip().replace("，", ",")
+        if not text:
+            return []
+        if "\t" in text:
+            return [part.strip() for part in text.split("\t") if part.strip()]
+        if "," in text:
+            return [part.strip() for part in next(csv.reader([text])) if part.strip()]
+        if "|" in text:
+            return [part.strip() for part in text.split("|") if part.strip()]
+        return [part.strip() for part in text.split() if part.strip()]
+
+    def _project_row_from_text_parts(self, parts: list[str], row_number: int) -> ProjectInputRow:
+        if len(parts) >= 4 and self._looks_like_list_quantity(parts[1]):
+            if self._looks_like_project_unit(parts[2]):
+                serial, quantity_text, unit, designation = parts[0], parts[1], parts[2], parts[3]
+            else:
+                serial, quantity_text, designation, unit = parts[0], parts[1], parts[2], parts[3]
+            return ProjectInputRow(
+                designation=designation,
+                quantity=self._parse_list_quantity(quantity_text, row_number),
+                serial=serial,
+                unit=unit or "組",
+            )
+
+        if len(parts) >= 3 and self._looks_like_list_quantity(parts[1]):
+            return ProjectInputRow(
+                designation=parts[2],
+                quantity=self._parse_list_quantity(parts[1], row_number),
+                serial=parts[0],
+                unit=parts[3] if len(parts) >= 4 and parts[3] else "組",
+            )
+
+        if len(parts) >= 3 and self._looks_like_list_quantity(parts[2]):
+            return ProjectInputRow(
+                designation=parts[1],
+                quantity=self._parse_list_quantity(parts[2], row_number),
+                serial=parts[0],
+                unit=parts[3] if len(parts) >= 4 and parts[3] else "組",
+            )
+
+        quantity = self._parse_list_quantity(parts[1], row_number) if len(parts) >= 2 and parts[1] else 1
+        return ProjectInputRow(designation=parts[0], quantity=quantity)
 
     def _parse_list_quantity(self, text: str, row_number: int) -> int:
         try:
@@ -994,6 +1034,30 @@ class MainWindow(QMainWindow):
         except ValueError:
             return False
         return True
+
+    def _looks_like_project_header(self, parts: list[str]) -> bool:
+        normalized = {self._normalize_project_header(part) for part in parts}
+        has_designation = any(
+            self._normalize_project_header(alias) in normalized
+            for alias in _PROJECT_ROW_ALIASES["designation"]
+        )
+        has_quantity = any(
+            self._normalize_project_header(alias) in normalized
+            for alias in _PROJECT_ROW_ALIASES["quantity"]
+        )
+        has_serial = any(
+            self._normalize_project_header(alias) in normalized
+            for alias in _PROJECT_ROW_ALIASES["serial"]
+        )
+        return has_designation and (has_quantity or has_serial)
+
+    @staticmethod
+    def _looks_like_project_unit(text: str) -> bool:
+        return str(text or "").strip().lower() in {"組", "set", "sets", "kg", "ea", "pc", "m"}
+
+    @staticmethod
+    def _looks_like_designation(text: str) -> bool:
+        return bool(re.fullmatch(r"\d{2}[A-Z]?(?:-[A-Z0-9./()]+)+", str(text or "").strip().upper()))
 
     @staticmethod
     def _normalize_project_header(text) -> str:
@@ -1040,30 +1104,32 @@ class MainWindow(QMainWindow):
         return overrides or None
 
     def _on_set_quantities(self):
-        """Two-stage quantity editor: designation list stays unchanged."""
+        """Edit project source trace and quantities in one grid."""
         if not self._project_rows:
             QMessageBox.warning(self, "提示", "請先新增支撐編碼")
             return
 
         dlg = QDialog(self)
-        dlg.setWindowTitle("設定組數")
-        dlg.setMinimumSize(520, 420)
+        dlg.setWindowTitle("設定流水號與組數")
+        dlg.setMinimumSize(760, 520)
         lay = QVBoxLayout(dlg)
-        lay.addWidget(QLabel("手動修改 quantity，或在下方逐列貼入組數。"))
+        lay.addWidget(QLabel("可直接修改流水號.sort、型號、數量、單位；變更型號後需重新分析。"))
 
         table = QTableWidget()
         table.setColumnCount(4)
         table.setHorizontalHeaderLabels(["流水號.sort", "型號", "數量", "單位"])
         table.setRowCount(len(self._project_rows))
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        table.setAlternatingRowColors(True)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        table.setColumnWidth(0, 120)
+        table.setColumnWidth(1, 260)
+        table.setColumnWidth(2, 90)
+        table.setColumnWidth(3, 80)
 
         for idx, row in enumerate(self._project_rows):
             serial_item = QTableWidgetItem(row.serial)
-            serial_item.setFlags(serial_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             desig_item = QTableWidgetItem(row.designation)
-            desig_item.setFlags(desig_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             unit_item = QTableWidgetItem(row.unit or "組")
-            unit_item.setFlags(unit_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             table.setItem(idx, 0, serial_item)
             table.setItem(idx, 1, desig_item)
             table.setItem(idx, 2, QTableWidgetItem(str(row.quantity)))
@@ -1071,51 +1137,100 @@ class MainWindow(QMainWindow):
 
         lay.addWidget(table)
 
-        lay.addWidget(QLabel("批次貼入組數 (每行一個數字，逐列對應目前清單):"))
+        lay.addWidget(QLabel("批次貼入校正值：可貼單欄數量、流水號+數量，或 流水號 數量 單位 型號。"))
         qty_text = QTextEdit()
-        qty_text.setPlaceholderText("2\n1\n1\n4")
-        qty_text.setMaximumHeight(90)
+        qty_text.setPlaceholderText(
+            "2\n"
+            "A-001 2\n"
+            "A-002 1 組 51-1B\n"
+            "A-003,57-1B-A,4"
+        )
+        qty_text.setMaximumHeight(110)
         lay.addWidget(qty_text)
 
         btn_row = QHBoxLayout()
-        btn_apply = QPushButton("套用批次組數")
+        btn_apply = QPushButton("套用批次校正")
+        btn_fill_serial = QPushButton("補空流水號")
         btn_ok = QPushButton("確定")
         btn_cancel = QPushButton("取消")
         btn_row.addWidget(btn_apply)
+        btn_row.addWidget(btn_fill_serial)
         btn_row.addStretch()
         btn_row.addWidget(btn_ok)
         btn_row.addWidget(btn_cancel)
         lay.addLayout(btn_row)
 
         def parse_quantity(text: str, row_number: int) -> int:
-            try:
-                value = int(text.strip())
-            except ValueError as exc:
-                raise ValueError(f"第 {row_number} 列組數不是整數: {text!r}") from exc
-            if value <= 0:
-                raise ValueError(f"第 {row_number} 列組數必須大於 0")
-            return value
+            return self._parse_list_quantity(text, row_number)
 
-        def apply_batch_quantities():
+        def ensure_item(row_idx: int, col_idx: int) -> QTableWidgetItem:
+            item = table.item(row_idx, col_idx)
+            if item is None:
+                item = QTableWidgetItem("")
+                table.setItem(row_idx, col_idx, item)
+            return item
+
+        def parse_correction_line(text: str, row_number: int) -> dict:
+            parts = self._split_project_row_parts(text)
+            if not parts:
+                return {}
+            if len(parts) == 1:
+                return {"quantity": self._parse_list_quantity(parts[0], row_number)}
+            if len(parts) == 2 and self._looks_like_list_quantity(parts[1]):
+                if self._looks_like_designation(parts[0]):
+                    return {
+                        "designation": parts[0],
+                        "quantity": self._parse_list_quantity(parts[1], row_number),
+                    }
+                return {
+                    "serial": parts[0],
+                    "quantity": self._parse_list_quantity(parts[1], row_number),
+                }
+            parsed = self._project_row_from_text_parts(parts, row_number)
+            return {
+                "serial": parsed.serial,
+                "designation": parsed.designation,
+                "quantity": parsed.quantity,
+                "unit": parsed.unit or "組",
+            }
+
+        def apply_batch_corrections():
             lines = [line.strip() for line in qty_text.toPlainText().splitlines() if line.strip()]
             if not lines:
                 return
             if len(lines) > len(self._project_rows):
                 QMessageBox.warning(
                     dlg,
-                    "組數列數過多",
-                    f"貼入 {len(lines)} 列組數，但目前只有 {len(self._project_rows)} 筆項目。",
+                    "校正列數過多",
+                    f"貼入 {len(lines)} 列，但目前只有 {len(self._project_rows)} 筆項目。",
                 )
                 return
             try:
-                quantities = [parse_quantity(line, idx + 1) for idx, line in enumerate(lines)]
+                corrections = [
+                    parse_correction_line(line, idx + 1)
+                    for idx, line in enumerate(lines)
+                ]
             except ValueError as exc:
-                QMessageBox.warning(dlg, "組數格式錯誤", str(exc))
+                QMessageBox.warning(dlg, "校正格式錯誤", str(exc))
                 return
-            for idx, quantity in enumerate(quantities):
-                table.setItem(idx, 2, QTableWidgetItem(str(quantity)))
+            for idx, correction in enumerate(corrections):
+                if "serial" in correction:
+                    ensure_item(idx, 0).setText(str(correction["serial"]))
+                if "designation" in correction:
+                    ensure_item(idx, 1).setText(str(correction["designation"]))
+                if "quantity" in correction:
+                    ensure_item(idx, 2).setText(str(correction["quantity"]))
+                if "unit" in correction:
+                    ensure_item(idx, 3).setText(str(correction["unit"] or "組"))
 
-        btn_apply.clicked.connect(apply_batch_quantities)
+        def fill_empty_serials():
+            for idx in range(table.rowCount()):
+                item = ensure_item(idx, 0)
+                if not item.text().strip():
+                    item.setText(str(idx + 1))
+
+        btn_apply.clicked.connect(apply_batch_corrections)
+        btn_fill_serial.clicked.connect(fill_empty_serials)
         btn_ok.clicked.connect(dlg.accept)
         btn_cancel.clicked.connect(dlg.reject)
 
@@ -1125,18 +1240,43 @@ class MainWindow(QMainWindow):
         updated_rows = []
         try:
             for idx, row in enumerate(self._project_rows):
+                serial_item = table.item(idx, 0)
+                desig_item = table.item(idx, 1)
                 qty_item = table.item(idx, 2)
+                unit_item = table.item(idx, 3)
+                designation = (desig_item.text() if desig_item else "").strip()
+                if not designation:
+                    raise ValueError(f"第 {idx + 1} 列型號不可空白")
                 quantity = parse_quantity(qty_item.text() if qty_item else "", idx + 1)
-                updated_rows.append(replace(row, quantity=quantity))
+                overrides = row.overrides
+                if get_type_code(designation) != get_type_code(row.designation):
+                    overrides = None
+                updated_rows.append(
+                    replace(
+                        row,
+                        serial=(serial_item.text() if serial_item else "").strip(),
+                        designation=designation,
+                        quantity=quantity,
+                        unit=(unit_item.text() if unit_item and unit_item.text().strip() else "組").strip(),
+                        overrides=overrides,
+                    )
+                )
         except ValueError as exc:
-            QMessageBox.warning(self, "組數格式錯誤", str(exc))
+            QMessageBox.warning(self, "校正格式錯誤", str(exc))
             return
 
         self._project_rows = updated_rows
         self._refresh_item_list_display()
+        if 0 <= self._selected_index < len(self._project_rows):
+            selected = self._project_rows[self._selected_index]
+            self.side_panel.show_item(
+                self._selected_index,
+                selected.designation,
+                selected.overrides or {},
+            )
         self._clear_analysis_outputs()
         total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
-        self.statusBar().showMessage(f"已更新組數，啟用項目合計 {total_supports} 組")
+        self.statusBar().showMessage(f"已更新流水號/組數，啟用項目合計 {total_supports} 組")
 
     def _focus_result_filter(self):
         self.result_filter_input.setFocus()
