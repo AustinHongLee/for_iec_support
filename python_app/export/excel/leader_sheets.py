@@ -347,7 +347,7 @@ def _leader_procurement_stats(
 
 
 def _boss_summary_rows(stats: dict[str, float]) -> list[dict]:
-    """Fixed leader-facing summary rows. Details remain in 支撐統計明細."""
+    """Fixed leader-facing summary rows. Details remain in 查核-支撐明細."""
 
     def qty(key: str) -> float:
         return stats.get(key, 0.0)
@@ -403,7 +403,7 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
         column=1,
         value=(
             "業主/長官摘要：固定列示採購與製裝統計項目；"
-            "型號來源與判定依據請見「支撐統計明細」。"
+            "型號來源與判定依據請見「查核-支撐明細」。"
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]

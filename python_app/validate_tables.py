@@ -166,16 +166,25 @@ try:
         export_project_workbook(project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
         assert wb.sheetnames == [
+            "長官-摘要",
             "專案摘要",
             "重量明細表",
             "計算標準與假設",
-            "支撐分類統計",
-            "支撐統計明細",
+            "長官-支撐分類",
+            "查核-支撐明細",
             "重量分析",
             "材料合計",
             "下料明細",
             "下料圖示",
         ], f"project package workbook sheets changed: {wb.sheetnames}"
+        ws_manager = wb["長官-摘要"]
+        assert ws_manager.cell(row=1, column=1).value == "長官摘要", "manager cover title failed"
+        assert "$A$1:$H$" in str(ws_manager.print_area), "manager cover should be A4 portrait width"
+        assert ws_manager.page_setup.orientation == "portrait", "manager cover should be portrait"
+        assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover should show simple support fabrication count"
+        assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover should point to leader classification sheet"
+        assert _sheet_contains_text(ws_manager, "查核-支撐明細"), "manager cover should point to support detail sheet"
+        assert not _sheet_contains_text(ws_manager, "51-1.1/2B"), "manager cover should not expose source designations"
         ws_summary = wb["專案摘要"]
         assert ws_summary.cell(row=1, column=1).value == "專案材料統計總覽", "project package summary title failed"
         assert "$A$1:$I$" in str(ws_summary.print_area), "project summary should be A4 portrait width"
@@ -204,13 +213,13 @@ try:
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
         assert ws_material.cell(row=4, column=11).value == original_quantity * 12, "project package material purchase qty failed"
         _assert_visible_chart(ws_material, "M")
-        ws_leader = wb["支撐分類統計"]
+        ws_leader = wb["長官-支撐分類"]
         assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
         assert _sheet_contains_text(ws_leader, "二、管支撐(連工帶料，含油漆)"), "leader summary fixed title missing"
         assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 12, "leader procurement CS <=15kg support count failed"
         assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
         assert not ws_leader._charts, "leader-facing summary should not include charts"
-        ws_leader_detail = wb["支撐統計明細"]
+        ws_leader_detail = wb["查核-支撐明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
         assert any(
@@ -237,7 +246,11 @@ try:
     try:
         export_project_workbook(leader_project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
-        ws_leader = wb["支撐分類統計"]
+        ws_manager = wb["長官-摘要"]
+        assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover leader rows missing"
+        assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover detail pointer missing"
+        assert not _sheet_contains_text(ws_manager, "57-1/2B-A"), "manager cover should hide source designations"
+        ws_leader = wb["長官-支撐分類"]
         assert _stat_value(ws_leader, 'U-Bolt & Band ≦ 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 3, "leader procurement <=4in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE) 5"~10"') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
@@ -245,7 +258,7 @@ try:
         assert not _sheet_contains_text(ws_leader, "SUS304 管支撐製裝"), "leader summary should not expose separate SUS304 support fabrication rows"
         assert not _sheet_contains_text(ws_leader, "57-1/2B-A"), "leader summary should not expose source designations"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
-        ws_leader_detail = wb["支撐統計明細"]
+        ws_leader_detail = wb["查核-支撐明細"]
         assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
