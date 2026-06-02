@@ -32,10 +32,8 @@ def _leader_stat_template() -> list[LeaderStatRow]:
         LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE <= 4" (SUS304)', "組", "shoe_304_le4", 'Type 52/53/54/55/66/67/80/85，管徑 <= 4"，整組任一明細材質含 304'),
         LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 5"~10" (SUS304)', "組", "shoe_304_5_10", 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組任一明細材質含 304'),
         LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 12"~24" (SUS304)', "組", "shoe_304_12_24", 'Type 52/53/54/55/66/67/80/85，管徑 12"~24"，整組任一明細材質含 304'),
-        LeaderStatRow("CS Support", "CS 管支撐製裝 <= 15 kg/組", "組", "cs_support_le15", "整組不含 SUS304，單組總重 <= 15 kg，按支撐組數統計"),
-        LeaderStatRow("CS Support", "CS 管支撐製裝 > 15 kg/組", "KG", "cs_support_gt15", "整組不含 SUS304，單組總重 > 15 kg，按總重量統計"),
-        LeaderStatRow("SUS304 Support", "SUS304 管支撐製裝 <= 15 kg/組", "組", "ss_support_le15", "整組含 SUS304，單組總重 <= 15 kg，按支撐組數統計"),
-        LeaderStatRow("SUS304 Support", "SUS304 管支撐製裝 > 15 kg/組", "KG", "ss_support_gt15", "整組含 SUS304，單組總重 > 15 kg，按總重量統計"),
+        LeaderStatRow("CS Support", "CS 管支撐製裝 <= 15 kg/組", "組", "cs_support_le15", "製裝分類不因 SUS304 另分；單組總重 <= 15 kg，按支撐組數統計"),
+        LeaderStatRow("CS Support", "CS 管支撐製裝 > 15 kg/組", "KG", "cs_support_gt15", "製裝分類不因 SUS304 另分；單組總重 > 15 kg，按總重量統計"),
     ]
 
 
@@ -306,8 +304,12 @@ def _leader_procurement_stats(
             )
 
         support_is_304 = _support_has_304_material(row_result)
-        material_prefix = "ss" if support_is_304 else "cs"
-        material_basis = "整組含 SUS304" if support_is_304 else "整組不含 SUS304"
+        material_prefix = "cs"
+        material_basis = (
+            "整組含 SUS304；依本批業主口徑併入 CS 管支撐製裝"
+            if support_is_304
+            else "整組不含 SUS304"
+        )
         single_weight = row_result.single_result.total_weight
         scaled_weight = row_result.scaled_result.total_weight
         if single_weight <= 15:

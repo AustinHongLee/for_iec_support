@@ -230,6 +230,7 @@ try:
         ProjectInputRow("52-1/2B-A-150-200", 3),
         ProjectInputRow("66-10B(P)-A-150-250", 4),
         ProjectInputRow("59-1.1/2B-B(S)", 5),
+        ProjectInputRow("10-6B-16", 2),
     ])
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
@@ -240,22 +241,31 @@ try:
         assert _stat_value(ws_leader, 'U-Bolt & Band <= 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
         assert _stat_value(ws_leader, 'PIPE SHOE <= 4" 熱浸鍍鋅') == 3, "leader procurement <=4in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, 'PIPE SHOE 5"~10" 熱浸鍍鋅') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
-        assert _stat_value(ws_leader, "SUS304 管支撐製裝 <= 15 kg/組") == 5, "leader procurement SUS304 <=15kg support count failed"
+        assert _stat_value(ws_leader, "CS 管支撐製裝 <= 15 kg/組") == 10, "leader procurement should merge SUS304 <=15kg supports into CS count"
+        assert not _sheet_contains_text(ws_leader, "SUS304 管支撐製裝"), "leader summary should not expose separate SUS304 support fabrication rows"
         assert _has_cell_value(ws_leader, 2, "57-1/2B-A"), "leader procurement U-Bolt source trace missing"
         assert _has_cell_value(ws_leader, 2, "59-1.1/2B-B(S)"), "leader procurement SUS304 support source trace missing"
+        assert _has_cell_value(ws_leader, 2, "10-6B-16"), "leader procurement SUS304 heavy support source trace missing"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
         ws_leader_detail = wb["支撐統計明細"]
+        assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"
+        assert any(
+            ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
+            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=10).value)
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "SUS304 <=15kg support should be listed under CS fabrication detail"
+        assert any(
+            ws_leader_detail.cell(row=r, column=4).value == "10-6B-16"
+            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 > 15 kg/組"
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=10).value)
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "SUS304 >15kg support should be listed under CS fabrication detail"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "57-1/2B-A"
             and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"
-        assert any(
-            ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
-            and ws_leader_detail.cell(row=r, column=2).value == "SUS304 Support"
-            and ws_leader_detail.cell(row=r, column=1).value == "命中"
-            for r in range(4, ws_leader_detail.max_row + 1)
-        ), "leader detail should include SUS304 support fabrication rows"
     finally:
         try:
             os.remove(path)
