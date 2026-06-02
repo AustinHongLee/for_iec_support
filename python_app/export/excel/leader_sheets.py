@@ -22,14 +22,14 @@ def _leader_stat_template() -> list[LeaderStatRow]:
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band >= 8" 熱浸鍍鋅', "組", "uband_hdg_ge8", '明細含 U-Bolt/Band，管徑 >= 8"，材質非 SUS304'),
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band <= 6" (SUS304)', "組", "uband_304_le6", '明細含 U-Bolt/Band，管徑 <= 6"，材質含 304'),
         LeaderStatRow("U-Bolt / Band", 'U-Bolt & Band >= 8" (SUS304)', "組", "uband_304_ge8", '明細含 U-Bolt/Band，管徑 >= 8"，材質含 304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE <= 4" 熱浸鍍鋅', "組", "shoe_hdg_le4", 'Type 52/53/54/55/66/67/80/85，管徑 <= 4"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 5"~10" 熱浸鍍鋅', "組", "shoe_hdg_5_10", 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 12"~24" 熱浸鍍鋅', "組", "shoe_hdg_12_24", 'Type 52/53/54/55/66/67/80/85，管徑 12"~24"，整組不含 SUS304'),
-        LeaderStatRow("Pipe Shoe", 'PIPE SHOE >= 26" 熱浸鍍鋅', "組", "shoe_hdg_ge26", 'Type 52/53/54/55/66/67/80/85，管徑 >= 26"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE <= 4" 熱浸鍍鋅', "組", "shoe_hdg_le4", 'Type 51/52/53/54/55/66/67/80/85，管徑 <= 4"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 5"~10" 熱浸鍍鋅', "組", "shoe_hdg_5_10", 'Type 51/52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE 12"~24" 熱浸鍍鋅', "組", "shoe_hdg_12_24", 'Type 51/52/53/54/55/66/67/80/85，管徑 12"~24"，整組不含 SUS304'),
+        LeaderStatRow("Pipe Shoe", 'PIPE SHOE >= 26" 熱浸鍍鋅', "組", "shoe_hdg_ge26", 'Type 51/52/53/54/55/66/67/80/85，管徑 >= 26"，整組不含 SUS304'),
         LeaderStatRow("Cold Support", "保冷支撐座（長春帶料）", "組", "cold_support", "Type 代碼尾碼為 C 的保冷支撐"),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE <= 4" (SUS304)', "組", "shoe_304_le4", 'Type 52/53/54/55/66/67/80/85，管徑 <= 4"，整組任一明細材質含 304'),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 5"~10" (SUS304)', "組", "shoe_304_5_10", 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組任一明細材質含 304'),
-        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 12"~24" (SUS304)', "組", "shoe_304_12_24", 'Type 52/53/54/55/66/67/80/85，管徑 12"~24"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE <= 4" (SUS304)', "組", "shoe_304_le4", 'Type 51/52/53/54/55/66/67/80/85，管徑 <= 4"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 5"~10" (SUS304)', "組", "shoe_304_5_10", 'Type 51/52/53/54/55/66/67/80/85，管徑 5"~10"，整組任一明細材質含 304'),
+        LeaderStatRow("Pipe Shoe SUS304", 'PIPE SHOE 12"~24" (SUS304)', "組", "shoe_304_12_24", 'Type 51/52/53/54/55/66/67/80/85，管徑 12"~24"，整組任一明細材質含 304'),
         LeaderStatRow("CS Support", "CS 管支撐製裝 <= 15 kg/組", "組", "cs_support_le15", "製裝分類不因 SUS304 另分；單組總重 <= 15 kg，按支撐組數統計"),
         LeaderStatRow("CS Support", "CS 管支撐製裝 > 15 kg/組", "KG", "cs_support_gt15", "製裝分類不因 SUS304 另分；單組總重 > 15 kg，按總重量統計"),
     ]
@@ -86,7 +86,8 @@ def _leader_procurement_stats(
     stats = {row.key: 0.0 for row in template}
     sources = {row.key: [] for row in template}
     details: list[LeaderHitDetail] = []
-    pipe_shoe_types = {"52", "53", "54", "55", "66", "67", "80", "85"}
+    pipe_shoe_types = {"51", "52", "53", "54", "55", "66", "67", "80", "85"}
+    ubolt_contract_types = {"57", "58"}
 
     def material_label(is_304: bool) -> str:
         return "SUS304" if is_304 else "HDG/CS"
@@ -181,7 +182,7 @@ def _leader_procurement_stats(
                 unit="",
                 matched_detail=entry_names or "無材料明細",
                 material_basis="整組含 SUS304" if has_304 else "整組不含 SUS304",
-                criteria="目前摘要統計 U-Bolt/Band、Pipe Shoe、Cold Support、CS/SUS304 管支撐製裝",
+                criteria="目前摘要統計 U-Bolt/Band、Pipe Shoe、Cold Support、CS 管支撐製裝",
                 note=(
                     "整組含 SUS304，但未符合目前摘要規則，請確認是否需要新增採購/製裝分類。"
                     if has_304
@@ -196,6 +197,11 @@ def _leader_procurement_stats(
         type_id = _parse_designation_type(designation)
         pipe_size = _parse_designation_pipe_size(designation)
         detail_count_before = len(details)
+        is_separate_contract_item = (
+            type_id in ubolt_contract_types
+            or type_id in pipe_shoe_types
+            or _is_cold_support_type(type_id)
+        )
 
         if row_result.single_result.error:
             add_issue(
@@ -301,39 +307,40 @@ def _leader_procurement_stats(
                 material_basis="Type 代碼尾碼 C",
             )
 
-        support_is_304 = _support_has_304_material(row_result)
-        material_prefix = "cs"
-        material_basis = (
-            "整組含 SUS304；依本批業主口徑併入 CS 管支撐製裝"
-            if support_is_304
-            else "整組不含 SUS304"
-        )
-        single_weight = row_result.single_result.total_weight
-        scaled_weight = row_result.scaled_result.total_weight
-        if single_weight <= 15:
-            add_stat(
-                f"{material_prefix}_support_le15",
-                project_qty,
-                f"{designation}: {project_qty}組，單組 {single_weight:.2f}kg",
-                designation=designation,
-                project_qty=project_qty,
-                pipe_size=pipe_size,
-                unit="組",
-                matched_detail=f"單組總重 {single_weight:.2f}kg <= 15kg",
-                material_basis=material_basis,
+        if not is_separate_contract_item:
+            support_is_304 = _support_has_304_material(row_result)
+            material_prefix = "cs"
+            material_basis = (
+                "整組含 SUS304；依本批業主口徑併入 CS 管支撐製裝"
+                if support_is_304
+                else "整組不含 SUS304"
             )
-        else:
-            add_stat(
-                f"{material_prefix}_support_gt15",
-                scaled_weight,
-                f"{designation}: {scaled_weight:.2f}kg，單組 {single_weight:.2f}kg",
-                designation=designation,
-                project_qty=project_qty,
-                pipe_size=pipe_size,
-                unit="KG",
-                matched_detail=f"單組總重 {single_weight:.2f}kg > 15kg",
-                material_basis=material_basis,
-            )
+            single_weight = row_result.single_result.total_weight
+            scaled_weight = row_result.scaled_result.total_weight
+            if single_weight <= 15:
+                add_stat(
+                    f"{material_prefix}_support_le15",
+                    project_qty,
+                    f"{designation}: {project_qty}組，單組 {single_weight:.2f}kg",
+                    designation=designation,
+                    project_qty=project_qty,
+                    pipe_size=pipe_size,
+                    unit="組",
+                    matched_detail=f"單組總重 {single_weight:.2f}kg <= 15kg",
+                    material_basis=material_basis,
+                )
+            else:
+                add_stat(
+                    f"{material_prefix}_support_gt15",
+                    scaled_weight,
+                    f"{designation}: {scaled_weight:.2f}kg，單組 {single_weight:.2f}kg",
+                    designation=designation,
+                    project_qty=project_qty,
+                    pipe_size=pipe_size,
+                    unit="KG",
+                    matched_detail=f"單組總重 {single_weight:.2f}kg > 15kg",
+                    material_basis=material_basis,
+                )
 
         if len(details) == detail_count_before:
             add_unmatched(

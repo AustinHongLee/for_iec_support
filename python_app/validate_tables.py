@@ -216,7 +216,8 @@ try:
         ws_leader = wb["長官-支撐分類"]
         assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
         assert _sheet_contains_text(ws_leader, "二、管支撐(連工帶料，含油漆)"), "leader summary fixed title missing"
-        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 12, "leader procurement CS <=15kg support count failed"
+        assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 12, "leader procurement Type 51 pipe shoe count failed"
+        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 0, "pipe shoe rows should not be counted as CS fabrication"
         assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
@@ -224,8 +225,14 @@ try:
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
+            and ws_leader_detail.cell(row=r, column=3).value == 'PIPE SHOE <= 4" 熱浸鍍鋅'
             for r in range(4, ws_leader_detail.max_row + 1)
-        ), "leader detail should include source designation"
+        ), "leader detail should classify Type 51 as pipe shoe"
+        assert not any(
+            ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
+            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("CS 管支撐製裝")
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "Type 51 pipe shoe should not be double counted as CS fabrication"
         ws_visual = wb["下料圖示"]
         assert ws_visual.cell(row=1, column=1).value == "下料圖示", "project package cutting visual title failed"
     finally:
@@ -254,7 +261,7 @@ try:
         assert _stat_value(ws_leader, 'U-Bolt & Band ≦ 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 3, "leader procurement <=4in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE) 5"~10"') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
-        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 10, "leader procurement should merge SUS304 <=15kg supports into CS count"
+        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 5, "leader procurement should merge only SUS304 generic <=15kg supports into CS count"
         assert not _sheet_contains_text(ws_leader, "SUS304 管支撐製裝"), "leader summary should not expose separate SUS304 support fabrication rows"
         assert not _sheet_contains_text(ws_leader, "57-1/2B-A"), "leader summary should not expose source designations"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
@@ -277,6 +284,11 @@ try:
             and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"
+        assert not any(
+            ws_leader_detail.cell(row=r, column=4).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
+            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("CS 管支撐製裝")
+            for r in range(4, ws_leader_detail.max_row + 1)
+        ), "U-Bolt and Pipe Shoe rows should not be double counted as CS fabrication"
     finally:
         try:
             os.remove(path)
