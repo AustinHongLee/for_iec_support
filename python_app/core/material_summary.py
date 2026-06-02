@@ -115,9 +115,16 @@ class MaterialSummary:
         return [ln for ln in self.lines if ln.aggregate_type == "piece"]
 
 
-def _project_source_label(designation: str, quantity: int, serial: str = "", unit: str = "組") -> str:
-    base = f"{serial} {designation}".strip() if serial else designation
-    if serial:
+def _project_source_label(
+    designation: str,
+    quantity: int,
+    serial: str = "",
+    unit: str = "組",
+    drawing_line_number: str = "",
+) -> str:
+    source_parts = [part for part in (drawing_line_number, serial) if part]
+    base = f"{' / '.join(source_parts)} {designation}".strip() if source_parts else designation
+    if source_parts:
         return f"{base} × {quantity}{unit or ''}"
     return f"{designation} × {quantity}" if quantity != 1 else designation
 
@@ -130,6 +137,7 @@ def aggregate_project(project) -> MaterialSummary:
             row.input_row.quantity,
             row.input_row.serial,
             row.input_row.unit,
+            row.input_row.drawing_line_number,
         )
         for row in project.rows
     ]

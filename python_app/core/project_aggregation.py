@@ -25,6 +25,7 @@ class ProjectInputRow:
     overrides: dict | None = None
     serial: str = ""
     unit: str = "組"
+    drawing_line_number: str = ""
 
 
 @dataclass

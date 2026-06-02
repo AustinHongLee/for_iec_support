@@ -112,6 +112,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
 
         if single.error:
             vals = [
+                inp.drawing_line_number,
                 inp.serial,
                 inp.quantity,
                 inp.unit or "組",
@@ -119,7 +120,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 get_type_code(inp.designation),
                 "錯誤",
                 single.error,
-            ] + [""] * (n_cols - 7)
+            ] + [""] * (n_cols - 8)
             vals[-1] = "明細"
             for col, val in enumerate(vals, 1):
                 cell = ws.cell(row=data_row, column=col, value=val)
@@ -137,7 +138,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
             total_w = round(sc_entry.weight_output, 3)
 
             vals = [
-                inp.serial, inp.quantity, inp.unit or "組",
+                inp.drawing_line_number, inp.serial, inp.quantity, inp.unit or "組",
                 inp.designation, get_type_code(inp.designation), s_entry.item_no, s_entry.name,
                 s_entry.display_spec, s_entry.material,
                 s_entry.length if s_entry.length else "",
@@ -155,19 +156,19 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.border = styles["border"]
                 if data_row % 2 == 0:
                     cell.fill = alt_fill
-                if col in (2, 13, 14):
+                if col in (3, 14, 15):
                     cell.fill = qty_fill
                 cell.alignment = Alignment(
                     vertical="center",
-                    horizontal="right" if col in (2, 10, 11, 13, 14, 15, 16, 17) else "left",
-                    wrap_text=(col == 18),
-                    indent=1 if col in (4, 7, 8, 9, 12) else 0,
+                    horizontal="right" if col in (3, 11, 12, 14, 15, 16, 17, 18) else "left",
+                    wrap_text=(col == 19),
+                    indent=1 if col in (5, 8, 9, 10, 13) else 0,
                 )
-                if col in (2, 13, 14):
+                if col in (3, 14, 15):
                     cell.number_format = NUMFMT["QTY_INT"]
-                elif col in (10, 11):
+                elif col in (11, 12):
                     cell.number_format = NUMFMT["LEN_MM"]
-                elif col in (15, 16, 17):
+                elif col in (16, 17, 18):
                     cell.number_format = NUMFMT["WEIGHT_KG3"]
             ws.row_dimensions[data_row].height = 16
             data_row += 1
@@ -179,14 +180,15 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.border = styles["border"]
                 cell.font = styles["bold_font"]
                 cell.alignment = Alignment(horizontal="center", vertical="center")
-            ws.cell(row=data_row, column=1, value=inp.serial)
-            ws.cell(row=data_row, column=2, value=inp.quantity)
-            ws.cell(row=data_row, column=3, value=inp.unit or "組")
-            ws.cell(row=data_row, column=4, value=f"小計 {inp.designation}")
-            ws.cell(row=data_row, column=5, value=get_type_code(inp.designation))
-            ws.cell(row=data_row, column=17, value=round(scaled.total_weight, 3))
-            ws.cell(row=data_row, column=2).number_format = NUMFMT["QTY_INT"]
-            ws.cell(row=data_row, column=17).number_format = NUMFMT["WEIGHT_KG3"]
+            ws.cell(row=data_row, column=1, value=inp.drawing_line_number)
+            ws.cell(row=data_row, column=2, value=inp.serial)
+            ws.cell(row=data_row, column=3, value=inp.quantity)
+            ws.cell(row=data_row, column=4, value=inp.unit or "組")
+            ws.cell(row=data_row, column=5, value=f"小計 {inp.designation}")
+            ws.cell(row=data_row, column=6, value=get_type_code(inp.designation))
+            ws.cell(row=data_row, column=18, value=round(scaled.total_weight, 3))
+            ws.cell(row=data_row, column=3).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=data_row, column=18).number_format = NUMFMT["WEIGHT_KG3"]
             ws.cell(row=data_row, column=n_cols, value="小計")
             ws.row_dimensions[data_row].height = 18
             data_row += 1
@@ -197,20 +199,20 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         data_row,
         n_cols,
         "全案合計",
-        17,
+        18,
         round(project.total_weight, 3),
         fmt=NUMFMT["WEIGHT_KG3"],
     )
-    ws.cell(row=data_row, column=2, value=project.total_support_count)
-    ws.cell(row=data_row, column=2).number_format = NUMFMT["QTY_INT"]
+    ws.cell(row=data_row, column=3, value=project.total_support_count)
+    ws.cell(row=data_row, column=3).number_format = NUMFMT["QTY_INT"]
     ws.cell(row=data_row, column=n_cols, value="合計")
     last_data_row = data_row
 
     freeze_and_filter(ws, HEADER_ROW, filter_last_row, last_col_letter, autofilter=True)
     if filter_last_row >= HEADER_ROW + 1:
-        add_color_scale(ws, f"Q{HEADER_ROW + 1}:Q{filter_last_row}", "weight")
+        add_color_scale(ws, f"R{HEADER_ROW + 1}:R{filter_last_row}", "weight")
 
-    _set_widths(ws, [12, 8, 7, 20, 8, 7, 18, 22, 14, 10, 10, 10, 10, 10, 12, 13, 13, 50, 14, 14, 8])
+    _set_widths(ws, [18, 12, 8, 7, 20, 8, 7, 18, 22, 14, 10, 10, 10, 10, 10, 12, 13, 13, 50, 14, 14, 8])
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
 
 

@@ -18,6 +18,7 @@ class LeaderHitDetail:
     status: str
     category: str
     label: str
+    drawing_line_number: str
     serial: str
     source_unit: str
     designation: str

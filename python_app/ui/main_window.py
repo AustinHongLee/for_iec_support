@@ -58,18 +58,22 @@ _RESULT_GROUP_COLORS = [
 ]
 
 _RESULT_HEADERS = [
-    "流水號.sort", "數量", "單位", "型號", "Type", "項次", "品名", "規格", "材質",
+    "Drawing line number", "流水號.sort", "數量", "單位", "型號", "Type", "項次", "品名", "規格", "材質",
     "長度(mm)", "寬度(mm)", "單件數量", "總數量",
     "單組重(kg)", "總重(kg)", "屬性", "物件類別", "製造方式",
     "計算說明", "零件ID", "庫存ID",
 ]
 
 _RESULT_COLUMN_WIDTHS = [
-    92, 54, 48, 120, 48, 48, 150, 230, 95,
+    150, 92, 54, 48, 120, 48, 48, 150, 230, 95,
     78, 78, 74, 74, 86, 86, 82, 112, 112, 300, 260, 96,
 ]
 
 _PROJECT_ROW_ALIASES = {
+    "drawing_line_number": (
+        "Drawing line number", "drawing_line_number", "drawing line", "drawing", "line_group",
+        "line group", "line no", "line number", "dwg", "dwg no", "圖名", "圖號",
+    ),
     "serial": ("流水號.sort", "流水號", "serial", "serial_no", "seq", "sort", "序號", "編號"),
     "designation": ("型號", "designation", "support_designation", "support_no", "支撐編碼", "編碼", "支撐型號", "model"),
     "quantity": ("數量", "quantity", "qty", "count", "組數", "支數"),
@@ -81,6 +85,7 @@ _PROJECT_ROW_ALIASES = {
 }
 
 _PROJECT_XLSX_FIELD_LABELS = {
+    "drawing_line_number": "Drawing line number",
     "serial": "流水號.sort",
     "quantity": "數量",
     "unit": "單位",
@@ -369,7 +374,7 @@ class MainWindow(QMainWindow):
         # 新增列
         add_row = QHBoxLayout()
         self.add_input = QLineEdit()
-        self.add_input.setPlaceholderText("型號，或 流水號 數量 單位 型號")
+        self.add_input.setPlaceholderText("型號，或 Drawing 流水號 數量 單位 型號")
         self.add_input.setFont(QFont("Consolas", 11))
         self.add_input.returnPressed.connect(self._on_add_item)
         add_row.addWidget(self.add_input)
@@ -477,7 +482,7 @@ class MainWindow(QMainWindow):
         row.addWidget(label)
 
         self.result_filter_input = QLineEdit()
-        self.result_filter_input.setPlaceholderText("流水號 / 型號 / 品名 / 規格 / 材質 / 零件ID / 庫存ID / 說明")
+        self.result_filter_input.setPlaceholderText("Drawing / 流水號 / 型號 / 品名 / 規格 / 材質 / 零件ID / 庫存ID / 說明")
         self.result_filter_input.setClearButtonEnabled(True)
         self.result_filter_input.textChanged.connect(self._apply_result_filter)
         row.addWidget(self.result_filter_input, 1)
@@ -603,6 +608,7 @@ class MainWindow(QMainWindow):
             overrides=row.overrides or None,
             serial=row.serial,
             unit=row.unit,
+            drawing_line_number=row.drawing_line_number,
         )
         self.add_input.clear()
         self.add_input.setFocus()
@@ -617,6 +623,7 @@ class MainWindow(QMainWindow):
         overrides: dict | None = None,
         serial: str = "",
         unit: str = "組",
+        drawing_line_number: str = "",
     ):
         idx = len(self._project_rows)
         self._project_rows.append(
@@ -626,7 +633,8 @@ class MainWindow(QMainWindow):
                 enabled=enabled,
                 overrides=overrides or None,
                 serial=str(serial or "").strip(),
-                unit=str(unit or "組").strip(),
+                unit=self._normalize_project_unit_value(unit),
+                drawing_line_number=str(drawing_line_number or "").strip(),
             )
         )
         item_widget = QListWidgetItem(text)
@@ -645,7 +653,8 @@ class MainWindow(QMainWindow):
         if item_widget is None:
             return
         row = self._project_rows[idx]
-        text = f"{row.serial} | {row.designation}" if row.serial else row.designation
+        source_bits = [part for part in (row.drawing_line_number, row.serial) if part]
+        text = f"{' | '.join(source_bits)} | {row.designation}" if source_bits else row.designation
         overrides = row.overrides or {}
         tags = []
         if row.quantity != 1 or row.serial:
@@ -664,6 +673,7 @@ class MainWindow(QMainWindow):
             item_widget.setText(text)
             item_widget.setForeground(QColor("black"))
         item_widget.setToolTip(
+            f"Drawing line number: {row.drawing_line_number or '-'}\n"
             f"流水號.sort: {row.serial or '-'}\n"
             f"型號: {row.designation}\n"
             f"數量: {row.quantity}\n"
@@ -689,13 +699,13 @@ class MainWindow(QMainWindow):
         dlg.setWindowTitle("批次貼上")
         dlg.setMinimumSize(400, 300)
         lay = QVBoxLayout(dlg)
-        lay.addWidget(QLabel("每行一筆支撐編碼；也可貼 流水號.sort,數量,單位,型號:"))
+        lay.addWidget(QLabel("每行一筆支撐編碼；也可貼 Drawing line number,流水號.sort,數量,單位,型號:"))
         text_edit = QTextEdit()
         text_edit.setFont(QFont("Consolas", 11))
         text_edit.setPlaceholderText(
             "01-2B-05A\n"
             "01-3B-08B,2\n"
-            "12,1,組,57-1B-A"
+            "1--1-S11U-AI-00001,12,1,組,57-1B-A"
         )
         lay.addWidget(text_edit)
         count_label = QLabel("已輸入 0 筆")
@@ -713,7 +723,11 @@ class MainWindow(QMainWindow):
             ]
 
         def row_key(row: ProjectInputRow) -> str:
-            return f"{row.serial}|{row.designation}".casefold() if row.serial else row.designation.casefold()
+            return (
+                f"{row.drawing_line_number}|{row.serial}|{row.designation}".casefold()
+                if row.serial or row.drawing_line_number
+                else row.designation.casefold()
+            )
 
         def duplicate_count(rows: list[ProjectInputRow]) -> int:
             seen = {row_key(row) for row in self._project_rows}
@@ -761,6 +775,7 @@ class MainWindow(QMainWindow):
                     overrides=row.overrides or None,
                     serial=row.serial,
                     unit=row.unit,
+                    drawing_line_number=row.drawing_line_number,
                 )
             self._invalidate_analysis_outputs("批次貼上已加入清單，請重新分析")
             self.statusBar().showMessage(f"已加入 {len(rows)} 筆支撐編碼")
@@ -811,6 +826,7 @@ class MainWindow(QMainWindow):
                 overrides=row.overrides or None,
                 serial=row.serial,
                 unit=row.unit,
+                drawing_line_number=row.drawing_line_number,
             )
         self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
         action = "取代並載入" if replace_existing else "追加載入"
@@ -836,11 +852,15 @@ class MainWindow(QMainWindow):
             with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
                 writer = csv.DictWriter(
                     f,
-                    fieldnames=["流水號.sort", "數量", "單位", "型號", "enabled", "overrides_json"],
+                    fieldnames=[
+                        "Drawing line number", "流水號.sort", "數量", "單位", "型號",
+                        "enabled", "overrides_json",
+                    ],
                 )
                 writer.writeheader()
                 for row in self._project_rows:
                     writer.writerow({
+                        "Drawing line number": row.drawing_line_number,
                         "流水號.sort": row.serial,
                         "數量": row.quantity,
                         "單位": row.unit or "組",
@@ -905,8 +925,11 @@ class MainWindow(QMainWindow):
                     quantity=self._parse_list_quantity(quantity_text, idx),
                     enabled=self._parse_list_enabled(enabled_text),
                     overrides=self._parse_list_overrides(overrides_text, idx),
+                    drawing_line_number=self._project_field_value(raw, _PROJECT_ROW_ALIASES["drawing_line_number"]),
                     serial=self._project_field_value(raw, _PROJECT_ROW_ALIASES["serial"]),
-                    unit=self._project_field_value(raw, _PROJECT_ROW_ALIASES["unit"]) or "組",
+                    unit=self._normalize_project_unit_value(
+                        self._project_field_value(raw, _PROJECT_ROW_ALIASES["unit"])
+                    ),
                 )
             )
         return rows
@@ -952,8 +975,11 @@ class MainWindow(QMainWindow):
                         designation=designation,
                         quantity=self._parse_list_quantity(quantity_text, row_idx),
                         enabled=True,
+                        drawing_line_number=self._project_mapped_value(values, mapping, "drawing_line_number"),
                         serial=self._project_mapped_value(values, mapping, "serial"),
-                        unit=self._project_mapped_value(values, mapping, "unit") or "組",
+                        unit=self._normalize_project_unit_value(
+                            self._project_mapped_value(values, mapping, "unit")
+                        ),
                     )
                 )
             return rows
@@ -1015,10 +1041,13 @@ class MainWindow(QMainWindow):
         return bonus
 
     def _infer_project_column_mapping(self, headers: list[str], sample_rows: list[tuple]) -> tuple[dict[str, int | None], float]:
-        field_order = ("designation", "quantity", "serial", "unit", "description", "item_code")
+        field_order = (
+            "designation", "quantity", "drawing_line_number", "serial", "unit", "description", "item_code",
+        )
         thresholds = {
             "designation": 35,
             "quantity": 35,
+            "drawing_line_number": 35,
             "serial": 45,
             "unit": 35,
             "description": 35,
@@ -1061,6 +1090,9 @@ class MainWindow(QMainWindow):
 
         keyword_scores = {
             "serial": (("流水", "序號", "編號", "serial", "serialno", "seq", "sort", "rowno", "lineno"), 42),
+            "drawing_line_number": (
+                ("drawinglinenumber", "drawingline", "linegroup", "line_group", "dwg", "圖名", "圖號"), 42
+            ),
             "quantity": (("數量", "組數", "qty", "quantity", "count"), 42),
             "unit": (("單位", "unit", "uom"), 42),
             "designation": (("型號", "designation", "model", "supportno", "supportdesignation", "支撐編碼"), 42),
@@ -1087,6 +1119,9 @@ class MainWindow(QMainWindow):
         elif field == "serial":
             unique_ratio = len(set(nonempty)) / len(nonempty)
             score += min(unique_ratio, 1.0) * 15
+        elif field == "drawing_line_number":
+            drawing_ratio = sum(1 for value in nonempty if self._looks_like_drawing_line_number(value)) / len(nonempty)
+            score += drawing_ratio * 35
         elif field == "description":
             extracted_ratio = sum(1 for value in nonempty if self._extract_designation_from_text(value) != value) / len(nonempty)
             score += extracted_ratio * 35
@@ -1122,7 +1157,9 @@ class MainWindow(QMainWindow):
 
         form = QFormLayout()
         combos: dict[str, QComboBox] = {}
-        fields = ("serial", "quantity", "unit", "designation", "description", "item_code")
+        fields = (
+            "drawing_line_number", "serial", "quantity", "unit", "designation", "description", "item_code",
+        )
         for field in fields:
             combo = QComboBox()
             combo.addItem("不使用", None)
@@ -1191,6 +1228,28 @@ class MainWindow(QMainWindow):
         return [part.strip() for part in text.split() if part.strip()]
 
     def _project_row_from_text_parts(self, parts: list[str], row_number: int) -> ProjectInputRow:
+        if len(parts) >= 5 and self._looks_like_list_quantity(parts[2]):
+            if self._looks_like_project_unit(parts[3]):
+                drawing, serial, quantity_text, unit, designation = parts[0], parts[1], parts[2], parts[3], parts[4]
+            else:
+                drawing, serial, quantity_text, designation, unit = parts[0], parts[1], parts[2], parts[3], parts[4]
+            return ProjectInputRow(
+                designation=designation,
+                quantity=self._parse_list_quantity(quantity_text, row_number),
+                serial=serial,
+                unit=self._normalize_project_unit_value(unit),
+                drawing_line_number=drawing,
+            )
+
+        if len(parts) >= 5 and self._looks_like_list_quantity(parts[3]):
+            return ProjectInputRow(
+                designation=parts[2],
+                quantity=self._parse_list_quantity(parts[3], row_number),
+                serial=parts[1],
+                unit=self._normalize_project_unit_value(parts[4]),
+                drawing_line_number=parts[0],
+            )
+
         if len(parts) >= 4 and self._looks_like_list_quantity(parts[1]):
             if self._looks_like_project_unit(parts[2]):
                 serial, quantity_text, unit, designation = parts[0], parts[1], parts[2], parts[3]
@@ -1200,7 +1259,7 @@ class MainWindow(QMainWindow):
                 designation=designation,
                 quantity=self._parse_list_quantity(quantity_text, row_number),
                 serial=serial,
-                unit=unit or "組",
+                unit=self._normalize_project_unit_value(unit),
             )
 
         if len(parts) >= 3 and self._looks_like_list_quantity(parts[1]):
@@ -1208,7 +1267,7 @@ class MainWindow(QMainWindow):
                 designation=parts[2],
                 quantity=self._parse_list_quantity(parts[1], row_number),
                 serial=parts[0],
-                unit=parts[3] if len(parts) >= 4 and parts[3] else "組",
+                unit=self._normalize_project_unit_value(parts[3] if len(parts) >= 4 else ""),
             )
 
         if len(parts) >= 3 and self._looks_like_list_quantity(parts[2]):
@@ -1216,7 +1275,7 @@ class MainWindow(QMainWindow):
                 designation=parts[1],
                 quantity=self._parse_list_quantity(parts[2], row_number),
                 serial=parts[0],
-                unit=parts[3] if len(parts) >= 4 and parts[3] else "組",
+                unit=self._normalize_project_unit_value(parts[3] if len(parts) >= 4 else ""),
             )
 
         quantity = self._parse_list_quantity(parts[1], row_number) if len(parts) >= 2 and parts[1] else 1
@@ -1258,12 +1317,25 @@ class MainWindow(QMainWindow):
         return has_designation and (has_quantity or has_serial)
 
     @staticmethod
+    def _normalize_project_unit_value(text: str) -> str:
+        value = str(text or "").strip()
+        normalized = value.replace(" ", "").lower()
+        if normalized in {"", "ве", "вe", "be"}:
+            return "組"
+        return value
+
+    @staticmethod
     def _looks_like_project_unit(text: str) -> bool:
-        return str(text or "").strip().lower() in {"組", "set", "sets", "kg", "ea", "pc", "m"}
+        return MainWindow._normalize_project_unit_value(text).lower() in {"組", "set", "sets", "kg", "ea", "pc", "m"}
 
     @staticmethod
     def _looks_like_designation(text: str) -> bool:
         return bool(re.fullmatch(r"\d{2}[A-Z]?(?:-[A-Z0-9./()]+)+", str(text or "").strip().upper()))
+
+    @staticmethod
+    def _looks_like_drawing_line_number(text: str) -> bool:
+        value = str(text or "").strip()
+        return bool(re.search(r"[A-Z]", value, re.IGNORECASE) and ("--" in value or value.count("-") >= 2))
 
     @staticmethod
     def _normalize_project_header(text) -> str:
@@ -1319,37 +1391,40 @@ class MainWindow(QMainWindow):
         dlg.setWindowTitle("設定流水號與組數")
         dlg.setMinimumSize(760, 520)
         lay = QVBoxLayout(dlg)
-        lay.addWidget(QLabel("可直接修改流水號.sort、型號、數量、單位；變更型號後需重新分析。"))
+        lay.addWidget(QLabel("可直接修改 Drawing line number、流水號.sort、型號、數量、單位；變更型號後需重新分析。"))
 
         table = QTableWidget()
-        table.setColumnCount(4)
-        table.setHorizontalHeaderLabels(["流水號.sort", "型號", "數量", "單位"])
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["Drawing line number", "流水號.sort", "型號", "數量", "單位"])
         table.setRowCount(len(self._project_rows))
         table.setAlternatingRowColors(True)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        table.setColumnWidth(0, 120)
-        table.setColumnWidth(1, 260)
-        table.setColumnWidth(2, 90)
-        table.setColumnWidth(3, 80)
+        table.setColumnWidth(0, 180)
+        table.setColumnWidth(1, 120)
+        table.setColumnWidth(2, 260)
+        table.setColumnWidth(3, 90)
+        table.setColumnWidth(4, 80)
 
         for idx, row in enumerate(self._project_rows):
+            drawing_item = QTableWidgetItem(row.drawing_line_number)
             serial_item = QTableWidgetItem(row.serial)
             desig_item = QTableWidgetItem(row.designation)
             unit_item = QTableWidgetItem(row.unit or "組")
-            table.setItem(idx, 0, serial_item)
-            table.setItem(idx, 1, desig_item)
-            table.setItem(idx, 2, QTableWidgetItem(str(row.quantity)))
-            table.setItem(idx, 3, unit_item)
+            table.setItem(idx, 0, drawing_item)
+            table.setItem(idx, 1, serial_item)
+            table.setItem(idx, 2, desig_item)
+            table.setItem(idx, 3, QTableWidgetItem(str(row.quantity)))
+            table.setItem(idx, 4, unit_item)
 
         lay.addWidget(table)
 
-        lay.addWidget(QLabel("批次貼入校正值：可貼單欄數量、流水號+數量，或 流水號 數量 單位 型號。"))
+        lay.addWidget(QLabel("批次貼入校正值：可貼單欄數量、流水號+數量，或 Drawing 流水號 數量 單位 型號。"))
         qty_text = QTextEdit()
         qty_text.setPlaceholderText(
             "2\n"
             "A-001 2\n"
-            "A-002 1 組 51-1B\n"
-            "A-003,57-1B-A,4"
+            "1--1-S11U-AI-00001 A-002 1 組 51-1B\n"
+            "1--1-S11U-AI-00002,A-003,4,57-1B-A,組"
         )
         qty_text.setMaximumHeight(110)
         lay.addWidget(qty_text)
@@ -1394,6 +1469,7 @@ class MainWindow(QMainWindow):
                 }
             parsed = self._project_row_from_text_parts(parts, row_number)
             return {
+                "drawing_line_number": parsed.drawing_line_number,
                 "serial": parsed.serial,
                 "designation": parsed.designation,
                 "quantity": parsed.quantity,
@@ -1420,18 +1496,20 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(dlg, "校正格式錯誤", str(exc))
                 return
             for idx, correction in enumerate(corrections):
+                if "drawing_line_number" in correction:
+                    ensure_item(idx, 0).setText(str(correction["drawing_line_number"]))
                 if "serial" in correction:
-                    ensure_item(idx, 0).setText(str(correction["serial"]))
+                    ensure_item(idx, 1).setText(str(correction["serial"]))
                 if "designation" in correction:
-                    ensure_item(idx, 1).setText(str(correction["designation"]))
+                    ensure_item(idx, 2).setText(str(correction["designation"]))
                 if "quantity" in correction:
-                    ensure_item(idx, 2).setText(str(correction["quantity"]))
+                    ensure_item(idx, 3).setText(str(correction["quantity"]))
                 if "unit" in correction:
-                    ensure_item(idx, 3).setText(str(correction["unit"] or "組"))
+                    ensure_item(idx, 4).setText(str(correction["unit"] or "組"))
 
         def fill_empty_serials():
             for idx in range(table.rowCount()):
-                item = ensure_item(idx, 0)
+                item = ensure_item(idx, 1)
                 if not item.text().strip():
                     item.setText(str(idx + 1))
 
@@ -1446,10 +1524,11 @@ class MainWindow(QMainWindow):
         updated_rows = []
         try:
             for idx, row in enumerate(self._project_rows):
-                serial_item = table.item(idx, 0)
-                desig_item = table.item(idx, 1)
-                qty_item = table.item(idx, 2)
-                unit_item = table.item(idx, 3)
+                drawing_item = table.item(idx, 0)
+                serial_item = table.item(idx, 1)
+                desig_item = table.item(idx, 2)
+                qty_item = table.item(idx, 3)
+                unit_item = table.item(idx, 4)
                 designation = (desig_item.text() if desig_item else "").strip()
                 if not designation:
                     raise ValueError(f"第 {idx + 1} 列型號不可空白")
@@ -1460,10 +1539,11 @@ class MainWindow(QMainWindow):
                 updated_rows.append(
                     replace(
                         row,
+                        drawing_line_number=(drawing_item.text() if drawing_item else "").strip(),
                         serial=(serial_item.text() if serial_item else "").strip(),
                         designation=designation,
                         quantity=quantity,
-                        unit=(unit_item.text() if unit_item and unit_item.text().strip() else "組").strip(),
+                        unit=self._normalize_project_unit_value(unit_item.text() if unit_item else ""),
                         overrides=overrides,
                     )
                 )
@@ -1787,10 +1867,10 @@ class MainWindow(QMainWindow):
                 self.result_table.insertRow(row)
                 desc = self._result_item(result.fullstring)
                 desc.setForeground(QColor("red"))
-                self.result_table.setItem(row, 3, desc)
+                self.result_table.setItem(row, 4, desc)
                 err = self._result_item(f"錯誤: {result.error}")
                 err.setForeground(QColor("red"))
-                self.result_table.setItem(row, 6, err)
+                self.result_table.setItem(row, 7, err)
                 self._set_result_row_group(row, group_key)
                 continue
 
@@ -1798,6 +1878,7 @@ class MainWindow(QMainWindow):
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
                 values = [
+                    "",
                     "",
                     "1",
                     "組",
@@ -1836,10 +1917,10 @@ class MainWindow(QMainWindow):
         LEFT = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         # col_idx → alignment
         COL_ALIGN = {
-            0: LEFT, 1: CENTER, 2: CENTER, 3: LEFT, 4: CENTER, 5: CENTER,
-            6: LEFT, 7: LEFT, 8: CENTER, 9: RIGHT_ALIGN, 10: RIGHT_ALIGN,
-            11: CENTER, 12: CENTER, 13: RIGHT_ALIGN, 14: RIGHT_ALIGN,
-            15: CENTER, 16: CENTER, 17: CENTER, 18: LEFT, 19: LEFT, 20: LEFT,
+            0: LEFT, 1: LEFT, 2: CENTER, 3: CENTER, 4: LEFT, 5: CENTER, 6: CENTER,
+            7: LEFT, 8: LEFT, 9: CENTER, 10: RIGHT_ALIGN, 11: RIGHT_ALIGN,
+            12: CENTER, 13: CENTER, 14: RIGHT_ALIGN, 15: RIGHT_ALIGN,
+            16: CENTER, 17: CENTER, 18: CENTER, 19: LEFT, 20: LEFT, 21: LEFT,
         }
 
         total_weight = 0.0
@@ -1863,15 +1944,16 @@ class MainWindow(QMainWindow):
                     cell = QTableWidgetItem()
                     cell.setBackground(err_bg)
                     self.result_table.setItem(row, col, cell)
-                desc = self.result_table.item(row, 3)
+                desc = self.result_table.item(row, 4)
                 desc.setText(input_row.designation)
                 desc.setForeground(err_fg)
                 desc.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
-                self.result_table.item(row, 0).setText(input_row.serial)
-                self.result_table.item(row, 1).setText(str(input_row.quantity))
-                self.result_table.item(row, 2).setText(input_row.unit or "組")
-                self.result_table.item(row, 4).setText(get_type_code(input_row.designation))
-                err_cell = self.result_table.item(row, 6)
+                self.result_table.item(row, 0).setText(input_row.drawing_line_number)
+                self.result_table.item(row, 1).setText(input_row.serial)
+                self.result_table.item(row, 2).setText(str(input_row.quantity))
+                self.result_table.item(row, 3).setText(input_row.unit or "組")
+                self.result_table.item(row, 5).setText(get_type_code(input_row.designation))
+                err_cell = self.result_table.item(row, 7)
                 err_cell.setText(f"⚠ {single_result.error}")
                 err_cell.setForeground(err_fg)
                 self._set_result_row_group(row, group_key)
@@ -1887,36 +1969,37 @@ class MainWindow(QMainWindow):
                 bg = QColor(hdr_color if is_first else body_color)
 
                 values = [
-                    input_row.serial if is_first else "",                # 0 流水號.sort
-                    str(input_row.quantity) if is_first else "",         # 1 數量
-                    (input_row.unit or "組") if is_first else "",        # 2 單位
-                    input_row.designation if is_first else "",           # 3 型號
-                    get_type_code(input_row.designation) if is_first else "",  # 4 Type
-                    str(single_entry.item_no),                            # 5 項次
-                    single_entry.name,                                    # 6 品名
-                    single_entry.display_spec,                            # 7 規格
-                    single_entry.material,                                # 8 材質
-                    str(single_entry.length) if single_entry.length else "",  # 9 長度
-                    str(single_entry.width)  if single_entry.width  else "",  # 10 寬度
-                    str(single_entry.quantity),                           # 11 單件數量
-                    str(scaled_entry.quantity),                           # 12 總數量
-                    f"{single_entry.weight_output:.3f}",                  # 13 單組重
-                    f"{scaled_entry.weight_output:.3f}",                  # 14 總重
-                    single_entry.category,                                # 15 屬性
-                    single_entry.item_class,                              # 16 物件類別
-                    single_entry.manufacturing_type,                      # 17 製造方式
-                    single_entry.display_remark,                          # 18 計算說明
-                    single_entry.part_key,                                # 19 零件ID
-                    single_entry.stock_id,                                # 20 庫存ID
+                    input_row.drawing_line_number if is_first else "",   # 0 Drawing line number
+                    input_row.serial if is_first else "",                # 1 流水號.sort
+                    str(input_row.quantity) if is_first else "",         # 2 數量
+                    (input_row.unit or "組") if is_first else "",        # 3 單位
+                    input_row.designation if is_first else "",           # 4 型號
+                    get_type_code(input_row.designation) if is_first else "",  # 5 Type
+                    str(single_entry.item_no),                            # 6 項次
+                    single_entry.name,                                    # 7 品名
+                    single_entry.display_spec,                            # 8 規格
+                    single_entry.material,                                # 9 材質
+                    str(single_entry.length) if single_entry.length else "",  # 10 長度
+                    str(single_entry.width)  if single_entry.width  else "",  # 11 寬度
+                    str(single_entry.quantity),                           # 12 單件數量
+                    str(scaled_entry.quantity),                           # 13 總數量
+                    f"{single_entry.weight_output:.3f}",                  # 14 單組重
+                    f"{scaled_entry.weight_output:.3f}",                  # 15 總重
+                    single_entry.category,                                # 16 屬性
+                    single_entry.item_class,                              # 17 物件類別
+                    single_entry.manufacturing_type,                      # 18 製造方式
+                    single_entry.display_remark,                          # 19 計算說明
+                    single_entry.part_key,                                # 20 零件ID
+                    single_entry.stock_id,                                # 21 庫存ID
                 ]
                 for col, val in enumerate(values):
                     item = self._result_item(val)
                     item.setBackground(bg)
                     item.setTextAlignment(COL_ALIGN.get(col, LEFT))
-                    if col == 3 and is_first:
+                    if col == 4 and is_first:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                         item.setForeground(QColor("#1A3A6B"))
-                    elif col == 14:
+                    elif col == 15:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                     self.result_table.setItem(row, col, item)
                 self._set_result_row_group(row, group_key)
@@ -1932,7 +2015,10 @@ class MainWindow(QMainWindow):
             sub_row = self.result_table.rowCount()
             self.result_table.insertRow(sub_row)
             sub_bg = QColor(hdr_color).darker(104)
-            source_label = f"{input_row.serial} | {input_row.designation}" if input_row.serial else input_row.designation
+            source_bits = [part for part in (input_row.drawing_line_number, input_row.serial) if part]
+            source_label = (
+                f"{' | '.join(source_bits)} | {input_row.designation}" if source_bits else input_row.designation
+            )
             sub_label = QTableWidgetItem(
                 f"小計  {source_label} ({input_row.quantity}{input_row.unit or '組'})"
             )
@@ -1945,7 +2031,7 @@ class MainWindow(QMainWindow):
                 filler = QTableWidgetItem("")
                 filler.setBackground(sub_bg)
                 self.result_table.setItem(sub_row, col, filler)
-            sub_wt = self.result_table.item(sub_row, 14)
+            sub_wt = self.result_table.item(sub_row, 15)
             sub_wt.setText(f"{group_weight:.3f}")
             sub_wt.setTextAlignment(RIGHT_ALIGN)
             sub_wt.setForeground(QColor("#1A3A6B"))

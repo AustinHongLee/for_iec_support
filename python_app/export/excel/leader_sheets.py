@@ -88,6 +88,7 @@ def _leader_procurement_stats(
     details: list[LeaderHitDetail] = []
     pipe_shoe_types = {"52", "53", "54", "55", "66", "67", "80", "85"}
     ubolt_contract_types = {"57", "58"}
+    current_drawing_line_number = ""
 
     def material_label(is_304: bool) -> str:
         return "SUS304" if is_304 else "HDG/CS"
@@ -109,6 +110,7 @@ def _leader_procurement_stats(
         matched_detail: str,
         material_basis: str,
         note: str = "",
+        drawing_line_number: str = "",
     ) -> None:
         stat_row = template_by_key.get(key)
         if stat_row is None:
@@ -119,6 +121,7 @@ def _leader_procurement_stats(
                 status=status,
                 category=stat_row.item,
                 label=stat_row.label,
+                drawing_line_number=drawing_line_number or current_drawing_line_number,
                 serial=serial,
                 source_unit=source_unit or "組",
                 designation=designation,
@@ -185,6 +188,7 @@ def _leader_procurement_stats(
                 status="未納入",
                 category="未納入支撐分類統計",
                 label="未命中摘要規則",
+                drawing_line_number=current_drawing_line_number,
                 serial=serial,
                 source_unit=source_unit or "組",
                 designation=designation,
@@ -206,6 +210,7 @@ def _leader_procurement_stats(
     for row_result in project.rows:
         designation = row_result.input_row.designation
         project_qty = row_result.input_row.quantity
+        current_drawing_line_number = row_result.input_row.drawing_line_number
         source_serial = row_result.input_row.serial
         source_unit = row_result.input_row.unit or "組"
         type_id = _parse_designation_type(designation)
@@ -538,6 +543,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 detail.status,
                 detail.category,
                 detail.label,
+                detail.drawing_line_number,
                 detail.serial,
                 detail.project_qty,
                 detail.source_unit or "組",
@@ -555,14 +561,14 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = styles["border"]
                 cell.alignment = styles["wrap"]
-                if col in (5, 9, 10):
+                if col in (6, 10, 11):
                     cell.alignment = styles["right"]
                 if col == 1:
                     apply_status_fill(cell, detail.status)
                     cell.alignment = styles["center"]
-            ws.cell(row=row, column=5).number_format = NUMFMT["QTY_INT"]
-            ws.cell(row=row, column=9).number_format = NUMFMT["PIPE_IN"]
-            ws.cell(row=row, column=10).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=6).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=10).number_format = NUMFMT["PIPE_IN"]
+            ws.cell(row=row, column=11).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
             row += 1
 
     last_row = max(row - 1, 3)
@@ -573,11 +579,11 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            5: NUMFMT["QTY_INT"],
-            9: NUMFMT["PIPE_IN"],
-            10: NUMFMT["WEIGHT_KG3"],
+            6: NUMFMT["QTY_INT"],
+            10: NUMFMT["PIPE_IN"],
+            11: NUMFMT["WEIGHT_KG3"],
         },
-        widths=[10, 16, 34, 12, 8, 7, 22, 8, 10, 12, 8, 36, 22, 52, 42],
+        widths=[10, 16, 34, 18, 12, 8, 7, 22, 8, 10, 12, 8, 36, 22, 52, 42],
     )
     for data_row in range(4, last_row + 1):
         apply_status_fill(ws.cell(row=data_row, column=1), ws.cell(row=data_row, column=1).value)

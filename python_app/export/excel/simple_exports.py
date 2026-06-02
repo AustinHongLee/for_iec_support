@@ -80,6 +80,7 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
 
         if single_result.error:
             values = [
+                input_row.drawing_line_number,
                 input_row.serial,
                 input_row.quantity,
                 input_row.unit or "組",
@@ -87,7 +88,7 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
                 get_type_code(input_row.designation),
                 "Error",
                 single_result.error,
-            ] + [""] * (len(PROJECT_HEADERS) - 7)
+            ] + [""] * (len(PROJECT_HEADERS) - 8)
             for col, value in enumerate(values, 1):
                 ws.cell(row=row, column=col, value=value)
             row += 1
@@ -95,6 +96,7 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             values = [
+                input_row.drawing_line_number,
                 input_row.serial,
                 input_row.quantity,
                 input_row.unit or "組",

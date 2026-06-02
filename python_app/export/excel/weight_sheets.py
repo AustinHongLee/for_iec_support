@@ -40,6 +40,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
 
         if single_result.error:
             values = [
+                input_row.drawing_line_number,
                 input_row.serial,
                 input_row.quantity,
                 input_row.unit or "組",
@@ -47,7 +48,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
                 get_type_code(input_row.designation),
                 "錯誤",
                 single_result.error,
-            ] + [""] * (len(PROJECT_HEADERS) - 7)
+            ] + [""] * (len(PROJECT_HEADERS) - 8)
             for col, value in enumerate(values, 1):
                 ws.cell(row=row, column=col, value=value)
             error_rows.append(row)
@@ -56,6 +57,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             values = [
+                input_row.drawing_line_number,
                 input_row.serial,
                 input_row.quantity,
                 input_row.unit or "組",
@@ -90,22 +92,22 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            2: NUMFMT["QTY_INT"],
-            10: NUMFMT["LEN_MM"],
+            3: NUMFMT["QTY_INT"],
             11: NUMFMT["LEN_MM"],
-            12: NUMFMT["QTY_INT"],
+            12: NUMFMT["LEN_MM"],
             13: NUMFMT["QTY_INT"],
-            14: NUMFMT["WEIGHT_KG"],
+            14: NUMFMT["QTY_INT"],
             15: NUMFMT["WEIGHT_KG"],
+            16: NUMFMT["WEIGHT_KG"],
         },
-        widths=[12, 8, 7, 20, 8, 7, 16, 22, 14, 12, 12, 10, 10, 14, 14, 10, 14, 14, 28, 12, 34],
+        widths=[18, 12, 8, 7, 20, 8, 7, 16, 22, 14, 12, 12, 10, 10, 14, 14, 10, 14, 14, 28, 12, 34],
     )
     for error_row in error_rows:
         for col in range(1, len(PROJECT_HEADERS) + 1):
             cell = ws.cell(row=error_row, column=col)
             cell.fill = styles["bad_fill"]
             cell.border = styles["border"]
-        apply_status_fill(ws.cell(row=error_row, column=6), "錯誤", set_font=True)
+        apply_status_fill(ws.cell(row=error_row, column=7), "錯誤", set_font=True)
     if last_row >= 4:
-        add_color_scale(ws, f"O4:O{last_row}", "weight")
+        add_color_scale(ws, f"P4:P{last_row}", "weight")
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="重量分析")
