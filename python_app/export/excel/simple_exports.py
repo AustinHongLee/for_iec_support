@@ -79,34 +79,46 @@ def export_project_to_excel(project: ProjectAnalysisResult, filepath: str):
         scaled_result = row_result.scaled_result
 
         if single_result.error:
-            ws.cell(row=row, column=1, value=input_row.designation)
-            ws.cell(row=row, column=2, value=get_type_code(input_row.designation))
-            ws.cell(row=row, column=3, value="Error")
-            ws.cell(row=row, column=4, value=single_result.error)
-            ws.cell(row=row, column=10, value=input_row.quantity)
+            values = [
+                input_row.serial,
+                input_row.quantity,
+                input_row.unit or "組",
+                input_row.designation,
+                get_type_code(input_row.designation),
+                "Error",
+                single_result.error,
+            ] + [""] * (len(PROJECT_HEADERS) - 7)
+            for col, value in enumerate(values, 1):
+                ws.cell(row=row, column=col, value=value)
             row += 1
             continue
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
-            ws.cell(row=row, column=1, value=input_row.designation)   # 每列填滿
-            ws.cell(row=row, column=2, value=get_type_code(input_row.designation))
-            ws.cell(row=row, column=3, value=single_entry.item_no)
-            ws.cell(row=row, column=4, value=single_entry.name)
-            ws.cell(row=row, column=5, value=single_entry.display_spec)
-            ws.cell(row=row, column=6, value=single_entry.material)
-            ws.cell(row=row, column=7, value=single_entry.length)
-            ws.cell(row=row, column=8, value=single_entry.width if single_entry.width else "")
-            ws.cell(row=row, column=9, value=single_entry.quantity)
-            ws.cell(row=row, column=10, value=input_row.quantity)
-            ws.cell(row=row, column=11, value=scaled_entry.quantity)
-            ws.cell(row=row, column=12, value=single_entry.weight_output)
-            ws.cell(row=row, column=13, value=scaled_entry.weight_output)
-            ws.cell(row=row, column=14, value=single_entry.category)
-            ws.cell(row=row, column=15, value=single_entry.item_class)
-            ws.cell(row=row, column=16, value=single_entry.manufacturing_type)
-            ws.cell(row=row, column=17, value=single_entry.part_key)
-            ws.cell(row=row, column=18, value=single_entry.stock_id)
-            ws.cell(row=row, column=19, value=single_entry.display_remark)
+            values = [
+                input_row.serial,
+                input_row.quantity,
+                input_row.unit or "組",
+                input_row.designation,
+                get_type_code(input_row.designation),
+                single_entry.item_no,
+                single_entry.name,
+                single_entry.display_spec,
+                single_entry.material,
+                single_entry.length,
+                single_entry.width if single_entry.width else "",
+                single_entry.quantity,
+                scaled_entry.quantity,
+                single_entry.weight_output,
+                scaled_entry.weight_output,
+                single_entry.category,
+                single_entry.item_class,
+                single_entry.manufacturing_type,
+                single_entry.part_key,
+                single_entry.stock_id,
+                single_entry.display_remark,
+            ]
+            for col, value in enumerate(values, 1):
+                ws.cell(row=row, column=col, value=value)
             row += 1
 
     _format_sheet(ws, PROJECT_HEADERS)

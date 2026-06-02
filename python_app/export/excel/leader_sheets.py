@@ -99,8 +99,10 @@ def _leader_procurement_stats(
         *,
         status: str,
         key: str,
+        serial: str,
         designation: str,
         project_qty: int,
+        source_unit: str,
         pipe_size: float | None,
         amount: float,
         unit: str,
@@ -117,6 +119,8 @@ def _leader_procurement_stats(
                 status=status,
                 category=stat_row.item,
                 label=stat_row.label,
+                serial=serial,
+                source_unit=source_unit or "組",
                 designation=designation,
                 project_qty=project_qty,
                 pipe_size=pipe_size,
@@ -138,8 +142,10 @@ def _leader_procurement_stats(
     def add_issue(
         *,
         key: str,
+        serial: str,
         designation: str,
         project_qty: int,
+        source_unit: str,
         pipe_size: float | None,
         matched_detail: str,
         material_basis: str,
@@ -148,8 +154,10 @@ def _leader_procurement_stats(
         add_detail(
             status="需確認",
             key=key,
+            serial=serial,
             designation=designation,
             project_qty=project_qty,
+            source_unit=source_unit,
             pipe_size=pipe_size,
             amount=0.0,
             unit="",
@@ -162,6 +170,8 @@ def _leader_procurement_stats(
         *,
         designation: str,
         project_qty: int,
+        serial: str,
+        source_unit: str,
         pipe_size: float | None,
         row_result,
     ) -> None:
@@ -175,6 +185,8 @@ def _leader_procurement_stats(
                 status="未納入",
                 category="未納入支撐分類統計",
                 label="未命中摘要規則",
+                serial=serial,
+                source_unit=source_unit or "組",
                 designation=designation,
                 project_qty=project_qty,
                 pipe_size=pipe_size,
@@ -194,6 +206,8 @@ def _leader_procurement_stats(
     for row_result in project.rows:
         designation = row_result.input_row.designation
         project_qty = row_result.input_row.quantity
+        source_serial = row_result.input_row.serial
+        source_unit = row_result.input_row.unit or "組"
         type_id = _parse_designation_type(designation)
         pipe_size = _parse_designation_pipe_size(designation)
         detail_count_before = len(details)
@@ -206,8 +220,10 @@ def _leader_procurement_stats(
         if row_result.single_result.error:
             add_issue(
                 key="cs_support_le15",
+                serial=source_serial,
                 designation=designation,
                 project_qty=project_qty,
+                source_unit=source_unit,
                 pipe_size=pipe_size,
                 matched_detail="分析失敗",
                 material_basis="",
@@ -230,8 +246,10 @@ def _leader_procurement_stats(
                     key,
                     entry.quantity,
                     f"{designation} ×{project_qty}: {entry.name} {entry.quantity:g}{entry.unit}",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     unit=entry.unit,
                     matched_detail=(
@@ -243,8 +261,10 @@ def _leader_procurement_stats(
             else:
                 add_issue(
                     key=f"uband_{material_key}_le6",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     matched_detail=f"項次{entry.item_no} {entry.name} {entry.display_spec}",
                     material_basis=f"{entry.material} -> {material_label(entry_is_304)}",
@@ -266,8 +286,10 @@ def _leader_procurement_stats(
                     key,
                     project_qty,
                     f"{designation}: {project_qty}組",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     unit="組",
                     matched_detail=f"Type {type_id} Pipe Shoe，{pipe_size_label(pipe_size)}",
@@ -276,8 +298,10 @@ def _leader_procurement_stats(
             elif bucket:
                 add_issue(
                     key="shoe_hdg_ge26",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     matched_detail=f"Type {type_id} Pipe Shoe，{pipe_size_label(pipe_size)}",
                     material_basis=f"整組材質 -> {material_label(support_is_304)}",
@@ -286,8 +310,10 @@ def _leader_procurement_stats(
             else:
                 add_issue(
                     key="shoe_hdg_le4",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     matched_detail=f"Type {type_id} Pipe Shoe",
                     material_basis=f"整組材質 -> {material_label(support_is_304)}",
@@ -299,8 +325,10 @@ def _leader_procurement_stats(
                 "cold_support",
                 project_qty,
                 f"{designation}: {project_qty}組",
+                serial=source_serial,
                 designation=designation,
                 project_qty=project_qty,
+                source_unit=source_unit,
                 pipe_size=pipe_size,
                 unit="組",
                 matched_detail=f"Type {type_id} 保冷支撐",
@@ -322,8 +350,10 @@ def _leader_procurement_stats(
                     f"{material_prefix}_support_le15",
                     project_qty,
                     f"{designation}: {project_qty}組，單組 {single_weight:.2f}kg",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     unit="組",
                     matched_detail=f"單組總重 {single_weight:.2f}kg <= 15kg",
@@ -334,8 +364,10 @@ def _leader_procurement_stats(
                     f"{material_prefix}_support_gt15",
                     scaled_weight,
                     f"{designation}: {scaled_weight:.2f}kg，單組 {single_weight:.2f}kg",
+                    serial=source_serial,
                     designation=designation,
                     project_qty=project_qty,
+                    source_unit=source_unit,
                     pipe_size=pipe_size,
                     unit="KG",
                     matched_detail=f"單組總重 {single_weight:.2f}kg > 15kg",
@@ -346,6 +378,8 @@ def _leader_procurement_stats(
             add_unmatched(
                 designation=designation,
                 project_qty=project_qty,
+                serial=source_serial,
+                source_unit=source_unit,
                 pipe_size=pipe_size,
                 row_result=row_result,
             )
@@ -475,10 +509,13 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
 
 
 def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
+    from openpyxl.utils import get_column_letter
+
     styles = _styles()
     _, _, details = _leader_procurement_stats(project)
 
-    _setup_sheet(ws, "支撐統計明細（製表者查核）", "M1")
+    last_col_letter = get_column_letter(len(LEADER_DETAIL_HEADERS))
+    _setup_sheet(ws, "支撐統計明細（製表者查核）", f"{last_col_letter}1")
     ws.cell(
         row=2,
         column=1,
@@ -488,7 +525,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
-    ws.merge_cells("A2:M2")
+    ws.merge_cells(f"A2:{last_col_letter}2")
 
     row = 4
     if not details:
@@ -501,9 +538,11 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 detail.status,
                 detail.category,
                 detail.label,
+                detail.serial,
+                detail.project_qty,
+                detail.source_unit or "組",
                 detail.designation,
                 _parse_designation_type(detail.designation),
-                detail.project_qty,
                 "" if detail.pipe_size is None else detail.pipe_size,
                 round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
                 detail.unit,
@@ -516,13 +555,14 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = styles["border"]
                 cell.alignment = styles["wrap"]
-                if col in (6, 7, 8):
+                if col in (5, 9, 10):
                     cell.alignment = styles["right"]
                 if col == 1:
                     apply_status_fill(cell, detail.status)
                     cell.alignment = styles["center"]
-            ws.cell(row=row, column=7).number_format = NUMFMT["PIPE_IN"]
-            ws.cell(row=row, column=8).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=5).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=9).number_format = NUMFMT["PIPE_IN"]
+            ws.cell(row=row, column=10).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
             row += 1
 
     last_row = max(row - 1, 3)
@@ -533,12 +573,12 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            6: NUMFMT["QTY_INT"],
-            7: NUMFMT["PIPE_IN"],
-            8: NUMFMT["WEIGHT_KG3"],
+            5: NUMFMT["QTY_INT"],
+            9: NUMFMT["PIPE_IN"],
+            10: NUMFMT["WEIGHT_KG3"],
         },
-        widths=[10, 16, 34, 22, 8, 8, 10, 12, 8, 36, 22, 52, 42],
+        widths=[10, 16, 34, 12, 8, 7, 22, 8, 10, 12, 8, 36, 22, 52, 42],
     )
     for data_row in range(4, last_row + 1):
         apply_status_fill(ws.cell(row=data_row, column=1), ws.cell(row=data_row, column=1).value)
-    set_print_layout(ws, title_rows="3:3", area=f"A1:M{last_row}", footer_title="支撐統計明細")
+    set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="支撐統計明細")

@@ -65,8 +65,8 @@ try:
     assert original_entry.weight_output == original_weight, "single result weight was mutated"
 
     project = analyze_project_rows([
-        ProjectInputRow("51-1.1/2B", 10),
-        ProjectInputRow("51-1.1/2B", 2),
+        ProjectInputRow("51-1.1/2B", 10, serial="S-001"),
+        ProjectInputRow("51-1.1/2B", 2, serial="S-002"),
         ProjectInputRow("57-1B-A", 1, enabled=False),
     ])
     assert not project.errors, f"project aggregation should not emit errors: {project.errors}"
@@ -84,15 +84,15 @@ try:
     assert len(material_summary.lines) == 1, "project material summary should merge duplicate designations"
     assert material_summary.lines[0].total_qty == original_quantity * 12, "project material summary quantity failed"
     assert material_summary.lines[0].source_fullstrings == [
-        "51-1.1/2B × 10",
-        "51-1.1/2B × 2",
+        "S-001 51-1.1/2B × 10組",
+        "S-002 51-1.1/2B × 2組",
     ], "project material summary source labels failed"
 
-    linear_project = analyze_project_rows([ProjectInputRow("24-L50-04", 2)])
+    linear_project = analyze_project_rows([ProjectInputRow("24-L50-04", 2, serial="S-L01")])
     linear_summary = aggregate_project(linear_project)
     linear_lines = linear_summary.get_linear_lines()
     assert linear_lines, "project cutting summary should include linear material"
-    assert "24-L50-04 × 2" in linear_lines[0].source_fullstrings, "project cutting source label failed"
+    assert "S-L01 24-L50-04 × 2組" in linear_lines[0].source_fullstrings, "project cutting source label failed"
 
     errored = analyze_project_rows([ProjectInputRow("99-1B", 5)])
     assert errored.errors == ["99-1B: Type 99 not implemented"], f"project error propagation failed: {errored.errors}"
@@ -145,15 +145,19 @@ try:
         wb = openpyxl.load_workbook(path, data_only=True)
         ws = wb.active
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
-        assert ws.cell(row=1, column=1).value == "型號", "project Excel header failed"
-        assert ws.cell(row=1, column=2).value == "Type", "project Excel type header missing"
-        assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
-        assert ws.cell(row=1, column=10).value == "組數", "project Excel group quantity missing"
-        assert ws.cell(row=1, column=11).value == "總數量", "project Excel total section missing"
-        assert ws.cell(row=2, column=2).value == "51", "project Excel type value failed"
-        assert ws.cell(row=2, column=10).value == 10, "project Excel quantity failed"
-        assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
-        assert ws.cell(row=2, column=11).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=1, column=1).value == "流水號.sort", "project Excel serial header failed"
+        assert ws.cell(row=1, column=2).value == "數量", "project Excel source quantity header failed"
+        assert ws.cell(row=1, column=3).value == "單位", "project Excel source unit header failed"
+        assert ws.cell(row=1, column=4).value == "型號", "project Excel designation header failed"
+        assert ws.cell(row=1, column=5).value == "Type", "project Excel type header missing"
+        assert ws.cell(row=1, column=12).value == "單件數量", "project Excel single section missing"
+        assert ws.cell(row=1, column=13).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=2, column=1).value == "S-001", "project Excel serial value failed"
+        assert ws.cell(row=2, column=2).value == 10, "project Excel quantity failed"
+        assert ws.cell(row=2, column=3).value == "組", "project Excel unit failed"
+        assert ws.cell(row=2, column=5).value == "51", "project Excel type value failed"
+        assert ws.cell(row=2, column=12).value == original_quantity, "project Excel single quantity failed"
+        assert ws.cell(row=2, column=13).value == original_quantity * 10, "project Excel total quantity failed"
     finally:
         try:
             os.remove(path)
@@ -194,21 +198,26 @@ try:
         assert not _sheet_contains_text(ws_summary, "資料量"), "project summary index should not expose confusing data-volume labels"
         ws_detail = wb["重量明細表"]
         assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
-        assert ws_detail.cell(row=3, column=2).value == "Type", "weight detail type header missing"
-        assert ws_detail.cell(row=4, column=2).value == "51", "weight detail type value failed"
-        assert ws_detail.cell(row=3, column=10).value == "單件數量", "weight detail single qty header failed"
-        assert ws_detail.cell(row=3, column=11).value == "組數", "weight detail group qty header failed"
-        assert ws_detail.cell(row=3, column=12).value == "總數量", "weight detail total qty header failed"
-        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 19)], "weight detail should not expose confidence header"
-        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 19)], "weight detail should not expose source header"
+        assert ws_detail.cell(row=3, column=1).value == "流水號.sort", "weight detail serial header failed"
+        assert ws_detail.cell(row=3, column=2).value == "數量", "weight detail source quantity header failed"
+        assert ws_detail.cell(row=3, column=4).value == "型號", "weight detail designation header failed"
+        assert ws_detail.cell(row=3, column=5).value == "Type", "weight detail type header missing"
+        assert ws_detail.cell(row=4, column=1).value == "S-001", "weight detail serial value failed"
+        assert ws_detail.cell(row=4, column=5).value == "51", "weight detail type value failed"
+        assert ws_detail.cell(row=3, column=13).value == "單件數量", "weight detail single qty header failed"
+        assert ws_detail.cell(row=3, column=14).value == "總數量", "weight detail total qty header failed"
+        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 22)], "weight detail should not expose confidence header"
+        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 22)], "weight detail should not expose source header"
         ws_calc = wb["計算標準與假設"]
         assert "$A$1:$F$" in str(ws_calc.print_area), "calc reference should remain A4 portrait width"
         assert _sheet_contains_text(ws_calc, "Type 計算資料狀態彙整"), "calc reference should summarize by Type"
         assert not ws_calc._charts, "calc reference should not use dashboard charts"
         ws_weight = wb["重量分析"]
-        assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
-        assert ws_weight.cell(row=3, column=2).value == "Type", "project package weight type header missing"
-        assert ws_weight.cell(row=4, column=10).value == 10, "project package quantity failed"
+        assert ws_weight.cell(row=3, column=1).value == "流水號.sort", "project package weight serial header failed"
+        assert ws_weight.cell(row=3, column=4).value == "型號", "project package weight header failed"
+        assert ws_weight.cell(row=3, column=5).value == "Type", "project package weight type header missing"
+        assert ws_weight.cell(row=4, column=1).value == "S-001", "project package serial failed"
+        assert ws_weight.cell(row=4, column=2).value == 10, "project package quantity failed"
         ws_material = wb["材料合計"]
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
         assert ws_material.cell(row=4, column=11).value == original_quantity * 12, "project package material purchase qty failed"
@@ -222,16 +231,18 @@ try:
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
-        assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
-        assert ws_leader_detail.cell(row=3, column=5).value == "Type", "leader detail type header failed"
+        assert ws_leader_detail.cell(row=3, column=4).value == "流水號.sort", "leader detail serial header failed"
+        assert ws_leader_detail.cell(row=3, column=7).value == "型號", "leader detail designation header failed"
+        assert ws_leader_detail.cell(row=3, column=8).value == "Type", "leader detail type header failed"
         assert any(
-            ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
-            and ws_leader_detail.cell(row=r, column=5).value == "51"
+            ws_leader_detail.cell(row=r, column=4).value == "S-001"
+            and ws_leader_detail.cell(row=r, column=7).value == "51-1.1/2B"
+            and ws_leader_detail.cell(row=r, column=8).value == "51"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail should classify Type 51 as CS fabrication"
         assert not any(
-            ws_leader_detail.cell(row=r, column=4).value == "51-1.1/2B"
+            ws_leader_detail.cell(row=r, column=7).value == "51-1.1/2B"
             and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("PIPE SHOE")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "Type 51 should not be classified as Pipe Shoe"
@@ -270,27 +281,27 @@ try:
         ws_leader_detail = wb["查核-支撐明細"]
         assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"
         assert any(
-            ws_leader_detail.cell(row=r, column=4).value == "59-1.1/2B-B(S)"
-            and ws_leader_detail.cell(row=r, column=5).value == "59"
+            ws_leader_detail.cell(row=r, column=7).value == "59-1.1/2B-B(S)"
+            and ws_leader_detail.cell(row=r, column=8).value == "59"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=11).value)
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=13).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 <=15kg support should be listed under CS fabrication detail"
         assert any(
-            ws_leader_detail.cell(row=r, column=4).value == "10-6B-16"
-            and ws_leader_detail.cell(row=r, column=5).value == "10"
+            ws_leader_detail.cell(row=r, column=7).value == "10-6B-16"
+            and ws_leader_detail.cell(row=r, column=8).value == "10"
             and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 > 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=11).value)
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=13).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 >15kg support should be listed under CS fabrication detail"
         assert any(
-            ws_leader_detail.cell(row=r, column=4).value == "57-1/2B-A"
-            and ws_leader_detail.cell(row=r, column=5).value == "57"
+            ws_leader_detail.cell(row=r, column=7).value == "57-1/2B-A"
+            and ws_leader_detail.cell(row=r, column=8).value == "57"
             and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"
         assert not any(
-            ws_leader_detail.cell(row=r, column=4).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
+            ws_leader_detail.cell(row=r, column=7).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
             and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("CS 管支撐製裝")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "U-Bolt and Pipe Shoe rows should not be double counted as CS fabrication"

@@ -18,6 +18,8 @@ class LeaderHitDetail:
     status: str
     category: str
     label: str
+    serial: str
+    source_unit: str
     designation: str
     project_qty: int
     pipe_size: float | None

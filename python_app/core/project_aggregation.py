@@ -17,12 +17,14 @@ from .models import AnalysisEntry, AnalysisResult
 
 @dataclass(frozen=True)
 class ProjectInputRow:
-    """One project row: a support designation plus project quantity."""
+    """One project row: source trace plus support designation and quantity."""
 
     designation: str
     quantity: int = 1
     enabled: bool = True
     overrides: dict | None = None
+    serial: str = ""
+    unit: str = "組"
 
 
 @dataclass
