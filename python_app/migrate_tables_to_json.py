@@ -161,8 +161,9 @@ if err:
     for e in err:
         print(f"    type {e['type']}: {e.get('error','?')}")
 
-# 寫 migration report
-report_path = ROOT / "python_app/docs/TABLE_MIGRATION_REPORT.md" if (ROOT / "python_app/docs").exists() else ROOT / "TABLE_MIGRATION_REPORT.md"
+# 寫 migration report。這是一次性工具輸出，歸到 archive 避免污染活文件區。
+report_path = ROOT / "python_app/archive/generated_reports/TABLE_MIGRATION_REPORT.md"
+report_path.parent.mkdir(parents=True, exist_ok=True)
 with open(report_path, "w", encoding="utf-8") as f:
     f.write(f"# Table Migration Report\n\n")
     f.write(f"**日期**: {date.today()}\n\n")

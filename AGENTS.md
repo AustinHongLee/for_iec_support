@@ -23,7 +23,7 @@ If Markdown conflicts with code/config/tests/PDF, do not trust the Markdown. Ins
 - `python_app/docs/COMPONENT_TABLE_STATUS.md`: component readiness summary. Confirm with `python_app/data/component_table_registry.py`.
 - `python_app/docs/M42_BASE_SUPPORT_RULES.md`: human-confirmed M-42/M-43 interpretation notes.
 - `python_app/docs/STEEL_PLATE_NAMING_PLAN.md`: design discussion/draft unless code and tests already implement the same rule.
-- `python_app/coordination/*.md`: historical coordination, review, and handoff logs. Never treat these as current calculation truth.
+- `python_app/archive/**/*.md`: archived audits, handoffs, planning notes, demos, and old AI-session material. Never treat these as current calculation truth.
 - `*_REPORT.md`, `*_HANDOFF.md`, `WORKLOG.md`, `IN_PROGRESS.md`: historical snapshots only.
 
 ## Data Update Rule
@@ -34,4 +34,3 @@ When changing a Type's calculation data or interpretation, update the relevant `
 - `data_update_note`
 
 Update `python_app/docs/types/type_XX.md` only if the Type overview UI would otherwise show misleading text.
-
