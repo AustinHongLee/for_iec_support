@@ -112,7 +112,7 @@ try:
     def _stat_value(ws, label: str):
         for row_index in range(1, ws.max_row + 1):
             if ws.cell(row=row_index, column=2).value == label:
-                return ws.cell(row=row_index, column=5).value
+                return ws.cell(row=row_index, column=6).value if ws.cell(row=row_index, column=6).value is not None else ws.cell(row=row_index, column=5).value
         raise AssertionError(f"stat label not found: {label}")
 
     def _has_cell_value(ws, column: int, value: str) -> bool:
@@ -206,10 +206,10 @@ try:
         _assert_visible_chart(ws_material, "M")
         ws_leader = wb["支撐分類統計"]
         assert ws_leader.cell(row=1, column=1).value == "支撐分類統計", "leader procurement sheet title failed"
-        assert _stat_value(ws_leader, "CS 管支撐製裝 <= 15 kg/組") == 12, "leader procurement CS <=15kg support count failed"
-        assert _has_cell_value(ws_leader, 2, "51-1.1/2B"), "leader procurement grouped source trace missing"
-        assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should not list no-hit categories"
-        _assert_visible_chart(ws_leader, "I")
+        assert _sheet_contains_text(ws_leader, "二、管支撐(連工帶料，含油漆)"), "leader summary fixed title missing"
+        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 12, "leader procurement CS <=15kg support count failed"
+        assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
+        assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["支撐統計明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "型號", "leader detail designation header failed"
@@ -238,14 +238,12 @@ try:
         export_project_workbook(leader_project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
         ws_leader = wb["支撐分類統計"]
-        assert _stat_value(ws_leader, 'U-Bolt & Band <= 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
-        assert _stat_value(ws_leader, 'PIPE SHOE <= 4" 熱浸鍍鋅') == 3, "leader procurement <=4in pipe shoe HDG count failed"
-        assert _stat_value(ws_leader, 'PIPE SHOE 5"~10" 熱浸鍍鋅') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
-        assert _stat_value(ws_leader, "CS 管支撐製裝 <= 15 kg/組") == 10, "leader procurement should merge SUS304 <=15kg supports into CS count"
+        assert _stat_value(ws_leader, 'U-Bolt & Band ≦ 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
+        assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 3, "leader procurement <=4in pipe shoe HDG count failed"
+        assert _stat_value(ws_leader, '管鞋(PIPE SHOE) 5"~10"') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
+        assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 10, "leader procurement should merge SUS304 <=15kg supports into CS count"
         assert not _sheet_contains_text(ws_leader, "SUS304 管支撐製裝"), "leader summary should not expose separate SUS304 support fabrication rows"
-        assert _has_cell_value(ws_leader, 2, "57-1/2B-A"), "leader procurement U-Bolt source trace missing"
-        assert _has_cell_value(ws_leader, 2, "59-1.1/2B-B(S)"), "leader procurement SUS304 support source trace missing"
-        assert _has_cell_value(ws_leader, 2, "10-6B-16"), "leader procurement SUS304 heavy support source trace missing"
+        assert not _sheet_contains_text(ws_leader, "57-1/2B-A"), "leader summary should not expose source designations"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
         ws_leader_detail = wb["支撐統計明細"]
         assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"

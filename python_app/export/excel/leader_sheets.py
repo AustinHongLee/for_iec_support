@@ -3,18 +3,16 @@
 from core.parser import get_lookup_value, get_part
 from core.project_aggregation import ProjectAnalysisResult
 
-from .headers import LEADER_DETAIL_HEADERS, LEADER_GROUP_DETAIL_HEADERS, LEADER_STAT_HEADERS
+from .headers import LEADER_DETAIL_HEADERS
 from .models import LeaderHitDetail, LeaderStatRow
 from .styles import (
     NUMFMT,
-    add_bar_chart,
     apply_report_table,
     apply_status_fill,
     set_print_layout,
     _set_widths,
     _setup_sheet,
     _styles,
-    _write_headers,
 )
 
 
@@ -348,155 +346,125 @@ def _leader_procurement_stats(
     return stats, sources, details
 
 
+def _boss_summary_rows(stats: dict[str, float]) -> list[dict]:
+    """Fixed leader-facing summary rows. Details remain in 支撐統計明細."""
+
+    def qty(key: str) -> float:
+        return stats.get(key, 0.0)
+
+    return [
+        {
+            "group": "1",
+            "label": "防靜電片(兩端附銅壓端子披覆型跨接線)廠商提供",
+            "unit": "組",
+            "qty": 0,
+            "note": "含SUS鋼片(3t)及導線",
+        },
+        {"group": "2", "label": 'U-Bolt & Band ≦ 6" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_le6"), "note": ""},
+        {"group": "2", "label": 'U-Bolt & Band ≧ 8" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_ge8"), "note": ""},
+        {"group": "2", "label": 'U-Bolt & Band ≦ 6"(SUS 304)', "unit": "組", "qty": qty("uband_304_le6"), "note": ""},
+        {"group": "2", "label": 'U-Bolt & Band ≧ 8"(SUS 304)', "unit": "組", "qty": qty("uband_304_ge8"), "note": ""},
+        {"group": "3", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_hdg_le4"), "note": "依長春規範"},
+        {"group": "3", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_hdg_5_10"), "note": "依長春規範"},
+        {"group": "3", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_hdg_12_24"), "note": "依長春規範"},
+        {"group": "3", "label": '管鞋(PIPE SHOE)≧26"', "unit": "組", "qty": qty("shoe_hdg_ge26"), "note": "依長春規範"},
+        {"group": "3", "label": "保冷支撐座(長春帶料)", "unit": "組", "qty": qty("cold_support"), "note": "依長春規範"},
+        {"group": "4", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_304_le4"), "note": "CLAMP"},
+        {"group": "4", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_304_5_10"), "note": "CLAMP"},
+        {"group": "4", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_304_12_24"), "note": "CLAMP"},
+        {
+            "group": "5",
+            "label": "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg",
+            "unit": "組",
+            "qty": qty("cs_support_le15"),
+            "note": "熱浸鍍鋅，依長春規範",
+        },
+        {
+            "group": "5",
+            "label": "CS(熱鍍鋅)管支撐(Pipe Support)製裝>15Kg",
+            "unit": "KG",
+            "qty": qty("cs_support_gt15"),
+            "note": "熱浸鍍鋅，依長春規範",
+        },
+        {"group": "6", "label": "管夾", "unit": "組", "qty": 0, "note": "CLAMP"},
+        {"group": "7", "label": "管支撐小基礎制裝工料(一樓)", "unit": "組", "qty": 0, "note": "依長春規範"},
+    ]
+
+
 def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
-    from openpyxl.chart import Reference
-    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     styles = _styles()
-    rows = _leader_stat_template()
-    stats, _, details = _leader_procurement_stats(project)
-
-    details_by_key: dict[str, list[LeaderHitDetail]] = {stat_row.key: [] for stat_row in rows}
-    for detail in details:
-        if detail.stat_key in details_by_key:
-            details_by_key[detail.stat_key].append(detail)
-
-    def stat_value(stat_row: LeaderStatRow):
-        value = stats.get(stat_row.key, 0.0)
-        return int(value) if stat_row.unit == "組" else round(value, 2)
-
-    def write_detail_header(row: int) -> None:
-        for col, header in enumerate(LEADER_GROUP_DETAIL_HEADERS, 1):
-            cell = ws.cell(row=row, column=col, value=header)
-            cell.fill = styles["subheader_fill"]
-            cell.font = styles["bold_font"]
-            cell.alignment = styles["center"]
-            cell.border = styles["border"]
-
-    def write_detail_row(row: int, detail: LeaderHitDetail) -> None:
-        values = [
-            detail.status,
-            detail.designation,
-            detail.project_qty,
-            "" if detail.pipe_size is None else detail.pipe_size,
-            round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
-            detail.unit,
-            detail.matched_detail,
-            detail.material_basis,
-            detail.note,
-        ]
-        for col, value in enumerate(values, 1):
-            cell = ws.cell(row=row, column=col, value=value)
-            cell.border = styles["border"]
-            cell.alignment = styles["wrap"]
-            if col in (3, 4, 5):
-                cell.alignment = styles["right"]
-            if col == 1:
-                apply_status_fill(cell, detail.status)
-                cell.alignment = styles["center"]
-        ws.cell(row=row, column=4).number_format = NUMFMT["PIPE_IN"]
-        ws.cell(row=row, column=5).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+    stats, _, _ = _leader_procurement_stats(project)
 
     _setup_sheet(ws, "支撐分類統計", "I1")
     ws.cell(
         row=2,
         column=1,
         value=(
-            "業主/長官摘要：僅列本批有數量或需確認的支撐分類統計；"
-            "每個統計項目下方列出命中型號與判定依據，完整查核請見「支撐統計明細」。"
+            "業主/長官摘要：固定列示採購與製裝統計項目；"
+            "型號來源與判定依據請見「支撐統計明細」。"
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
     ws.merge_cells("A2:I2")
 
-    active_rows = [
-        stat_row for stat_row in rows
-        if stat_value(stat_row) != 0 or details_by_key.get(stat_row.key)
-    ]
-
     row = 4
-    if not active_rows:
-        ws.cell(row=row, column=1, value="本批無需列示之支撐分類統計項目")
-        ws.cell(row=row, column=1).font = styles["bold_font"]
-        ws.cell(row=row, column=1).fill = styles["section_fill"]
-        ws.cell(row=row, column=1).border = styles["border"]
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)
-        row += 1
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)
+    title = ws.cell(row=row, column=1, value="二、管支撐(連工帶料，含油漆)")
+    title.font = Font(name="Microsoft JhengHei", bold=True, size=13, color="000000")
+    title.fill = PatternFill("solid", fgColor="FFFFFF")
+    title.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    title.border = styles["border"]
+    ws.row_dimensions[row].height = 24
+    row += 1
 
-    for stat_row in active_rows:
-        stat_details = details_by_key.get(stat_row.key, [])
-        summary_values = [
-            stat_row.item,
-            stat_row.label,
-            stat_row.criteria,
-            stat_row.unit,
-            stat_value(stat_row),
-            len(stat_details),
-        ]
-        for col, header in enumerate(LEADER_STAT_HEADERS, 1):
-            cell = ws.cell(row=row, column=col, value=header)
-            cell.fill = styles["header_fill"]
-            cell.font = styles["header_font"]
-            cell.alignment = styles["center"]
-            cell.border = styles["border"]
-        ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
-        note_cell = ws.cell(row=row, column=7, value="命中型號依據")
-        note_cell.fill = styles["header_fill"]
-        note_cell.font = styles["header_font"]
-        note_cell.alignment = styles["center"]
-        note_cell.border = styles["border"]
+    boss_rows = _boss_summary_rows(stats)
+    start_row = row
+    thin = Side(style="thin", color="000000")
+    table_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    body_font = Font(name="Microsoft JhengHei", size=12, color="000000")
 
-        row += 1
+    for item in boss_rows:
+        ws.cell(row=row, column=1, value=item["group"])
+        ws.cell(row=row, column=2, value=item["label"])
+        ws.cell(row=row, column=5, value=item["unit"])
+        ws.cell(row=row, column=6, value=round(item["qty"], 2) if item["unit"] == "KG" else int(item["qty"]))
+        ws.cell(row=row, column=9, value=item["note"])
         for col in range(1, 10):
             cell = ws.cell(row=row, column=col)
-            cell.fill = styles["section_fill"]
-            cell.font = styles["bold_font"]
-            cell.border = styles["border"]
-            cell.alignment = styles["wrap"]
-        for col, value in enumerate(summary_values, 1):
-            ws.cell(row=row, column=col, value=value)
-        ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
-        ws.cell(row=row, column=7, value=f"{len(stat_details)} 筆命中/確認")
-        ws.cell(row=row, column=4).alignment = styles["center"]
-        ws.cell(row=row, column=5).alignment = styles["right"]
-        ws.cell(row=row, column=6).alignment = styles["right"]
-        ws.cell(row=row, column=5).number_format = NUMFMT["WEIGHT_KG"] if stat_row.unit == "KG" else NUMFMT["QTY_INT"]
-
-        row += 1
-        write_detail_header(row)
-        row += 1
-        for detail in stat_details:
-            write_detail_row(row, detail)
-            row += 1
+            cell.border = table_border
+            cell.font = body_font
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+        ws.cell(row=row, column=1).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(row=row, column=5).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(row=row, column=6).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(row=row, column=6).number_format = NUMFMT["WEIGHT_KG"] if item["unit"] == "KG" else NUMFMT["QTY_INT"]
+        ws.row_dimensions[row].height = 24
         row += 1
 
-    last_row = max(row - 1, 4)
-    chart_bottom = last_row
-    if active_rows:
-        chart_row = 4
-        label_col = 27
-        value_col = 28
-        ws.cell(row=chart_row, column=label_col, value="統計項目")
-        ws.cell(row=chart_row, column=value_col, value="數量")
-        ranked = sorted(active_rows, key=lambda stat_row: float(stat_value(stat_row) or 0), reverse=True)[:8]
-        for offset, stat_row in enumerate(ranked, start=1):
-            ws.cell(row=chart_row + offset, column=label_col, value=stat_row.label)
-            ws.cell(row=chart_row + offset, column=value_col, value=stat_value(stat_row))
-        add_bar_chart(
-            ws,
-            Reference(ws, min_col=label_col, min_row=chart_row + 1, max_row=chart_row + len(ranked)),
-            Reference(ws, min_col=value_col, min_row=chart_row, max_row=chart_row + len(ranked)),
-            f"A{last_row + 3}",
-            "accent",
-            "支撐分類 Top",
-            horizontal=True,
-        )
-        chart_bottom = last_row + 18
-        for col in (label_col, value_col):
-            ws.column_dimensions[get_column_letter(col)].hidden = True
-    ws.freeze_panes = "A4"
-    _set_widths(ws, [12, 24, 8, 10, 12, 8, 38, 24, 42])
-    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:I{chart_bottom}", footer_title="支撐分類統計")
+    by_group: dict[str, list[int]] = {}
+    by_note: dict[tuple[str, str], list[int]] = {}
+    for offset, item in enumerate(boss_rows):
+        data_row = start_row + offset
+        by_group.setdefault(item["group"], []).append(data_row)
+        if item["note"]:
+            by_note.setdefault((item["group"], item["note"]), []).append(data_row)
+
+    for rows in by_group.values():
+        if len(rows) > 1:
+            ws.merge_cells(start_row=rows[0], start_column=1, end_row=rows[-1], end_column=1)
+            ws.cell(row=rows[0], column=1).alignment = Alignment(horizontal="center", vertical="center")
+
+    for rows in by_note.values():
+        if len(rows) > 1:
+            ws.merge_cells(start_row=rows[0], start_column=9, end_row=rows[-1], end_column=9)
+            ws.cell(row=rows[0], column=9).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+    last_row = row - 1
+    ws.freeze_panes = "A5"
+    _set_widths(ws, [8, 34, 10, 10, 8, 12, 8, 8, 34])
+    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:I{last_row}", footer_title="支撐分類統計")
 
 
 def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
