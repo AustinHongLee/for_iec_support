@@ -70,14 +70,23 @@ _RESULT_COLUMN_WIDTHS = [
 ]
 
 _PROJECT_ROW_ALIASES = {
-    "serial": ("流水號.sort", "流水號", "serial", "serial_no", "sort", "序號"),
-    "designation": ("型號", "designation", "支撐編碼", "編碼", "support", "support_no"),
-    "quantity": ("數量", "quantity", "qty", "組數"),
-    "unit": ("單位", "unit"),
+    "serial": ("流水號.sort", "流水號", "serial", "serial_no", "seq", "sort", "序號", "編號"),
+    "designation": ("型號", "designation", "support_designation", "support_no", "支撐編碼", "編碼", "支撐型號", "model"),
+    "quantity": ("數量", "quantity", "qty", "count", "組數", "支數"),
+    "unit": ("單位", "unit", "uom"),
     "enabled": ("enabled", "啟用"),
     "overrides": ("overrides_json", "overrides"),
-    "description": ("description", "描述", "中文說明", "說明"),
-    "item_code": ("item_code", "item code", "料號"),
+    "description": ("description", "desc", "描述", "中文說明", "說明", "品名"),
+    "item_code": ("item_code", "item code", "料號", "code"),
+}
+
+_PROJECT_XLSX_FIELD_LABELS = {
+    "serial": "流水號.sort",
+    "quantity": "數量",
+    "unit": "單位",
+    "designation": "型號",
+    "description": "說明備援",
+    "item_code": "料號備援",
 }
 
 
@@ -906,60 +915,50 @@ class MainWindow(QMainWindow):
         from openpyxl import load_workbook
 
         wb = load_workbook(filepath, read_only=True, data_only=True)
-        ws = wb["SUPPORT MTO"] if "SUPPORT MTO" in wb.sheetnames else wb[wb.sheetnames[0]]
+        try:
+            layout = self._detect_project_xlsx_layout(wb)
+            if layout is None:
+                raise ValueError("找不到可用的 MTO 表頭；請確認 Excel 內有流水號/數量/單位/型號等欄位。")
 
-        header_row = None
-        headers: list[str] = []
-        for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=min(ws.max_row, 30), values_only=True), start=1):
-            candidate = ["" if cell is None else str(cell).strip() for cell in row]
-            normalized = {self._normalize_project_header(cell) for cell in candidate if cell}
-            has_designation = any(
-                self._normalize_project_header(alias) in normalized
-                for alias in _PROJECT_ROW_ALIASES["designation"]
-            )
-            has_quantity = any(
-                self._normalize_project_header(alias) in normalized
-                for alias in _PROJECT_ROW_ALIASES["quantity"]
-            )
-            if has_designation and has_quantity:
-                header_row = row_idx
-                headers = candidate
-                break
+            ws = layout["worksheet"]
+            header_row = layout["header_row"]
+            headers = layout["headers"]
+            mapping = dict(layout["mapping"])
+            mapping = self._confirm_project_xlsx_mapping(ws.title, header_row, headers, mapping)
 
-        if header_row is None:
-            raise ValueError("找不到 MTO 表頭；至少需要 型號/designation 與 數量/quantity 欄。")
+            if not self._has_project_designation_source(mapping):
+                raise ValueError("xlsx 匯入至少需要指定「型號」欄，或指定可抽型號的說明/料號備援欄。")
+            if mapping.get("quantity") is None:
+                raise ValueError("xlsx 匯入至少需要指定「數量」欄。")
 
-        rows: list[ProjectInputRow] = []
-        for row_idx, values in enumerate(ws.iter_rows(min_row=header_row + 1, values_only=True), start=header_row + 1):
-            raw = {
-                headers[col_idx]: "" if value is None else value
-                for col_idx, value in enumerate(values)
-                if col_idx < len(headers) and headers[col_idx]
-            }
-            designation = self._project_field_value(raw, _PROJECT_ROW_ALIASES["designation"])
-            if not designation:
-                designation = (
-                    self._extract_designation_from_text(
-                        self._project_field_value(raw, _PROJECT_ROW_ALIASES["description"])
+            rows: list[ProjectInputRow] = []
+            for row_idx, values in enumerate(ws.iter_rows(min_row=header_row + 1, values_only=True), start=header_row + 1):
+                designation = self._project_mapped_value(values, mapping, "designation")
+                if not designation:
+                    designation = (
+                        self._extract_designation_from_text(
+                            self._project_mapped_value(values, mapping, "description")
+                        )
+                        or self._extract_designation_from_text(
+                            self._project_mapped_value(values, mapping, "item_code")
+                        )
                     )
-                    or self._extract_designation_from_text(
-                        self._project_field_value(raw, _PROJECT_ROW_ALIASES["item_code"])
+                if not designation:
+                    continue
+
+                quantity_text = self._project_mapped_value(values, mapping, "quantity") or "1"
+                rows.append(
+                    ProjectInputRow(
+                        designation=designation,
+                        quantity=self._parse_list_quantity(quantity_text, row_idx),
+                        enabled=True,
+                        serial=self._project_mapped_value(values, mapping, "serial"),
+                        unit=self._project_mapped_value(values, mapping, "unit") or "組",
                     )
                 )
-            if not designation:
-                continue
-
-            quantity_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["quantity"]) or "1"
-            rows.append(
-                ProjectInputRow(
-                    designation=designation,
-                    quantity=self._parse_list_quantity(quantity_text, row_idx),
-                    enabled=True,
-                    serial=self._project_field_value(raw, _PROJECT_ROW_ALIASES["serial"]),
-                    unit=self._project_field_value(raw, _PROJECT_ROW_ALIASES["unit"]) or "組",
-                )
-            )
-        return rows
+            return rows
+        finally:
+            wb.close()
 
     def _read_project_rows_text(self, lines: list[str]) -> list[ProjectInputRow]:
         rows: list[ProjectInputRow] = []
@@ -971,6 +970,213 @@ class MainWindow(QMainWindow):
                 continue
             rows.append(self._project_row_from_text_parts(parts, idx))
         return rows
+
+    def _detect_project_xlsx_layout(self, wb):
+        best = None
+        for ws in wb.worksheets:
+            scan_rows = list(
+                ws.iter_rows(
+                    min_row=1,
+                    max_row=min(ws.max_row, 30),
+                    values_only=True,
+                )
+            )
+            for row_offset, row_values in enumerate(scan_rows, start=1):
+                headers = ["" if cell is None else str(cell).strip() for cell in row_values]
+                if sum(1 for header in headers if header) < 2:
+                    continue
+                sample_rows = scan_rows[row_offset:row_offset + 12]
+                mapping, score = self._infer_project_column_mapping(headers, sample_rows)
+                score += self._project_sheet_name_bonus(ws.title)
+                score += 60 if mapping.get("designation") is not None and mapping.get("quantity") is not None else 0
+                candidate = {
+                    "worksheet": ws,
+                    "header_row": row_offset,
+                    "headers": headers,
+                    "mapping": mapping,
+                    "score": score,
+                }
+                if best is None or candidate["score"] > best["score"]:
+                    best = candidate
+        return best
+
+    @staticmethod
+    def _project_sheet_name_bonus(title: str) -> int:
+        normalized = re.sub(r"\s+", "", str(title or "").strip().lower())
+        if normalized == "supportmto":
+            return 30
+        bonus = 0
+        if "support" in normalized:
+            bonus += 8
+        if "mto" in normalized:
+            bonus += 8
+        if "材料" in normalized or "支撐" in normalized:
+            bonus += 4
+        return bonus
+
+    def _infer_project_column_mapping(self, headers: list[str], sample_rows: list[tuple]) -> tuple[dict[str, int | None], float]:
+        field_order = ("designation", "quantity", "serial", "unit", "description", "item_code")
+        thresholds = {
+            "designation": 35,
+            "quantity": 35,
+            "serial": 45,
+            "unit": 35,
+            "description": 35,
+            "item_code": 35,
+        }
+        scores = []
+        for field in field_order:
+            for col_idx, header in enumerate(headers):
+                column_values = [
+                    row[col_idx] if col_idx < len(row) else None
+                    for row in sample_rows
+                ]
+                score = self._project_column_score(field, header, column_values)
+                if score >= thresholds[field]:
+                    scores.append((score, field, col_idx))
+
+        mapping: dict[str, int | None] = {field: None for field in field_order}
+        used_cols: set[int] = set()
+        total_score = 0.0
+        for score, field, col_idx in sorted(scores, reverse=True):
+            if mapping[field] is not None or col_idx in used_cols:
+                continue
+            mapping[field] = col_idx
+            used_cols.add(col_idx)
+            total_score += score
+        return mapping, total_score
+
+    def _project_column_score(self, field: str, header, values: list) -> float:
+        header_text = str(header or "").strip()
+        normalized = self._normalize_project_header(header_text)
+        if not normalized:
+            return 0.0
+
+        score = 0.0
+        aliases = [self._normalize_project_header(alias) for alias in _PROJECT_ROW_ALIASES.get(field, ())]
+        if normalized in aliases:
+            score += 100
+        elif any(alias and alias in normalized for alias in aliases):
+            score += 65
+
+        keyword_scores = {
+            "serial": (("流水", "序號", "編號", "serial", "serialno", "seq", "sort", "rowno", "lineno"), 42),
+            "quantity": (("數量", "組數", "qty", "quantity", "count"), 42),
+            "unit": (("單位", "unit", "uom"), 42),
+            "designation": (("型號", "designation", "model", "supportno", "supportdesignation", "支撐編碼"), 42),
+            "description": (("description", "desc", "描述", "說明", "中文說明", "品名"), 42),
+            "item_code": (("itemcode", "料號", "code"), 42),
+        }
+        keywords, keyword_score = keyword_scores.get(field, ((), 0))
+        if any(self._normalize_project_header(keyword) in normalized for keyword in keywords):
+            score += keyword_score
+
+        nonempty = [str(value).strip() for value in values if value is not None and str(value).strip()]
+        if not nonempty:
+            return score
+
+        if field == "designation":
+            hit_ratio = sum(1 for value in nonempty if self._looks_like_designation(value)) / len(nonempty)
+            score += hit_ratio * 70
+        elif field == "quantity":
+            numeric_ratio = sum(1 for value in nonempty if self._looks_like_list_quantity(value)) / len(nonempty)
+            score += numeric_ratio * 45
+        elif field == "unit":
+            unit_ratio = sum(1 for value in nonempty if self._looks_like_project_unit(value)) / len(nonempty)
+            score += unit_ratio * 70
+        elif field == "serial":
+            unique_ratio = len(set(nonempty)) / len(nonempty)
+            score += min(unique_ratio, 1.0) * 15
+        elif field == "description":
+            extracted_ratio = sum(1 for value in nonempty if self._extract_designation_from_text(value) != value) / len(nonempty)
+            score += extracted_ratio * 35
+        return score
+
+    def _project_mapped_value(self, values, mapping: dict, field: str) -> str:
+        col_idx = mapping.get(field)
+        if col_idx is None or col_idx >= len(values):
+            return ""
+        value = values[col_idx]
+        return "" if value is None else str(value).strip()
+
+    @staticmethod
+    def _has_project_designation_source(mapping: dict) -> bool:
+        return any(mapping.get(field) is not None for field in ("designation", "description", "item_code"))
+
+    def _confirm_project_xlsx_mapping(
+        self,
+        sheet_name: str,
+        header_row: int,
+        headers: list[str],
+        mapping: dict[str, int | None],
+    ) -> dict[str, int | None]:
+        if not self._can_show_xlsx_mapping_dialog():
+            return mapping
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("xlsx 匯入欄位對應")
+        dlg.setMinimumSize(560, 360)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(QLabel(f"Sheet: {sheet_name}    表頭列: {header_row}"))
+        lay.addWidget(QLabel("請確認欄位對應；型號與數量為必填，其餘可不使用。"))
+
+        form = QFormLayout()
+        combos: dict[str, QComboBox] = {}
+        fields = ("serial", "quantity", "unit", "designation", "description", "item_code")
+        for field in fields:
+            combo = QComboBox()
+            combo.addItem("不使用", None)
+            for col_idx, header in enumerate(headers):
+                if not header:
+                    continue
+                combo.addItem(f"{self._xlsx_column_label(col_idx)}  {header}", col_idx)
+            current_col = mapping.get(field)
+            if current_col is not None:
+                for item_idx in range(combo.count()):
+                    if combo.itemData(item_idx) == current_col:
+                        combo.setCurrentIndex(item_idx)
+                        break
+            combos[field] = combo
+            label = _PROJECT_XLSX_FIELD_LABELS.get(field, field)
+            if field in {"designation", "quantity"}:
+                label += " *"
+            form.addRow(label, combo)
+        lay.addLayout(form)
+
+        button_row = QHBoxLayout()
+        btn_ok = QPushButton("套用匯入")
+        btn_cancel = QPushButton("取消")
+        button_row.addStretch()
+        button_row.addWidget(btn_ok)
+        button_row.addWidget(btn_cancel)
+        lay.addLayout(button_row)
+
+        def accept_mapping():
+            selected = {field: combos[field].currentData() for field in fields}
+            if not self._has_project_designation_source(selected) or selected.get("quantity") is None:
+                QMessageBox.warning(dlg, "欄位不足", "請至少指定「數量」欄，以及「型號」或可抽型號的備援欄。")
+                return
+            dlg.accept()
+
+        btn_ok.clicked.connect(accept_mapping)
+        btn_cancel.clicked.connect(dlg.reject)
+
+        if not dlg.exec():
+            raise ValueError("已取消 xlsx 匯入")
+
+        return {field: combos[field].currentData() for field in fields}
+
+    def _can_show_xlsx_mapping_dialog(self) -> bool:
+        try:
+            return QApplication.instance() is not None and "item_list" in object.__getattribute__(self, "__dict__")
+        except RuntimeError:
+            return False
+
+    @staticmethod
+    def _xlsx_column_label(col_idx: int) -> str:
+        from openpyxl.utils import get_column_letter
+
+        return get_column_letter(col_idx + 1)
 
     def _split_project_row_parts(self, line: str) -> list[str]:
         text = str(line or "").strip().replace("，", ",")

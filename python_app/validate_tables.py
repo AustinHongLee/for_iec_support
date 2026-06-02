@@ -141,6 +141,33 @@ try:
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
     try:
+        from ui.main_window import MainWindow
+
+        wb_import = openpyxl.Workbook()
+        ws_import = wb_import.active
+        ws_import.title = "Owner MTO"
+        ws_import.append(["ignored title row"])
+        ws_import.append(["uom", "model", "count", "seq"])
+        ws_import.append(["組", "57-1B-A", 3, "A-009"])
+        wb_import.save(path)
+        wb_import.close()
+
+        reader = MainWindow.__new__(MainWindow)
+        imported_rows = reader._read_project_rows_xlsx(path)
+        assert len(imported_rows) == 1, "flexible xlsx import row count failed"
+        assert imported_rows[0].serial == "A-009", "flexible xlsx import serial mapping failed"
+        assert imported_rows[0].designation == "57-1B-A", "flexible xlsx import designation mapping failed"
+        assert imported_rows[0].quantity == 3, "flexible xlsx import quantity mapping failed"
+        assert imported_rows[0].unit == "組", "flexible xlsx import unit mapping failed"
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    fd, path = tempfile.mkstemp(suffix=".xlsx")
+    os.close(fd)
+    try:
         export_project_to_excel(project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
         ws = wb.active
