@@ -38,6 +38,7 @@ from core.calculator import (
 )
 from core.models import AnalysisResult
 from core.parser import get_type_code, get_part, get_lookup_value
+from core.project_import import read_project_rows_xlsx
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict
 from ui.type_manager import TypeManagerWidget, load_catalog
@@ -935,56 +936,10 @@ class MainWindow(QMainWindow):
         return rows
 
     def _read_project_rows_xlsx(self, filepath: str) -> list[ProjectInputRow]:
-        from openpyxl import load_workbook
-
-        wb = load_workbook(filepath, read_only=True, data_only=True)
-        try:
-            layout = self._detect_project_xlsx_layout(wb)
-            if layout is None:
-                raise ValueError("找不到可用的 MTO 表頭；請確認 Excel 內有流水號/數量/單位/型號等欄位。")
-
-            ws = layout["worksheet"]
-            header_row = layout["header_row"]
-            headers = layout["headers"]
-            mapping = dict(layout["mapping"])
-            mapping = self._confirm_project_xlsx_mapping(ws.title, header_row, headers, mapping)
-
-            if not self._has_project_designation_source(mapping):
-                raise ValueError("xlsx 匯入至少需要指定「型號」欄，或指定可抽型號的說明/料號備援欄。")
-            if mapping.get("quantity") is None:
-                raise ValueError("xlsx 匯入至少需要指定「數量」欄。")
-
-            rows: list[ProjectInputRow] = []
-            for row_idx, values in enumerate(ws.iter_rows(min_row=header_row + 1, values_only=True), start=header_row + 1):
-                designation = self._project_mapped_value(values, mapping, "designation")
-                if not designation:
-                    designation = (
-                        self._extract_designation_from_text(
-                            self._project_mapped_value(values, mapping, "description")
-                        )
-                        or self._extract_designation_from_text(
-                            self._project_mapped_value(values, mapping, "item_code")
-                        )
-                    )
-                if not designation:
-                    continue
-
-                quantity_text = self._project_mapped_value(values, mapping, "quantity") or "1"
-                rows.append(
-                    ProjectInputRow(
-                        designation=designation,
-                        quantity=self._parse_list_quantity(quantity_text, row_idx),
-                        enabled=True,
-                        drawing_line_number=self._project_mapped_value(values, mapping, "drawing_line_number"),
-                        serial=self._project_mapped_value(values, mapping, "serial"),
-                        unit=self._normalize_project_unit_value(
-                            self._project_mapped_value(values, mapping, "unit")
-                        ),
-                    )
-                )
-            return rows
-        finally:
-            wb.close()
+        return read_project_rows_xlsx(
+            filepath,
+            mapping_confirmer=self._confirm_project_xlsx_mapping,
+        )
 
     def _read_project_rows_text(self, lines: list[str]) -> list[ProjectInputRow]:
         rows: list[ProjectInputRow] = []

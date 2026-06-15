@@ -7,6 +7,14 @@ APP_DIR = Path(__file__).resolve().parent
 os.chdir(APP_DIR)
 sys.path.insert(0, str(APP_DIR))
 
+_FAILURES: list[str] = []
+
+
+def record_failure(message: str) -> None:
+    _FAILURES.append(message)
+    print(message)
+
+
 # Phase X parser normalization smoke tests.
 try:
     from core.calculator import analyze_single
@@ -36,7 +44,7 @@ try:
 
     print("v phase X parser normalization OK")
 except Exception as e:
-    print(f"X phase X parser normalization ERROR: {e}")
+    record_failure(f"X phase X parser normalization ERROR: {e}")
 
 # Project-level aggregation wrapper smoke tests.
 try:
@@ -146,7 +154,7 @@ try:
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
     try:
-        from ui.main_window import MainWindow
+        from core.project_import import read_project_rows_xlsx
 
         wb_import = openpyxl.Workbook()
         ws_import = wb_import.active
@@ -157,8 +165,7 @@ try:
         wb_import.save(path)
         wb_import.close()
 
-        reader = MainWindow.__new__(MainWindow)
-        imported_rows = reader._read_project_rows_xlsx(path)
+        imported_rows = read_project_rows_xlsx(path)
         assert len(imported_rows) == 1, "flexible xlsx import row count failed"
         assert imported_rows[0].drawing_line_number == "1--1-S11U-AI-00009", "flexible xlsx import drawing line mapping failed"
         assert imported_rows[0].serial == "A-009", "flexible xlsx import serial mapping failed"
@@ -363,7 +370,7 @@ try:
 
     print("v project aggregation wrapper OK")
 except Exception as e:
-    print(f"X project aggregation wrapper ERROR: {e}")
+    record_failure(f"X project aggregation wrapper ERROR: {e}")
 
 # Type 01 Rev.1 table and note guardrails.
 try:
@@ -558,7 +565,7 @@ try:
 
     print("v type01 Rev.1 table/note guardrails OK")
 except Exception as e:
-    print(f"X type01 Rev.1 table/note guardrails ERROR: {e}")
+    record_failure(f"X type01 Rev.1 table/note guardrails ERROR: {e}")
 
 # Phase H-02: Type 10/15/16 dimensional and weight guardrails.
 try:
@@ -737,7 +744,7 @@ try:
 
     print("v phase H-02 type10/type15/type16 guardrails OK")
 except Exception as e:
-    print(f"X phase H-02 type10/type15/type16 guardrails ERROR: {e}")
+    record_failure(f"X phase H-02 type10/type15/type16 guardrails ERROR: {e}")
     raise
 
 # Type 20/26 structural guardrails.
@@ -837,7 +844,7 @@ try:
 
     print("v type03/type05/type06/type07/type08/type20/type26 structural guardrails OK")
 except Exception as e:
-    print(f"X type03/type05/type06/type07/type08/type20/type26 structural guardrails ERROR: {e}")
+    record_failure(f"X type03/type05/type06/type07/type08/type20/type26 structural guardrails ERROR: {e}")
     raise
 
 # Type 52/66 D-80 pad and FB guardrails.
@@ -908,7 +915,7 @@ try:
 
     print("v type52/type66 pad and FB guardrails OK")
 except Exception as e:
-    print(f"X type52/type66 pad and FB guardrails ERROR: {e}")
+    record_failure(f"X type52/type66 pad and FB guardrails ERROR: {e}")
 
 # Urgent project priority Type guardrails.
 try:
@@ -1162,7 +1169,7 @@ try:
 
     print(f"v urgent priority Type guardrails OK ({len(_PRIORITY_TYPE_CASES)} cases + Type 80)")
 except Exception as e:
-    print(f"X urgent priority Type guardrails ERROR: {e}")
+    record_failure(f"X urgent priority Type guardrails ERROR: {e}")
     raise
 
 try:
@@ -1183,7 +1190,7 @@ try:
     print("implemented components:", ", ".join(sorted(EXISTING_COMPONENT_TABLES)))
     print("missing components:", ", ".join(MISSING_COMPONENT_TABLES))
 except Exception as e:
-    print(f"X component registry ERROR: {e}")
+    record_failure(f"X component registry ERROR: {e}")
 
 # Test full M/N metadata baseline
 try:
@@ -1221,7 +1228,7 @@ try:
 
     print("v full M/N component metadata baseline OK")
 except Exception as e:
-    print(f"X full M/N component metadata baseline ERROR: {e}")
+    record_failure(f"X full M/N component metadata baseline ERROR: {e}")
 
 # Test m45_table
 try:
@@ -1231,7 +1238,7 @@ try:
     assert r1 is not None and r1["tensile_kg"] == 2312, f"m45 1/2 failed: {r1}"
     print("v m45_table OK")
 except Exception as e:
-    print(f"X m45_table ERROR: {e}")
+    record_failure(f"X m45_table ERROR: {e}")
 
 # Test m4_table
 try:
@@ -1248,7 +1255,7 @@ try:
     ), f"m4 failed: {r_m4}"
     print("v m4_table OK")
 except Exception as e:
-    print(f"X m4_table ERROR: {e}")
+    record_failure(f"X m4_table ERROR: {e}")
 
 # Test m6_table
 try:
@@ -1259,7 +1266,7 @@ try:
     assert r_m6_2_5 is not None and r_m6_2_5["designation"] == "PCL-C-2 1/2B", f"m6 2 1/2 failed: {r_m6_2_5}"
     print("v m6_table OK")
 except Exception as e:
-    print(f"X m6_table ERROR: {e}")
+    record_failure(f"X m6_table ERROR: {e}")
 
 # Test m5/m7 PDF designation coverage
 try:
@@ -1275,7 +1282,7 @@ try:
     assert r_m7_2 is None, f"m7 2 should be None (not in PDF): {r_m7_2}"
     print("v m5/m7 PDF designation coverage OK")
 except Exception as e:
-    print(f"X m5/m7 PDF designation coverage ERROR: {e}")
+    record_failure(f"X m5/m7 PDF designation coverage ERROR: {e}")
 
 # Test m21_table
 try:
@@ -1284,7 +1291,7 @@ try:
     assert r_m21 is not None and r_m21["take_up_mm"] == 180 and r_m21["unit_weight_kg"] > 0, f"m21 failed: {r_m21}"
     print("v m21_table OK")
 except Exception as e:
-    print(f"X m21_table ERROR: {e}")
+    record_failure(f"X m21_table ERROR: {e}")
 
 # Test m24_table
 try:
@@ -1293,7 +1300,7 @@ try:
     assert r_m24 is not None and r_m24["pin_dia_b"] == '1"' and r_m24["unit_weight_kg"] > 0, f"m24 failed: {r_m24}"
     print("v m24_table OK")
 except Exception as e:
-    print(f"X m24_table ERROR: {e}")
+    record_failure(f"X m24_table ERROR: {e}")
 
 # Test Type 11 table-backed hardware
 try:
@@ -1312,7 +1319,7 @@ try:
     assert type11_washer_entry and type11_washer_entry.category == "鋼板類", f"type11 calculator washer failed: {type11_result}"
     print("v type11 hardware table OK")
 except Exception as e:
-    print(f"X type11 hardware table ERROR: {e}")
+    record_failure(f"X type11 hardware table ERROR: {e}")
 
 # Test m47_table
 try:
@@ -1323,7 +1330,7 @@ try:
     assert dims_m47 == (90, 1915), f"m47 dims failed: {dims_m47}"
     print("v m47_table OK")
 except Exception as e:
-    print(f"X m47_table ERROR: {e}")
+    record_failure(f"X m47_table ERROR: {e}")
 
 # Test AI-visual transcribed component tables and remaining metadata-only tables
 try:
@@ -1360,7 +1367,7 @@ try:
     assert r_n1["component_id"] == "N-1" and r_n1["table_kind"] == "metadata_only", f"n1 metadata failed: {r_n1}"
     print("v m52/m53/m54/m55 visual lookup + metadata-only component tables OK")
 except Exception as e:
-    print(f"X m52/m53/m54/m55 visual lookup + metadata-only component tables ERROR: {e}")
+    record_failure(f"X m52/m53/m54/m55 visual lookup + metadata-only component tables ERROR: {e}")
 
 # Test m22_table
 try:
@@ -1369,7 +1376,7 @@ try:
     assert r12 is not None and r12["designation"] == "MTRL-3/4-600" and r12["thread_length_c"] == 152 and r12["unit_weight_kg"] > 0, f"m22 failed: {r12}"
     print("v m22_table OK")
 except Exception as e:
-    print(f"X m22_table ERROR: {e}")
+    record_failure(f"X m22_table ERROR: {e}")
 
 # Test m23_table
 try:
@@ -1382,7 +1389,7 @@ try:
     assert r13_inferred is None, f"m23 1 1/8 should be None (not in PDF): {r13_inferred}"
     print("v m23_table OK")
 except Exception as e:
-    print(f"X m23_table ERROR: {e}")
+    record_failure(f"X m23_table ERROR: {e}")
 
 # Test m25_table
 try:
@@ -1391,7 +1398,7 @@ try:
     assert r14 is not None and r14["designation"] == "WENL-7/8" and r14["G"] == 25 and r14["unit_weight_kg"] > 0, f"m25 failed: {r14}"
     print("v m25_table OK")
 except Exception as e:
-    print(f"X m25_table ERROR: {e}")
+    record_failure(f"X m25_table ERROR: {e}")
 
 # Test m26_table
 try:
@@ -1400,7 +1407,7 @@ try:
     assert r15 is not None and r15["type"] == "UB-2B" and r15["C"] == 71, f"m26 failed: {r15}"
     print("v m26_table OK")
 except Exception as e:
-    print(f"X m26_table ERROR: {e}")
+    record_failure(f"X m26_table ERROR: {e}")
 
 # Test m28_table
 try:
@@ -1413,7 +1420,7 @@ try:
     assert r16_inferred is None, f"m28 1 1/8 should be None (not in PDF): {r16_inferred}"
     print("v m28_table OK")
 except Exception as e:
-    print(f"X m28_table ERROR: {e}")
+    record_failure(f"X m28_table ERROR: {e}")
 
 # Test centralized component fallback rules
 try:
@@ -1506,7 +1513,7 @@ try:
     assert pipe_only.material_overrides.per_kind == {} and pipe_only.material_overrides.all_hardware is None, "pipe_material must not affect hardware parser"
     print("v component_rules fallback layer OK")
 except Exception as e:
-    print(f"X component_rules fallback layer ERROR: {e}")
+    record_failure(f"X component_rules fallback layer ERROR: {e}")
 
 # Phase 2B material identity scaffold
 try:
@@ -1530,7 +1537,7 @@ try:
     assert normalize_material_alias(" A36/SS400 ") in MATERIAL_ALIAS_MAP, "normalized alias map failed"
     print("v phase 2B material identity scaffold OK")
 except Exception as e:
-    print(f"X phase 2B material identity scaffold ERROR: {e}")
+    record_failure(f"X phase 2B material identity scaffold ERROR: {e}")
 
 # Phase 2I pipe/plate MaterialSpec compatibility
 try:
@@ -1568,7 +1575,7 @@ try:
 
     print("v phase 2I pipe/plate MaterialSpec compatibility OK")
 except Exception as e:
-    print(f"X phase 2I pipe/plate MaterialSpec compatibility ERROR: {e}")
+    record_failure(f"X phase 2I pipe/plate MaterialSpec compatibility ERROR: {e}")
 
 # Phase 3A core helper MaterialSpec compatibility
 try:
@@ -1709,7 +1716,7 @@ try:
 
     print("v phase 3A core helper MaterialSpec compatibility OK")
 except Exception as e:
-    print(f"X phase 3A core helper MaterialSpec compatibility ERROR: {e}")
+    record_failure(f"X phase 3A core helper MaterialSpec compatibility ERROR: {e}")
 
 # Test type41_table
 try:
@@ -1718,7 +1725,7 @@ try:
     assert r3 is not None and r3["L"] == 230 and r3["fig"] == "A", f"type41 41-1 failed: {r3}"
     print("v type41_table OK")
 except Exception as e:
-    print(f"X type41_table ERROR: {e}")
+    record_failure(f"X type41_table ERROR: {e}")
 
 # Test type42_table
 try:
@@ -1727,7 +1734,7 @@ try:
     assert r4 is not None and r4["H_MAX"] == 1750, f"type42 C125 failed: {r4}"
     print("v type42_table OK")
 except Exception as e:
-    print(f"X type42_table ERROR: {e}")
+    record_failure(f"X type42_table ERROR: {e}")
 
 # Test type43_table
 try:
@@ -1736,7 +1743,7 @@ try:
     assert r5 is not None and r5["A"] == 160, f"type43 L75 failed: {r5}"
     print("v type43_table OK")
 except Exception as e:
-    print(f"X type43_table ERROR: {e}")
+    record_failure(f"X type43_table ERROR: {e}")
 
 # Test type44_table
 try:
@@ -1745,7 +1752,7 @@ try:
     assert r6 == 140, f"type44 Q 10 failed: {r6}"
     print("v type44_table OK")
 except Exception as e:
-    print(f"X type44_table ERROR: {e}")
+    record_failure(f"X type44_table ERROR: {e}")
 
 # Test type45_table
 try:
@@ -1754,7 +1761,7 @@ try:
     assert r7 == 181, f"type45 Q 14 failed: {r7}"
     print("v type45_table OK")
 except Exception as e:
-    print(f"X type45_table ERROR: {e}")
+    record_failure(f"X type45_table ERROR: {e}")
 
 # Test type46_table
 try:
@@ -1763,7 +1770,7 @@ try:
     assert r8 == 187, f"type46 Q 6 failed: {r8}"
     print("v type46_table OK")
 except Exception as e:
-    print(f"X type46_table ERROR: {e}")
+    record_failure(f"X type46_table ERROR: {e}")
 
 # Test type48_table
 try:
@@ -1772,7 +1779,7 @@ try:
     assert r9 is not None and r9["plate_t"] == 6, f"type48 2 failed: {r9}"
     print("v type48_table OK")
 except Exception as e:
-    print(f"X type48_table ERROR: {e}")
+    record_failure(f"X type48_table ERROR: {e}")
 
 # Test type51_table
 try:
@@ -1781,7 +1788,7 @@ try:
     assert r10 is not None and r10["member"] == "L65*65*6", f"type51 12 failed: {r10}"
     print("v type51_table OK")
 except Exception as e:
-    print(f"X type51_table ERROR: {e}")
+    record_failure(f"X type51_table ERROR: {e}")
 
 # Test type56_table
 try:
@@ -1790,7 +1797,7 @@ try:
     assert r11 is not None and r11["R"] == 84, f"type56 6 failed: {r11}"
     print("v type56_table OK")
 except Exception as e:
-    print(f"X type56_table ERROR: {e}")
+    record_failure(f"X type56_table ERROR: {e}")
 
 # Test type62 hanger combination table/calculator
 try:
@@ -1818,7 +1825,7 @@ try:
     assert not r62_material.error and r62_material.entries[0].material == "SUS304", f"type62 material override failed: {r62_material.entries}"
     print("v type62 hanger combination OK")
 except Exception as e:
-    print(f"X type62 hanger combination ERROR: {e}")
+    record_failure(f"X type62 hanger combination ERROR: {e}")
 
 # Test consistency refactor smokes
 try:
@@ -1834,7 +1841,7 @@ try:
     assert not r16_override.error and r16_override.entries[0].material == "SUS304" and r16_override.entries[1].material == "A53Gr.B", f"type16 should keep fixed pipe materials: {r16_override.entries}"
     print("v system consistency refactor smokes OK")
 except Exception as e:
-    print(f"X system consistency refactor smokes ERROR: {e}")
+    record_failure(f"X system consistency refactor smokes ERROR: {e}")
 
 # Phase 1D-0 material/override snapshot guardrails
 try:
@@ -2137,7 +2144,7 @@ try:
 
     print("v phase 1D-0 material/override snapshot baseline OK")
 except Exception as e:
-    print(f"X phase 1D-0 material/override snapshot baseline ERROR: {e}")
+    record_failure(f"X phase 1D-0 material/override snapshot baseline ERROR: {e}")
 
 # Phase 1D-2C override consistency across migrated material Types
 try:
@@ -2327,7 +2334,7 @@ try:
 
     print("v phase 1D-2C override consistency OK")
 except Exception as e:
-    print(f"X phase 1D-2C override consistency ERROR: {e}")
+    record_failure(f"X phase 1D-2C override consistency ERROR: {e}")
 
 # Phase 1D-6 material-system lock-in checks
 try:
@@ -2388,7 +2395,7 @@ try:
 
     print("v phase 1D-6 material-system lock-in OK")
 except Exception as e:
-    print(f"X phase 1D-6 material-system lock-in ERROR: {e}")
+    record_failure(f"X phase 1D-6 material-system lock-in ERROR: {e}")
 
 # Phase 4B material hard lock for Phase 1D migrated Types.
 #
@@ -2427,7 +2434,7 @@ try:
 
     print("v phase 4B material hard lock OK")
 except Exception as e:
-    print(f"X phase 4B material hard lock ERROR: {e}")
+    record_failure(f"X phase 4B material hard lock ERROR: {e}")
     raise
 
 # Test type72 strap support table/calculator
@@ -2447,7 +2454,7 @@ try:
     assert r72_bad.error and "3/4" in r72_bad.error, f"type72 invalid range failed: {r72_bad}"
     print("v type72 strap support OK")
 except Exception as e:
-    print(f"X type72 strap support ERROR: {e}")
+    record_failure(f"X type72 strap support ERROR: {e}")
 
 # Test type73/type76/type77/type78/type79 support calculators
 try:
@@ -2484,7 +2491,7 @@ try:
     assert r79_bad.error and '5"' in r79_bad.error, f"type79 invalid range failed: {r79_bad}"
     print("v type73/type76/type77/type78/type79 support calculators OK")
 except Exception as e:
-    print(f"X type73/type76/type77/type78/type79 support calculators ERROR: {e}")
+    record_failure(f"X type73/type76/type77/type78/type79 support calculators ERROR: {e}")
 
 # Test localized truth/evidence contract
 try:
@@ -2506,7 +2513,7 @@ try:
     assert r_unknown_truth.meta["truth_level"] == TRUTH_UNKNOWN and r_unknown_truth.meta["requires_review"], f"unknown truth failed: {r_unknown_truth.meta}"
     print("v localized truth/evidence contract OK")
 except Exception as e:
-    print(f"X localized truth/evidence contract ERROR: {e}")
+    record_failure(f"X localized truth/evidence contract ERROR: {e}")
 
 # Test type64/type65 normalization helpers
 try:
@@ -2518,7 +2525,7 @@ try:
     assert r65 is not None and r65["rod_size"] == '3/8"', f"type65 normalize failed: {r65}"
     print("v type64/type65 normalization OK")
 except Exception as e:
-    print(f"X type64/type65 normalization ERROR: {e}")
+    record_failure(f"X type64/type65 normalization ERROR: {e}")
 
 # Phase 2L-A soft lock warnings for unmanaged material paths.
 #
@@ -2860,7 +2867,11 @@ try:
     print("v phase 5b golden cases type_27/42/43/39/56 OK")
 except Exception as e:
     import traceback
-    print(f"X phase 5b golden cases FAILED: {e}")
+    record_failure(f"X phase 5b golden cases FAILED: {e}")
     traceback.print_exc()
+
+if _FAILURES:
+    print(f"\n=== VALIDATION FAILED: {len(_FAILURES)} error(s) ===")
+    sys.exit(1)
 
 print("\n=== VALIDATION COMPLETE ===")
