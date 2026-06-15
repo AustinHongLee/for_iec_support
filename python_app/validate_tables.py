@@ -1,6 +1,11 @@
 
+import os
 import sys
-sys.path.insert(0, ".")
+from pathlib import Path
+
+APP_DIR = Path(__file__).resolve().parent
+os.chdir(APP_DIR)
+sys.path.insert(0, str(APP_DIR))
 
 # Phase X parser normalization smoke tests.
 try:
@@ -173,21 +178,22 @@ try:
         wb = openpyxl.load_workbook(path, data_only=True)
         ws = wb.active
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
-        assert ws.cell(row=1, column=1).value == "Drawing line number", "project Excel drawing header failed"
-        assert ws.cell(row=1, column=2).value == "流水號.sort", "project Excel serial header failed"
-        assert ws.cell(row=1, column=3).value == "數量", "project Excel source quantity header failed"
-        assert ws.cell(row=1, column=4).value == "單位", "project Excel source unit header failed"
-        assert ws.cell(row=1, column=5).value == "型號", "project Excel designation header failed"
-        assert ws.cell(row=1, column=6).value == "Type", "project Excel type header missing"
-        assert ws.cell(row=1, column=13).value == "單件數量", "project Excel single section missing"
-        assert ws.cell(row=1, column=14).value == "總數量", "project Excel total section missing"
-        assert ws.cell(row=2, column=1).value == "DL-001", "project Excel drawing value failed"
-        assert ws.cell(row=2, column=2).value == "S-001", "project Excel serial value failed"
-        assert ws.cell(row=2, column=3).value == 10, "project Excel quantity failed"
-        assert ws.cell(row=2, column=4).value == "組", "project Excel unit failed"
-        assert ws.cell(row=2, column=6).value == "51", "project Excel type value failed"
-        assert ws.cell(row=2, column=13).value == original_quantity, "project Excel single quantity failed"
-        assert ws.cell(row=2, column=14).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=1, column=1).value == "型號", "project Excel designation header failed"
+        assert ws.cell(row=1, column=2).value == "Type", "project Excel type header missing"
+        assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
+        assert ws.cell(row=1, column=10).value == "總數量", "project Excel total section missing"
+        assert ws.cell(row=1, column=19).value == "來源圖號", "project Excel drawing header failed"
+        assert ws.cell(row=1, column=20).value == "流水號", "project Excel serial header failed"
+        assert ws.cell(row=1, column=21).value == "輸入數量", "project Excel source quantity header failed"
+        assert ws.cell(row=1, column=22).value == "輸入單位", "project Excel source unit header failed"
+        assert ws.cell(row=2, column=1).value == "51-1.1/2B", "project Excel designation value failed"
+        assert ws.cell(row=2, column=2).value == "51", "project Excel type value failed"
+        assert ws.cell(row=2, column=9).value == original_quantity, "project Excel single quantity failed"
+        assert ws.cell(row=2, column=10).value == original_quantity * 10, "project Excel total quantity failed"
+        assert ws.cell(row=2, column=19).value == "DL-001", "project Excel drawing value failed"
+        assert ws.cell(row=2, column=20).value == "S-001", "project Excel serial value failed"
+        assert ws.cell(row=2, column=21).value == 10, "project Excel quantity failed"
+        assert ws.cell(row=2, column=22).value == "組", "project Excel unit failed"
     finally:
         try:
             os.remove(path)
@@ -228,30 +234,38 @@ try:
         assert not _sheet_contains_text(ws_summary, "資料量"), "project summary index should not expose confusing data-volume labels"
         ws_detail = wb["重量明細表"]
         assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
-        assert ws_detail.cell(row=3, column=1).value == "Drawing line number", "weight detail drawing header failed"
-        assert ws_detail.cell(row=3, column=2).value == "流水號.sort", "weight detail serial header failed"
-        assert ws_detail.cell(row=3, column=3).value == "數量", "weight detail source quantity header failed"
-        assert ws_detail.cell(row=3, column=5).value == "型號", "weight detail designation header failed"
-        assert ws_detail.cell(row=3, column=6).value == "Type", "weight detail type header missing"
-        assert ws_detail.cell(row=4, column=1).value == "DL-001", "weight detail drawing value failed"
-        assert ws_detail.cell(row=4, column=2).value == "S-001", "weight detail serial value failed"
-        assert ws_detail.cell(row=4, column=6).value == "51", "weight detail type value failed"
-        assert ws_detail.cell(row=3, column=14).value == "單件數量", "weight detail single qty header failed"
-        assert ws_detail.cell(row=3, column=15).value == "總數量", "weight detail total qty header failed"
-        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 23)], "weight detail should not expose confidence header"
-        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 23)], "weight detail should not expose source header"
+        assert ws_detail.cell(row=3, column=1).value == "型號", "weight detail designation header failed"
+        assert ws_detail.cell(row=3, column=2).value == "Type", "weight detail type header missing"
+        assert ws_detail.cell(row=3, column=10).value == "單件數量", "weight detail single qty header failed"
+        assert ws_detail.cell(row=3, column=11).value == "組數", "weight detail support count header failed"
+        assert ws_detail.cell(row=3, column=12).value == "總數量", "weight detail total qty header failed"
+        assert ws_detail.cell(row=3, column=20).value == "來源圖號", "weight detail drawing header failed"
+        assert ws_detail.cell(row=3, column=21).value == "流水號", "weight detail serial header failed"
+        assert ws_detail.cell(row=4, column=1).value == "51-1.1/2B", "weight detail designation value failed"
+        assert ws_detail.cell(row=4, column=2).value == "51", "weight detail type value failed"
+        assert any(
+            ws_detail.cell(row=r, column=19).value == "小計"
+            and ws_detail.cell(row=r, column=20).value == "DL-001"
+            and ws_detail.cell(row=r, column=21).value == "S-001"
+            and ws_detail.cell(row=r, column=22).value == 10
+            for r in range(4, ws_detail.max_row + 1)
+        ), "weight detail subtotal source trace failed"
+        assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 24)], "weight detail should not expose confidence header"
+        assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 24)], "weight detail should not expose source header"
         ws_calc = wb["計算標準與假設"]
         assert "$A$1:$F$" in str(ws_calc.print_area), "calc reference should remain A4 portrait width"
         assert _sheet_contains_text(ws_calc, "Type 計算資料狀態彙整"), "calc reference should summarize by Type"
         assert not ws_calc._charts, "calc reference should not use dashboard charts"
         ws_weight = wb["重量分析"]
-        assert ws_weight.cell(row=3, column=1).value == "Drawing line number", "project package weight drawing header failed"
-        assert ws_weight.cell(row=3, column=2).value == "流水號.sort", "project package weight serial header failed"
-        assert ws_weight.cell(row=3, column=5).value == "型號", "project package weight header failed"
-        assert ws_weight.cell(row=3, column=6).value == "Type", "project package weight type header missing"
-        assert ws_weight.cell(row=4, column=1).value == "DL-001", "project package drawing failed"
-        assert ws_weight.cell(row=4, column=2).value == "S-001", "project package serial failed"
-        assert ws_weight.cell(row=4, column=3).value == 10, "project package quantity failed"
+        assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
+        assert ws_weight.cell(row=3, column=2).value == "Type", "project package weight type header missing"
+        assert ws_weight.cell(row=3, column=19).value == "來源圖號", "project package weight drawing header failed"
+        assert ws_weight.cell(row=3, column=20).value == "流水號", "project package weight serial header failed"
+        assert ws_weight.cell(row=4, column=1).value == "51-1.1/2B", "project package designation failed"
+        assert ws_weight.cell(row=4, column=2).value == "51", "project package type failed"
+        assert ws_weight.cell(row=4, column=19).value == "DL-001", "project package drawing failed"
+        assert ws_weight.cell(row=4, column=20).value == "S-001", "project package serial failed"
+        assert ws_weight.cell(row=4, column=21).value == 10, "project package quantity failed"
         ws_material = wb["材料合計"]
         assert ws_material.cell(row=3, column=1).value == "品名", "project package material summary header failed"
         assert ws_material.cell(row=4, column=11).value == original_quantity * 12, "project package material purchase qty failed"

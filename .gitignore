@@ -6,6 +6,7 @@ __pycache__/
 .venv_gui/
 .env
 .codex/
+.qwen/
 .codex_tmp/
 
 # IDE

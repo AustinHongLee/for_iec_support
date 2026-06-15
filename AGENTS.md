@@ -34,3 +34,5 @@ When changing a Type's calculation data or interpretation, update the relevant `
 - `data_update_note`
 
 Update `python_app/docs/types/type_XX.md` only if the Type overview UI would otherwise show misleading text.
+
+## Imported Claude Cowork project instructions

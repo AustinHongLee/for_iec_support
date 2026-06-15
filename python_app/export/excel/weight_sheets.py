@@ -39,16 +39,18 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         scaled_result = row_result.scaled_result
 
         if single_result.error:
+            # 與正常資料一致的順序：型號優先，來源放最後
             values = [
-                input_row.drawing_line_number,
-                input_row.serial,
-                input_row.quantity,
-                input_row.unit or "組",
                 input_row.designation,
                 get_type_code(input_row.designation),
                 "錯誤",
                 single_result.error,
-            ] + [""] * (len(PROJECT_HEADERS) - 8)
+            ] + [""] * (len(PROJECT_HEADERS) - 4)
+            # 來源放最後
+            values[-4] = input_row.drawing_line_number
+            values[-3] = input_row.serial
+            values[-2] = input_row.quantity
+            values[-1] = input_row.unit or "組"
             for col, value in enumerate(values, 1):
                 ws.cell(row=row, column=col, value=value)
             error_rows.append(row)
@@ -56,12 +58,9 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
             continue
 
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
+            # 型號為主角，來源資訊移到最右側作為配角
             values = [
-                input_row.drawing_line_number,
-                input_row.serial,
-                input_row.quantity,
-                input_row.unit or "組",
-                input_row.designation,                                  # 型號 - 每列填滿
+                input_row.designation,
                 get_type_code(input_row.designation),
                 single_entry.item_no,
                 single_entry.name,
@@ -79,6 +78,10 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
                 single_entry.part_key,
                 single_entry.stock_id,
                 single_entry.display_remark,
+                input_row.drawing_line_number,                           # 來源圖號 (配角)
+                input_row.serial,                                        # 流水號 (唯一值，配角)
+                input_row.quantity,
+                input_row.unit or "組",
             ]
             for col, value in enumerate(values, 1):
                 ws.cell(row=row, column=col, value=value)
@@ -92,22 +95,30 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            3: NUMFMT["QTY_INT"],
-            11: NUMFMT["LEN_MM"],
-            12: NUMFMT["LEN_MM"],
-            13: NUMFMT["QTY_INT"],
-            14: NUMFMT["QTY_INT"],
-            15: NUMFMT["WEIGHT_KG"],
-            16: NUMFMT["WEIGHT_KG"],
+            7: NUMFMT["LEN_MM"],
+            8: NUMFMT["LEN_MM"],
+            9: NUMFMT["QTY_INT"],
+            10: NUMFMT["QTY_INT"],
+            21: NUMFMT["QTY_INT"],
+            11: NUMFMT["WEIGHT_KG"],
+            12: NUMFMT["WEIGHT_KG"],
         },
-        widths=[18, 12, 8, 7, 20, 8, 7, 16, 22, 14, 12, 12, 10, 10, 14, 14, 10, 14, 14, 28, 12, 34],
+        widths=[
+            22, 6, 6, 16, 20, 12,   # 型號 Type 項次 品名 規格 材質
+            9, 9,                   # 長 寬
+            8, 8, 10, 10, 10,       # 單件 總數 單組重 總重 屬性
+            10, 10, 12, 10, 34,     # 類別 製造 零件ID 庫存 計算說明
+            16, 10, 8, 6,           # 來源圖號 流水號 輸入數量 輸入單位
+        ],
     )
     for error_row in error_rows:
         for col in range(1, len(PROJECT_HEADERS) + 1):
             cell = ws.cell(row=error_row, column=col)
             cell.fill = styles["bad_fill"]
             cell.border = styles["border"]
-        apply_status_fill(ws.cell(row=error_row, column=7), "錯誤", set_font=True)
+        # 錯誤標記現在在第 3 欄（項次位置）
+        apply_status_fill(ws.cell(row=error_row, column=3), "錯誤", set_font=True)
     if last_row >= 4:
-        add_color_scale(ws, f"P4:P{last_row}", "weight")
+        total_weight_col = get_column_letter(PROJECT_HEADERS.index("總重(kg)") + 1)
+        add_color_scale(ws, f"{total_weight_col}4:{total_weight_col}{last_row}", "weight")
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="重量分析")
