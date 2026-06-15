@@ -1,6 +1,9 @@
 """測試材料合計 + 下料計算"""
 import sys, os
-sys.path.insert(0, os.path.dirname(__file__))
+APP_DIR = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, APP_DIR)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from core.calculator import analyze_batch
 from core.material_summary import aggregate
@@ -73,7 +76,7 @@ if linear_lines:
 # 4. 匯出 Excel
 print(f"\n=== 匯出 Excel ===")
 from export.summary_export import export_summary_and_cutting
-out_path = os.path.join(os.path.dirname(__file__), "output", "test_summary_cutting.xlsx")
+out_path = os.path.join(APP_DIR, "output", "test_summary_cutting.xlsx")
 os.makedirs(os.path.dirname(out_path), exist_ok=True)
 export_summary_and_cutting(summary, out_path)
 print(f"已匯出: {out_path}")
