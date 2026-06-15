@@ -142,6 +142,20 @@ try:
             if cell.value is not None
         )
 
+    def _sheet_link_targets(ws) -> set[str]:
+        targets: set[str] = set()
+        for row in ws.iter_rows():
+            for cell in row:
+                hyperlink = cell.hyperlink
+                if hyperlink:
+                    targets.add(str(getattr(hyperlink, "target", hyperlink)))
+        return targets
+
+    def _assert_sheet_index_links(ws, sheetnames: list[str]) -> None:
+        targets = _sheet_link_targets(ws)
+        for sheet in sheetnames:
+            assert f"#'{sheet}'!A1" in targets, f"{ws.title} missing hyperlink to {sheet}"
+
     def _assert_visible_chart(ws, last_print_col: str) -> None:
         assert ws._charts, f"{ws.title} chart missing"
         chart = ws._charts[0]
@@ -228,13 +242,17 @@ try:
         assert ws_manager.cell(row=1, column=1).value == "長官摘要", "manager cover title failed"
         assert "$A$1:$H$" in str(ws_manager.print_area), "manager cover should be A4 portrait width"
         assert ws_manager.page_setup.orientation == "portrait", "manager cover should be portrait"
+        assert _sheet_contains_text(ws_manager, "分頁索引"), "manager cover should include sheet index"
+        _assert_sheet_index_links(ws_manager, wb.sheetnames)
         assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover should show simple support fabrication count"
         assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover should point to leader classification sheet"
         assert _sheet_contains_text(ws_manager, "查核-支撐明細"), "manager cover should point to support detail sheet"
+        assert _sheet_contains_text(ws_manager, "下料圖示"), "manager cover should expose full workbook index"
         assert not _sheet_contains_text(ws_manager, "51-1.1/2B"), "manager cover should not expose source designations"
         ws_summary = wb["專案摘要"]
         assert ws_summary.cell(row=1, column=1).value == "專案材料統計總覽", "project package summary title failed"
         assert "$A$1:$I$" in str(ws_summary.print_area), "project summary should be A4 portrait width"
+        _assert_sheet_index_links(ws_summary, wb.sheetnames)
         assert _sheet_contains_text(ws_summary, "使用 Type 統計"), "project summary should show used Type list"
         assert _sheet_contains_text(ws_summary, "Type 51"), "project summary should include Type 51"
         assert not _sheet_contains_text(ws_summary, "Workbook 索引"), "project summary should not use old workbook index wording"
@@ -286,8 +304,8 @@ try:
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
-        assert ws_leader_detail.cell(row=3, column=4).value == "Drawing line number", "leader detail drawing header failed"
-        assert ws_leader_detail.cell(row=3, column=5).value == "流水號.sort", "leader detail serial header failed"
+        assert ws_leader_detail.cell(row=3, column=4).value == "來源圖號", "leader detail drawing header failed"
+        assert ws_leader_detail.cell(row=3, column=5).value == "流水號", "leader detail serial header failed"
         assert ws_leader_detail.cell(row=3, column=8).value == "型號", "leader detail designation header failed"
         assert ws_leader_detail.cell(row=3, column=9).value == "Type", "leader detail type header failed"
         assert any(

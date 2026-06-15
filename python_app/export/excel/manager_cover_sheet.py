@@ -5,6 +5,7 @@ from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
 from .leader_sheets import _boss_summary_rows, _leader_procurement_stats
+from .navigation import workbook_navigation
 from .styles import COLORS, FONT_CJK, NUMFMT, _set_widths, _setup_sheet, _styles, set_print_layout
 
 
@@ -157,32 +158,45 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
 
     row += 2
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
-    guide = ws.cell(row=row, column=1, value="查閱路徑")
+    guide = ws.cell(row=row, column=1, value="分頁索引")
     guide.font = styles["section_font"]
     guide.fill = styles["section_fill"]
     guide.alignment = Alignment(horizontal="left", vertical="center", indent=1)
     ws.row_dimensions[row].height = 24
     row += 1
 
-    guide_rows = [
-        ("合約項目完整分段", "長官-支撐分類", "列印給業主/長官確認數量"),
-        ("每一筆型號怎麼被分類", "查核-支撐明細", "工程與規則維護用"),
-        ("材料採購合計與總重", "材料合計", "採購 BOM 以此頁為準"),
-        ("單件重量、Type、計算式", "重量明細表", "工程查核用"),
-    ]
-    for label, sheet_name, note in guide_rows:
-        ws.cell(row=row, column=1, value=label)
-        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=3)
-        _write_link_cell(ws, row, 2, sheet_name)
-        ws.merge_cells(start_row=row, start_column=4, end_row=row, end_column=8)
-        ws.cell(row=row, column=4, value=note)
-        for col in (1, 2, 4):
+    for col in range(1, 9):
+        cell = ws.cell(row=row, column=col)
+        cell.fill = styles["header_fill"]
+        cell.font = styles["header_font"]
+        cell.alignment = styles["center"]
+        cell.border = styles["border"]
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+    ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=6)
+    ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=8)
+    ws.cell(row=row, column=1, value="分頁")
+    ws.cell(row=row, column=3, value="適合查看")
+    ws.cell(row=row, column=7, value="角色 / 列印")
+    ws.row_dimensions[row].height = 22
+    row += 1
+
+    for nav_item in workbook_navigation():
+        for col in range(1, 9):
             cell = ws.cell(row=row, column=col)
             cell.border = styles["border"]
             cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
-            if col != 2:
-                cell.font = Font(name=FONT_CJK, size=10, color=COLORS["text_mute"])
-        ws.row_dimensions[row].height = 24
+            if (row - header_row) % 2 == 0:
+                cell.fill = styles["zebra_fill"]
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+        ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=6)
+        ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=8)
+        _write_link_cell(ws, row, 1, nav_item.sheet)
+        ws.cell(row=row, column=3, value=nav_item.purpose)
+        ws.cell(row=row, column=7, value=f"{nav_item.audience} / {nav_item.print_note}")
+        ws.cell(row=row, column=1).font = Font(name=FONT_CJK, size=10, color="0563C1", underline="single")
+        ws.cell(row=row, column=3).font = Font(name=FONT_CJK, size=9, color=COLORS["text_mute"])
+        ws.cell(row=row, column=7).font = Font(name=FONT_CJK, size=9, color=COLORS["text_mute"])
+        ws.row_dimensions[row].height = 28
         row += 1
 
     row += 2
