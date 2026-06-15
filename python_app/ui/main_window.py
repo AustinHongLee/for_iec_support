@@ -2004,6 +2004,49 @@ class MainWindow(QMainWindow):
         self.btn_export.setEnabled(False if busy else bool(self._results))
         self.btn_export.setText("匯出中..." if busy else "匯出結果")
 
+    def _confirm_export_preview(self, *, ext: str, export_label: str) -> bool:
+        if self._project_result is not None:
+            from export.project_export_preview import (
+                build_project_export_preview,
+                format_project_export_preview,
+            )
+
+            preview = build_project_export_preview(
+                self._project_result,
+                export_label=export_label,
+                include_workbook_sheets=(ext == ".xlsx"),
+            )
+            default_button = (
+                QMessageBox.StandardButton.No
+                if preview.needs_attention
+                else QMessageBox.StandardButton.Yes
+            )
+            reply = QMessageBox.question(
+                self,
+                "匯出前確認",
+                format_project_export_preview(preview),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                default_button,
+            )
+            return reply == QMessageBox.StandardButton.Yes
+
+        error_count = sum(1 for result in self._results if result.error)
+        success_count = len(self._results) - error_count
+        reply = QMessageBox.question(
+            self,
+            "匯出前確認",
+            (
+                f"即將匯出：{export_label}\n\n"
+                f"結果筆數：{len(self._results)}\n"
+                f"計算狀態：成功 {success_count}，錯誤 {error_count}\n\n"
+                "若數字看起來不對，請先取消並回到分析結果修正。\n"
+                "確認繼續匯出？"
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No if error_count else QMessageBox.StandardButton.Yes,
+        )
+        return reply == QMessageBox.StandardButton.Yes
+
     def _on_export(self):
         if not self._results:
             return
@@ -2014,6 +2057,10 @@ class MainWindow(QMainWindow):
             filt, ext = "CSV (*.csv)", ".csv"
         else:
             filt, ext = "PDF (*.pdf)", ".pdf"
+
+        if not self._confirm_export_preview(ext=ext, export_label=fmt):
+            self.statusBar().showMessage("已取消匯出")
+            return
 
         filepath, _ = QFileDialog.getSaveFileName(
             self, "匯出結果", f"analysis_result{ext}", filt
