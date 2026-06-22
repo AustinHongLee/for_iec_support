@@ -259,6 +259,8 @@ try:
         assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover should show simple support fabrication count"
         assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover should point to leader classification sheet"
         assert _sheet_contains_text(ws_manager, "查核-支撐明細"), "manager cover should point to support detail sheet"
+        assert _sheet_contains_text(ws_manager, "資料可信度"), "manager cover should expose data confidence summary"
+        assert _sheet_contains_text(ws_manager, "最低"), "manager cover confidence summary should show worst confidence"
         assert _sheet_contains_text(ws_manager, "下料圖示"), "manager cover should expose full workbook index"
         assert not _sheet_contains_text(ws_manager, "51-1.1/2B"), "manager cover should not expose source designations"
         ws_summary = wb["專案摘要"]
@@ -267,6 +269,7 @@ try:
         _assert_sheet_index_links(ws_summary, wb.sheetnames)
         assert _sheet_contains_text(ws_summary, "使用 Type 統計"), "project summary should show used Type list"
         assert _sheet_contains_text(ws_summary, "Type 51"), "project summary should include Type 51"
+        assert _sheet_contains_text(ws_summary, "資料狀態"), "project summary should show confidence status column"
         assert not _sheet_contains_text(ws_summary, "Workbook 索引"), "project summary should not use old workbook index wording"
         assert not _sheet_contains_text(ws_summary, "資料量"), "project summary index should not expose confusing data-volume labels"
         ws_detail = wb["重量明細表"]

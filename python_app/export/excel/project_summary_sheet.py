@@ -5,6 +5,11 @@ from core.material_summary import MaterialSummary
 from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
+from .confidence_summary import (
+    confidence_level_for_row,
+    format_confidence_counts,
+    worst_confidence_level,
+)
 from .navigation import workbook_navigation
 from .styles import (
     GLYPH,
@@ -14,6 +19,7 @@ from .styles import (
     _set_widths,
     _setup_sheet,
     _styles,
+    apply_confidence_fill,
     set_print_layout,
     write_kpi_card_v2,
 )
@@ -36,11 +42,19 @@ def _project_type_summary(project: ProjectAnalysisResult) -> list[dict]:
                 "support_count": 0,
                 "row_count": 0,
                 "total_weight": 0.0,
+                "status_counts": {
+                    "精確": 0,
+                    "推導": 0,
+                    "估算": 0,
+                    "未知": 0,
+                    "錯誤": 0,
+                },
                 "designations": [],
             },
         )
         stat["support_count"] += row_result.input_row.quantity
         stat["row_count"] += 1
+        stat["status_counts"][confidence_level_for_row(row_result)] += 1
         if not row_result.single_result.error:
             stat["total_weight"] += row_result.scaled_result.total_weight
         if designation not in stat["designations"]:
@@ -112,7 +126,7 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
         f"全案總重 {summary.total_weight:,.2f} kg"
     )
     _setup_sheet(ws, "專案材料統計總覽", "I1", subtitle=subtitle, audience="主管 / 工程 / 採購", freeze_title=True)
-    _set_widths(ws, [14, 12, 11, 14, 12, 12, 14, 14, 32])
+    _set_widths(ws, [14, 11, 10, 13, 10, 20, 13, 13, 31])
 
     # A4 portrait first page summary.
     _section_header(ws, 4, "專案概況", span_cols=9)
@@ -150,38 +164,41 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     row = 14
     _section_header(ws, row, "使用 Type 統計", span_cols=9)
     row += 1
-    _write_table_header(ws, row, ["Type", "支撐組數", "型號列數", "總重(kg)", "佔比", "代表型號"], span_cols=9)
-    ws.merge_cells(start_row=row, start_column=6, end_row=row, end_column=9)
-    ws.cell(row=row, column=6).alignment = styles["center"]
+    _write_table_header(ws, row, ["Type", "支撐組數", "型號列數", "總重(kg)", "佔比", "資料狀態", "代表型號"], span_cols=9)
+    ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
+    ws.cell(row=row, column=7).alignment = styles["center"]
     row += 1
 
     total_weight_for_pct = total_weight or 1.0
     for stat in type_rows:
+        status_counts = stat["status_counts"]
         ws.cell(row=row, column=1, value=f"Type {stat['type_id']}")
         ws.cell(row=row, column=2, value=stat["support_count"])
         ws.cell(row=row, column=3, value=stat["row_count"])
         ws.cell(row=row, column=4, value=round(stat["total_weight"], 2))
         ws.cell(row=row, column=5, value=stat["total_weight"] / total_weight_for_pct)
-        ws.merge_cells(start_row=row, start_column=6, end_row=row, end_column=9)
+        ws.cell(row=row, column=6, value=format_confidence_counts(status_counts))
+        ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
         examples = "、".join(stat["designations"][:3])
         if len(stat["designations"]) > 3:
             examples += f" 等 {len(stat['designations'])} 種"
-        ws.cell(row=row, column=6, value=examples)
-        for col in (1, 2, 3, 4, 5, 6):
+        ws.cell(row=row, column=7, value=examples)
+        for col in (1, 2, 3, 4, 5, 6, 7):
             cell = ws.cell(row=row, column=col)
             cell.border = styles["border"]
             cell.alignment = Alignment(
                 horizontal="right" if col in (2, 3, 4, 5) else "left",
                 vertical="center",
-                wrap_text=(col == 6),
-                indent=1 if col in (1, 6) else 0,
+                wrap_text=(col in (6, 7)),
+                indent=1 if col in (1, 6, 7) else 0,
             )
+        apply_confidence_fill(ws.cell(row=row, column=6), worst_confidence_level(status_counts))
         ws.cell(row=row, column=2).number_format = NUMFMT["QTY_INT"]
         ws.cell(row=row, column=3).number_format = NUMFMT["QTY_INT"]
         ws.cell(row=row, column=4).number_format = NUMFMT["WEIGHT_KG"]
         ws.cell(row=row, column=5).number_format = NUMFMT["PCT"]
         if (row - 16) % 2 == 1:
-            for col in (1, 2, 3, 4, 5, 6):
+            for col in (1, 2, 3, 4, 5, 7):
                 ws.cell(row=row, column=col).fill = styles["zebra_fill"]
         ws.row_dimensions[row].height = 24
         row += 1

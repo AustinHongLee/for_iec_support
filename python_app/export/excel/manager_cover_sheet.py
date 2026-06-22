@@ -4,9 +4,24 @@ from core.material_summary import MaterialSummary
 from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
+from .confidence_summary import (
+    format_confidence_counts,
+    project_confidence_counts,
+    review_required_count,
+    worst_confidence_level,
+)
 from .leader_sheets import _boss_summary_rows, _leader_procurement_stats
 from .navigation import workbook_navigation
-from .styles import COLORS, FONT_CJK, NUMFMT, _set_widths, _setup_sheet, _styles, set_print_layout
+from .styles import (
+    COLORS,
+    FONT_CJK,
+    NUMFMT,
+    apply_confidence_fill,
+    _set_widths,
+    _setup_sheet,
+    _styles,
+    set_print_layout,
+)
 
 
 def _project_type_count(project: ProjectAnalysisResult) -> int:
@@ -96,6 +111,18 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
     stats, _, details = _leader_procurement_stats(project)
     type_count = _project_type_count(project)
     cover_rows = _cover_support_rows(stats, details)
+    confidence_counts = project_confidence_counts(project)
+    worst_confidence = worst_confidence_level(confidence_counts)
+    cover_rows.append(
+        {
+            "item": "資料可信度",
+            "qty": review_required_count(project),
+            "unit": "列",
+            "where": "計算標準與假設",
+            "note": f"最低 {worst_confidence}；{format_confidence_counts(confidence_counts)}",
+            "confidence_level": worst_confidence,
+        }
+    )
 
     ws.title = "長官-摘要"
     subtitle = (
@@ -150,9 +177,12 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
         ws.cell(row=row, column=4).font = Font(name=FONT_CJK, size=10, color="0563C1", underline="single")
         ws.cell(row=row, column=2).font = Font(name="Calibri", bold=True, size=16, color=COLORS["accent"])
         ws.cell(row=row, column=2).number_format = NUMFMT["WEIGHT_KG"] if item["unit"] == "KG" else NUMFMT["QTY_INT"]
+        if item.get("confidence_level"):
+            apply_confidence_fill(ws.cell(row=row, column=5), item["confidence_level"])
         if (row - header_row) % 2 == 0:
             for col in range(1, 9):
-                ws.cell(row=row, column=col).fill = styles["zebra_fill"]
+                if not (item.get("confidence_level") and col == 5):
+                    ws.cell(row=row, column=col).fill = styles["zebra_fill"]
         ws.row_dimensions[row].height = 30
         row += 1
 
