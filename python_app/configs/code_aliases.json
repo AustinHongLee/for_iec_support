@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "aliases": {
+    "type_01@acme": {
+      "maps_to_base": "01",
+      "notes": "Example external code mapping for Type 01-shaped support aliases.",
+      "patterns": [
+        {
+          "match": "^ACME-PS01-(?P<line_size>\\d+(?:\\.\\d+)?B)-(?P<H_code>\\d+)(?P<M42_letter>[A-Z])?$",
+          "designation": "01-{line_size}-{H_code}{M42_letter}"
+        }
+      ]
+    }
+  }
+}
