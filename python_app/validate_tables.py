@@ -212,7 +212,7 @@ try:
         ws = wb.active
         assert ws.title == "Project_Weight_Analysis", "project Excel sheet name failed"
         assert ws.cell(row=1, column=1).value == "型號", "project Excel designation header failed"
-        assert ws.cell(row=1, column=2).value == "Type", "project Excel type header missing"
+        assert ws.cell(row=1, column=2).value == "型號類別", "project Excel type header missing"
         assert ws.cell(row=1, column=9).value == "單件數量", "project Excel single section missing"
         assert ws.cell(row=1, column=10).value == "總數量", "project Excel total section missing"
         assert ws.cell(row=1, column=19).value == "來源圖號", "project Excel drawing header failed"
@@ -276,7 +276,7 @@ try:
         from export.excel.headers import LEADER_DETAIL_HEADERS, _CALC_BASIS_HEADERS
         assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
         assert ws_detail.cell(row=3, column=1).value == "型號", "weight detail designation header failed"
-        assert ws_detail.cell(row=3, column=2).value == "Type", "weight detail type header missing"
+        assert ws_detail.cell(row=3, column=2).value == "型號類別", "weight detail type header missing"
         assert ws_detail.cell(row=3, column=10).value == "單件數量", "weight detail single qty header failed"
         assert ws_detail.cell(row=3, column=11).value == "組數", "weight detail support count header failed"
         assert ws_detail.cell(row=3, column=12).value == "總數量", "weight detail total qty header failed"
@@ -300,7 +300,7 @@ try:
         assert not ws_calc._charts, "calc reference should not use dashboard charts"
         ws_weight = wb["重量分析"]
         assert ws_weight.cell(row=3, column=1).value == "型號", "project package weight header failed"
-        assert ws_weight.cell(row=3, column=2).value == "Type", "project package weight type header missing"
+        assert ws_weight.cell(row=3, column=2).value == "型號類別", "project package weight type header missing"
         assert ws_weight.cell(row=3, column=19).value == "來源圖號", "project package weight drawing header failed"
         assert ws_weight.cell(row=3, column=20).value == "流水號", "project package weight serial header failed"
         assert ws_weight.cell(row=4, column=1).value == "51-1.1/2B", "project package designation failed"
@@ -325,7 +325,7 @@ try:
         assert ws_leader_detail.cell(row=3, column=4).value == "來源圖號", "leader detail drawing header failed"
         assert ws_leader_detail.cell(row=3, column=5).value == "流水號", "leader detail serial header failed"
         assert ws_leader_detail.cell(row=3, column=8).value == "型號", "leader detail designation header failed"
-        assert ws_leader_detail.cell(row=3, column=9).value == "Type", "leader detail type header failed"
+        assert ws_leader_detail.cell(row=3, column=9).value == "型號類別", "leader detail type header failed"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "DL-001"
             and ws_leader_detail.cell(row=r, column=5).value == "S-001"
