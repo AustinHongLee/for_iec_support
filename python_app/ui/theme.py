@@ -40,7 +40,7 @@ TOKENS = {
     },
     "font": {
         "control": 12,
-        "table": 11,
+        "table": 12,
     },
     "space": {
         "tab_y": 7,

@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
     QFileDialog, QLabel, QSplitter, QGroupBox, QMessageBox,
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
-    QListWidget, QListWidgetItem, QRadioButton, QButtonGroup,
+    QListWidget, QListWidgetItem, QRadioButton, QButtonGroup, QCheckBox,
     QFrame, QScrollArea, QTextBrowser, QInputDialog,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -70,6 +70,14 @@ _RESULT_COLUMN_WIDTHS = [
     150, 92, 54, 48, 120, 48, 48, 150, 230, 95,
     78, 78, 74, 74, 86, 86, 82, 112, 112, 300, 260, 96,
 ]
+
+_RESULT_DEFAULT_VISIBLE_HEADERS = {
+    "數量", "單位", "型號", "品名", "規格", "材質", "總數量", "總重(kg)",
+}
+
+_RESULT_DATA_ROW_HEIGHT = 28
+_RESULT_GROUP_ROW_HEIGHT = 30
+_RESULT_SUBTOTAL_ROW_HEIGHT = 26
 
 _PROJECT_ROW_ALIASES = {
     "drawing_line_number": (
@@ -322,7 +330,7 @@ class MainWindow(QMainWindow):
         self.result_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
-        self.result_table.verticalHeader().setDefaultSectionSize(22)
+        self.result_table.verticalHeader().setDefaultSectionSize(_RESULT_DATA_ROW_HEIGHT)
         self.result_table.verticalHeader().setVisible(False)
         layout.addWidget(self.result_table)
 
@@ -354,6 +362,12 @@ class MainWindow(QMainWindow):
         self.result_filter_input.setClearButtonEnabled(True)
         self.result_filter_input.textChanged.connect(self._apply_result_filter)
         row.addWidget(self.result_filter_input, 1)
+
+        self.show_advanced_columns_checkbox = QCheckBox("顯示進階欄")
+        self.show_advanced_columns_checkbox.toggled.connect(
+            self._apply_result_column_visibility
+        )
+        row.addWidget(self.show_advanced_columns_checkbox)
 
         self.result_filter_count_label = QLabel("顯示 0 列")
         self.result_filter_count_label.setMinimumWidth(86)
@@ -446,6 +460,16 @@ class MainWindow(QMainWindow):
         header.setStretchLastSection(False)
         for col, width in enumerate(_RESULT_COLUMN_WIDTHS):
             self.result_table.setColumnWidth(col, width)
+        self._apply_result_column_visibility()
+
+    def _apply_result_column_visibility(self):
+        if not hasattr(self, "result_table"):
+            return
+        checkbox = getattr(self, "show_advanced_columns_checkbox", None)
+        show_advanced = bool(checkbox and checkbox.isChecked())
+        for col, header in enumerate(_RESULT_HEADERS):
+            hidden = False if show_advanced else header not in _RESULT_DEFAULT_VISIBLE_HEADERS
+            self.result_table.setColumnHidden(col, hidden)
 
     def _result_item(self, value) -> QTableWidgetItem:
         text = "" if value is None else str(value)
@@ -1759,7 +1783,7 @@ class MainWindow(QMainWindow):
             if single_result.error:
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                self.result_table.setRowHeight(row, 24)
+                self.result_table.setRowHeight(row, _RESULT_GROUP_ROW_HEIGHT)
                 err_bg = QColor("#FDE8E8")
                 err_fg = QColor("#C62828")
                 for col in range(self.result_table.columnCount()):
@@ -1831,7 +1855,7 @@ class MainWindow(QMainWindow):
                 is_first = False
 
             if group_start_row < self.result_table.rowCount():
-                self.result_table.setRowHeight(group_start_row, 24)
+                self.result_table.setRowHeight(group_start_row, _RESULT_GROUP_ROW_HEIGHT)
 
             # ── 群組小計列 ─────────────────────────────────────
             sub_row = self.result_table.rowCount()
@@ -1858,7 +1882,7 @@ class MainWindow(QMainWindow):
             sub_wt.setTextAlignment(RIGHT_ALIGN)
             sub_wt.setForeground(QColor("#1A3A6B"))
             sub_wt.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
-            self.result_table.setRowHeight(sub_row, 22)
+            self.result_table.setRowHeight(sub_row, _RESULT_SUBTOTAL_ROW_HEIGHT)
             self._set_result_row_group(sub_row, group_key)
 
         self._set_result_summary(total_weight=total_weight, total_precision=3)
