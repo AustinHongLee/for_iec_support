@@ -110,3 +110,66 @@ def resolve_designation_alias(
                 pattern=match_expr,
             )
     return None
+
+
+def alias_resolution_meta(alias_resolution: AliasResolution) -> dict:
+    return {
+        "original": alias_resolution.original,
+        "designation": alias_resolution.designation,
+        "alias_ref": alias_resolution.alias_ref,
+        "maps_to_base": alias_resolution.maps_to_base,
+        "pattern": alias_resolution.pattern,
+    }
+
+
+def apply_alias_resolution_meta(result, alias_resolution: AliasResolution | None):
+    if alias_resolution is None:
+        return result
+    result.meta["alias_resolution"] = alias_resolution_meta(alias_resolution)
+    result.meta["input_designation"] = alias_resolution.original
+    result.meta["normalized_designation"] = alias_resolution.designation
+    return result
+
+
+def normalize_designation_alias(
+    value: str,
+    *,
+    alias_ref: str | None = None,
+    config: dict | None = None,
+    known_type_codes: set[str] | list[str] | tuple[str, ...] | None = None,
+) -> tuple[str, AliasResolution | None]:
+    text = str(value or "").strip()
+    if not alias_ref:
+        return text, None
+
+    if known_type_codes is not None:
+        from .parser import get_type_code
+
+        if get_type_code(text) in {str(code) for code in known_type_codes}:
+            return text, None
+
+    resolved = resolve_designation_alias(text, alias_ref=alias_ref, config=config)
+    if not resolved:
+        return text, None
+    return resolved.designation, resolved
+
+
+def analyze_with_designation_alias(
+    value: str,
+    overrides: dict | None = None,
+    *,
+    alias_ref: str | None = None,
+    config: dict | None = None,
+):
+    from .calculator import analyze_single, get_supported_types
+
+    designation, alias_resolution = normalize_designation_alias(
+        value,
+        alias_ref=alias_ref,
+        config=config,
+        known_type_codes=get_supported_types() if alias_ref else None,
+    )
+    return apply_alias_resolution_meta(
+        analyze_single(designation, overrides),
+        alias_resolution,
+    )
