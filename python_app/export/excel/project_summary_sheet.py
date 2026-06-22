@@ -164,7 +164,7 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     row = 14
     _section_header(ws, row, "使用 Type 統計", span_cols=9)
     row += 1
-    _write_table_header(ws, row, ["Type", "支撐組數", "型號列數", "總重(kg)", "佔比", "資料狀態", "代表型號"], span_cols=9)
+    _write_table_header(ws, row, ["型號類別", "支撐組數", "型號列數", "總重(kg)", "佔比", "資料狀態", "代表型號"], span_cols=9)
     ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
     ws.cell(row=row, column=7).alignment = styles["center"]
     row += 1

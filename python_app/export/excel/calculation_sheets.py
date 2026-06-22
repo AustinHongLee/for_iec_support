@@ -316,7 +316,7 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
     _section_header(ws, row, "Type 計算資料狀態彙整", span_cols=6)
     row += 1
 
-    summ_headers = ["Type", "型號列數", "支撐組數", "資料狀態", "合計重(kg)", "代表型號 / 備註"]
+    summ_headers = ["型號類別", "型號列數", "支撐組數", "資料狀態", "合計重(kg)", "代表型號 / 備註"]
     for col, h in enumerate(summ_headers, 1):
         cell = ws.cell(row=row, column=col, value=h)
         cell.fill = styles["subheader_fill"]
