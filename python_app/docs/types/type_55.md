@@ -7,7 +7,7 @@
 | 分類 | Guided Clamped Shoe Support with Gasket Isolation |
 | 圖面數 | 2 頁 |
 | 圖面編號 | E1906-DSP-500-006 |
-| 狀態 | ✅ 已實作 |
+| 狀態 | ⚠️ 半封存 / 暫定計算：共用 pipe_shoe_engine，D-81/D-81A clamp、gasket、guide 專屬重量仍需補齊 |
 
 ---
 

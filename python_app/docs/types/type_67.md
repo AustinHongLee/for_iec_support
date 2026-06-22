@@ -1,6 +1,6 @@
 # Type 67 — 夾持式隔離管鞍座 Clamped Pipe Shoe with Gasket Isolation
 
-> **圖號**: 67 &nbsp;|&nbsp; **分類**: 支撐型式（管線介面層） &nbsp;|&nbsp; **狀態**: ✅ 已實作
+> **圖號**: 67 &nbsp;|&nbsp; **分類**: 支撐型式（管線介面層） &nbsp;|&nbsp; **狀態**: ⚠️ 半封存 / 暫定計算：D-81/D-81A clamp、M-47 gasket 細節仍需補齊
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-81 (1/2), D-81A (2/2)
 > **日期**: 12/12/19
 

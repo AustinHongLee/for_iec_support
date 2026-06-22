@@ -7,7 +7,7 @@
 | 分類 | Isolated Clamp Shoe Support（隔離型固定支撐） |
 | 圖面數 | 1 頁 |
 | 圖面編號 | E1906-DSP-500-006 |
-| 狀態 | ✅ 已實作 |
+| 狀態 | ⚠️ 半封存 / 暫定計算：共用 pipe_shoe_engine，D-81 clamp、M-47 gasket 細節仍需補齊 |
 
 ---
 
