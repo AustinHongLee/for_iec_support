@@ -22,8 +22,11 @@ def test_project_export_preview_summarizes_workbook_before_save():
 
     assert preview.row_count == 2
     assert preview.support_count == 12
+    assert preview.type_count == 2
     assert preview.success_count == 2
     assert preview.error_count == 0
+    assert preview.review_required_count >= 1
+    assert "未知" in preview.confidence_summary
     assert preview.material_line_count > 0
     assert preview.total_weight > 0
     assert preview.sheet_names == (
@@ -39,6 +42,9 @@ def test_project_export_preview_summarizes_workbook_before_save():
         "下料圖示",
     )
     assert "即將匯出：Excel (.xlsx)" in message
+    assert "Type 2 種" in message
+    assert "資料信心" in message
+    assert "需複核" in message
     assert "Workbook 分頁" in message
     assert "材料合計" in message
 
@@ -55,6 +61,8 @@ def test_project_export_preview_flags_attention_for_errors():
 
     assert preview.needs_attention
     assert preview.error_count == 1
+    assert preview.review_required_count == 1
     assert preview.success_count == 0
     assert preview.sheet_names == ()
+    assert "需複核 1" in message
     assert "錯誤 1" in message
