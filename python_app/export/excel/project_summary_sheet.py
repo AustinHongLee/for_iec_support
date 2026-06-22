@@ -95,7 +95,21 @@ def _write_index_row(ws, row: int, sheet: str, purpose: str, print_note: str) ->
     ws.row_dimensions[row].height = 28
 
 
-def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: MaterialSummary, plans: list[CuttingPlan]):
+def _package_navigation(total_bars: int, available_sheets: tuple[str, ...] | None) -> list:
+    items = workbook_navigation(total_bars)
+    if available_sheets is None:
+        return items
+    return [item for item in items if item.sheet in available_sheets]
+
+
+def _write_project_summary_sheet(
+    ws,
+    project: ProjectAnalysisResult,
+    summary: MaterialSummary,
+    plans: list[CuttingPlan],
+    *,
+    available_sheets: tuple[str, ...] | None = None,
+):
     """專案摘要 — A4 直式、以專案 Type 與查閱路徑為主。"""
     import datetime as _dt
     from openpyxl.styles import Alignment, Font
@@ -213,7 +227,7 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
     ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=9)
     row += 1
-    for nav_item in workbook_navigation(total_bars):
+    for nav_item in _package_navigation(total_bars, available_sheets):
         _write_index_row(ws, row, nav_item.sheet, nav_item.purpose, nav_item.print_note)
         row += 1
 
@@ -235,8 +249,11 @@ def _write_project_summary_sheet(ws, project: ProjectAnalysisResult, summary: Ma
     notes = [
         "材料與重量計算以各 Type calculator、component table 與材料合計頁為準。",
         "Type 統計依型號第一段彙整；例如 15-... 歸入 Type 15。",
-        "若分類顯示需確認，請先看「查核-支撐明細」，再決定是否更新分類規則。",
     ]
+    if available_sheets is None or "查核-支撐明細" in available_sheets:
+        notes.append("若分類顯示需確認，請先看「查核-支撐明細」，再決定是否更新分類規則。")
+    else:
+        notes.append("若分類顯示需確認，請開啟完整活頁簿或採購材料包查看「查核-支撐明細」。")
     for note in notes:
         row += 1
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)

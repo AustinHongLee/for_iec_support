@@ -36,7 +36,13 @@ from .excel.styles import (
     _write_headers,
 )
 from .excel.simple_exports import export_project_to_excel, export_to_excel
-from .excel.workbook import export_project_workbook, _build_cutting_plans
+from .excel.workbook import (
+    FULL_WORKBOOK_SHEETS,
+    WORKBOOK_PACKAGE_PROFILES,
+    export_project_workbook,
+    export_project_workbook_package,
+    _build_cutting_plans,
+)
 from .excel.project_summary_sheet import _write_project_summary_sheet
 from .excel.calculation_sheets import (
     _confidence_label,
@@ -65,4 +71,5 @@ __all__ = [
     "export_to_excel",
     "export_project_to_excel",
     "export_project_workbook",
+    "export_project_workbook_package",
 ]

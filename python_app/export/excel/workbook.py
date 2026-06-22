@@ -1,5 +1,7 @@
 """Project workbook orchestration."""
 
+from pathlib import Path
+
 from core.cutting_optimizer import CuttingPlan, optimize_from_summary
 from core.material_summary import MaterialSummary, aggregate_project
 from core.project_aggregation import ProjectAnalysisResult
@@ -11,6 +13,45 @@ from .manager_cover_sheet import _write_manager_cover_sheet
 from .material_sheets import _write_material_summary_sheet
 from .project_summary_sheet import _write_project_summary_sheet
 from .weight_sheets import _write_project_weight_sheet
+
+
+FULL_WORKBOOK_SHEETS = (
+    "長官-摘要",
+    "專案摘要",
+    "重量明細表",
+    "計算標準與假設",
+    "長官-支撐分類",
+    "查核-支撐明細",
+    "重量分析",
+    "材料合計",
+    "下料明細",
+    "下料圖示",
+)
+
+WORKBOOK_PACKAGE_PROFILES = {
+    "完整活頁簿": FULL_WORKBOOK_SHEETS,
+    "長官業主包": (
+        "長官-摘要",
+        "專案摘要",
+        "長官-支撐分類",
+    ),
+    "工程明細包": (
+        "專案摘要",
+        "重量明細表",
+        "計算標準與假設",
+        "重量分析",
+    ),
+    "採購材料包": (
+        "材料合計",
+        "長官-支撐分類",
+        "查核-支撐明細",
+    ),
+    "下料製造包": (
+        "材料合計",
+        "下料明細",
+        "下料圖示",
+    ),
+}
 
 
 def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
@@ -29,25 +70,71 @@ def export_project_workbook(project: ProjectAnalysisResult, filepath: str):
       9. 下料明細
       10. 下料圖示
     """
+    wb = build_project_workbook(project, FULL_WORKBOOK_SHEETS)
+    wb.save(filepath)
+
+
+def export_project_workbook_package(project: ProjectAnalysisResult, output_dir: str | Path) -> dict[str, Path]:
+    """Export the complete workbook plus role-focused workbook packages."""
+    target_dir = Path(output_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    exported: dict[str, Path] = {}
+    for label, sheets in WORKBOOK_PACKAGE_PROFILES.items():
+        path = target_dir / f"{label}.xlsx"
+        wb = build_project_workbook(project, sheets)
+        wb.save(path)
+        exported[label] = path
+    return exported
+
+
+def build_project_workbook(project: ProjectAnalysisResult, sheets: tuple[str, ...] = FULL_WORKBOOK_SHEETS):
+    """Build a project workbook containing only the requested sheets."""
     import openpyxl
 
     summary = aggregate_project(project)
     cutting_plans = _build_cutting_plans(summary)
 
     wb = openpyxl.Workbook()
-    _write_manager_cover_sheet(wb.active, project, summary)
-    _write_project_summary_sheet(wb.create_sheet("專案摘要"), project, summary, cutting_plans)
-    _write_calculation_basis_sheet(wb.create_sheet("重量明細表"), project)
-    _write_calc_reference_sheet(wb.create_sheet("計算標準與假設"), project)
-    _write_leader_procurement_sheet(wb.create_sheet("長官-支撐分類"), project)
-    _write_leader_detail_sheet(wb.create_sheet("查核-支撐明細"), project)
-    _write_project_weight_sheet(wb.create_sheet("重量分析"), project)
-    _write_material_summary_sheet(wb.create_sheet("材料合計"), summary)
-    _write_cutting_detail_sheet(wb.create_sheet("下料明細"), cutting_plans)
-    _write_cutting_visual_sheet(wb.create_sheet("下料圖示"), cutting_plans)
+    for index, sheet_name in enumerate(sheets):
+        ws = wb.active if index == 0 else wb.create_sheet(sheet_name)
+        ws.title = sheet_name
+        _write_project_sheet(ws, sheet_name, project, summary, cutting_plans, tuple(sheets))
 
     _polish_workbook(wb)
-    wb.save(filepath)
+    return wb
+
+
+def _write_project_sheet(
+    ws,
+    sheet_name: str,
+    project: ProjectAnalysisResult,
+    summary: MaterialSummary,
+    cutting_plans: list[CuttingPlan],
+    available_sheets: tuple[str, ...],
+) -> None:
+    if sheet_name == "長官-摘要":
+        _write_manager_cover_sheet(ws, project, summary, available_sheets=available_sheets)
+    elif sheet_name == "專案摘要":
+        _write_project_summary_sheet(ws, project, summary, cutting_plans, available_sheets=available_sheets)
+    elif sheet_name == "重量明細表":
+        _write_calculation_basis_sheet(ws, project)
+    elif sheet_name == "計算標準與假設":
+        _write_calc_reference_sheet(ws, project)
+    elif sheet_name == "長官-支撐分類":
+        _write_leader_procurement_sheet(ws, project)
+    elif sheet_name == "查核-支撐明細":
+        _write_leader_detail_sheet(ws, project)
+    elif sheet_name == "重量分析":
+        _write_project_weight_sheet(ws, project)
+    elif sheet_name == "材料合計":
+        _write_material_summary_sheet(ws, summary)
+    elif sheet_name == "下料明細":
+        _write_cutting_detail_sheet(ws, cutting_plans)
+    elif sheet_name == "下料圖示":
+        _write_cutting_visual_sheet(ws, cutting_plans)
+    else:
+        raise ValueError(f"Unknown project workbook sheet: {sheet_name}")
 
 
 def _build_cutting_plans(summary: MaterialSummary) -> list[CuttingPlan]:

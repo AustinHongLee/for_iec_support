@@ -356,7 +356,7 @@ class MainWindow(QMainWindow):
         # 匯出列
         export_row = QHBoxLayout()
         self.export_format = QComboBox()
-        self.export_format.addItems(["Excel (.xlsx)", "CSV (.csv)", "PDF (.pdf)"])
+        self.export_format.addItems(["Excel (.xlsx)", "Excel 分包資料夾", "CSV (.csv)", "PDF (.pdf)"])
         export_row.addWidget(QLabel("匯出格式:"))
         export_row.addWidget(self.export_format)
         self.btn_export = QPushButton("匯出結果")
@@ -1983,20 +1983,30 @@ class MainWindow(QMainWindow):
         if not self._results:
             return
         fmt = self.export_format.currentText()
-        if "xlsx" in fmt:
+        is_excel_package = "分包資料夾" in fmt
+        if is_excel_package:
+            filt, ext = "", ".xlsx"
+        elif "xlsx" in fmt:
             filt, ext = "Excel (*.xlsx)", ".xlsx"
         elif "csv" in fmt:
             filt, ext = "CSV (*.csv)", ".csv"
         else:
             filt, ext = "PDF (*.pdf)", ".pdf"
 
+        if is_excel_package and self._project_result is None:
+            QMessageBox.warning(self, "提示", "Excel 分包資料夾需要先完成專案分析")
+            return
+
         if not self._confirm_export_preview(ext=ext, export_label=fmt):
             self._set_status("info", "已取消匯出")
             return
 
-        filepath, _ = QFileDialog.getSaveFileName(
-            self, "匯出結果", f"analysis_result{ext}", filt
-        )
+        if is_excel_package:
+            filepath = QFileDialog.getExistingDirectory(self, "選擇分包輸出資料夾")
+        else:
+            filepath, _ = QFileDialog.getSaveFileName(
+                self, "匯出結果", f"analysis_result{ext}", filt
+            )
         if not filepath:
             return
         self._set_export_busy(True)
@@ -2010,19 +2020,27 @@ class MainWindow(QMainWindow):
             if ext == ".xlsx":
                 from export.excel_export import (
                     export_project_workbook,
+                    export_project_workbook_package,
                     export_to_excel,
                 )
-                if self._project_result is not None:
+                if is_excel_package:
+                    exported = export_project_workbook_package(self._project_result, filepath)
+                    files = "\n".join(path.name for path in exported.values())
+                    success_message = f"已匯出分包資料夾:\n{filepath}\n\n{files}"
+                elif self._project_result is not None:
                     export_project_workbook(self._project_result, filepath)
+                    success_message = f"已匯出至:\n{filepath}"
                 else:
                     export_to_excel(self._results, filepath)
+                    success_message = f"已匯出至:\n{filepath}"
             elif ext == ".csv":
                 from export.csv_export import export_to_csv
                 export_to_csv(self._results, filepath)
+                success_message = f"已匯出至:\n{filepath}"
             else:
                 from export.pdf_export import export_to_pdf
                 export_to_pdf(self._results, filepath)
-            success_message = f"已匯出至:\n{filepath}"
+                success_message = f"已匯出至:\n{filepath}"
             self._set_status("ok", f"已匯出: {filepath}")
         except ImportError as e:
             self._set_status("error", "匯出失敗: 缺少套件")

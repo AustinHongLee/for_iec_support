@@ -96,13 +96,41 @@ def _cover_support_rows(stats: dict[str, float], details: list) -> list[dict]:
     return [row for row in rows if row["qty"] or row["item"].startswith("管支撐製裝")]
 
 
-def _write_link_cell(ws, row: int, column: int, sheet_name: str, label: str | None = None) -> None:
+def _sheet_available(sheet_name: str, available_sheets: tuple[str, ...] | None) -> bool:
+    return available_sheets is None or sheet_name in available_sheets
+
+
+def _package_navigation(available_sheets: tuple[str, ...] | None) -> list:
+    items = workbook_navigation()
+    if available_sheets is None:
+        return items
+    return [item for item in items if item.sheet in available_sheets]
+
+
+def _write_link_cell(
+    ws,
+    row: int,
+    column: int,
+    sheet_name: str,
+    label: str | None = None,
+    *,
+    available_sheets: tuple[str, ...] | None = None,
+) -> None:
     cell = ws.cell(row=row, column=column, value=label or sheet_name)
+    if not _sheet_available(sheet_name, available_sheets):
+        cell.value = f"{label or sheet_name}（見完整活頁簿）"
+        return
     cell.hyperlink = f"#'{sheet_name}'!A1"
     cell.style = "Hyperlink"
 
 
-def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: MaterialSummary) -> None:
+def _write_manager_cover_sheet(
+    ws,
+    project: ProjectAnalysisResult,
+    summary: MaterialSummary,
+    *,
+    available_sheets: tuple[str, ...] | None = None,
+) -> None:
     """長官摘要 - one-page reading path and high-level support quantities."""
     import datetime as _dt
     from openpyxl.styles import Alignment, Font, PatternFill
@@ -137,7 +165,10 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
 
     ws.merge_cells("A4:H4")
     intro = ws["A4"]
-    intro.value = "本頁只放快速結論；合約項目分段請看「長官-支撐分類」，型號與判定依據請看「查核-支撐明細」。"
+    if _sheet_available("查核-支撐明細", available_sheets):
+        intro.value = "本頁只放快速結論；合約項目分段請看「長官-支撐分類」，型號與判定依據請看「查核-支撐明細」。"
+    else:
+        intro.value = "本頁只放快速結論；合約項目分段請看「長官-支撐分類」，型號與判定依據請看完整活頁簿或採購材料包。"
     intro.font = Font(name=FONT_CJK, size=11, color=COLORS["ink"])
     intro.fill = styles["subtitle_fill"]
     intro.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
@@ -161,7 +192,7 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
         ws.cell(row=row, column=1, value=item["item"])
         ws.cell(row=row, column=2, value=round(item["qty"], 2) if item["unit"] == "KG" else int(item["qty"]))
         ws.cell(row=row, column=3, value=item["unit"])
-        _write_link_cell(ws, row, 4, item["where"])
+        _write_link_cell(ws, row, 4, item["where"], available_sheets=available_sheets)
         ws.merge_cells(start_row=row, start_column=5, end_row=row, end_column=8)
         ws.cell(row=row, column=5, value=item["note"])
         for col in range(1, 9):
@@ -210,7 +241,7 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
     ws.row_dimensions[row].height = 22
     row += 1
 
-    for nav_item in workbook_navigation():
+    for nav_item in _package_navigation(available_sheets):
         for col in range(1, 9):
             cell = ws.cell(row=row, column=col)
             cell.border = styles["border"]
@@ -220,7 +251,7 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
         ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=6)
         ws.merge_cells(start_row=row, start_column=7, end_row=row, end_column=8)
-        _write_link_cell(ws, row, 1, nav_item.sheet)
+        _write_link_cell(ws, row, 1, nav_item.sheet, available_sheets=available_sheets)
         ws.cell(row=row, column=3, value=nav_item.purpose)
         ws.cell(row=row, column=7, value=f"{nav_item.audience} / {nav_item.print_note}")
         ws.cell(row=row, column=1).font = Font(name=FONT_CJK, size=10, color="0563C1", underline="single")
@@ -231,7 +262,12 @@ def _write_manager_cover_sheet(ws, project: ProjectAnalysisResult, summary: Mate
 
     row += 2
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
-    note = ws.cell(row=row, column=1, value="註：長官摘要不列型號來源；若數字需要追溯，請直接進入查核分頁。")
+    note_text = (
+        "註：長官摘要不列型號來源；若數字需要追溯，請直接進入查核分頁。"
+        if _sheet_available("查核-支撐明細", available_sheets)
+        else "註：長官摘要不列型號來源；若數字需要追溯，請開啟完整活頁簿或採購材料包。"
+    )
+    note = ws.cell(row=row, column=1, value=note_text)
     note.font = Font(name=FONT_CJK, size=10, italic=True, color=COLORS["text_mute"])
     note.fill = PatternFill("solid", fgColor="FFFFFF")
     note.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
