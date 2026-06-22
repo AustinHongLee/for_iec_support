@@ -84,10 +84,23 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
     error_fill = PatternFill("solid", fgColor="FCE4D6")
 
     n_cols = len(_CALC_BASIS_HEADERS)
+    col_idx = {header: index + 1 for index, header in enumerate(_CALC_BASIS_HEADERS)}
     last_col_letter = get_column_letter(n_cols)
-    total_weight_col_idx = _CALC_BASIS_HEADERS.index("總重(kg)") + 1
-    support_count_col_idx = _CALC_BASIS_HEADERS.index("組數") + 1
-    row_type_col_idx = _CALC_BASIS_HEADERS.index("列型") + 1
+    total_weight_col_idx = col_idx["總重(kg)"]
+    support_count_col_idx = col_idx["組數"]
+    row_type_col_idx = col_idx["列型"]
+    qty_cols = {col_idx["單件數量"], col_idx["組數"], col_idx["總數量"]}
+    length_cols = {col_idx["長度(mm)"], col_idx["寬度(mm)"]}
+    weight_cols = {col_idx["單件重(kg)"], col_idx["單組小計(kg)"], col_idx["總重(kg)"]}
+    right_align_cols = length_cols | qty_cols | weight_cols
+    formula_col_idx = col_idx["重量計算式"]
+    indent_cols = {
+        col_idx["型號"],
+        col_idx["品名"],
+        col_idx["規格"],
+        col_idx["材質"],
+        col_idx["屬性"],
+    }
 
     subtitle = (
         f"支撐總組數 {project.total_support_count} 組    "
@@ -122,19 +135,18 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         scaled = row_result.scaled_result
 
         if single.error:
-            vals = [
-                inp.designation,
-                get_type_code(inp.designation),
-                "錯誤",
-                single.error,
-            ] + [""] * (n_cols - 4)
-            # 標記放「列型」位置 (col 19)
-            vals[18] = "錯誤"
-            # 來源資訊放最後 4 欄
-            vals[19] = inp.drawing_line_number   # 來源圖號
-            vals[20] = inp.serial                # 流水號
-            vals[21] = inp.quantity
-            vals[22] = inp.unit or "組"
+            row_values = {
+                "型號": inp.designation,
+                "型號類別": get_type_code(inp.designation),
+                "項次": "錯誤",
+                "品名": single.error,
+                "列型": "錯誤",
+                "來源圖號": inp.drawing_line_number,
+                "流水號": inp.serial,
+                "輸入數量": inp.quantity,
+                "輸入單位": inp.unit or "組",
+            }
+            vals = [row_values.get(header, "") for header in _CALC_BASIS_HEADERS]
             for col, val in enumerate(vals, 1):
                 cell = ws.cell(row=data_row, column=col, value=val)
                 cell.fill = error_fill
@@ -151,40 +163,47 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
             total_w = round(sc_entry.weight_output, 3)
 
             # 型號為主角，來源資訊（配角）放在最右側；明細列來源欄留空，讓小計列承擔 traceability
-            vals = [
-                inp.designation, get_type_code(inp.designation), s_entry.item_no, s_entry.name,
-                s_entry.display_spec, s_entry.material,
-                s_entry.length if s_entry.length else "",
-                s_entry.width if s_entry.width else "",
-                getattr(s_entry, "category", ""),
-                s_entry.quantity,               # 單件數量
-                inp.quantity,                   # 組數（乘數，顯示在明細上方便理解總數）
-                sc_entry.quantity,              # 總數量
-                single_unit_w, single_group_w, total_w,
-                formula_str,
-                getattr(s_entry, "item_class", ""),
-                getattr(s_entry, "manufacturing_type", ""),
-                "明細",
-                "", "", "", "",                 # 來源圖號, 流水號, 輸入數量, 輸入單位  -- 明細列空白
-            ]
+            row_values = {
+                "型號": inp.designation,
+                "型號類別": get_type_code(inp.designation),
+                "項次": s_entry.item_no,
+                "品名": s_entry.name,
+                "規格": s_entry.display_spec,
+                "材質": s_entry.material,
+                "長度(mm)": s_entry.length if s_entry.length else "",
+                "寬度(mm)": s_entry.width if s_entry.width else "",
+                "屬性": getattr(s_entry, "category", ""),
+                "單件數量": s_entry.quantity,
+                "組數": inp.quantity,
+                "總數量": sc_entry.quantity,
+                "單件重(kg)": single_unit_w,
+                "單組小計(kg)": single_group_w,
+                "總重(kg)": total_w,
+                "重量計算式": formula_str,
+                "物件類別": getattr(s_entry, "item_class", ""),
+                "製造方式": getattr(s_entry, "manufacturing_type", ""),
+                "列型": "明細",
+                # 來源圖號 / 流水號 / 輸入數量 / 輸入單位：明細列空白，小計列承擔 traceability
+            }
+            vals = [row_values.get(header, "") for header in _CALC_BASIS_HEADERS]
             for col, val in enumerate(vals, 1):
                 cell = ws.cell(row=data_row, column=col, value=val)
                 cell.border = styles["border"]
                 if data_row % 2 == 0:
                     cell.fill = alt_fill
-                if col in (10, 11, 12):         # 單件數量, 組數, 總數量
+                if col in qty_cols:
                     cell.fill = qty_fill
                 cell.alignment = Alignment(
                     vertical="center",
-                    horizontal="right" if col in (7, 8, 10, 11, 12, 13, 14, 15) else "left",
-                    wrap_text=(col == 16),
-                    indent=1 if col in (1, 4, 5, 6, 9) else 0,
+                    horizontal="right" if col in right_align_cols else "left",
+                    wrap_text=(col == formula_col_idx),
+                    indent=1 if col in indent_cols else 0,
                 )
-                if col in (10, 11, 12):
+                if col in qty_cols:
                     cell.number_format = NUMFMT["QTY_INT"]
-                elif col in (7, 8):
+                elif col in length_cols:
                     cell.number_format = NUMFMT["LEN_MM"]
-                elif col in (13, 14, 15):
+                elif col in weight_cols:
                     cell.number_format = NUMFMT["WEIGHT_KG3"]
             ws.row_dimensions[data_row].height = 16
             data_row += 1
@@ -200,8 +219,8 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
             # 型號區（主角）
-            ws.cell(row=data_row, column=1, value=f"小計 {inp.designation}")
-            ws.cell(row=data_row, column=2, value=get_type_code(inp.designation))
+            ws.cell(row=data_row, column=col_idx["型號"], value=f"小計 {inp.designation}")
+            ws.cell(row=data_row, column=col_idx["型號類別"], value=get_type_code(inp.designation))
             # 組數與總重
             ws.cell(row=data_row, column=support_count_col_idx, value=inp.quantity)
             ws.cell(row=data_row, column=total_weight_col_idx, value=round(scaled.total_weight, 3))
@@ -210,11 +229,11 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
             ws.cell(row=data_row, column=row_type_col_idx, value="小計")
 
             # 來源資訊（配角）只在小計列顯示
-            ws.cell(row=data_row, column=20, value=inp.drawing_line_number)
-            ws.cell(row=data_row, column=21, value=inp.serial)
-            ws.cell(row=data_row, column=22, value=inp.quantity)
-            ws.cell(row=data_row, column=23, value=inp.unit or "組")
-            ws.cell(row=data_row, column=22).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=data_row, column=col_idx["來源圖號"], value=inp.drawing_line_number)
+            ws.cell(row=data_row, column=col_idx["流水號"], value=inp.serial)
+            ws.cell(row=data_row, column=col_idx["輸入數量"], value=inp.quantity)
+            ws.cell(row=data_row, column=col_idx["輸入單位"], value=inp.unit or "組")
+            ws.cell(row=data_row, column=col_idx["輸入數量"]).number_format = NUMFMT["QTY_INT"]
             ws.row_dimensions[data_row].height = 18
             data_row += 1
 
@@ -239,14 +258,32 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         total_weight_col_letter = get_column_letter(total_weight_col_idx)
         add_color_scale(ws, f"{total_weight_col_letter}{HEADER_ROW + 1}:{total_weight_col_letter}{filter_last_row}", "weight")
 
-    _set_widths(ws, [
-        22, 6, 6, 16, 20, 12,   # 型號 Type 項次 品名 規格 材質
-        9, 9, 10,               # 長度 寬度 屬性
-        8, 6, 8,                # 單件 組數 總數量
-        10, 10, 10,             # 單件重 單組小計 總重
-        42, 10, 10, 6,          # 計算式 類別 製造 列型
-        16, 10, 8, 6            # 來源圖號 流水號 輸入數量 輸入單位
-    ])
+    width_by_header = {
+        "型號": 22,
+        "型號類別": 6,
+        "項次": 6,
+        "品名": 16,
+        "規格": 20,
+        "材質": 12,
+        "長度(mm)": 9,
+        "寬度(mm)": 9,
+        "屬性": 10,
+        "單件數量": 8,
+        "組數": 6,
+        "總數量": 8,
+        "單件重(kg)": 10,
+        "單組小計(kg)": 10,
+        "總重(kg)": 10,
+        "重量計算式": 42,
+        "物件類別": 10,
+        "製造方式": 10,
+        "列型": 6,
+        "來源圖號": 16,
+        "流水號": 10,
+        "輸入數量": 8,
+        "輸入單位": 6,
+    }
+    _set_widths(ws, [width_by_header[header] for header in _CALC_BASIS_HEADERS])
     apply_default_visibility(ws, _CALC_BASIS_HEADERS)
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
 

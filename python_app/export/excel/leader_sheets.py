@@ -519,6 +519,12 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
 
     styles = _styles()
     _, _, details = _leader_procurement_stats(project)
+    col_idx = {header: index + 1 for index, header in enumerate(LEADER_DETAIL_HEADERS)}
+    status_col = col_idx["狀態"]
+    project_qty_col = col_idx["數量"]
+    pipe_size_col = col_idx["管徑(吋)"]
+    amount_col = col_idx["計入數量"]
+    numeric_cols = {project_qty_col, pipe_size_col, amount_col}
 
     last_col_letter = get_column_letter(len(LEADER_DETAIL_HEADERS))
     _setup_sheet(ws, "支撐統計明細（製表者查核）", f"{last_col_letter}1")
@@ -541,39 +547,58 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         row += 1
     else:
         for detail in details:
-            values = [
-                detail.status,
-                detail.category,
-                detail.label,
-                detail.drawing_line_number,
-                detail.serial,
-                detail.project_qty,
-                detail.source_unit or "組",
-                detail.designation,
-                _parse_designation_type(detail.designation),
-                "" if detail.pipe_size is None else detail.pipe_size,
-                round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
-                detail.unit,
-                detail.matched_detail,
-                detail.material_basis,
-                detail.criteria,
-                detail.note,
-            ]
+            row_values = {
+                "狀態": detail.status,
+                "類別": detail.category,
+                "統計項目": detail.label,
+                "來源圖號": detail.drawing_line_number,
+                "流水號": detail.serial,
+                "數量": detail.project_qty,
+                "單位": detail.source_unit or "組",
+                "型號": detail.designation,
+                "型號類別": _parse_designation_type(detail.designation),
+                "管徑(吋)": "" if detail.pipe_size is None else detail.pipe_size,
+                "計入數量": round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
+                "計入單位": detail.unit,
+                "命中明細": detail.matched_detail,
+                "材質判定": detail.material_basis,
+                "統計條件": detail.criteria,
+                "備註": detail.note,
+            }
+            values = [row_values[header] for header in LEADER_DETAIL_HEADERS]
             for col, value in enumerate(values, 1):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = styles["border"]
                 cell.alignment = styles["wrap"]
-                if col in (6, 10, 11):
+                if col in numeric_cols:
                     cell.alignment = styles["right"]
-                if col == 1:
+                if col == status_col:
                     apply_status_fill(cell, detail.status)
                     cell.alignment = styles["center"]
-            ws.cell(row=row, column=6).number_format = NUMFMT["QTY_INT"]
-            ws.cell(row=row, column=10).number_format = NUMFMT["PIPE_IN"]
-            ws.cell(row=row, column=11).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=project_qty_col).number_format = NUMFMT["QTY_INT"]
+            ws.cell(row=row, column=pipe_size_col).number_format = NUMFMT["PIPE_IN"]
+            ws.cell(row=row, column=amount_col).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
             row += 1
 
     last_row = max(row - 1, 3)
+    width_by_header = {
+        "狀態": 10,
+        "類別": 16,
+        "統計項目": 34,
+        "來源圖號": 18,
+        "流水號": 12,
+        "數量": 8,
+        "單位": 7,
+        "型號": 22,
+        "型號類別": 8,
+        "管徑(吋)": 10,
+        "計入數量": 12,
+        "計入單位": 8,
+        "命中明細": 36,
+        "材質判定": 22,
+        "統計條件": 52,
+        "備註": 42,
+    }
     apply_report_table(
         ws,
         3,
@@ -581,13 +606,13 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         4,
         last_row,
         col_formats={
-            6: NUMFMT["QTY_INT"],
-            10: NUMFMT["PIPE_IN"],
-            11: NUMFMT["WEIGHT_KG3"],
+            project_qty_col: NUMFMT["QTY_INT"],
+            pipe_size_col: NUMFMT["PIPE_IN"],
+            amount_col: NUMFMT["WEIGHT_KG3"],
         },
-        widths=[10, 16, 34, 18, 12, 8, 7, 22, 8, 10, 12, 8, 36, 22, 52, 42],
+        widths=[width_by_header[header] for header in LEADER_DETAIL_HEADERS],
     )
     apply_default_visibility(ws, LEADER_DETAIL_HEADERS)
     for data_row in range(4, last_row + 1):
-        apply_status_fill(ws.cell(row=data_row, column=1), ws.cell(row=data_row, column=1).value)
+        apply_status_fill(ws.cell(row=data_row, column=status_col), ws.cell(row=data_row, column=status_col).value)
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="支撐統計明細")
