@@ -24,6 +24,7 @@ _tmp_*
 
 # Generated outputs
 python_app/output/
+python_app/analysis_result.xlsx
 
 # Pytest cache
 python_app/pytest-cache-files-*/
