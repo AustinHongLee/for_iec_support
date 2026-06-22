@@ -154,8 +154,27 @@ class MainWindow(QMainWindow):
         self.main_tabs.addTab(self.ontology_browser, "🌳 支撐架構")
 
         main_layout.addWidget(self.main_tabs)
-        self.statusBar().showMessage("就緒 — 新增支撐編碼後按「開始分析」")
+        self._set_status("info", "就緒 — 新增支撐編碼後按「開始分析」")
         self._install_shortcuts()
+
+    def _set_status(self, kind: str, text: str):
+        color_key = {
+            "info": "status_info",
+            "busy": "status_busy",
+            "ok": "status_ok",
+            "warn": "status_warn",
+            "error": "status_error",
+        }.get(kind, "status_info")
+        color = TOKENS["color"][color_key]
+        self.statusBar().setStyleSheet(
+            "QStatusBar {"
+            f"color: {color};"
+            f"font-size: {TOKENS['font']['control']}px;"
+            f"background: {TOKENS['color']['surface_soft']};"
+            f"border-top: 1px solid {TOKENS['color']['border_soft']};"
+            "}"
+        )
+        self.statusBar().showMessage(text)
 
     def _install_shortcuts(self):
         """Keyboard shortcuts for high-volume input work."""
@@ -1543,7 +1562,7 @@ class MainWindow(QMainWindow):
         self._clear_analysis_outputs()
         if message:
             suffix = "，已清除舊結果" if had_outputs else ""
-            self.statusBar().showMessage(f"{message}{suffix}")
+            self._set_status("info", f"{message}{suffix}")
 
     def _on_item_check_changed(self, item: QListWidgetItem):
         row = self.item_list.row(item)
@@ -1603,7 +1622,7 @@ class MainWindow(QMainWindow):
             self.item_list.setCurrentRow(min(row, len(self._project_rows) - 1))
         else:
             self.side_panel.clear_panel()
-        self.statusBar().showMessage(f"已刪除 {deleted_designation}，請重新分析")
+        self._set_status("info", f"已刪除 {deleted_designation}，請重新分析")
 
     def _on_clear_all(self):
         if not self._project_rows and not self._results:
@@ -1622,7 +1641,7 @@ class MainWindow(QMainWindow):
         self._clear_analysis_outputs()
         self._selected_index = -1
         self.side_panel.clear_panel()
-        self.statusBar().showMessage("已清除")
+        self._set_status("info", "已清除")
 
     def _on_item_selected(self, row):
         """清單項目被點選 → 更新 Side Panel"""
@@ -1674,7 +1693,7 @@ class MainWindow(QMainWindow):
 
         self._set_analyze_busy(True)
         QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
-        self.statusBar().showMessage("分析中...")
+        self._set_status("busy", "分析中...")
         QApplication.processEvents()
         error_message = ""
         try:
@@ -1698,7 +1717,8 @@ class MainWindow(QMainWindow):
                 error_count=error_count,
                 support_count=self._project_result.total_support_count,
             )
-            self.statusBar().showMessage(
+            self._set_status(
+                "ok",
                 f"分析完成: {len(self._results)} 筆 / "
                 f"{self._project_result.total_support_count} 組 "
                 f"(成功 {success_count}, 錯誤 {error_count})"
@@ -1711,7 +1731,7 @@ class MainWindow(QMainWindow):
             # 啟用材料合計 Tab
             self.material_cutting_page.set_results_ready(True)
         except Exception as exc:
-            self.statusBar().showMessage("分析失敗")
+            self._set_status("error", "分析失敗")
             error_message = str(exc)
         finally:
             QApplication.restoreOverrideCursor()
@@ -1971,7 +1991,7 @@ class MainWindow(QMainWindow):
             filt, ext = "PDF (*.pdf)", ".pdf"
 
         if not self._confirm_export_preview(ext=ext, export_label=fmt):
-            self.statusBar().showMessage("已取消匯出")
+            self._set_status("info", "已取消匯出")
             return
 
         filepath, _ = QFileDialog.getSaveFileName(
@@ -1981,7 +2001,7 @@ class MainWindow(QMainWindow):
             return
         self._set_export_busy(True)
         QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
-        self.statusBar().showMessage("匯出中...")
+        self._set_status("busy", "匯出中...")
         QApplication.processEvents()
         success_message = ""
         warning_message = ""
@@ -2003,15 +2023,15 @@ class MainWindow(QMainWindow):
                 from export.pdf_export import export_to_pdf
                 export_to_pdf(self._results, filepath)
             success_message = f"已匯出至:\n{filepath}"
-            self.statusBar().showMessage(f"已匯出: {filepath}")
+            self._set_status("ok", f"已匯出: {filepath}")
         except ImportError as e:
-            self.statusBar().showMessage("匯出失敗: 缺少套件")
+            self._set_status("error", "匯出失敗: 缺少套件")
             warning_message = (
                 f"匯出失敗，請安裝必要套件:\n{e}\n\n"
                 "pip install openpyxl reportlab"
             )
         except Exception as e:
-            self.statusBar().showMessage("匯出失敗")
+            self._set_status("error", "匯出失敗")
             error_message = str(e)
         finally:
             QApplication.restoreOverrideCursor()
@@ -2036,7 +2056,7 @@ class MainWindow(QMainWindow):
 
     def _on_material_changed(self, text):
         set_analysis_setting("upper_material", text)
-        self.statusBar().showMessage(f"全域上段管材質: {text}")
+        self._set_status("info", f"全域上段管材質: {text}")
 
     def _on_open_config(self):
         dialog = ConfigDialog(self)

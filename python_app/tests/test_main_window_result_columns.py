@@ -45,6 +45,19 @@ def test_result_summary_uses_metric_theme_tokens():
         window.close()
 
 
+def test_status_helper_applies_status_token_color():
+    app = QApplication.instance() or QApplication(sys.argv)
+    window = MainWindow()
+
+    try:
+        window._set_status("ok", "完成")
+
+        assert window.statusBar().currentMessage() == "完成"
+        assert TOKENS["color"]["status_ok"] in window.statusBar().styleSheet()
+    finally:
+        window.close()
+
+
 def test_hidden_result_columns_still_hold_searchable_data():
     app = QApplication.instance() or QApplication(sys.argv)
     window = MainWindow()
@@ -60,6 +73,7 @@ def test_hidden_result_columns_still_hold_searchable_data():
         app.processEvents()
 
         assert window.result_table.rowCount() > 0
+        assert "分析完成" in window.statusBar().currentMessage()
         assert window.result_table.isColumnHidden(_RESULT_HEADERS.index("流水號.sort"))
         assert window.result_table.item(0, _RESULT_HEADERS.index("流水號.sort")).text() == "S-001"
 
