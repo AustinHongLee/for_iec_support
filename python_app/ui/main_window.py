@@ -41,6 +41,7 @@ from core.parser import get_type_code, get_part, get_lookup_value
 from core.project_import import read_project_rows_xlsx
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict
+from ui.theme import build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
@@ -112,141 +113,7 @@ class MainWindow(QMainWindow):
     #  全域樣式
     # ══════════════════════════════════════════
     def _apply_stylesheet(self):
-        self.setStyleSheet("""
-            QMainWindow, QDialog {
-                background-color: #F5F6FA;
-            }
-            QTabWidget::pane {
-                border: 1px solid #C8CDD5;
-                background: #FFFFFF;
-                border-radius: 0 4px 4px 4px;
-            }
-            QTabBar::tab {
-                padding: 7px 18px;
-                background: #E8ECF1;
-                color: #555;
-                border: 1px solid #C8CDD5;
-                border-bottom: none;
-                border-radius: 4px 4px 0 0;
-                font-size: 12px;
-                margin-right: 2px;
-            }
-            QTabBar::tab:selected {
-                background: #FFFFFF;
-                color: #1565C0;
-                font-weight: bold;
-                border-bottom: 2px solid #FFFFFF;
-            }
-            QTabBar::tab:hover:!selected {
-                background: #DDE3EC;
-            }
-            QGroupBox {
-                font-weight: bold;
-                font-size: 12px;
-                color: #333;
-                border: 1px solid #C8CDD5;
-                border-radius: 6px;
-                margin-top: 18px;
-                padding: 12px 8px 8px 8px;
-                background: #FFFFFF;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-                color: #1565C0;
-                font-size: 12px;
-            }
-            QPushButton {
-                padding: 5px 12px;
-                border: 1px solid #B8C0CC;
-                border-radius: 4px;
-                background-color: #F0F2F5;
-                color: #333;
-                font-size: 12px;
-                min-height: 24px;
-            }
-            QPushButton:hover {
-                background-color: #E2E8F0;
-                border-color: #8898B0;
-            }
-            QPushButton:pressed {
-                background-color: #D0DAEA;
-            }
-            QPushButton:disabled {
-                color: #AAA;
-                background-color: #EAEAEA;
-                border-color: #D0D0D0;
-            }
-            QLineEdit, QComboBox {
-                border: 1px solid #C0C8D4;
-                border-radius: 4px;
-                padding: 4px 8px;
-                background: #FFFFFF;
-                color: #222;
-                selection-background-color: #BBDEFB;
-                font-size: 12px;
-            }
-            QLineEdit:focus, QComboBox:focus {
-                border-color: #1565C0;
-            }
-            QListWidget {
-                border: 1px solid #C0C8D4;
-                border-radius: 4px;
-                background: #FFFFFF;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 3px 6px;
-                border-bottom: 1px solid #EEF0F3;
-            }
-            QListWidget::item:selected {
-                background: #BBDEFB;
-                color: #0D47A1;
-                border-radius: 2px;
-            }
-            QListWidget::item:hover:!selected {
-                background: #E8F0F8;
-            }
-            QTableWidget {
-                border: 1px solid #C0C8D4;
-                border-radius: 4px;
-                gridline-color: #E4E8EE;
-                background: #FFFFFF;
-                alternate-background-color: #F8FAFB;
-                selection-background-color: #BBDEFB;
-                font-size: 11px;
-            }
-            QHeaderView::section {
-                background-color: #EEF2F8;
-                color: #2C3E60;
-                font-weight: bold;
-                font-size: 11px;
-                border: none;
-                border-right: 1px solid #D2D8E2;
-                border-bottom: 1px solid #BBDEFB;
-                padding: 5px 8px;
-            }
-            QScrollBar:vertical {
-                width: 10px;
-                background: #F0F2F5;
-            }
-            QScrollBar::handle:vertical {
-                background: #C0CBD8;
-                border-radius: 5px;
-                min-height: 20px;
-            }
-            QStatusBar {
-                color: #666;
-                font-size: 12px;
-                background: #F0F2F5;
-                border-top: 1px solid #D0D5DC;
-            }
-            QSplitter::handle {
-                background: #D0D5DC;
-                width: 2px;
-            }
-        """)
+        self.setStyleSheet(build_stylesheet())
 
     # ══════════════════════════════════════════
     #  UI 初始化
