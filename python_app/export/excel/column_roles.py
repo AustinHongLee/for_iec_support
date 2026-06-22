@@ -125,3 +125,18 @@ def trace_columns(headers: list[str]) -> list[str]:
 def columns_by_role(headers: list[str], role: str) -> list[str]:
     """從一組 headers 取出指定角色的欄（保持原順序）。"""
     return [h for h in headers if role_of(h) == role]
+
+
+def apply_default_visibility(ws, headers: list[str], *, outline_level: int = 1) -> None:
+    """依欄位用途設定 Excel 預設顯示狀態；只隱藏欄，不刪欄或改值。"""
+    from openpyxl.utils import get_column_letter
+
+    for index, header in enumerate(headers, 1):
+        if is_visible(header):
+            continue
+        dimension = ws.column_dimensions[get_column_letter(index)]
+        dimension.hidden = True
+        dimension.outline_level = outline_level
+
+    ws.sheet_view.showOutlineSymbols = True
+    ws.sheet_properties.outlinePr.summaryRight = False

@@ -3,6 +3,7 @@
 from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
+from .column_roles import apply_default_visibility
 from .headers import _CALC_BASIS_HEADERS, _STANDARDS_TABLE
 from .styles import (
     NUMFMT,
@@ -92,7 +93,8 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         f"支撐總組數 {project.total_support_count} 組    "
         f"成功項目 {len(project.rows) - len(project.errors)}    "
         f"錯誤項目 {len(project.errors)}    "
-        f"全案總重 {project.total_weight:,.3f} kg"
+        f"全案總重 {project.total_weight:,.3f} kg    "
+        "追溯欄預設收起，可用 Excel 欄位展開檢視"
     )
     _setup_sheet(
         ws,
@@ -245,6 +247,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
         42, 10, 10, 6,          # 計算式 類別 製造 列型
         16, 10, 8, 6            # 來源圖號 流水號 輸入數量 輸入單位
     ])
+    apply_default_visibility(ws, _CALC_BASIS_HEADERS)
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
 
 

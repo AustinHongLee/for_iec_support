@@ -165,6 +165,18 @@ try:
         assert f"$A$1:${last_print_col}$" in str(ws.print_area), f"{ws.title} print area should include chart zone"
         assert ws.page_setup.orientation == "portrait", f"{ws.title} should be portrait for A4 print"
 
+    def _assert_default_trace_columns_hidden(ws, headers: list[str]) -> None:
+        from openpyxl.utils import get_column_letter
+        from export.excel import column_roles
+
+        for index, header in enumerate(headers, 1):
+            letter = get_column_letter(index)
+            hidden = bool(ws.column_dimensions[letter].hidden)
+            expected_hidden = not column_roles.is_visible(header)
+            assert hidden is expected_hidden, f"{ws.title} column {letter} ({header}) hidden={hidden}, expected {expected_hidden}"
+            if expected_hidden:
+                assert ws.column_dimensions[letter].outline_level == 1, f"{ws.title} column {letter} should be grouped for expand"
+
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
     try:
@@ -258,6 +270,7 @@ try:
         assert not _sheet_contains_text(ws_summary, "Workbook 索引"), "project summary should not use old workbook index wording"
         assert not _sheet_contains_text(ws_summary, "資料量"), "project summary index should not expose confusing data-volume labels"
         ws_detail = wb["重量明細表"]
+        from export.excel.headers import LEADER_DETAIL_HEADERS, _CALC_BASIS_HEADERS
         assert ws_detail.cell(row=1, column=1).value == "IEC 管架支撐 - 重量明細表", "weight detail title failed"
         assert ws_detail.cell(row=3, column=1).value == "型號", "weight detail designation header failed"
         assert ws_detail.cell(row=3, column=2).value == "Type", "weight detail type header missing"
@@ -277,6 +290,7 @@ try:
         ), "weight detail subtotal source trace failed"
         assert "可信度" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 24)], "weight detail should not expose confidence header"
         assert "來源依據" not in [ws_detail.cell(row=3, column=col).value for col in range(1, 24)], "weight detail should not expose source header"
+        _assert_default_trace_columns_hidden(ws_detail, _CALC_BASIS_HEADERS)
         ws_calc = wb["計算標準與假設"]
         assert "$A$1:$F$" in str(ws_calc.print_area), "calc reference should remain A4 portrait width"
         assert _sheet_contains_text(ws_calc, "Type 計算資料狀態彙整"), "calc reference should summarize by Type"
@@ -303,6 +317,7 @@ try:
         assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
+        _assert_default_trace_columns_hidden(ws_leader_detail, LEADER_DETAIL_HEADERS)
         assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "來源圖號", "leader detail drawing header failed"
         assert ws_leader_detail.cell(row=3, column=5).value == "流水號", "leader detail serial header failed"

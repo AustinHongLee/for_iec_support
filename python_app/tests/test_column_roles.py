@@ -65,3 +65,26 @@ def test_helpers_preserve_order_and_subset():
     assert trace == [h for h in hdrs if h in trace]
     # 可見與追溯不重疊（追溯欄預設隱藏）
     assert set(vis).isdisjoint(set(trace))
+
+
+def test_apply_default_visibility_hides_trace_columns_only():
+    """套用到 worksheet 時只把預設隱藏欄收起，不移除欄位。"""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    hdrs = list(headers.LEADER_DETAIL_HEADERS)
+    for col, header in enumerate(hdrs, 1):
+        ws.cell(row=1, column=col, value=header)
+        ws.cell(row=2, column=col, value=f"value-{col}")
+
+    column_roles.apply_default_visibility(ws, hdrs)
+
+    for col, header in enumerate(hdrs, 1):
+        letter = get_column_letter(col)
+        assert ws.cell(row=1, column=col).value == header
+        assert ws.cell(row=2, column=col).value == f"value-{col}"
+        assert bool(ws.column_dimensions[letter].hidden) is (not column_roles.is_visible(header))
+        if not column_roles.is_visible(header):
+            assert ws.column_dimensions[letter].outline_level == 1

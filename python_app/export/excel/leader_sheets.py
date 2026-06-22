@@ -3,6 +3,7 @@
 from core.parser import get_lookup_value, get_part
 from core.project_aggregation import ProjectAnalysisResult
 
+from .column_roles import apply_default_visibility
 from .headers import LEADER_DETAIL_HEADERS
 from .models import LeaderHitDetail, LeaderStatRow
 from .styles import (
@@ -526,7 +527,8 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         column=1,
         value=(
             "本表逐筆列出支撐分類統計的命中、需確認與未納入來源；"
-            "圖例：命中=綠、需確認=紅、未納入=橘。"
+            "圖例：命中=綠、需確認=紅、未納入=橘；"
+            "追溯欄預設收起，可用 Excel 欄位展開檢視。"
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
@@ -585,6 +587,7 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         },
         widths=[10, 16, 34, 18, 12, 8, 7, 22, 8, 10, 12, 8, 36, 22, 52, 42],
     )
+    apply_default_visibility(ws, LEADER_DETAIL_HEADERS)
     for data_row in range(4, last_row + 1):
         apply_status_fill(ws.cell(row=data_row, column=1), ws.cell(row=data_row, column=1).value)
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="支撐統計明細")
