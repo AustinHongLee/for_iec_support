@@ -10,6 +10,7 @@ from ui.main_window import (
     _RESULT_DEFAULT_VISIBLE_HEADERS,
     _RESULT_HEADERS,
 )
+from ui.theme import TOKENS
 
 
 def test_result_table_hides_advanced_columns_by_default():
@@ -29,6 +30,17 @@ def test_result_table_hides_advanced_columns_by_default():
             window.result_table.isColumnHidden(index)
             for index in range(len(_RESULT_HEADERS))
         )
+    finally:
+        window.close()
+
+
+def test_result_summary_uses_metric_theme_tokens():
+    app = QApplication.instance() or QApplication(sys.argv)
+    window = MainWindow()
+
+    try:
+        assert window.total_weight_label.font().pointSize() == TOKENS["font"]["metric_primary"]
+        assert window.summary_success_label.font().pointSize() == TOKENS["font"]["metric_value"]
     finally:
         window.close()
 

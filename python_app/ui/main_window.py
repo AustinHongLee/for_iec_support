@@ -41,7 +41,7 @@ from core.parser import get_type_code, get_part, get_lookup_value
 from core.project_import import read_project_rows_xlsx
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict
-from ui.theme import build_stylesheet
+from ui.theme import TOKENS, build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
@@ -381,27 +381,41 @@ class MainWindow(QMainWindow):
         return row
 
     def _build_result_summary_bar(self):
+        color = TOKENS["color"]
+        radius = TOKENS["radius"]
+        space = TOKENS["space"]
+        font = TOKENS["font"]
+
         bar = QFrame()
         bar.setObjectName("resultSummaryBar")
         bar.setStyleSheet(
             "QFrame#resultSummaryBar {"
-            "background: #F8FBFE;"
-            "border: 1px solid #D6E2EF;"
-            "border-radius: 4px;"
+            f"background: {color['summary_bg']};"
+            f"border: 1px solid {color['summary_border']};"
+            f"border-radius: {radius['sm']}px;"
             "}"
             "QLabel { background: transparent; }"
         )
 
         row = QHBoxLayout(bar)
-        row.setContentsMargins(10, 6, 10, 6)
-        row.setSpacing(12)
+        row.setContentsMargins(
+            space["summary_x"], space["summary_y"],
+            space["summary_x"], space["summary_y"],
+        )
+        row.setSpacing(space["summary_gap"])
 
         self.total_weight_label = self._make_summary_value_label(
-            "-- kg", "#0D47A1", 13, True
+            "-- kg", color["metric_weight"], font["metric_primary"], True
         )
-        self.summary_success_label = self._make_summary_value_label("--", "#1B5E20")
-        self.summary_error_label = self._make_summary_value_label("--", "#546E7A")
-        self.summary_support_label = self._make_summary_value_label("--", "#263238")
+        self.summary_success_label = self._make_summary_value_label(
+            "--", color["metric_ok"], font["metric_value"]
+        )
+        self.summary_error_label = self._make_summary_value_label(
+            "--", color["metric_muted"], font["metric_value"]
+        )
+        self.summary_support_label = self._make_summary_value_label(
+            "--", color["metric_support"], font["metric_value"]
+        )
 
         row.addLayout(self._make_summary_metric("總重量", self.total_weight_label))
         row.addWidget(self._make_summary_separator())
@@ -414,14 +428,18 @@ class MainWindow(QMainWindow):
         return bar
 
     def _make_summary_metric(self, title: str, value_label: QLabel):
+        color = TOKENS["color"]
+        font = TOKENS["font"]
+        space = TOKENS["space"]
+
         metric = QHBoxLayout()
         metric.setContentsMargins(0, 0, 0, 0)
-        metric.setSpacing(5)
+        metric.setSpacing(space["metric_gap"])
 
         title_label = QLabel(title)
-        title_label.setFont(QFont("Microsoft JhengHei UI", 12))
+        title_label.setFont(QFont("Microsoft JhengHei UI", font["metric_label"]))
         title_label.setStyleSheet(
-            "color: #607080; font-weight: normal; background: transparent;"
+            f"color: {color['metric_label']}; font-weight: normal; background: transparent;"
         )
         metric.addWidget(title_label)
         metric.addWidget(value_label)
@@ -445,8 +463,11 @@ class MainWindow(QMainWindow):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.VLine)
         sep.setFrameShadow(QFrame.Shadow.Plain)
-        sep.setStyleSheet("color: #D6E2EF; background: #D6E2EF;")
-        sep.setFixedHeight(20)
+        sep.setStyleSheet(
+            f"color: {TOKENS['color']['summary_border']}; "
+            f"background: {TOKENS['color']['summary_border']};"
+        )
+        sep.setFixedHeight(28)
         return sep
 
     def _set_project_result_headers(self):
