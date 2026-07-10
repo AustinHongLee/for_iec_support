@@ -6,15 +6,40 @@ $guiPython = Join-Path $guiVenvDir "Scripts\python.exe"
 $requirements = Join-Path $repoRoot "python_app\requirements.txt"
 $bundledPython = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
 
-if (-not (Test-Path $bundledPython)) {
-    Write-Host "Cannot find bundled Python:" -ForegroundColor Red
-    Write-Host "  $bundledPython"
+function Get-BootstrapPython {
+    if (Test-Path $bundledPython) {
+        return @{ Executable = $bundledPython; PrefixArgs = @() }
+    }
+
+    $py = Get-Command py -ErrorAction SilentlyContinue
+    if ($py) {
+        & $py.Source -3 -c "import venv" *> $null
+        if ($LASTEXITCODE -eq 0) {
+            return @{ Executable = $py.Source; PrefixArgs = @("-3") }
+        }
+    }
+
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) {
+        & $python.Source -c "import venv" *> $null
+        if ($LASTEXITCODE -eq 0) {
+            return @{ Executable = $python.Source; PrefixArgs = @() }
+        }
+    }
+
+    return $null
+}
+
+$bootstrap = Get-BootstrapPython
+if (-not $bootstrap) {
+    Write-Host "Cannot create the GUI environment: Python 3 with venv was not found." -ForegroundColor Red
+    Write-Host "Install Python 3.10+ from python.org, then run run_app.cmd again." -ForegroundColor Yellow
     exit 1
 }
 
 if (-not (Test-Path $guiPython)) {
-Write-Host "Creating GUI virtual environment: $guiVenvDir" -ForegroundColor Green
-    & $bundledPython -m venv $guiVenvDir
+    Write-Host "Creating GUI virtual environment: $guiVenvDir" -ForegroundColor Green
+    & $bootstrap.Executable @($bootstrap.PrefixArgs) -m venv $guiVenvDir
 }
 
 $venvHasPip = $false
@@ -33,7 +58,7 @@ if ($venvHasPip) {
     $sitePackages = Join-Path $guiVenvDir "Lib\site-packages"
     Write-Host "Venv pip is unavailable; installing via bundled pip target:" -ForegroundColor Yellow
     Write-Host "  $sitePackages"
-    & $bundledPython -m pip install --upgrade -r $requirements --target $sitePackages
+    & $bootstrap.Executable @($bootstrap.PrefixArgs) -m pip install --upgrade -r $requirements --target $sitePackages
 }
 
 & $guiPython -c "import PyQt6" *> $null

@@ -35,17 +35,13 @@ if (Test-PythonModule -PythonPath $guiVenvPython -ModuleName "PyQt6") {
 }
 
 if (-not $pythonPath) {
-    Write-Host "Cannot launch IEC app: no usable Python with PyQt6 was found." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Checked:" -ForegroundColor Yellow
-    Write-Host "  $guiVenvPython"
-    Write-Host "  $venvPython"
-    Write-Host "  $bundledPython"
-    Write-Host ""
-    Write-Host "Suggested fix:" -ForegroundColor Yellow
-    Write-Host "  Run .\setup_app_env.ps1 once, then run:"
-    Write-Host "  .\run_app.ps1"
-    exit 1
+    Write-Host "Preparing the GUI environment for the first launch..." -ForegroundColor Yellow
+    & (Join-Path $repoRoot "setup_app_env.ps1")
+    if ($LASTEXITCODE -ne 0 -or -not (Test-PythonModule -PythonPath $guiVenvPython -ModuleName "PyQt6")) {
+        Write-Host "Cannot launch IEC app: GUI environment setup did not complete." -ForegroundColor Red
+        exit 1
+    }
+    $pythonPath = $guiVenvPython
 }
 
 Set-Location $appDir

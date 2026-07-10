@@ -7,10 +7,13 @@ For AI agents: read [AGENTS.md](AGENTS.md) before using Markdown files as contex
 ## Quickstart
 
 ```powershell
-.\run_app.ps1
+.\run_app.cmd
 ```
 
-If the environment is not ready yet, run:
+On the first launch, the script automatically creates `.venv_gui` and installs
+the GUI requirements. It uses the Codex bundled Python when available, or a
+normal Windows `py -3` / `python` installation otherwise. If the automatic
+setup is interrupted, run it directly:
 
 ```powershell
 .\setup_app_env.ps1
