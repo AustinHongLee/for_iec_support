@@ -26,10 +26,13 @@ PROJECT_ROW_ALIASES = {
     "overrides": ("overrides_json", "overrides"),
     "description": ("description", "desc", "描述", "中文說明", "說明", "品名"),
     "item_code": ("item_code", "item code", "料號", "code"),
+    "nominal_size": ("nominal_size", "nominal size", "管徑", "管徑(吋)", "size"),
+    "insulation": ("保溫厚度", "insulation", "insulation thickness", "insul thk"),
 }
 
 PROJECT_XLSX_FIELDS = (
     "designation", "quantity", "drawing_line_number", "serial", "unit", "description", "item_code",
+    "nominal_size", "insulation",
 )
 
 
@@ -70,6 +73,16 @@ def read_project_rows_xlsx(
                 continue
 
             quantity_text = project_mapped_value(values, mapping, "quantity") or "1"
+            overrides = None
+            display_designation = ""
+            if str(designation).strip().upper() == "PENETRATION HOLE":
+                from .penetration_hole import build_item_code
+
+                nominal_size = project_mapped_value(values, mapping, "nominal_size")
+                insulation = project_mapped_value(values, mapping, "insulation")
+                overrides = {"nominal_size": nominal_size, "insulation": insulation}
+                display_designation = build_item_code(nominal_size, insulation)
+
             rows.append(
                 ProjectInputRow(
                     designation=designation,
@@ -78,6 +91,8 @@ def read_project_rows_xlsx(
                     drawing_line_number=project_mapped_value(values, mapping, "drawing_line_number"),
                     serial=project_mapped_value(values, mapping, "serial"),
                     unit=normalize_project_unit_value(project_mapped_value(values, mapping, "unit")),
+                    overrides=overrides,
+                    display_designation=display_designation,
                 )
             )
         return rows
@@ -138,6 +153,8 @@ def infer_project_column_mapping(headers: list[str], sample_rows: list[tuple]) -
         "unit": 35,
         "description": 35,
         "item_code": 35,
+        "nominal_size": 35,
+        "insulation": 35,
     }
     scores = []
     for field in PROJECT_XLSX_FIELDS:
@@ -185,6 +202,8 @@ def project_column_score(field: str, header, values: list) -> float:
         "designation": (("型號", "designation", "model", "supportno", "supportdesignation", "支撐編碼"), 42),
         "description": (("description", "desc", "描述", "說明", "中文說明", "品名"), 42),
         "item_code": (("itemcode", "料號", "code"), 42),
+        "nominal_size": (("nominalsize", "管徑", "size"), 42),
+        "insulation": (("保溫厚度", "insulation", "insulthk"), 42),
     }
     keywords, keyword_score = keyword_scores.get(field, ((), 0))
     if any(normalize_project_header(keyword) in normalized for keyword in keywords):

@@ -41,7 +41,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         if single_result.error:
             # 與正常資料一致的順序：型號優先，來源放最後
             values = [
-                input_row.designation,
+                input_row.display_designation or input_row.designation,
                 get_type_code(input_row.designation),
                 "錯誤",
                 single_result.error,
@@ -60,7 +60,7 @@ def _write_project_weight_sheet(ws, project: ProjectAnalysisResult):
         for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
             # 型號為主角，來源資訊移到最右側作為配角
             values = [
-                input_row.designation,
+                input_row.display_designation or input_row.designation,
                 get_type_code(input_row.designation),
                 single_entry.item_no,
                 single_entry.name,

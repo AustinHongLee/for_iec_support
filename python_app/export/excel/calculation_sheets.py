@@ -136,7 +136,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
 
         if single.error:
             row_values = {
-                "型號": inp.designation,
+                "型號": inp.display_designation or inp.designation,
                 "型號類別": get_type_code(inp.designation),
                 "項次": "錯誤",
                 "品名": single.error,
@@ -164,7 +164,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
 
             # 型號為主角，來源資訊（配角）放在最右側；明細列來源欄留空，讓小計列承擔 traceability
             row_values = {
-                "型號": inp.designation,
+                "型號": inp.display_designation or inp.designation,
                 "型號類別": get_type_code(inp.designation),
                 "項次": s_entry.item_no,
                 "品名": s_entry.name,
@@ -219,7 +219,7 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
             # 型號區（主角）
-            ws.cell(row=data_row, column=col_idx["型號"], value=f"小計 {inp.designation}")
+            ws.cell(row=data_row, column=col_idx["型號"], value=f"小計 {inp.display_designation or inp.designation}")
             ws.cell(row=data_row, column=col_idx["型號類別"], value=get_type_code(inp.designation))
             # 組數與總重
             ws.cell(row=data_row, column=support_count_col_idx, value=inp.quantity)

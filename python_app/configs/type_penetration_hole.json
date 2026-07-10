@@ -1,0 +1,9 @@
+{
+  "type_id": "PENETRATION HOLE",
+  "name": "Project opening reinforcement MTO",
+  "data_updated_at": "2026-07-10",
+  "data_update_note": "This-project rule from analysis_result_20260603_REV.01.xlsx SUPPORT MTO: opening = ROUNDUP(OD + 2*insulation, -1) + 50; FB50x6 length = opening*4.",
+  "flat_bar": {"width_mm": 50, "thickness_mm": 6, "material": "A36/SS400", "density_kg_per_mm3": 0.00000785},
+  "opening_clearance_mm": 50,
+  "rounding_mm": 10
+}

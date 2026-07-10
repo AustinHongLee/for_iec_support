@@ -92,6 +92,8 @@ _PROJECT_ROW_ALIASES = {
     "overrides": ("overrides_json", "overrides"),
     "description": ("description", "desc", "描述", "中文說明", "說明", "品名"),
     "item_code": ("item_code", "item code", "料號", "code"),
+    "nominal_size": ("nominal_size", "nominal size", "管徑", "管徑(吋)", "size"),
+    "insulation": ("保溫厚度", "insulation", "insulation thickness", "insul thk"),
 }
 
 _PROJECT_XLSX_FIELD_LABELS = {
@@ -102,6 +104,8 @@ _PROJECT_XLSX_FIELD_LABELS = {
     "designation": "型號",
     "description": "說明備援",
     "item_code": "料號備援",
+    "nominal_size": "管徑（開孔必填）",
+    "insulation": "保溫厚度（開孔用）",
 }
 
 
@@ -556,6 +560,7 @@ class MainWindow(QMainWindow):
         serial: str = "",
         unit: str = "組",
         drawing_line_number: str = "",
+        display_designation: str = "",
     ):
         idx = len(self._project_rows)
         self._project_rows.append(
@@ -567,6 +572,7 @@ class MainWindow(QMainWindow):
                 serial=str(serial or "").strip(),
                 unit=self._normalize_project_unit_value(unit),
                 drawing_line_number=str(drawing_line_number or "").strip(),
+                display_designation=str(display_designation or "").strip(),
             )
         )
         item_widget = QListWidgetItem(text)
@@ -759,6 +765,7 @@ class MainWindow(QMainWindow):
                 serial=row.serial,
                 unit=row.unit,
                 drawing_line_number=row.drawing_line_number,
+                display_designation=row.display_designation,
             )
         self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
         action = "取代並載入" if replace_existing else "追加載入"
@@ -1039,12 +1046,13 @@ class MainWindow(QMainWindow):
         dlg.setMinimumSize(560, 360)
         lay = QVBoxLayout(dlg)
         lay.addWidget(QLabel(f"Sheet: {sheet_name}    表頭列: {header_row}"))
-        lay.addWidget(QLabel("請確認欄位對應；型號與數量為必填，其餘可不使用。"))
+        lay.addWidget(QLabel("請確認欄位對應；型號與數量為必填。若含 PENETRATION HOLE，請指定管徑與保溫厚度。"))
 
         form = QFormLayout()
         combos: dict[str, QComboBox] = {}
         fields = (
             "drawing_line_number", "serial", "quantity", "unit", "designation", "description", "item_code",
+            "nominal_size", "insulation",
         )
         for field in fields:
             combo = QComboBox()

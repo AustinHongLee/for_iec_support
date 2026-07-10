@@ -39,6 +39,7 @@ class ComponentRole(str, Enum):
     ANGLE               = "angle"
     CHANNEL             = "channel"
     H_SECTION           = "h_section"
+    OPENING_REINFORCEMENT = "opening_reinforcement"
 
     # ── 螺栓/五金 ────────────────────────────────────────────
     EXPANSION_BOLT      = "expansion_bolt"
@@ -91,6 +92,7 @@ ROLE_AGGREGATE_TYPE: dict[ComponentRole, str] = {
     ComponentRole.ANGLE:            "linear",
     ComponentRole.CHANNEL:          "linear",
     ComponentRole.H_SECTION:        "linear",
+    ComponentRole.OPENING_REINFORCEMENT: "linear",
     ComponentRole.FLAT_BAR:         "plate",   # flat bar in shoe context = discrete piece (add_plate_entry)
 
     # plate
@@ -131,6 +133,7 @@ ROLE_ITEM_CLASS: dict[ComponentRole, ItemClass] = {
     ComponentRole.ANGLE:            ItemClass.PRIMARY_STRUCTURE,
     ComponentRole.CHANNEL:          ItemClass.PRIMARY_STRUCTURE,
     ComponentRole.H_SECTION:        ItemClass.PRIMARY_STRUCTURE,
+    ComponentRole.OPENING_REINFORCEMENT: ItemClass.FABRICATED_PART,
 
     ComponentRole.FLAT_BAR:         ItemClass.FABRICATED_PART,
     ComponentRole.BASE_PLATE:       ItemClass.FABRICATED_PART,
@@ -167,6 +170,7 @@ ROLE_MANUFACTURING_TYPE: dict[ComponentRole, ManufacturingType] = {
     ComponentRole.ANGLE:            ManufacturingType.RAW_CUT,
     ComponentRole.CHANNEL:          ManufacturingType.RAW_CUT,
     ComponentRole.H_SECTION:        ManufacturingType.RAW_CUT,
+    ComponentRole.OPENING_REINFORCEMENT: ManufacturingType.RAW_CUT,
     ComponentRole.FLAT_BAR:         ManufacturingType.RAW_CUT,
 
     ComponentRole.BASE_PLATE:       ManufacturingType.PLATE_CUT,
@@ -276,6 +280,7 @@ ROLE_DISPLAY_NAME: dict[ComponentRole, dict[str, str]] = {
     ComponentRole.ANGLE:            {"zh": "角鋼",     "en": "Angle"},
     ComponentRole.CHANNEL:          {"zh": "槽鋼",     "en": "Channel"},
     ComponentRole.H_SECTION:        {"zh": "H型鋼",    "en": "H Section"},
+    ComponentRole.OPENING_REINFORCEMENT: {"zh": "開孔補強扁鋼", "en": "Opening Reinforcement Flat Bar"},
     ComponentRole.EXPANSION_BOLT:   {"zh": "膨脹螺栓", "en": "Expansion Bolt"},
     ComponentRole.MACHINE_BOLT:     {"zh": "機械螺栓", "en": "Machine Bolt"},
     ComponentRole.K_BOLT:           {"zh": "K型螺栓",  "en": "K-Bolt"},

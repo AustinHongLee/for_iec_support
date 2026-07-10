@@ -26,6 +26,9 @@ class ProjectInputRow:
     serial: str = ""
     unit: str = "組"
     drawing_line_number: str = ""
+    # Source designation remains the calculator routing key.  Some project-only
+    # rows (for example penetration openings) need a separate MTO display code.
+    display_designation: str = ""
 
 
 @dataclass

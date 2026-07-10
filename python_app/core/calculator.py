@@ -36,7 +36,8 @@ def _register_types():
                          type_46, type_47, type_48, type_49, type_51, type_56, type_61, type_62,
                          type_72, type_73, type_76, type_77, type_78, type_79,
                          type_52, type_57,
-                         type_58, type_59, type_60, type_64, type_65, type_80)
+                         type_58, type_59, type_60, type_64, type_65, type_80,
+                         type_penetration_hole)
 
     TYPE_HANDLERS.update({
         "01":  type_01.calculate,
@@ -106,6 +107,7 @@ def _register_types():
         "60":  type_60.calculate,
         "64":  type_64.calculate,
         "65":  type_65.calculate,
+        "PENETRATION HOLE": type_penetration_hole.calculate,
     })
 
 
