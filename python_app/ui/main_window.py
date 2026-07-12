@@ -46,6 +46,7 @@ from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
 from ui.project_header import ProjectHeader
+from ui.data_maintenance_page import DataMaintenancePage
 
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -155,7 +156,13 @@ class MainWindow(QMainWindow):
         self.type_manager = TypeManagerWidget()
         self.main_tabs.addTab(self.type_manager, "📋 Type 總覽")
 
-        # Tab 4: 支撐架構
+        self.data_maintenance_page = DataMaintenancePage()
+        self.data_maintenance_page.statusMessage.connect(
+            lambda text: self._set_status("ok", text)
+        )
+        self.main_tabs.addTab(self.data_maintenance_page, "🛠 數據維護")
+
+        # Tab 5: 支撐架構
         self.ontology_browser = OntologyBrowserWidget()
         self.main_tabs.addTab(self.ontology_browser, "🌳 支撐架構")
 
