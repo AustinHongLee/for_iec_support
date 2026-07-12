@@ -389,9 +389,11 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
             "status_counts": {"精確": 0, "推導": 0, "估算": 0, "未知": 0, "錯誤": 0},
             "examples": [],
             "errors": [],
+            "versions": set(),
         })
         stat["rows"] += 1
         stat["support_count"] += inp.quantity
+        stat["versions"].add(str(meta.get("config_version") or "?"))
         if inp.designation not in stat["examples"] and len(stat["examples"]) < 3:
             stat["examples"].append(inp.designation)
         if single.error:
@@ -451,6 +453,31 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
         fmt=NUMFMT["WEIGHT_KG3"],
     )
 
+    row += 2
+    _section_header(ws, row, "Type 計算資料版本", span_cols=6)
+    row += 1
+    for col, header in enumerate(["型號類別", "資料版本"], 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.fill = styles["subheader_fill"]
+        cell.font = styles["bold_font"]
+        cell.alignment = styles["center"]
+        cell.border = styles["border"]
+    ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+    row += 1
+    for type_id, stat in sorted(type_stats.items(), key=type_sort_key):
+        ws.cell(row=row, column=1, value=f"Type {type_id}")
+        ws.cell(
+            row=row,
+            column=2,
+            value=" / ".join(sorted(stat["versions"])),
+        )
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+        for col in range(1, 7):
+            cell = ws.cell(row=row, column=col)
+            cell.border = styles["border"]
+            cell.alignment = Alignment(vertical="center", horizontal="left", indent=1)
+        row += 1
+
     col_widths = [14, 10, 10, 18, 14, 54]
     _set_widths(ws, col_widths)
-    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:F{row}", footer_title="計算標準與假設")
+    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:F{row - 1}", footer_title="計算標準與假設")

@@ -10,6 +10,7 @@ import json
 import os
 from copy import deepcopy
 from datetime import date
+from functools import lru_cache
 from typing import Optional
 
 _CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "configs")
@@ -128,6 +129,18 @@ def load_config(
     return config
 
 
+@lru_cache(maxsize=None)
+def get_config_version_info(type_id: str) -> tuple[str, str]:
+    """Return cached config version metadata without retaining mutable config data."""
+    config = load_config(type_id)
+    if config is None:
+        return "(calculator-only)", ""
+    return (
+        str(config.get("version") or "?"),
+        str(config.get("last_modified") or config.get("data_updated_at") or ""),
+    )
+
+
 def save_config(type_id: str, config: dict, change_desc: str = ""):
     """儲存 config，自動更新 last_modified 和 change_log"""
     config["last_modified"] = date.today().isoformat()
@@ -149,6 +162,7 @@ def save_config(type_id: str, config: dict, change_desc: str = ""):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
+    get_config_version_info.cache_clear()
 
 
 def list_configs() -> list:

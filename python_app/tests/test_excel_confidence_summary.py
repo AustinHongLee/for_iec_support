@@ -84,6 +84,19 @@ def test_project_workbook_marks_confidence_on_manager_and_summary_sheets():
             for row in range(16, ws_summary.max_row + 1)
             if ws_summary.cell(row=row, column=status_col).value
         )
+
+        ws_reference = wb["計算標準與假設"]
+        reference_values = [
+            [cell.value for cell in row]
+            for row in ws_reference.iter_rows()
+        ]
+        header_row = next(row for row in reference_values if "資料版本" in row)
+        version_col = header_row.index("資料版本")
+        assert any(
+            row[version_col] not in (None, "")
+            for row in reference_values[reference_values.index(header_row) + 1 :]
+            if len(row) > version_col
+        )
     finally:
         try:
             os.remove(path)

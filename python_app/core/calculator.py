@@ -6,6 +6,7 @@ from typing import List, Optional, Dict
 from .models import AnalysisResult
 from .parser import get_type_code
 from .truth import apply_truth_contract, make_evidence
+from .config_loader import get_config_version_info
 
 
 # 已實作的 Type 對照表
@@ -15,6 +16,13 @@ TYPE_HANDLERS = {}
 _ANALYSIS_SETTINGS = {
     "upper_material": "SUS304",
 }
+
+
+def _attach_config_metadata(result: AnalysisResult, type_id: str) -> AnalysisResult:
+    version, updated = get_config_version_info(type_id)
+    result.meta["config_version"] = version
+    result.meta["config_updated"] = updated
+    return result
 
 
 def set_analysis_setting(key: str, value):
@@ -140,7 +148,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
             type_id=type_code,
             review_reasons=["Type 尚未實作，無可信度 evidence"],
         )
-        return result
+        return _attach_config_metadata(result, type_code)
 
     try:
         import inspect
@@ -198,7 +206,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
                 type_id=type_code,
                 review_reasons=["此 Type 尚未補齊中文化 evidence；預設需審核"],
             )
-        return result
+        return _attach_config_metadata(result, type_code)
     except Exception as e:
         result = AnalysisResult(fullstring=fullstring)
         result.error = f"計算錯誤: {str(e)}"
@@ -207,7 +215,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
             type_id=type_code,
             review_reasons=["calculator runtime error，無可信度 evidence"],
         )
-        return result
+        return _attach_config_metadata(result, type_code)
 
 
 def analyze_batch(items: List[str],
