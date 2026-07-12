@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from export.excel.column_roles import VALID_ROLES, role_of
+
 
 DETAIL_HEADERS = [
     "品名",
@@ -26,6 +28,29 @@ DETAIL_HEADERS = [
     "計算說明",
 ]
 _DEFAULT_VISIBLE_COUNT = 7
+
+VIEW_ROLE_SETS = {
+    "工程": {"manager", "engineer"},
+    "採購": {"manager", "procure"},
+    "查核": set(VALID_ROLES),
+}
+VIEW_EXTRA_HEADERS = {
+    "工程": set(),
+    "採購": {"品名", "規格", "材質", "單位", "單件數量", "總數量", "總重", "總重(kg)"},
+    "查核": set(),
+}
+UI_ROLE_HEADER_ALIASES = {
+    "Drawing line number": "來源圖號",
+    "流水號.sort": "流水號",
+    "Type": "型號類別",
+}
+
+
+def is_header_visible_for_view(header: str, view: str) -> bool:
+    roles = VIEW_ROLE_SETS.get(view, VIEW_ROLE_SETS["工程"])
+    extras = VIEW_EXTRA_HEADERS.get(view, set())
+    role_header = UI_ROLE_HEADER_ALIASES.get(header, header)
+    return role_of(role_header) in roles or header in extras
 
 
 class BomDetailPanel(QWidget):
@@ -46,6 +71,7 @@ class BomDetailPanel(QWidget):
         self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         layout.addWidget(self.table)
+        self._view_preset = "工程"
         self._apply_column_visibility()
 
     def clear_result(self):
@@ -91,7 +117,10 @@ class BomDetailPanel(QWidget):
 
     def _apply_column_visibility(self):
         show_all = self.show_all_checkbox.isChecked()
-        for column in range(len(DETAIL_HEADERS)):
-            self.table.setColumnHidden(
-                column, not show_all and column >= _DEFAULT_VISIBLE_COUNT
-            )
+        for column, header in enumerate(DETAIL_HEADERS):
+            visible = is_header_visible_for_view(header, self._view_preset)
+            self.table.setColumnHidden(column, not show_all and not visible)
+
+    def set_view_preset(self, view: str) -> None:
+        self._view_preset = view if view in VIEW_ROLE_SETS else "工程"
+        self._apply_column_visibility()

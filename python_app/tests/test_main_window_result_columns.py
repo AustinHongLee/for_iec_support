@@ -11,6 +11,7 @@ from ui.main_window import (
     _RESULT_HEADERS,
 )
 from ui.theme import TOKENS
+from ui.bom_detail_panel import is_header_visible_for_view
 
 
 def test_result_table_hides_advanced_columns_by_default():
@@ -20,7 +21,7 @@ def test_result_table_hides_advanced_columns_by_default():
 
     try:
         for index, header in enumerate(_RESULT_HEADERS):
-            expected_hidden = header not in _RESULT_DEFAULT_VISIBLE_HEADERS
+            expected_hidden = not is_header_visible_for_view(header, "工程")
             assert window.result_table.isColumnHidden(index) is expected_hidden
 
         window.show_advanced_columns_checkbox.setChecked(True)

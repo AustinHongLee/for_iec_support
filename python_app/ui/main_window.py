@@ -48,7 +48,7 @@ from ui.material_cutting_page import MaterialCuttingPage
 from ui.project_header import ProjectHeader
 from ui.data_maintenance_page import DataMaintenancePage
 from ui.support_master_table import SupportMasterTable
-from ui.bom_detail_panel import BomDetailPanel
+from ui.bom_detail_panel import BomDetailPanel, is_header_visible_for_view
 
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -427,6 +427,13 @@ class MainWindow(QMainWindow):
         )
         row.addWidget(self.show_advanced_columns_checkbox)
 
+        self.result_view_preset = QComboBox()
+        self.result_view_preset.addItems(["工程", "採購", "查核"])
+        self.result_view_preset.currentTextChanged.connect(
+            self._apply_result_view_preset
+        )
+        row.addWidget(self.result_view_preset)
+
         self.pending_material_filter_button = QPushButton("僅看待確認")
         self.pending_material_filter_button.setCheckable(True)
         self.pending_material_filter_button.toggled.connect(self._apply_result_filter)
@@ -556,9 +563,15 @@ class MainWindow(QMainWindow):
             return
         checkbox = getattr(self, "show_advanced_columns_checkbox", None)
         show_advanced = bool(checkbox and checkbox.isChecked())
+        preset_combo = getattr(self, "result_view_preset", None)
+        preset = preset_combo.currentText() if preset_combo else "工程"
         for col, header in enumerate(_RESULT_HEADERS):
-            hidden = False if show_advanced else header not in _RESULT_DEFAULT_VISIBLE_HEADERS
+            hidden = False if show_advanced else not is_header_visible_for_view(header, preset)
             self.result_table.setColumnHidden(col, hidden)
+
+    def _apply_result_view_preset(self, view: str):
+        self.bom_detail_panel.set_view_preset(view)
+        self._apply_result_column_visibility()
 
     def _result_item(self, value) -> QTableWidgetItem:
         text = "" if value is None else str(value)
