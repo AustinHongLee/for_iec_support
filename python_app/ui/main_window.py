@@ -250,7 +250,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(info_label)
         toolbar.addStretch()
 
-        self.btn_config = QPushButton("⚙ Type 資料管理")
+        self.btn_config = QPushButton("⚙ 數據維護")
         self.btn_config.clicked.connect(self._on_open_config)
         toolbar.addWidget(self.btn_config)
 
@@ -2250,8 +2250,8 @@ class MainWindow(QMainWindow):
         self._set_status("info", f"全域上段管材質: {text}")
 
     def _on_open_config(self):
-        dialog = ConfigDialog(self)
-        dialog.exec()
+        self.main_tabs.setCurrentWidget(self.data_maintenance_page)
+        self._set_status("info", "已切換至數據維護分頁")
 
 
 # ══════════════════════════════════════════════════

@@ -1,5 +1,8 @@
+import os
 from copy import deepcopy
 from datetime import date
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from core import config_loader
 from ui.data_maintenance_page import (
@@ -9,6 +12,22 @@ from ui.data_maintenance_page import (
     prepare_config_for_save,
     validation_commands,
 )
+
+
+def test_toolbar_data_entry_switches_to_maintenance_page():
+    from PyQt6.QtWidgets import QApplication
+    from ui.main_window import MainWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    try:
+        window.main_tabs.setCurrentIndex(0)
+        window.btn_config.click()
+        app.processEvents()
+        assert window.main_tabs.currentWidget() is window.data_maintenance_page
+        assert "數據維護" in window.statusBar().currentMessage()
+    finally:
+        window.close()
 
 
 def test_numeric_type_summaries_exclude_special_configs():
