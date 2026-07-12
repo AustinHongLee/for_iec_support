@@ -1,5 +1,7 @@
 # AI Working Rules For This Repo
 
+Start each repo task by reading [`docs/STATUS.md`](docs/STATUS.md) for the current implementation and validation baseline.
+
 This repository has many Markdown files from audits, handoffs, planning, and old AI sessions. Treat Markdown as human context unless the file is explicitly listed below as authoritative.
 
 ## Calculation Truth Priority
