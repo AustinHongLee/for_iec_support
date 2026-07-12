@@ -79,6 +79,7 @@ _RESULT_DEFAULT_VISIBLE_HEADERS = {
 _RESULT_DATA_ROW_HEIGHT = 28
 _RESULT_GROUP_ROW_HEIGHT = 30
 _RESULT_SUBTOTAL_ROW_HEIGHT = 26
+_UNKNOWN_MATERIAL_LABEL = "未定(用預設概算)"
 
 _PROJECT_ROW_ALIASES = {
     "drawing_line_number": (
@@ -602,12 +603,19 @@ class MainWindow(QMainWindow):
             tags.append("Tee" if overrides["connection"] == "tee" else "Elbow")
         if overrides.get("upper_material"):
             tags.append(overrides["upper_material"])
+        if overrides.get("upper_material_unknown"):
+            tags.append("⚠ 材質未定")
         if any(overrides.get(k) for k in ("pipe_size", "schedule", "l_value")):
             tags.append("自訂值")
 
         if tags:
             item_widget.setText(f"{text}  ◆ [{', '.join(tags)}]")
-            item_widget.setForeground(QColor("#1565C0"))
+            color = (
+                TOKENS["color"]["status_warn"]
+                if overrides.get("upper_material_unknown")
+                else TOKENS["color"]["primary"]
+            )
+            item_widget.setForeground(QColor(color))
         else:
             item_widget.setText(text)
             item_widget.setForeground(QColor("black"))
@@ -1828,6 +1836,9 @@ class MainWindow(QMainWindow):
             input_row = row_result.input_row
             single_result = row_result.single_result
             scaled_result = row_result.scaled_result
+            material_unknown = bool(
+                (input_row.overrides or {}).get("upper_material_unknown")
+            )
             group_key = f"project:{result_index}"
             hdr_color, body_color = _RESULT_GROUP_COLORS[g_idx % len(_RESULT_GROUP_COLORS)]
             g_idx += 1
@@ -1871,7 +1882,11 @@ class MainWindow(QMainWindow):
                     input_row.serial if is_first else "",                # 1 流水號.sort
                     str(input_row.quantity) if is_first else "",         # 2 數量
                     (input_row.unit or "組") if is_first else "",        # 3 單位
-                    input_row.designation if is_first else "",           # 4 型號
+                    (
+                        f"⚠ {input_row.designation}"
+                        if is_first and material_unknown
+                        else input_row.designation if is_first else ""
+                    ),                                                    # 4 型號
                     get_type_code(input_row.designation) if is_first else "",  # 5 Type
                     str(single_entry.item_no),                            # 6 項次
                     single_entry.name,                                    # 7 品名
@@ -1896,7 +1911,11 @@ class MainWindow(QMainWindow):
                     item.setTextAlignment(COL_ALIGN.get(col, LEFT))
                     if col == 4 and is_first:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
-                        item.setForeground(QColor("#1A3A6B"))
+                        item.setForeground(QColor(
+                            TOKENS["color"]["status_warn"]
+                            if material_unknown
+                            else "#1A3A6B"
+                        ))
                     elif col == 15:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                     self.result_table.setItem(row, col, item)
@@ -2699,8 +2718,15 @@ class SidePanel(QGroupBox):
                     "", "SUS304", "SUS316", "A53Gr.B", "A106Gr.B",
                     "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
                 ])
+                if axis.get("allow_unknown"):
+                    combo.addItem(_UNKNOWN_MATERIAL_LABEL)
                 combo.setEditable(True)
-                combo.setCurrentText(overrides.get(axis_name, ""))
+                current_material = (
+                    _UNKNOWN_MATERIAL_LABEL
+                    if overrides.get("upper_material_unknown")
+                    else overrides.get(axis_name, "")
+                )
+                combo.setCurrentText(current_material)
                 combo.currentTextChanged.connect(self._on_field_changed)
                 hint = QLabel("空白=跟隨全域")
                 hint.setStyleSheet(
@@ -2764,7 +2790,9 @@ class SidePanel(QGroupBox):
                     overrides[axis_name] = value
             elif kind == "material" and isinstance(widget, QComboBox):
                 value = widget.currentText().strip()
-                if value:
+                if value == _UNKNOWN_MATERIAL_LABEL:
+                    overrides["upper_material_unknown"] = True
+                elif value:
                     overrides[axis_name] = value
             elif kind == "table_override" and isinstance(widget, dict):
                 for field, edit in widget.items():

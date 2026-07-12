@@ -5,7 +5,7 @@
 from typing import List, Optional, Dict
 from .models import AnalysisResult
 from .parser import get_type_code
-from .truth import apply_truth_contract
+from .truth import apply_truth_contract, make_evidence
 
 
 # 已實作的 Type 對照表
@@ -146,6 +146,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
         import inspect
         sig = inspect.signature(handler)
         kwargs = {}
+        assumed_upper_material = None
 
         # 決定 connection
         if "connection" in sig.parameters:
@@ -158,17 +159,40 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
 
         # 決定 upper_material (覆寫 > 全域設定)
         if "upper_material" in sig.parameters:
-            kwargs["upper_material"] = (
-                overrides.get("upper_material")
-                or _ANALYSIS_SETTINGS["upper_material"]
-            )
+            if overrides.get("upper_material_unknown"):
+                assumed_upper_material = _ANALYSIS_SETTINGS["upper_material"]
+                kwargs["upper_material"] = assumed_upper_material
+            else:
+                kwargs["upper_material"] = (
+                    overrides.get("upper_material")
+                    or _ANALYSIS_SETTINGS["upper_material"]
+                )
 
         # 傳遞 overrides 給支援的計算器
         if "overrides" in sig.parameters:
             kwargs["overrides"] = overrides
 
         result = handler(fullstring, **kwargs)
-        if not result.meta.get("type_id"):
+        if assumed_upper_material is not None:
+            result.evidence.append(
+                make_evidence(
+                    field="upper_material",
+                    value=assumed_upper_material,
+                    basis="assumption",
+                    confidence=0.5,
+                    note="材質未確認,以預設值概算",
+                )
+            )
+            existing_meta = result.meta if result.meta.get("type_id") else {}
+            review_reasons = list(existing_meta.get("review_reasons", []))
+            review_reasons.append("材質未確認，以預設值概算")
+            apply_truth_contract(
+                result,
+                type_id=type_code,
+                invariant_errors=existing_meta.get("invariant_errors", []),
+                review_reasons=review_reasons,
+            )
+        elif not result.meta.get("type_id"):
             apply_truth_contract(
                 result,
                 type_id=type_code,

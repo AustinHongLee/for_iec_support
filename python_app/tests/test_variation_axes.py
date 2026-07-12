@@ -17,13 +17,13 @@ def _panel(monkeypatch) -> SidePanel:
     return SidePanel()
 
 
-def test_type01_declares_existing_override_axes_without_enabling_unknown():
+def test_type01_declares_existing_override_axes_with_unknown_material_enabled():
     config = load_config("01", strict=True)
     axes = get_variation_axes("01", config=config)
 
     assert list(axes) == ["connection", "upper_material", "table_override"]
     assert axes["connection"]["choices"] == ["elbow", "tee"]
-    assert axes["upper_material"]["allow_unknown"] is False
+    assert axes["upper_material"]["allow_unknown"] is True
     assert axes["table_override"]["fields"] == [
         "pipe_size",
         "schedule",

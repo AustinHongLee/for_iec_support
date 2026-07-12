@@ -58,7 +58,7 @@
             "label": "上段管材質",
             "kind": "material",
             "default_from": "global",
-            "allow_unknown": false
+            "allow_unknown": true
         },
         "table_override": {
             "label": "查表值覆寫",
@@ -97,7 +97,7 @@
     "version": "1.1",
     "last_modified": "2026-04-23",
     "data_updated_at": "2026-07-12",
-    "data_update_note": "新增 variation_axes UI 宣告，僅描述既有 connection、upper_material 與查表覆寫能力；未變更計算數值。",
+    "data_update_note": "variation_axes 啟用 upper_material 未定選項；未定時沿用全域預設值概算，僅新增 assumption evidence，不變更 BOM 計算路徑。",
     "change_log": [
         {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"},
         {"date": "2026-04-23", "desc": "依 D-1 Rev.1 補齊 2\"~50\" table 與 NOTE 6 paving warning"}
