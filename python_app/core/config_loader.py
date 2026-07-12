@@ -8,6 +8,7 @@ Config Loader - 讀取 configs/ 資料夾中的 JSON 設定檔
 import getpass
 import json
 import os
+from copy import deepcopy
 from datetime import date
 from typing import Optional
 
@@ -181,3 +182,10 @@ def get_type_table_as_dict(type_id: str) -> dict:
     """將 table 轉為以 line_size 為 key 的 dict，方便查表"""
     table = get_type_table(type_id)
     return {row["line_size"]: row for row in table}
+
+
+def get_variation_axes(type_id: str, *, config: dict | None = None) -> dict:
+    """Return a detached copy of a Type's declarative override axes."""
+    loaded = config if config is not None else load_config(type_id)
+    axes = loaded.get("variation_axes", {}) if isinstance(loaded, dict) else {}
+    return deepcopy(axes) if isinstance(axes, dict) else {}

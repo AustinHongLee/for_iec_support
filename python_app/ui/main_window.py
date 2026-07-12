@@ -40,7 +40,7 @@ from core.models import AnalysisResult
 from core.parser import get_type_code, get_part, get_lookup_value
 from core.project_import import read_project_rows_xlsx
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
-from core.config_loader import load_config, get_type_table_as_dict
+from core.config_loader import load_config, get_type_table_as_dict, get_variation_axes
 from ui.theme import TOKENS, build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
@@ -2141,6 +2141,8 @@ class SidePanel(QGroupBox):
         self._pipe_edit = None
         self._sch_edit = None
         self._l_edit = None
+        self._variation_axes = {}
+        self._axis_widgets = {}
         self._result_browser = None
         self._btn_inventor = None
         self._current_result = None
@@ -2363,6 +2365,8 @@ class SidePanel(QGroupBox):
         self._pipe_edit = None
         self._sch_edit = None
         self._l_edit = None
+        self._variation_axes = {}
+        self._axis_widgets = {}
         self._result_browser = None
         self._btn_inventor = None
 
@@ -2451,7 +2455,12 @@ class SidePanel(QGroupBox):
 
         # ── 覆寫設定 ──
         self._add_dw(self._section_label("覆寫設定"))
-        if type_code in ("01", "01T"):
+        self._variation_axes = get_variation_axes(type_code, config=config)
+        if self._variation_axes:
+            self._build_override_form(
+                item_text, type_code, current_overrides, self._variation_axes
+            )
+        elif type_code in ("01", "01T"):
             self._build_type01_form(item_text, type_code, current_overrides, config)
         else:
             self._build_generic_form(current_overrides)
@@ -2645,6 +2654,131 @@ class SidePanel(QGroupBox):
     # ══════════════════════════════════════════
     #  覆寫設定表單
     # ══════════════════════════════════════════
+    def _build_override_form(self, item_text, type_code, overrides, axes):
+        """Build supported override controls from a Type's variation_axes."""
+        part2 = get_part(item_text, 2)
+        try:
+            line_size = int(get_lookup_value(part2))
+        except (ValueError, TypeError):
+            line_size = 0
+        row_data = get_type_table_as_dict(type_code.replace("T", "")) or {}
+        row_data = row_data.get(line_size, {})
+
+        for axis_name, axis in axes.items():
+            kind = axis.get("kind")
+            label = axis.get("label") or axis_name
+
+            if kind == "choice":
+                group = QGroupBox(label)
+                layout = QHBoxLayout(group)
+                combo = QComboBox()
+                choice_labels = {
+                    "elbow": "Elbow (彎頭)",
+                    "tee": "Tee (三通)",
+                }
+                for choice in axis.get("choices", []):
+                    combo.addItem(choice_labels.get(choice, str(choice)), choice)
+                effective = overrides.get(axis_name)
+                if not effective and axis_name == "connection" and type_code == "01T":
+                    effective = "tee"
+                effective = effective or axis.get("default")
+                selected = combo.findData(effective)
+                if selected >= 0:
+                    combo.setCurrentIndex(selected)
+                combo.currentIndexChanged.connect(self._on_field_changed)
+                layout.addWidget(combo)
+                self._axis_widgets[axis_name] = combo
+                self._add_dw(group)
+                continue
+
+            if kind == "material":
+                group = QGroupBox(label)
+                layout = QHBoxLayout(group)
+                combo = QComboBox()
+                combo.addItems([
+                    "", "SUS304", "SUS316", "A53Gr.B", "A106Gr.B",
+                    "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
+                ])
+                combo.setEditable(True)
+                combo.setCurrentText(overrides.get(axis_name, ""))
+                combo.currentTextChanged.connect(self._on_field_changed)
+                hint = QLabel("空白=跟隨全域")
+                hint.setStyleSheet(
+                    f"color: {TOKENS['color']['text_disabled']}; "
+                    f"font-size: {TOKENS['font']['metric_label']}px;"
+                )
+                layout.addWidget(combo)
+                layout.addWidget(hint)
+                self._axis_widgets[axis_name] = combo
+                self._mat_combo = combo
+                self._add_dw(group)
+                continue
+
+            if kind == "table_override":
+                group = QGroupBox(f"{label} (留空=用 Config 預設)")
+                form = QFormLayout(group)
+                widgets = {}
+                field_labels = {
+                    "pipe_size": "支撐管徑:",
+                    "schedule": "Schedule:",
+                    "l_value": "L 值 (mm):",
+                }
+                config_keys = {"l_value": "L"}
+                for field in axis.get("fields", []):
+                    value = overrides.get(field, "")
+                    edit = QLineEdit(str(value) if value not in (None, "") else "")
+                    config_key = config_keys.get(field, field)
+                    edit.setPlaceholderText(f"預設: {row_data.get(config_key, '?')}")
+                    edit.textChanged.connect(self._on_field_changed)
+                    form.addRow(field_labels.get(field, f"{field}:"), edit)
+                    widgets[field] = edit
+                    if field == "pipe_size":
+                        self._pipe_edit = edit
+                    elif field == "schedule":
+                        self._sch_edit = edit
+                    elif field == "l_value":
+                        self._l_edit = edit
+
+                part3 = get_part(item_text, 3) or ""
+                if part3:
+                    letter = part3[-1] if part3[-1].isalpha() else ""
+                    h_code = part3[:-1] if letter else part3
+                    try:
+                        h_mm = int(h_code) * 100
+                    except ValueError:
+                        h_mm = 0
+                    form.addRow("H 高度:", QLabel(f"{h_mm} mm"))
+                    form.addRow("M42 底板:", QLabel(f"代碼 {letter}" if letter else "無"))
+
+                self._axis_widgets[axis_name] = widgets
+                self._add_dw(group)
+
+    def _collect_declared_overrides(self) -> dict:
+        overrides = {}
+        for axis_name, axis in self._variation_axes.items():
+            kind = axis.get("kind")
+            widget = self._axis_widgets.get(axis_name)
+            if kind == "choice" and isinstance(widget, QComboBox):
+                value = widget.currentData()
+                if value not in (None, ""):
+                    overrides[axis_name] = value
+            elif kind == "material" and isinstance(widget, QComboBox):
+                value = widget.currentText().strip()
+                if value:
+                    overrides[axis_name] = value
+            elif kind == "table_override" and isinstance(widget, dict):
+                for field, edit in widget.items():
+                    value = edit.text().strip()
+                    if not value:
+                        continue
+                    if field == "l_value":
+                        try:
+                            value = int(value)
+                        except ValueError:
+                            continue
+                    overrides[field] = value
+        return overrides
+
     def _build_type01_form(self, item_text, type_code, overrides, config):
         # 接入方式
         conn_group = QGroupBox("接入方式")
@@ -2743,6 +2877,11 @@ class SidePanel(QGroupBox):
     # ══════════════════════════════════════════
     def _on_field_changed(self):
         if self._building or self._idx < 0:
+            return
+        if self._variation_axes:
+            overrides = self._collect_declared_overrides()
+            self._overrides = overrides
+            self.overrideChanged.emit(self._idx, overrides)
             return
         overrides = {}
         if self._rb_tee is not None:

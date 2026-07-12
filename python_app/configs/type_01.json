@@ -47,6 +47,25 @@
             "restrain": "Restrain Function (可選，第4段)"
         }
     },
+    "variation_axes": {
+        "connection": {
+            "label": "主管接點",
+            "kind": "choice",
+            "choices": ["elbow", "tee"],
+            "default": "elbow"
+        },
+        "upper_material": {
+            "label": "上段管材質",
+            "kind": "material",
+            "default_from": "global",
+            "allow_unknown": false
+        },
+        "table_override": {
+            "label": "查表值覆寫",
+            "kind": "table_override",
+            "fields": ["pipe_size", "schedule", "l_value"]
+        }
+    },
     "table": [
         {"line_size": 2,  "pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
         {"line_size": 3,  "pipe_size": "2",     "schedule": "SCH.40",  "L": 93},
@@ -77,6 +96,8 @@
     ],
     "version": "1.1",
     "last_modified": "2026-04-23",
+    "data_updated_at": "2026-07-12",
+    "data_update_note": "新增 variation_axes UI 宣告，僅描述既有 connection、upper_material 與查表覆寫能力；未變更計算數值。",
     "change_log": [
         {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"},
         {"date": "2026-04-23", "desc": "依 D-1 Rev.1 補齊 2\"~50\" table 與 NOTE 6 paving warning"}
