@@ -1,7 +1,14 @@
+* text=auto
+
 .gitattributes text eol=lf
 .gitignore text eol=lf
 README.md text eol=lf
 AGENTS.md text eol=lf
+*.md text
+*.txt text
+*.sh text eol=lf
+*.bas text eol=crlf
+*.lsp text eol=crlf
 *.py text eol=lf
 *.json text eol=lf
 *.ini text eol=lf
