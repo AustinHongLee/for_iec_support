@@ -3,6 +3,18 @@
 
 ## Unreleased
 
+- 26b703a - feat: show analyzed Type data versions (HomeWorking, 2026-07-13)
+- e46c359 - feat: enforce estimate and final export modes (HomeWorking, 2026-07-13)
+- f1f57b4 - feat: add batch material review workflow (HomeWorking, 2026-07-13)
+- a32eb25 - feat: route Type data entry to safe maintenance (HomeWorking, 2026-07-13)
+- 680341f - feat: add role-based UI column views (HomeWorking, 2026-07-13)
+- 76eece8 - feat: add support master-detail workspace (HomeWorking, 2026-07-13)
+- f69f975 - feat: record Type config version footprint (HomeWorking, 2026-07-13)
+- dc5b63c - feat: guide golden validation after data updates (HomeWorking, 2026-07-13)
+- 4187df0 - feat: validate maintained config values (HomeWorking, 2026-07-13)
+- 25aa983 - feat: add safe Type data maintenance page (HomeWorking, 2026-07-13)
+- ca337b6 - chore: archive VBA update log as UTF-8 (HomeWorking, 2026-07-13)
+- 23c1b31 - docs: regenerate changelog (HomeWorking, 2026-07-13)
 - 9bdc341 - docs: add current repository status entrypoint (HomeWorking, 2026-07-13)
 - e2f3238 - chore: complete line-ending normalization (HomeWorking, 2026-07-13)
 - 4e80670 - feat: show material confirmation progress (HomeWorking, 2026-07-13)

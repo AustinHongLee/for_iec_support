@@ -4,9 +4,9 @@
 
 ## As of
 
-- Baseline commit: `e2f3238` (`chore: complete line-ending normalization`)
+- Baseline commit: `26b703a` (`feat: show analyzed Type data versions`)
 - Active plan: `施工單_G1-G4_功能延伸與主介面重整_2026-07-12.md`
-- Validation: 97 passed; `VALIDATION COMPLETE`; 0 lines beginning with `X`
+- Validation: 120 passed; `VALIDATION COMPLETE`; 0 lines beginning with `X`
 - Expected warnings: 21 `phase 2L-A unmanaged material entry` warnings
 
 ## Completed — do not redo
@@ -17,21 +17,31 @@
 - C3 code aliases and opt-in alias seam
 - Validation exit-code hardening, GUI-independent xlsx import, and CI
 - G0a line-ending rules and tracked-file normalization
+- G0b current-status entry point
+- G0c regenerated changelog
+- G0d VBA update log archived as UTF-8
 - G1a variant directory/schema convention
 - G1b reserved `load_config(..., variant=None)` interface
 - G1c config change author tracking
+- G1d config-version footprint in result meta, project header, and Excel reference block
+- G2a safe data-maintenance page with diff preview and required drawing/revision evidence
+- G2b config sanity rules and large-change confirmation
+- G2c golden-validation guidance after saved data changes
 - G3a Type 01 declarative `variation_axes`
 - G3b unknown-material assumption evidence with unchanged BOM numbers
 - G3c material-confirmation progress and pending-only filter
+- G3d batch material application and keyboard review mode
+- G3e estimate/final modes, export blocking, exception reason, and workbook markings
 - G4a persistent project status header
+- G4b-1 one-row-per-support master table with BOM detail and retained full detail view
+- G4c role-based engineering/procurement/audit UI column views
+- G4d safe data-maintenance entry point and final tab ordering
 
 ## In progress / next
 
-1. G0b-G0d repository hygiene completion
-2. G2a-G2c safe data-maintenance page
-3. G1d config-version footprint
-4. G4b-1/G4c/G4d master-detail workspace and entry-point cleanup
-5. G3d/G3e batch review and estimate/final export policy
+- No unconditional construction module remains from the active G1-G4 work order.
+- Use G4b-1 for a real project cycle, then decide whether G4b-2 should retire the left input list.
+- Provide 3–5 normal-operation screenshots if a G4e second-round layout diagnosis is desired.
 
 ## Deferred by decision or unmet prerequisite
 
