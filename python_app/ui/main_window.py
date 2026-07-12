@@ -47,6 +47,8 @@ from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
 from ui.project_header import ProjectHeader
 from ui.data_maintenance_page import DataMaintenancePage
+from ui.support_master_table import SupportMasterTable
+from ui.bom_detail_panel import BomDetailPanel
 
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -351,6 +353,26 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._build_result_summary_bar())
         layout.addLayout(self._build_result_filter_row())
 
+        self.result_views = QTabWidget()
+
+        overview = QWidget()
+        overview_layout = QVBoxLayout(overview)
+        overview_layout.setContentsMargins(0, 0, 0, 0)
+        overview_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.support_master_table = SupportMasterTable()
+        self.support_master_table.supportSelected.connect(
+            self._on_master_support_selected
+        )
+        overview_splitter.addWidget(self.support_master_table)
+        self.bom_detail_panel = BomDetailPanel()
+        overview_splitter.addWidget(self.bom_detail_panel)
+        overview_splitter.setSizes([360, 260])
+        overview_layout.addWidget(overview_splitter)
+        self.result_views.addTab(overview, "支撐總覽")
+
+        detail_view = QWidget()
+        detail_layout = QVBoxLayout(detail_view)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
         self.result_table = QTableWidget()
         self._set_project_result_headers()
         self._apply_result_table_column_layout()
@@ -365,7 +387,10 @@ class MainWindow(QMainWindow):
         )
         self.result_table.verticalHeader().setDefaultSectionSize(_RESULT_DATA_ROW_HEIGHT)
         self.result_table.verticalHeader().setVisible(False)
-        layout.addWidget(self.result_table)
+        detail_layout.addWidget(self.result_table)
+        self.result_views.addTab(detail_view, "全部明細")
+        self.result_views.currentChanged.connect(self._apply_result_filter)
+        layout.addWidget(self.result_views)
 
         # 匯出列
         export_row = QHBoxLayout()
@@ -1520,11 +1545,25 @@ class MainWindow(QMainWindow):
         terms = [term for term in query.split() if term]
         row_count = self.result_table.rowCount()
         pending_only = self.pending_material_filter_button.isChecked()
+        master_visible = self.support_master_table.apply_filter(
+            query, pending_only=pending_only
+        )
+
+        def update_count(detail_visible: int):
+            if self.result_views.currentIndex() == 0:
+                total = self.support_master_table.rowCount()
+                self.result_filter_count_label.setText(
+                    f"顯示 {master_visible}/{total} 筆"
+                )
+            else:
+                self.result_filter_count_label.setText(
+                    f"顯示 {detail_visible}/{row_count} 列"
+                )
 
         if not terms and not pending_only:
             for row in range(row_count):
                 self.result_table.setRowHidden(row, False)
-            self.result_filter_count_label.setText(f"顯示 {row_count} 列")
+            update_count(row_count)
             return
 
         row_groups = [self._result_row_group(row) for row in range(row_count)]
@@ -1556,7 +1595,7 @@ class MainWindow(QMainWindow):
             if is_visible:
                 visible_count += 1
 
-        self.result_filter_count_label.setText(f"顯示 {visible_count}/{row_count} 列")
+        update_count(visible_count)
 
     def _set_result_summary(
         self,
@@ -1627,6 +1666,11 @@ class MainWindow(QMainWindow):
         self.material_cutting_page.set_results_ready(False)
         self.material_cutting_page.clear_outputs()
         self.side_panel.mark_result_stale()
+        self.support_master_table.set_project(
+            self._project_rows,
+            global_material=get_analysis_setting("upper_material", "SUS304"),
+        )
+        self.bom_detail_panel.clear_result()
         self._update_material_completion()
 
     def _invalidate_analysis_outputs(self, message: str = ""):
@@ -1721,6 +1765,24 @@ class MainWindow(QMainWindow):
         self.project_header.set_project_name(None)
         self._set_status("info", "已清除")
 
+    def _row_result_for_project_index(self, project_index: int):
+        if self._project_result is None:
+            return None
+        if not (0 <= project_index < len(self._project_rows)):
+            return None
+        if not self._project_rows[project_index].enabled:
+            return None
+        result_index = sum(
+            1 for row in self._project_rows[:project_index] if row.enabled
+        )
+        if result_index >= len(self._project_result.rows):
+            return None
+        return self._project_result.rows[result_index]
+
+    def _on_master_support_selected(self, project_index: int):
+        if 0 <= project_index < self.item_list.count():
+            self.item_list.setCurrentRow(project_index)
+
     def _on_item_selected(self, row):
         """清單項目被點選 → 更新 Side Panel"""
         if row < 0 or row >= len(self._project_rows):
@@ -1737,6 +1799,10 @@ class MainWindow(QMainWindow):
         project_row = self._project_rows[row]
         self.side_panel.show_item(
             row, project_row.designation, project_row.overrides or {}
+        )
+        self.support_master_table.select_support(row)
+        self.bom_detail_panel.set_row_result(
+            self._row_result_for_project_index(row)
         )
         # 若已有分析結果，一併顯示
         if 0 <= row < len(self._results):
@@ -1786,6 +1852,11 @@ class MainWindow(QMainWindow):
             self._project_result = analyze_project_rows(self._project_rows)
             self._results = [row.scaled_result for row in self._project_result.rows]
             self._display_results()
+            self.support_master_table.set_project(
+                self._project_rows,
+                self._project_result,
+                global_material=get_analysis_setting("upper_material", "SUS304"),
+            )
             self.btn_export.setEnabled(True)
 
             error_count = sum(1 for r in self._results if r.error)
