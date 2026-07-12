@@ -4,6 +4,10 @@ IEC support dimension/BOM analysis tool.
 
 For AI agents: read [AGENTS.md](AGENTS.md) before using Markdown files as context. Many `.md` files are historical handoffs or design drafts, not current calculation truth.
 
+## 材質核對與委外 round-trip
+
+重量分析頁可多選輸入項目後，以右鍵批次套用上段管材質；「核對模式」會在選定材質後自動跳至下一筆待確認項目。儲存清單 CSV 時，每筆覆寫會保留在 `overrides_json` 欄，可交由同事填寫後再匯回合併；匯回後仍須重新分析與執行基線驗證。
+
 ## Quickstart
 
 ```powershell

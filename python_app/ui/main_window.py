@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
     QListWidget, QListWidgetItem, QRadioButton, QButtonGroup, QCheckBox,
-    QFrame, QScrollArea, QTextBrowser, QInputDialog,
+    QFrame, QScrollArea, QTextBrowser, QInputDialog, QMenu,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import (
@@ -270,6 +270,7 @@ class MainWindow(QMainWindow):
         # [右] Side Panel
         self.side_panel = SidePanel()
         self.side_panel.overrideChanged.connect(self._on_override_changed)
+        self.side_panel.advanceRequested.connect(self._advance_to_next_pending)
         splitter.addWidget(self.side_panel)
 
         splitter.setSizes([260, 680, 300])
@@ -297,8 +298,13 @@ class MainWindow(QMainWindow):
 
         # 清單
         self.item_list = QListWidget()
+        self.item_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.item_list.currentRowChanged.connect(self._on_item_selected)
         self.item_list.itemChanged.connect(self._on_item_check_changed)
+        self.item_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.item_list.customContextMenuRequested.connect(
+            self._show_item_context_menu
+        )
         self.item_list.setFont(QFont("Consolas", 10))
         layout.addWidget(self.item_list)
 
@@ -1758,6 +1764,65 @@ class MainWindow(QMainWindow):
             self.side_panel.clear_panel()
         self._set_status("info", f"已刪除 {deleted_designation}，請重新分析")
 
+    def _show_item_context_menu(self, position):
+        indexes = sorted({index.row() for index in self.item_list.selectedIndexes()})
+        if not indexes:
+            return
+        menu = QMenu(self.item_list)
+        apply_action = menu.addAction("套用材質到選取項…")
+        chosen = menu.exec(self.item_list.viewport().mapToGlobal(position))
+        if chosen is not apply_action:
+            return
+        materials = [
+            _UNKNOWN_MATERIAL_LABEL,
+            "SUS304", "SUS316", "A53Gr.B", "A106Gr.B",
+            "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
+        ]
+        material, accepted = QInputDialog.getItem(
+            self,
+            "批次套用材質",
+            f"套用到 {len(indexes)} 筆選取項：",
+            materials,
+            0,
+            False,
+        )
+        if accepted:
+            self._apply_material_to_indices(indexes, material)
+
+    def _apply_material_to_indices(self, indexes: list[int], material: str):
+        valid_indexes = sorted(
+            {index for index in indexes if 0 <= index < len(self._project_rows)}
+        )
+        if not valid_indexes:
+            return
+        for index in valid_indexes:
+            overrides = dict(self._project_rows[index].overrides or {})
+            if material == _UNKNOWN_MATERIAL_LABEL:
+                overrides.pop("upper_material", None)
+                overrides["upper_material_unknown"] = True
+            else:
+                overrides.pop("upper_material_unknown", None)
+                overrides["upper_material"] = material
+            self._project_rows[index] = replace(
+                self._project_rows[index], overrides=overrides or None
+            )
+            self._update_item_display(index)
+        self._invalidate_analysis_outputs(
+            f"已套用材質到 {len(valid_indexes)} 筆，請重新分析"
+        )
+
+    def _advance_to_next_pending(self, current_index: int):
+        count = len(self._project_rows)
+        if count <= 1:
+            return
+        order = [*range(current_index + 1, count), *range(0, current_index)]
+        for index in order:
+            row = self._project_rows[index]
+            if row.enabled and (row.overrides or {}).get("upper_material_unknown"):
+                self.item_list.setCurrentRow(index)
+                self.item_list.scrollToItem(self.item_list.item(index))
+                return
+
     def _on_clear_all(self):
         if not self._project_rows and not self._results:
             return
@@ -2274,6 +2339,7 @@ class SidePanel(QGroupBox):
     """右側面板：上半 PDF 圖面預覽（可縮放/滑動），下半計算明細與覆寫設定"""
 
     overrideChanged = pyqtSignal(int, dict)
+    advanceRequested = pyqtSignal(int)
     _catalog_cache: list = []   # 類別層級快取，避免重複讀檔
 
     # ── 常用按鈕樣式 ─────────────────────────────────────────
@@ -2314,6 +2380,14 @@ class SidePanel(QGroupBox):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(4, 16, 4, 4)
         outer.setSpacing(0)
+
+        self.review_mode_checkbox = QCheckBox(
+            "核對模式（選定材質後跳下一筆待確認）"
+        )
+        self.review_mode_checkbox.setToolTip(
+            "可用鍵盤選擇材質；確認後自動移到下一筆材質未定項目"
+        )
+        outer.addWidget(self.review_mode_checkbox)
 
         # placeholder（未選中時顯示）
         self._placeholder = QLabel("← 點選左側項目\n   以檢視詳情")
@@ -3053,6 +3127,11 @@ class SidePanel(QGroupBox):
             overrides = self._collect_declared_overrides()
             self._overrides = overrides
             self.overrideChanged.emit(self._idx, overrides)
+            if (
+                self.review_mode_checkbox.isChecked()
+                and self.sender() is self._mat_combo
+            ):
+                self.advanceRequested.emit(self._idx)
             return
         overrides = {}
         if self._rb_tee is not None:

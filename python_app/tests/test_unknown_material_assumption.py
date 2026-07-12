@@ -103,3 +103,49 @@ def test_material_completion_and_pending_filter_follow_enabled_rows(monkeypatch)
         assert "01-4b-05a" not in visible_text
     finally:
         window.close()
+
+
+def test_batch_material_applies_only_to_selected_indexes(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        for index in range(25):
+            window._add_item_to_list(
+                "01-2B-05A",
+                overrides={"connection": "tee", "upper_material_unknown": True},
+            )
+
+        window._apply_material_to_indices(list(range(20)), "SUS316")
+
+        for index, row in enumerate(window._project_rows):
+            overrides = row.overrides or {}
+            assert overrides["connection"] == "tee"
+            if index < 20:
+                assert overrides["upper_material"] == "SUS316"
+                assert "upper_material_unknown" not in overrides
+            else:
+                assert overrides["upper_material_unknown"] is True
+    finally:
+        window.close()
+
+
+def test_review_mode_advances_to_next_pending_item(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        window._add_item_to_list(
+            "01-2B-05A", overrides={"upper_material_unknown": True}
+        )
+        window._add_item_to_list(
+            "01-3B-05A", overrides={"upper_material_unknown": True}
+        )
+        window.item_list.setCurrentRow(0)
+        window.side_panel.review_mode_checkbox.setChecked(True)
+
+        window.side_panel._mat_combo.setCurrentText("SUS304")
+        _APP.processEvents()
+
+        assert window.item_list.currentRow() == 1
+        assert (window._project_rows[0].overrides or {})["upper_material"] == "SUS304"
+    finally:
+        window.close()
