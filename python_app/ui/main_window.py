@@ -1694,6 +1694,7 @@ class MainWindow(QMainWindow):
             global_material=get_analysis_setting("upper_material", "SUS304"),
         )
         self.bom_detail_panel.clear_result()
+        self.project_header.reset_data_versions()
         self._update_material_completion()
 
     def _invalidate_analysis_outputs(self, message: str = ""):
@@ -1938,6 +1939,14 @@ class MainWindow(QMainWindow):
                 self._project_rows,
                 self._project_result,
                 global_material=get_analysis_setting("upper_material", "SUS304"),
+            )
+            self.project_header.set_data_versions(
+                sorted(
+                    {
+                        str((result.meta or {}).get("config_version") or "?")
+                        for result in self._results
+                    }
+                )
             )
             self.btn_export.setEnabled(True)
 

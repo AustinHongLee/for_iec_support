@@ -2,6 +2,28 @@ from core import config_loader
 from core.calculator import analyze_single
 
 
+def test_project_header_shows_versions_after_analysis():
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PyQt6.QtWidgets import QApplication
+    from ui.main_window import MainWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    try:
+        window._add_item_to_list("01-2B-05A")
+        window._on_analyze()
+        app.processEvents()
+        assert window.project_header.version_label.isEnabled()
+        assert "1.1" in window.project_header.version_label.text()
+
+        window._invalidate_analysis_outputs("test")
+        assert not window.project_header.version_label.isEnabled()
+        assert "待分析" in window.project_header.version_label.text()
+    finally:
+        window.close()
+
+
 def test_analyze_single_records_json_config_version():
     result = analyze_single("01-2B-05A")
 

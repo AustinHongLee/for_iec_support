@@ -80,6 +80,18 @@ class ProjectHeader(QFrame):
         self.mode_combo.setEnabled(True)
         self.mode_combo.setToolTip("概算會標示假設值；精算遇未定值時預設禁止匯出")
 
+    def set_data_versions(self, versions: list[str]) -> None:
+        values = [value for value in dict.fromkeys(versions) if value]
+        self.version_label.setText(
+            "資料版本：" + (" / ".join(values) if values else "無版本資訊")
+        )
+        self.version_label.setEnabled(True)
+        self.version_label.setToolTip("本次分析實際使用的 Type config 版本")
+
+    def reset_data_versions(self) -> None:
+        self.version_label.setText("資料版本：待分析")
+        self.version_label.setEnabled(False)
+
     @staticmethod
     def _stylesheet() -> str:
         color = TOKENS["color"]
