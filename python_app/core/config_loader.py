@@ -5,6 +5,7 @@ Config Loader - 讀取 configs/ 資料夾中的 JSON 設定檔
   - 儲存 (自動更新 last_modified + change_log)
   - 列出所有可用 config
 """
+import getpass
 import json
 import os
 from datetime import date
@@ -132,9 +133,14 @@ def save_config(type_id: str, config: dict, change_desc: str = ""):
     if change_desc:
         if "change_log" not in config:
             config["change_log"] = []
+        try:
+            changed_by = getpass.getuser()
+        except Exception:
+            changed_by = "unknown"
         config["change_log"].append({
             "date": date.today().isoformat(),
             "desc": change_desc,
+            "by": changed_by,
         })
     path = _config_path(type_id, must_exist=False)
     if not path:

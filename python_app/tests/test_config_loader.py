@@ -56,3 +56,34 @@ def test_strict_load_raises_on_invalid_existing_config(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError, match="Invalid config"):
         config_loader.load_config("99", strict=True)
+
+
+def test_save_config_records_user_in_change_log(monkeypatch, tmp_path):
+    config_path = tmp_path / "type_99.json"
+    monkeypatch.setattr(
+        config_loader, "_config_path", lambda type_id, must_exist=True: str(config_path)
+    )
+    monkeypatch.setattr(config_loader.getpass, "getuser", lambda: "test-user")
+    config = {"type_id": "99", "table": []}
+
+    config_loader.save_config("99", config, change_desc="test change")
+
+    assert config["change_log"][-1]["by"] == "test-user"
+    assert config_path.exists()
+
+
+def test_save_config_uses_unknown_when_user_lookup_fails(monkeypatch, tmp_path):
+    config_path = tmp_path / "type_99.json"
+    monkeypatch.setattr(
+        config_loader, "_config_path", lambda type_id, must_exist=True: str(config_path)
+    )
+
+    def fail_user_lookup():
+        raise OSError("user lookup unavailable")
+
+    monkeypatch.setattr(config_loader.getpass, "getuser", fail_user_lookup)
+    config = {"type_id": "99", "table": []}
+
+    config_loader.save_config("99", config, change_desc="test change")
+
+    assert config["change_log"][-1]["by"] == "unknown"
