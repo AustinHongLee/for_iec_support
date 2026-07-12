@@ -7,6 +7,7 @@ from ui.data_maintenance_page import (
     diff_configs,
     editable_config_summaries,
     prepare_config_for_save,
+    validation_commands,
 )
 
 
@@ -83,3 +84,14 @@ def test_prepare_rejects_no_data_change():
 
     assert prepared["data_update_note"]
     assert "沒有可儲存的資料變更" in issues
+
+
+def test_golden_guidance_exposes_the_four_validation_commands():
+    commands = validation_commands().splitlines()
+
+    assert commands == [
+        "python -m compileall -q python_app",
+        "python python_app\\validate_tables.py",
+        "python python_app\\validate_tables.py | Select-String '^X'",
+        "python -m pytest -q",
+    ]

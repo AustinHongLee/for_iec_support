@@ -9,6 +9,7 @@ import json
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QApplication,
     QComboBox,
     QCheckBox,
     QFormLayout,
@@ -45,6 +46,15 @@ _METADATA_FIELDS = {
     "data_updated_at",
     "data_update_note",
 }
+
+_VALIDATION_COMMANDS = """python -m compileall -q python_app
+python python_app\\validate_tables.py
+python python_app\\validate_tables.py | Select-String '^X'
+python -m pytest -q"""
+
+
+def validation_commands() -> str:
+    return _VALIDATION_COMMANDS
 
 
 @dataclass(frozen=True)
@@ -438,3 +448,20 @@ class DataMaintenancePage(QWidget):
         self._original = deepcopy(load_config(self._type_id, strict=True))
         self._populate(self._original)
         self.statusMessage.emit(f"Type {self._type_id} 資料已儲存")
+        self._show_golden_guidance()
+
+    def _show_golden_guidance(self) -> None:
+        message = QMessageBox(self)
+        message.setWindowTitle("資料已變更 — 請驗證基線")
+        message.setIcon(QMessageBox.Icon.Warning)
+        message.setText(
+            f"型號 {self._type_id} 資料已變更。請立即執行基線驗證；"
+            "若 golden 轉紅且此變更係刻意，依裁決流程更新基線並記錄依據。"
+        )
+        copy_button = message.addButton(
+            "複製驗證指令", QMessageBox.ButtonRole.ActionRole
+        )
+        message.addButton(QMessageBox.StandardButton.Ok)
+        message.exec()
+        if message.clickedButton() is copy_button:
+            QApplication.clipboard().setText(validation_commands())
