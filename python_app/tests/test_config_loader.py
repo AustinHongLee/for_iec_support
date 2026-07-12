@@ -26,6 +26,11 @@ def test_shared_spec_types_do_not_claim_direct_type_config():
     assert config_loader.load_config("52") is None
 
 
+def test_load_config_rejects_unimplemented_variant_overlay():
+    with pytest.raises(NotImplementedError, match="configs/variants/README.md"):
+        config_loader.load_config("01", variant="01@ACME")
+
+
 def test_strict_load_accepts_existing_type_configs():
     for path in sorted(CONFIG_DIR.glob("type_*.json")):
         if path.name in {"type_anchor_index.json", "type_catalog.json"}:

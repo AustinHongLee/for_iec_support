@@ -108,8 +108,12 @@ def validate_config(config: dict) -> list[str]:
     return issues
 
 
-def load_config(type_id: str, *, strict: bool = False) -> Optional[dict]:
+def load_config(
+    type_id: str, *, strict: bool = False, variant: str | None = None
+) -> Optional[dict]:
     """讀取指定 Type 的 JSON config"""
+    if variant is not None:
+        raise NotImplementedError("variant overlay 尚未實作;規格見 configs/variants/README.md")
     path = _config_path(type_id)
     if not path:
         return None
