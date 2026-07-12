@@ -45,6 +45,7 @@ from ui.theme import TOKENS, build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
 from ui.material_cutting_page import MaterialCuttingPage
+from ui.project_header import ProjectHeader
 
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -220,6 +221,17 @@ class MainWindow(QMainWindow):
         page = QWidget()
         page_layout = QVBoxLayout(page)
 
+        self.project_header = ProjectHeader(
+            materials=[
+                "SUS304", "SUS316", "A53Gr.B", "A106Gr.B",
+                "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
+            ],
+            current_material=get_analysis_setting("upper_material", "SUS304"),
+        )
+        self.material_combo = self.project_header.material_combo
+        self.material_combo.currentTextChanged.connect(self._on_material_changed)
+        page_layout.addWidget(self.project_header)
+
         # ── 頂部工具列 ──
         toolbar = QHBoxLayout()
         supported = get_supported_types()
@@ -227,17 +239,6 @@ class MainWindow(QMainWindow):
         info_label.setStyleSheet("color: #555; font-size: 12px;")
         toolbar.addWidget(info_label)
         toolbar.addStretch()
-
-        toolbar.addWidget(QLabel("全域上段管材質:"))
-        self.material_combo = QComboBox()
-        self.material_combo.addItems([
-            "SUS304", "SUS316", "A53Gr.B", "A106Gr.B",
-            "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
-        ])
-        self.material_combo.setEditable(True)
-        self.material_combo.setCurrentText("SUS304")
-        self.material_combo.currentTextChanged.connect(self._on_material_changed)
-        toolbar.addWidget(self.material_combo)
 
         self.btn_config = QPushButton("⚙ Type 資料管理")
         self.btn_config.clicked.connect(self._on_open_config)
@@ -768,6 +769,7 @@ class MainWindow(QMainWindow):
                 display_designation=row.display_designation,
             )
         self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
+        self.project_header.set_project_name(os.path.basename(filepath))
         action = "取代並載入" if replace_existing else "追加載入"
         self.statusBar().showMessage(f"已{action} {len(rows)} 筆: {filepath}")
 
@@ -1649,6 +1651,7 @@ class MainWindow(QMainWindow):
         self._clear_analysis_outputs()
         self._selected_index = -1
         self.side_panel.clear_panel()
+        self.project_header.set_project_name(None)
         self._set_status("info", "已清除")
 
     def _on_item_selected(self, row):
