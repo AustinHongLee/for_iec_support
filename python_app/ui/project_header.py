@@ -76,6 +76,10 @@ class ProjectHeader(QFrame):
         self.completion_label.setEnabled(True)
         self.completion_label.setToolTip("啟用項目中已確認上段管材質的筆數")
 
+    def enable_mode_selector(self) -> None:
+        self.mode_combo.setEnabled(True)
+        self.mode_combo.setToolTip("概算會標示假設值；精算遇未定值時預設禁止匯出")
+
     @staticmethod
     def _stylesheet() -> str:
         color = TOKENS["color"]

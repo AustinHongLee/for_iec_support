@@ -44,3 +44,47 @@ def review_required_count(project: ProjectAnalysisResult) -> int:
 def format_confidence_counts(counts: dict[str, int]) -> str:
     parts = [f"{level} {counts[level]}" for level in CONFIDENCE_LEVELS if counts.get(level, 0)]
     return " / ".join(parts) if parts else "無資料"
+
+
+def project_assumption_rows(project: ProjectAnalysisResult) -> list[dict]:
+    rows = []
+    for row_result in project.rows:
+        designation = (
+            row_result.input_row.display_designation
+            or row_result.input_row.designation
+        )
+        for evidence in row_result.single_result.evidence or []:
+            if evidence.get("basis") != "assumption":
+                continue
+            rows.append(
+                {
+                    "designation": designation,
+                    "field": evidence.get("field", ""),
+                    "value": evidence.get("value", ""),
+                    "note": evidence.get("note", ""),
+                }
+            )
+    return rows
+
+
+def build_export_context(
+    project: ProjectAnalysisResult,
+    *,
+    mode: str,
+    exception_reason: str = "",
+) -> dict:
+    normalized_mode = "final" if mode in {"final", "精算"} else "estimate"
+    assumptions = project_assumption_rows(project)
+    return {
+        "mode": normalized_mode,
+        "mode_label": "精算" if normalized_mode == "final" else "概算",
+        "assumption_rows": assumptions,
+        "assumption_count": len(assumptions),
+        "exception_reason": exception_reason.strip(),
+    }
+
+
+def final_export_allowed(context: dict) -> bool:
+    if context.get("mode") != "final" or not context.get("assumption_count"):
+        return True
+    return bool(str(context.get("exception_reason") or "").strip())

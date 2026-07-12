@@ -288,7 +288,9 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
 
 
-def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
+def _write_calc_reference_sheet(
+    ws, project: ProjectAnalysisResult, *, export_context: dict | None = None
+):
     """計算標準與假設 — 給長官或客戶看的靜態說明頁。"""
     from openpyxl.styles import Alignment, PatternFill
 
@@ -442,6 +444,41 @@ def _write_calc_reference_sheet(ws, project: ProjectAnalysisResult):
                 cell.number_format = NUMFMT["WEIGHT_KG3"]
         ws.row_dimensions[row].height = 24
         row += 1
+
+    assumption_rows = (
+        list(export_context.get("assumption_rows") or [])
+        if export_context
+        else []
+    )
+    if assumption_rows:
+        row += 1
+        _section_header(ws, row, "本次匯出假設值彙總", span_cols=6)
+        row += 1
+        for col, header in enumerate(["型號", "欄位", "採用值", "說明"], 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.fill = styles["subheader_fill"]
+            cell.font = styles["bold_font"]
+            cell.alignment = styles["center"]
+            cell.border = styles["border"]
+        ws.merge_cells(start_row=row, start_column=4, end_row=row, end_column=6)
+        row += 1
+        for assumption in assumption_rows:
+            values = [
+                assumption.get("designation", ""),
+                assumption.get("field", ""),
+                assumption.get("value", ""),
+                assumption.get("note", ""),
+            ]
+            for col, value in enumerate(values, 1):
+                ws.cell(row=row, column=col, value=value)
+            ws.merge_cells(start_row=row, start_column=4, end_row=row, end_column=6)
+            for col in range(1, 7):
+                cell = ws.cell(row=row, column=col)
+                cell.border = styles["border"]
+                cell.alignment = Alignment(
+                    vertical="center", horizontal="left", wrap_text=True, indent=1
+                )
+            row += 1
 
     write_grand_total_band(
         ws,

@@ -240,6 +240,10 @@ class MainWindow(QMainWindow):
         )
         self.material_combo = self.project_header.material_combo
         self.material_combo.currentTextChanged.connect(self._on_material_changed)
+        self.project_header.enable_mode_selector()
+        self.project_header.mode_combo.currentTextChanged.connect(
+            self._on_project_mode_changed
+        )
         page_layout.addWidget(self.project_header)
 
         # ── 頂部工具列 ──
@@ -2174,6 +2178,48 @@ class MainWindow(QMainWindow):
         self.btn_export.setEnabled(False if busy else bool(self._results))
         self.btn_export.setText("匯出中..." if busy else "匯出結果")
 
+    def _on_project_mode_changed(self, mode: str):
+        self._set_status("info", f"專案模式：{mode}")
+
+    def _prepare_export_context(self):
+        if self._project_result is None:
+            return None
+        from export.excel.confidence_summary import (
+            build_export_context,
+            final_export_allowed,
+        )
+
+        mode = self.project_header.mode_combo.currentText()
+        context = build_export_context(self._project_result, mode=mode)
+        if final_export_allowed(context):
+            return context
+
+        reply = QMessageBox.question(
+            self,
+            "精算匯出已擋下",
+            (
+                f"目前仍有 {context['assumption_count']} 筆假設值，預設不得匯出精算版。\n\n"
+                "是否申請本次例外放行？放行原因會記錄在封面。"
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return None
+        reason, accepted = QInputDialog.getMultiLineText(
+            self,
+            "精算版例外放行",
+            "放行原因（必填）：",
+        )
+        if not accepted or not reason.strip():
+            QMessageBox.warning(self, "無法放行", "未填放行原因，精算匯出維持禁止。")
+            return None
+        return build_export_context(
+            self._project_result,
+            mode=mode,
+            exception_reason=reason,
+        )
+
     def _confirm_export_preview(self, *, ext: str, export_label: str) -> bool:
         if self._project_result is not None:
             from export.project_export_preview import (
@@ -2239,6 +2285,22 @@ class MainWindow(QMainWindow):
             self._set_status("info", "已取消匯出")
             return
 
+        export_context = self._prepare_export_context()
+        if self._project_result is not None and export_context is None:
+            self._set_status("warn", "匯出已擋下：精算版仍有未定假設")
+            return
+        if (
+            self._project_result is not None
+            and ext != ".xlsx"
+            and export_context.get("assumption_count")
+        ):
+            QMessageBox.warning(
+                self,
+                "請改用 Excel 匯出",
+                "目前含假設值；CSV/PDF 無法保留概算／例外放行標示，請改用 Excel。",
+            )
+            return
+
         if is_excel_package:
             filepath = QFileDialog.getExistingDirectory(self, "選擇分包輸出資料夾")
         else:
@@ -2262,11 +2324,19 @@ class MainWindow(QMainWindow):
                     export_to_excel,
                 )
                 if is_excel_package:
-                    exported = export_project_workbook_package(self._project_result, filepath)
+                    exported = export_project_workbook_package(
+                        self._project_result,
+                        filepath,
+                        export_context=export_context,
+                    )
                     files = "\n".join(path.name for path in exported.values())
                     success_message = f"已匯出分包資料夾:\n{filepath}\n\n{files}"
                 elif self._project_result is not None:
-                    export_project_workbook(self._project_result, filepath)
+                    export_project_workbook(
+                        self._project_result,
+                        filepath,
+                        export_context=export_context,
+                    )
                     success_message = f"已匯出至:\n{filepath}"
                 else:
                     export_to_excel(self._results, filepath)

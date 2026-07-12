@@ -130,6 +130,7 @@ def _write_manager_cover_sheet(
     summary: MaterialSummary,
     *,
     available_sheets: tuple[str, ...] | None = None,
+    export_context: dict | None = None,
 ) -> None:
     """長官摘要 - one-page reading path and high-level support quantities."""
     import datetime as _dt
@@ -173,6 +174,34 @@ def _write_manager_cover_sheet(
     intro.fill = styles["subtitle_fill"]
     intro.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
     ws.row_dimensions[4].height = 28
+
+    if export_context:
+        assumption_count = int(export_context.get("assumption_count") or 0)
+        mode = export_context.get("mode")
+        reason = str(export_context.get("exception_reason") or "").strip()
+        if mode == "final" and assumption_count:
+            banner_text = (
+                f"精算版例外放行：仍含 {assumption_count} 筆假設值；"
+                f"放行原因：{reason}"
+            )
+            banner_color = "F8CBAD"
+        elif mode == "final":
+            banner_text = "精算版：未檢出假設值，可作為發包前查核版本。"
+            banner_color = "E2F0D9"
+        else:
+            banner_text = (
+                f"概算版：含 {assumption_count} 筆假設值，不得作為發包依據"
+            )
+            banner_color = "FFF2CC"
+        ws.merge_cells("A5:H5")
+        banner = ws["A5"]
+        banner.value = banner_text
+        banner.font = Font(name=FONT_CJK, size=12, bold=True, color=COLORS["ink"])
+        banner.fill = PatternFill("solid", fgColor=banner_color)
+        banner.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        ws.row_dimensions[5].height = 30
 
     header_row = 6
     headers = ["項目", "數量", "單位", "詳細位置", "備註"]
