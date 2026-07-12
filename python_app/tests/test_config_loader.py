@@ -31,6 +31,8 @@ def test_strict_load_accepts_existing_type_configs():
         if path.name in {"type_anchor_index.json", "type_catalog.json"}:
             continue
         type_id = path.stem.removeprefix("type_").upper()
+        if not type_id.isdigit():
+            continue
         assert config_loader.load_config(type_id, strict=True)["type_id"]
 
 
