@@ -10,6 +10,7 @@ import json
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
+    QCheckBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -29,6 +30,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core.config_loader import list_configs, load_config, save_config, validate_config
+from core.config_sanity import SanityIssue, check_config_sanity
 from ui.theme import TOKENS
 
 
@@ -244,6 +246,10 @@ class DataMaintenancePage(QWidget):
         )
         editor_layout.addWidget(self.issues_label)
 
+        self.confirm_large_change_checkbox = QCheckBox("我確認此變動")
+        self.confirm_large_change_checkbox.setVisible(False)
+        editor_layout.addWidget(self.confirm_large_change_checkbox)
+
         self.diff_browser = QTextBrowser()
         self.diff_browser.setMinimumHeight(90)
         editor_layout.addWidget(self.diff_browser)
@@ -316,6 +322,8 @@ class DataMaintenancePage(QWidget):
         self.source_edit.clear()
         self.description_edit.clear()
         self.issues_label.clear()
+        self.confirm_large_change_checkbox.setChecked(False)
+        self.confirm_large_change_checkbox.setVisible(False)
         self.diff_browser.clear()
 
     def _candidate(self) -> dict:
@@ -342,16 +350,36 @@ class DataMaintenancePage(QWidget):
             table_rows=rows,
         )
 
+    def _show_validation(
+        self, schema_issues: list[str], sanity_issues: list[SanityIssue]
+    ) -> None:
+        red = TOKENS["color"]["status_error"]
+        yellow = TOKENS["color"]["status_warn"]
+        lines = [f'<span style="color:{red}">● {issue}</span>' for issue in schema_issues]
+        for issue in sanity_issues:
+            color = yellow if issue.severity == "warning" else red
+            lines.append(
+                f'<span style="color:{color}">● {issue.message}</span>'
+            )
+        self.issues_label.setText("<br>".join(lines))
+        has_warning = any(issue.severity == "warning" for issue in sanity_issues)
+        self.confirm_large_change_checkbox.setVisible(has_warning)
+        if not has_warning:
+            self.confirm_large_change_checkbox.setChecked(False)
+
     def _show_issues(self, issues: list[str]) -> None:
-        self.issues_label.setText("\n".join(f"• {issue}" for issue in issues))
+        self._show_validation(issues, [])
 
     def _on_check(self):
         try:
-            issues = validate_config(self._candidate())
+            candidate = self._candidate()
+            issues = validate_config(candidate)
+            sanity = check_config_sanity(candidate, original=self._original)
         except (TypeError, ValueError) as exc:
             issues = [str(exc)]
-        self._show_issues(issues)
-        if not issues:
+            sanity = []
+        self._show_validation(issues, sanity)
+        if not issues and not sanity:
             self.statusMessage.emit(f"Type {self._type_id} config 檢查通過")
 
     def _on_diff(self):
@@ -378,6 +406,15 @@ class DataMaintenancePage(QWidget):
         )
         if issues:
             self._show_issues(issues)
+            return
+
+        sanity = check_config_sanity(prepared, original=self._original)
+        errors = [issue for issue in sanity if issue.severity == "error"]
+        warnings = [issue for issue in sanity if issue.severity == "warning"]
+        if errors or (warnings and not self.confirm_large_change_checkbox.isChecked()):
+            self._show_validation([], sanity)
+            if warnings and not errors:
+                self.statusMessage.emit("大幅變動需勾選「我確認此變動」才能儲存")
             return
 
         changes = diff_configs(self._original, prepared)
