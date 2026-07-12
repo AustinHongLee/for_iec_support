@@ -71,6 +71,11 @@ class ProjectHeader(QFrame):
     def set_project_name(self, name: str | None) -> None:
         self.project_name_label.setText((name or "").strip() or "未命名清單")
 
+    def set_material_completion(self, confirmed: int, total: int) -> None:
+        self.completion_label.setText(f"材質確認：{confirmed}/{total}")
+        self.completion_label.setEnabled(True)
+        self.completion_label.setToolTip("啟用項目中已確認上段管材質的筆數")
+
     @staticmethod
     def _stylesheet() -> str:
         color = TOKENS["color"]

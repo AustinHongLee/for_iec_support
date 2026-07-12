@@ -265,6 +265,7 @@ class MainWindow(QMainWindow):
 
         splitter.setSizes([260, 680, 300])
         page_layout.addWidget(splitter)
+        self._update_material_completion()
 
         return page
 
@@ -394,6 +395,11 @@ class MainWindow(QMainWindow):
         )
         row.addWidget(self.show_advanced_columns_checkbox)
 
+        self.pending_material_filter_button = QPushButton("僅看待確認")
+        self.pending_material_filter_button.setCheckable(True)
+        self.pending_material_filter_button.toggled.connect(self._apply_result_filter)
+        row.addWidget(self.pending_material_filter_button)
+
         self.result_filter_count_label = QLabel("顯示 0 列")
         self.result_filter_count_label.setMinimumWidth(86)
         self.result_filter_count_label.setAlignment(
@@ -441,6 +447,9 @@ class MainWindow(QMainWindow):
         self.summary_support_label = self._make_summary_value_label(
             "--", color["metric_support"], font["metric_value"]
         )
+        self.summary_material_label = self._make_summary_value_label(
+            "--", color["status_warn"], font["metric_value"]
+        )
 
         row.addLayout(self._make_summary_metric("總重量", self.total_weight_label))
         row.addWidget(self._make_summary_separator())
@@ -449,6 +458,8 @@ class MainWindow(QMainWindow):
         row.addLayout(self._make_summary_metric("錯誤項目", self.summary_error_label))
         row.addWidget(self._make_summary_separator())
         row.addLayout(self._make_summary_metric("支撐組數", self.summary_support_label))
+        row.addWidget(self._make_summary_separator())
+        row.addLayout(self._make_summary_metric("材質確認", self.summary_material_label))
         row.addStretch()
         return bar
 
@@ -1501,19 +1512,35 @@ class MainWindow(QMainWindow):
         query = self.result_filter_input.text().strip().casefold()
         terms = [term for term in query.split() if term]
         row_count = self.result_table.rowCount()
+        pending_only = self.pending_material_filter_button.isChecked()
 
-        if not terms:
+        if not terms and not pending_only:
             for row in range(row_count):
                 self.result_table.setRowHidden(row, False)
             self.result_filter_count_label.setText(f"顯示 {row_count} 列")
             return
 
         row_groups = [self._result_row_group(row) for row in range(row_count)]
-        matched_groups = set()
-        for row, group_key in enumerate(row_groups):
-            row_text = self._result_row_text(row)
-            if all(term in row_text for term in terms):
-                matched_groups.add(group_key)
+        if terms:
+            matched_groups = set()
+            for row, group_key in enumerate(row_groups):
+                row_text = self._result_row_text(row)
+                if all(term in row_text for term in terms):
+                    matched_groups.add(group_key)
+        else:
+            matched_groups = set(row_groups)
+
+        if pending_only:
+            pending_groups = {
+                f"project:{index}"
+                for index, row_result in enumerate(
+                    self._project_result.rows if self._project_result else []
+                )
+                if (row_result.input_row.overrides or {}).get(
+                    "upper_material_unknown"
+                )
+            }
+            matched_groups &= pending_groups
 
         visible_count = 0
         for row, group_key in enumerate(row_groups):
@@ -1532,6 +1559,8 @@ class MainWindow(QMainWindow):
         success_count: int | None = None,
         error_count: int | None = None,
         support_count: int | None = None,
+        material_confirmed: int | None = None,
+        material_total: int | None = None,
         reset: bool = False,
     ):
         if reset or total_weight is not None:
@@ -1558,6 +1587,28 @@ class MainWindow(QMainWindow):
             text = "--" if support_count is None else f"{support_count} 組"
             self.summary_support_label.setText(text)
 
+        if reset or material_confirmed is not None or material_total is not None:
+            text = (
+                "--"
+                if material_confirmed is None or material_total is None
+                else f"{material_confirmed}/{material_total}"
+            )
+            self.summary_material_label.setText(text)
+
+    def _material_confirmation_counts(self) -> tuple[int, int]:
+        enabled_rows = [row for row in self._project_rows if row.enabled]
+        confirmed = sum(
+            1
+            for row in enabled_rows
+            if not (row.overrides or {}).get("upper_material_unknown")
+        )
+        return confirmed, len(enabled_rows)
+
+    def _update_material_completion(self) -> None:
+        confirmed, total = self._material_confirmation_counts()
+        self.summary_material_label.setText(f"{confirmed}/{total}")
+        self.project_header.set_material_completion(confirmed, total)
+
     def _clear_analysis_outputs(self):
         """Clear stale analysis/material outputs after project inputs change."""
         self._results.clear()
@@ -1569,6 +1620,7 @@ class MainWindow(QMainWindow):
         self.material_cutting_page.set_results_ready(False)
         self.material_cutting_page.clear_outputs()
         self.side_panel.mark_result_stale()
+        self._update_material_completion()
 
     def _invalidate_analysis_outputs(self, message: str = ""):
         """Invalidate analysis/material outputs after input rows change."""

@@ -69,3 +69,37 @@ def test_unknown_material_marks_input_and_project_result(monkeypatch):
         assert window.result_table.item(0, designation_col).text() == "⚠ 01-2B-05A"
     finally:
         window.close()
+
+
+def test_material_completion_and_pending_filter_follow_enabled_rows(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        window._add_item_to_list(
+            "01-2B-05A",
+            overrides={"upper_material_unknown": True},
+        )
+        window._add_item_to_list("01-3B-05A", overrides={"upper_material": "SUS304"})
+        window._add_item_to_list(
+            "01-4B-05A",
+            enabled=False,
+            overrides={"upper_material_unknown": True},
+        )
+
+        assert window.summary_material_label.text() == "1/2"
+        assert window.project_header.completion_label.text() == "材質確認：1/2"
+
+        window._on_analyze()
+        window.pending_material_filter_button.setChecked(True)
+        _APP.processEvents()
+
+        visible_text = " ".join(
+            window._result_row_text(row)
+            for row in range(window.result_table.rowCount())
+            if not window.result_table.isRowHidden(row)
+        )
+        assert "01-2b-05a" in visible_text
+        assert "01-3b-05a" not in visible_text
+        assert "01-4b-05a" not in visible_text
+    finally:
+        window.close()
