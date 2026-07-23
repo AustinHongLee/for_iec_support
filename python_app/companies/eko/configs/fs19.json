@@ -1,0 +1,101 @@
+{
+ "code": "FS19",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "焊接鋼管立柱(接彎頭)[尚得富SATURN圖]",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 2,
+   "col": "1",
+   "base_t": 9,
+   "base_w": 100,
+   "base_l": 100,
+   "nut": "M16x160L"
+  },
+  {
+   "max": 6,
+   "col": "2",
+   "base_t": 9,
+   "base_w": 150,
+   "base_l": 150,
+   "nut": "M36x160L"
+  },
+  {
+   "max": 10,
+   "col": "6",
+   "base_t": 16,
+   "base_w": 250,
+   "base_l": 250,
+   "nut": "M48x160L",
+   "sup_t": 12,
+   "sup_w": 180,
+   "sup_l": 180
+  }
+ ],
+ "components": [
+  {
+   "kind": "pipe_col",
+   "name": "管支撐",
+   "size_field": "col",
+   "sch": "SCH.40",
+   "len": "H"
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t_field": "base_t",
+   "w_field": "base_w",
+   "l_field": "base_l",
+   "material": "A36",
+   "hole": {
+    "n": 1,
+    "pattern": "center"
+   }
+  },
+  {
+   "kind": "bolt_fixed",
+   "name": "螺栓連帽",
+   "spec_field": "nut",
+   "material": "A307-B 鍍鋅",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "補強角板",
+   "t_field": "sup_t",
+   "w_field": "sup_w",
+   "l_field": "sup_l",
+   "material": "A36",
+   "shape": {
+    "kind": "triangle",
+    "spec": "三角補強板 約180×180"
+   }
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": "always",
+   "qty": 1
+  }
+ ],
+ "fix_letters": null,
+ "limits": {
+  "Hmax": 1200,
+  "applicable": "≤10\" 可焊"
+ },
+ "extra_warnings": [
+  "原圖公司=尚得富工程 SATURN(非E-KO),依使用者要求掛入益高",
+  "H範圍 200~1200"
+ ],
+ "designation_format": {
+  "pattern": "FS19-□\"-□H-□H1",
+  "example": "FS19-4\"-600H"
+ },
+ "data_update_note": "無固定字母;螺栓連帽恆有;支撐板僅8-10\";水泥墩恆CM1A",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

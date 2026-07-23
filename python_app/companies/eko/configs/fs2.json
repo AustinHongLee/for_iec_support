@@ -1,0 +1,178 @@
+{
+ "code": "FS2",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "A字型雙腳角鋼門架",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 1,
+   "angle": "50*50*6",
+   "A": 110,
+   "B": 300,
+   "C": 100,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 100,
+   "base_l": 100
+  },
+  {
+   "max": 1.5,
+   "angle": "50*50*6",
+   "A": 130,
+   "B": 300,
+   "C": 100,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 100,
+   "base_l": 100
+  },
+  {
+   "max": 2,
+   "angle": "50*50*6",
+   "A": 150,
+   "B": 350,
+   "C": 100,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 100,
+   "base_l": 100
+  },
+  {
+   "max": 3,
+   "angle": "75*75*9",
+   "A": 190,
+   "B": 350,
+   "C": 150,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 150,
+   "base_l": 150
+  },
+  {
+   "max": 4,
+   "angle": "75*75*9",
+   "A": 230,
+   "B": 450,
+   "C": 150,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 150,
+   "base_l": 150
+  },
+  {
+   "max": 6,
+   "angle": "75*75*9",
+   "A": 290,
+   "B": 450,
+   "C": 150,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 150,
+   "base_l": 150
+  },
+  {
+   "max": 8,
+   "angle": "75*75*9",
+   "A": 340,
+   "B": 500,
+   "C": 150,
+   "d": 22,
+   "anchor": "M20x200L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L",
+   "base_w": 150,
+   "base_l": 150
+  },
+  {
+   "max": 10,
+   "angle": "75*75*9",
+   "A": 395,
+   "B": 500,
+   "C": 150,
+   "d": 22,
+   "anchor": "M20x200L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L",
+   "base_w": 150,
+   "base_l": 150
+  },
+  {
+   "max": 12,
+   "angle": "75*75*9",
+   "A": 445,
+   "B": 500,
+   "C": 150,
+   "d": 22,
+   "anchor": "M20x200L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L",
+   "base_w": 150,
+   "base_l": 150
+  }
+ ],
+ "members": [
+  {
+   "role": "上橫段",
+   "sec": "row",
+   "qty": 1,
+   "len": "A"
+  },
+  {
+   "role": "斜腳",
+   "sec": "row",
+   "qty": 2,
+   "len": "slant"
+  }
+ ],
+ "base": {
+  "t": 9,
+  "qty": 2,
+  "material": "A36",
+  "hole": {
+   "n": 1,
+   "dia_field": "d",
+   "pattern": "corner"
+  }
+ },
+ "bolt_qty": 2,
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W"
+ ],
+ "ubolt": {
+  "qty": 1
+ },
+ "pier": {
+  "type": "CM1B",
+  "qty": 2
+ },
+ "limits": {
+  "Hmax": 1000,
+  "applicable": "1\"~12\""
+ },
+ "designation_format": {
+  "pattern": "FS2{A/B/E/W}-□\"-□H-□H1",
+  "example": "FS2E-6\"-600H-200H1"
+ },
+ "data_update_note": "依FS2.pdf;斜腳長=√(H²+((B-A)/2)²)幾何算;底板C×C方板",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_portal",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

@@ -1,0 +1,101 @@
+{
+ "company": "EKO",
+ "code": "SS11",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "直立/懸臂角鋼(承推力)",
+ "material": "A36",
+ "serial_sections": {
+  "1": [
+   "Angle",
+   "50*50*6"
+  ],
+  "2": [
+   "Angle",
+   "75*75*9"
+  ]
+ },
+ "members": [
+  {
+   "role": "水平臂",
+   "sec": "serial",
+   "qty": 1,
+   "len": "L"
+  },
+  {
+   "role": "垂直",
+   "sec": "serial",
+   "qty": 1,
+   "len": "H"
+  }
+ ],
+ "base_plate": {
+  "t": 9,
+  "material": "A36",
+  "qty": 2,
+  "approx": true,
+  "by_serial": {
+   "1": [
+    96,
+    122
+   ],
+   "2": [
+    130,
+    151
+   ]
+  },
+  "by_serial_hole": {
+   "1": {
+    "n": 2,
+    "dia": 14,
+    "py": 122,
+    "edge": 18
+   },
+   "2": {
+    "n": 2,
+    "dia": 19,
+    "py": 151,
+    "edge": 20
+   }
+  }
+ },
+ "plate_fixes": [
+  "B",
+  "E"
+ ],
+ "nut_bolt": {
+  "spec": "serial",
+  "qty": 4
+ },
+ "exp_bolt": {
+  "spec": "serial",
+  "qty": 4
+ },
+ "serial_bolts": {
+  "1": {
+   "B": "M12x40L",
+   "E": "EB2-M12-80L"
+  },
+  "2": {
+   "B": "M16x50L",
+   "E": "EB2-M16-125L"
+  }
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "E": "擴展螺栓+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "Lmax": 1000,
+  "Hmax": 1500
+ },
+ "designation_format": {
+  "pattern": "SS11{B/E/W}-序號-□H-□L",
+  "example": "SS11W-2-500H-600L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "a/b/c與SS6不同;底板尺寸近似"
+}

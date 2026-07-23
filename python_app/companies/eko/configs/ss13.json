@@ -1,0 +1,125 @@
+{
+ "company": "EKO",
+ "code": "SS13",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "雙腳不等高門型角鋼",
+ "material": "A36",
+ "serial_sections": {
+  "1": [
+   "Angle",
+   "50*50*6"
+  ],
+  "2": [
+   "Angle",
+   "75*75*9"
+  ],
+  "3": [
+   "Angle",
+   "100*100*10"
+  ]
+ },
+ "members": [
+  {
+   "role": "立柱1",
+   "sec": "serial",
+   "qty": 1,
+   "len": "H1"
+  },
+  {
+   "role": "立柱2",
+   "sec": "serial",
+   "qty": 1,
+   "len": "H2"
+  },
+  {
+   "role": "水平桿",
+   "sec": "serial",
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "base_plate": {
+  "t": 9,
+  "material": "A36",
+  "qty": 2,
+  "approx": true,
+  "by_serial": {
+   "1": [
+    105,
+    130
+   ],
+   "2": [
+    140,
+    160
+   ],
+   "3": [
+    180,
+    190
+   ]
+  },
+  "by_serial_hole": {
+   "1": {
+    "n": 2,
+    "dia": 14,
+    "py": 130,
+    "edge": 20
+   },
+   "2": {
+    "n": 2,
+    "dia": 19,
+    "py": 160,
+    "edge": 25
+   },
+   "3": {
+    "n": 2,
+    "dia": 19,
+    "py": 190,
+    "edge": 25
+   }
+  }
+ },
+ "plate_fixes": [
+  "B",
+  "E"
+ ],
+ "nut_bolt": {
+  "spec": "serial",
+  "qty": 4
+ },
+ "exp_bolt": {
+  "spec": "serial",
+  "qty": 4
+ },
+ "serial_bolts": {
+  "1": {
+   "B": "M12x50L",
+   "E": "EB2-M12-110L"
+  },
+  "2": {
+   "B": "M16x60L",
+   "E": "EB2-M16-125L"
+  },
+  "3": {
+   "B": "M16x60L",
+   "E": "EB2-M16-125L"
+  }
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "E": "擴展螺栓+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "Lmax": 1300,
+  "Hmax": 600
+ },
+ "designation_format": {
+  "pattern": "SS13{B/E/W}-序號-□H1-□H2-□L",
+  "example": "SS13W-2-500H1-600H2-600L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "兩腳不等高H1/H2各自下料"
+}

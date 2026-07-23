@@ -1,0 +1,20 @@
+{
+  "company":"EKO","code":"CM1","name":"PIPE SUPPORT 管支撐水泥墩","drawing_no":"CM1","kind":"cement_pier","dim_unit":"mm",
+  "concrete_ratio":"1:2:4","embed_min_mm":200,"concrete_density_kg_m3":2400,"default_height_mm":300,
+  "designation_format":{"pattern":"CM1{A/B/C/D/E}-□H-□\"","fields":{"type":"A/B/C/D/E","H":"水泥墩高(E籃式過濾器基礎填)","pipe":"E型出入口管徑"},"example":"CM1E-300H-4\""},
+  "types":{
+    "A":{"plan_w":400,"plan_d":400},
+    "B":{"plan_w":240,"plan_d":240},
+    "C":{"plan_w":200,"plan_d":200},
+    "D":{"plan_w":390,"plan_d":180},
+    "E":{"plan_w":null,"plan_d":null}
+  },
+  "type_e_mnp":[
+    {"pipe":2,"M":320,"N":230,"P":220},
+    {"pipe":3,"M":320,"N":230,"P":220},
+    {"pipe":4,"M":420,"N":340,"P":320},
+    {"pipe":6,"M":510,"N":420,"P":410}
+  ],
+  "type_e_anchor":{"spec":"M12x200L","material":"A307-B","qty":2},
+  "version":"1.0","data_updated_at":"2026-07-21","data_update_note":"依 CM1.pdf(子代理核對)。混凝土量=平面積×高(高預設300或由H);E型加L型基礎螺栓×2。C型平面以200×200近似。"
+}

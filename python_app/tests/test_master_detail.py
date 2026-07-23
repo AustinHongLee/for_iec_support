@@ -27,6 +27,7 @@ def test_master_detail_keeps_full_detail_table_and_syncs_selection(monkeypatch):
             "51-1.1/2B",
             drawing_line_number="DL-002",
             serial="S-002",
+            overrides={"upper_material": "SUS304"},
         )
         window._on_analyze()
         _APP.processEvents()
@@ -51,7 +52,7 @@ def test_master_detail_keeps_full_detail_table_and_syncs_selection(monkeypatch):
         window.close()
 
 
-def test_master_filter_operates_on_support_rows(monkeypatch):
+def test_result_locator_selects_support_without_hiding_other_rows(monkeypatch):
     monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
     window = MainWindow()
     try:
@@ -61,8 +62,52 @@ def test_master_filter_operates_on_support_rows(monkeypatch):
         window.result_filter_input.setText("DL-002")
         _APP.processEvents()
 
-        assert window.support_master_table.isRowHidden(0)
+        assert not window.support_master_table.isRowHidden(0)
         assert not window.support_master_table.isRowHidden(1)
-        assert window.result_filter_count_label.text() == "顯示 1/2 筆"
+        assert window.support_master_table.currentRow() == 1
+        assert window.item_list.currentRow() == 1
+        assert window.result_locator_count_label.text() == "第 1/1 筆"
+        assert window.result_filter_count_label.text() == "顯示 2/2 筆"
+
+        window.result_filter_input.setText("DL-")
+        _APP.processEvents()
+        assert window.support_master_table.currentRow() == 0
+        assert window.result_locator_count_label.text() == "第 1/2 筆"
+        window._locate_next_result()
+        assert window.support_master_table.currentRow() == 1
+        assert window.result_locator_count_label.text() == "第 2/2 筆"
+    finally:
+        window.close()
+
+
+def test_disabled_rows_keep_side_panel_and_detail_filters_on_project_index(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        window._add_item_to_list("01-2B-05A", enabled=False)
+        window._add_item_to_list(
+            "01-3B-05A",
+            overrides={"upper_material_unknown": True},
+        )
+        window._add_item_to_list(
+            "01-4B-05A",
+            overrides={"upper_material": "SUS304"},
+        )
+        window.item_list.setCurrentRow(1)
+        window._on_analyze()
+        _APP.processEvents()
+
+        assert window.side_panel._current_result.fullstring == "01-3B-05A"
+
+        status_filter = window.result_column_filters["status"]
+        status_filter.setCurrentIndex(status_filter.findData("⚠"))
+        _APP.processEvents()
+        visible_text = " ".join(
+            window._result_row_text(row)
+            for row in range(window.result_table.rowCount())
+            if not window.result_table.isRowHidden(row)
+        )
+        assert "01-3b-05a" in visible_text
+        assert "01-4b-05a" not in visible_text
     finally:
         window.close()

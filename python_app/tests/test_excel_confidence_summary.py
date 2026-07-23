@@ -52,7 +52,7 @@ def test_project_confidence_counts_use_existing_meta_and_errors():
     assert format_confidence_counts(counts) == "精確 1 / 推導 1 / 估算 1 / 未知 1 / 錯誤 1"
 
 
-def test_project_workbook_marks_confidence_on_manager_and_summary_sheets():
+def test_project_workbook_keeps_manager_claim_focused_and_confidence_in_engineering_sheets():
     project = analyze_project_rows(
         [
             ProjectInputRow("51-1.1/2B", 10, drawing_line_number="DL-001", serial="S-001"),
@@ -67,8 +67,9 @@ def test_project_workbook_marks_confidence_on_manager_and_summary_sheets():
 
         ws_manager = wb["長官-摘要"]
         manager_values = [cell.value for row in ws_manager.iter_rows() for cell in row]
-        assert "資料可信度" in manager_values
-        assert any(isinstance(value, str) and "最低" in value for value in manager_values)
+        assert "資料可信度" not in manager_values
+        assert "合約名稱怎麼來的？" in manager_values
+        assert "哪些資料不能直接說明？" in manager_values
 
         ws_summary = wb["專案摘要"]
         headers = [ws_summary.cell(row=15, column=col).value for col in range(1, 10)]

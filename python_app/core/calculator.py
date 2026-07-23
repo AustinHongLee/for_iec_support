@@ -17,6 +17,10 @@ _ANALYSIS_SETTINGS = {
     "upper_material": "SUS304",
 }
 
+# These calculators inherit the project-level upper-material setting when a
+# row does not carry an explicit material override.
+_GLOBAL_UPPER_MATERIAL_TYPES = frozenset({"01", "01T", "09", "11"})
+
 
 def _attach_config_metadata(result: AnalysisResult, type_id: str) -> AnalysisResult:
     version, updated = get_config_version_info(type_id)
@@ -31,6 +35,10 @@ def set_analysis_setting(key: str, value):
 
 def get_analysis_setting(key: str, default=None):
     return _ANALYSIS_SETTINGS.get(key, default)
+
+
+def uses_global_upper_material(fullstring: str) -> bool:
+    return get_type_code(fullstring) in _GLOBAL_UPPER_MATERIAL_TYPES
 
 
 def _register_types():
@@ -141,6 +149,28 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
 
     handler = TYPE_HANDLERS.get(type_code)
     if not handler:
+        # ── 益高(E-KO)延展 fallback ──────────────────────────────
+        # 原始核心唯一改動點：IEC 無對應 Type 時，轉交延展套件 companies.eko 判讀，
+        # 使益高編號(FS12/UB1/CM1…)沿用同一條 analyze_single，主程式 GUI 免改。
+        # 詳見 companies/EKO_延展_改動索引.txt。
+        try:
+            from companies.eko import dispatch as _eko
+            if _eko.can_handle(fullstring):
+                try:
+                    result = _eko.analyze(fullstring, overrides)
+                except Exception as e:  # noqa: BLE001
+                    result = AnalysisResult(fullstring=fullstring)
+                    result.error = f"益高(EKO)計算錯誤: {e}"
+                if not result.meta.get("type_id"):
+                    apply_truth_contract(
+                        result,
+                        type_id=type_code,
+                        review_reasons=["益高(EKO)延展判讀"],
+                    )
+                return _attach_config_metadata(result, type_code)
+        except Exception:
+            pass
+        # ─────────────────────────────────────────────────────────
         result = AnalysisResult(fullstring=fullstring)
         result.error = f"Type {type_code} not implemented"
         apply_truth_contract(
@@ -154,7 +184,12 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
         import inspect
         sig = inspect.signature(handler)
         kwargs = {}
-        assumed_upper_material = None
+        assumed_upper_material = (
+            _ANALYSIS_SETTINGS["upper_material"]
+            if overrides.get("upper_material_unknown")
+            and uses_global_upper_material(fullstring)
+            else None
+        )
 
         # 決定 connection
         if "connection" in sig.parameters:
@@ -167,8 +202,7 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
 
         # 決定 upper_material (覆寫 > 全域設定)
         if "upper_material" in sig.parameters:
-            if overrides.get("upper_material_unknown"):
-                assumed_upper_material = _ANALYSIS_SETTINGS["upper_material"]
+            if assumed_upper_material is not None:
                 kwargs["upper_material"] = assumed_upper_material
             else:
                 kwargs["upper_material"] = (

@@ -1,0 +1,95 @@
+{
+ "name": "管線導架(保溫,含管蹄柱)",
+ "structure": "導架+管蹄柱",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": "pipe",
+ "fix_letters": null,
+ "table": [
+  {
+   "max": 2.5,
+   "stem_t": 6,
+   "stem_L": 150,
+   "base_t": 6,
+   "base_L": 150,
+   "reinf_t": 3,
+   "reinf_L": 200
+  },
+  {
+   "max": 8,
+   "stem_t": 9,
+   "stem_L": 300,
+   "base_t": 9,
+   "base_L": 300,
+   "reinf_t": 6,
+   "reinf_L": 350
+  },
+  {
+   "max": 16,
+   "stem_t": 12,
+   "stem_L": 250,
+   "base_t": 12,
+   "base_L": 300,
+   "stiff_t": 12,
+   "stiff_W": 200,
+   "reinf_t": 9,
+   "reinf_L": 350
+  },
+  {
+   "max": 24,
+   "stem_t": 12,
+   "stem_L": 250,
+   "base_t": 12,
+   "base_L": 300,
+   "stiff_t": 12,
+   "stiff_W": 250,
+   "reinf_t": 9,
+   "reinf_L": 350
+  }
+ ],
+ "components": [
+  {
+   "kind": "plate",
+   "name": "管蹄柱",
+   "t": "stem_t",
+   "w": "stem_L",
+   "l": "H",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": "base_t",
+   "w": "base_L",
+   "l": "base_L",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "加強板",
+   "t": "stiff_t",
+   "w": "stiff_W",
+   "l": "H",
+   "qty": 2
+  },
+  {
+   "kind": "steel",
+   "name": "導架角鋼",
+   "sec": [
+    "Angle",
+    "40*40*5"
+   ],
+   "len": 150,
+   "qty": 2
+  }
+ ],
+ "extra_warnings": [
+  "G2 H(管蹄柱高)未註明時＝保溫厚+25mm；不銹鋼管線需於管底加焊補強板 A240-304(t/寬詳表)",
+  "加強板僅10\"~24\"適用；容許負荷 ≤8\"=1000kg、10~24\"=1500kg"
+ ],
+ "data_update_note": "依G2.pdf件號表；管蹄柱/底板/加強板/導架角鋼；補強板另計",
+ "code": "G2",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

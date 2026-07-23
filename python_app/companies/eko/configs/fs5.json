@@ -1,0 +1,149 @@
+{
+ "code": "FS5",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "焊接式鋼管立柱(頂焊彎頭)",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 1,
+   "col": "3/4",
+   "A": 120,
+   "B": 160,
+   "d": 14,
+   "anchor": "M12x200L",
+   "nut": "M12x40L",
+   "exp": "EB2-M12x110L"
+  },
+  {
+   "max": 2,
+   "col": "1",
+   "A": 130,
+   "B": 170,
+   "d": 14,
+   "anchor": "M12x200L",
+   "nut": "M12x40L",
+   "exp": "EB2-M12x110L"
+  },
+  {
+   "max": 6,
+   "col": "2",
+   "A": 160,
+   "B": 200,
+   "d": 14,
+   "anchor": "M12x200L",
+   "nut": "M12x40L",
+   "exp": "EB2-M12x110L"
+  },
+  {
+   "max": 14,
+   "col": "4",
+   "A": 180,
+   "B": 220,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L"
+  },
+  {
+   "max": 16,
+   "col": "8",
+   "A": 200,
+   "B": 260,
+   "d": 22,
+   "anchor": "M20x250L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L"
+  },
+  {
+   "max": 20,
+   "col": "10",
+   "A": 250,
+   "B": 320,
+   "d": 22,
+   "anchor": "M20x250L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L"
+  },
+  {
+   "max": 22,
+   "col": "12",
+   "A": 300,
+   "B": 370,
+   "d": 22,
+   "anchor": "M20x250L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L"
+  },
+  {
+   "max": 24,
+   "col": "14",
+   "A": 320,
+   "B": 400,
+   "d": 22,
+   "anchor": "M20x250L",
+   "nut": "M20x50L",
+   "exp": "EB2-M20x140L"
+  }
+ ],
+ "components": [
+  {
+   "kind": "pipe_col",
+   "name": "管支撐",
+   "size_field": "col",
+   "sch": "SCH.40",
+   "len": "H"
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": 9,
+   "w_field": "B",
+   "l_field": "B",
+   "material": "A36",
+   "hole": {
+    "n": 4,
+    "dia_field": "d",
+    "px_field": "A",
+    "py_field": "A"
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "qty": 4
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": [
+    "A",
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "N",
+  "W"
+ ],
+ "limits": {
+  "Hmax": 900,
+  "applicable": "3/4\"~24\" 可焊"
+ },
+ "extra_warnings": [
+  "禁用:設計溫度<-30或>400°C、壓力>70kg/cm²G;H須>4C+D/2+25"
+ ],
+ "designation_format": {
+  "pattern": "FS5{A/B/E/N/W}-□\"-□H-□H1",
+  "example": "FS5N-4\"-600H"
+ },
+ "data_update_note": "依FS5.pdf",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

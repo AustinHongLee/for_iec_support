@@ -5,9 +5,18 @@ __pycache__/
 .venv/
 .venv_gui/
 .env
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local agent/tool state
 .codex/
-.qwen/
 .codex_tmp/
+.qwen/
+.sixth/
+/mcps/
 
 # IDE
 .vscode/
@@ -21,8 +30,14 @@ Thumbs.db
 # Temp
 _tmp_*
 *.bak
+*.orig
+*.log
+*.tmp
+**/tmp_pytest/
+**/.tmp_pytest/
 
 # Generated outputs
+/outputs/
 python_app/output/
 python_app/analysis_result.xlsx
 

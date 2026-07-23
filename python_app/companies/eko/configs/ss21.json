@@ -1,0 +1,68 @@
+{
+ "company": "EKO",
+ "code": "SS21",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "桿式可調角鋼撐架",
+ "material": "A36",
+ "fix_scheme": "double",
+ "members": [
+  {
+   "role": "主桿角鋼",
+   "sec": [
+    "Angle",
+    "75*75*9"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "extra_plates": [
+  {
+   "name": "鋼板(擋板)",
+   "t": 3,
+   "a": 50,
+   "b": 50,
+   "material": "A283 Gr.C",
+   "qty": 1,
+   "note": "點焊定位擋板"
+  }
+ ],
+ "base_plate": {
+  "t": 9,
+  "a": 170,
+  "b": 215,
+  "material": "A283 Gr.C",
+  "qty": 1,
+  "hole": {
+   "n": 4,
+   "dia": 15,
+   "px": 100,
+   "py": 145,
+   "edge": 35
+  }
+ },
+ "plate_fixes": [
+  "B"
+ ],
+ "nut_bolt": {
+  "spec": "M12x50L",
+  "qty": 4
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "max_load_kg": 220,
+  "Lmax": 900
+ },
+ "designation_format": {
+  "pattern": "SS21{S/V}{B/W}-□L",
+  "example": "SS21SB-700L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "雙字母:方向S/V+固定B/W;S向Lmax850"
+}

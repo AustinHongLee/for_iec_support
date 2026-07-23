@@ -1,0 +1,14 @@
+{
+    "company": "EKO", "code": "EB2", "name": "EXPANSION BOLT 擴展螺栓",
+    "drawing_no": "EB2", "kind": "expansion_bolt", "dim_unit": "mm",
+    "concrete_strength_kgf_cm2": 280,
+    "designation_format": {"pattern": "EB2-M□-□L-{U}", "fields": {"msize": "螺栓徑M", "L": "長度", "U": "材質(空白=鍍鋅鋼/U=SUS304)"}, "example": "EB2-M16-125L"},
+    "table": {
+        "10": {"L": 80,  "drill_d": 10, "drill_depth": 62,  "max_fix": 19, "A": 18, "tensile_kg": 1850, "shear_kg": 2200},
+        "12": {"L": 110, "drill_d": 12, "drill_depth": 88,  "max_fix": 25, "A": 22, "tensile_kg": 2670, "shear_kg": 3810},
+        "16": {"L": 125, "drill_d": 16, "drill_depth": 100, "max_fix": 28, "A": 25, "tensile_kg": 3560, "shear_kg": 5200},
+        "20": {"L": 140, "drill_d": 20, "drill_depth": 112, "max_fix": 32, "A": 28, "tensile_kg": 5100, "shear_kg": 7300}
+    },
+    "version": "1.0", "data_updated_at": "2026-07-21",
+    "data_update_note": "依 SUPPORT-單張/EB2.pdf 全 4 列轉錄(子代理核對)。M10/12/16/20；U=SUS304否則鍍鋅鋼。"
+}

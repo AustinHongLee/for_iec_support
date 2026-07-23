@@ -4,10 +4,11 @@ from core.parser import get_type_code
 from core.project_aggregation import ProjectAnalysisResult
 
 from .column_roles import apply_default_visibility
-from .headers import _CALC_BASIS_HEADERS, _STANDARDS_TABLE
+from .headers import _CALC_BASIS_HEADERS, _STANDARDS_TABLE, _UNIT_WEIGHT_HEADERS
 from .styles import (
     NUMFMT,
     add_color_scale,
+    apply_report_table,
     apply_confidence_fill,
     freeze_and_filter,
     set_print_layout,
@@ -286,6 +287,56 @@ def _write_calculation_basis_sheet(ws, project: ProjectAnalysisResult):
     _set_widths(ws, [width_by_header[header] for header in _CALC_BASIS_HEADERS])
     apply_default_visibility(ws, _CALC_BASIS_HEADERS)
     set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_data_row}", footer_title="重量明細表")
+
+
+def _write_unit_weight_sheet(ws, project: ProjectAnalysisResult):
+    """單組重量表 — 每個型號一列，不展開 BOM，也不乘專案組數。"""
+    from openpyxl.utils import get_column_letter
+
+    headers = _UNIT_WEIGHT_HEADERS
+    last_col_letter = get_column_letter(len(headers))
+
+    _setup_sheet(
+        ws,
+        "IEC 管架支撐 - 單組重量表",
+        f"{last_col_letter}1",
+        subtitle="每個型號一列；不展開材料 BOM；重量固定為 1 組，不乘專案數量。",
+        audience="估價 / 請款 / 查核",
+    )
+    _write_headers(ws, 3, headers)
+    ws.row_dimensions[3].height = 30
+
+    model_weights: set[tuple[str, float | None]] = set()
+    for row_result in project.rows:
+        designation = row_result.input_row.display_designation or row_result.input_row.designation
+        weight = None if row_result.single_result.error else round(row_result.single_result.total_weight, 3)
+        model_weights.add((designation, weight))
+
+    row = 4
+    for designation, weight in sorted(model_weights, key=lambda item: (item[0], item[1] is None, item[1] or 0.0)):
+        ws.cell(row=row, column=1, value=designation)
+        ws.cell(row=row, column=2, value=weight)
+        if weight is not None:
+            ws.cell(row=row, column=2).number_format = NUMFMT["WEIGHT_KG3"]
+        row += 1
+
+    last_row = max(row - 1, 3)
+    apply_report_table(
+        ws,
+        3,
+        headers,
+        4,
+        last_row,
+        col_formats={2: NUMFMT["WEIGHT_KG3"]},
+        widths=[34, 18],
+    )
+    set_print_layout(
+        ws,
+        orientation="portrait",
+        title_rows="3:3",
+        area=f"A1:{last_col_letter}{last_row}",
+        footer_title="單組重量表",
+    )
 
 
 def _write_calc_reference_sheet(

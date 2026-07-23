@@ -35,10 +35,151 @@ PROJECT_XLSX_FIELDS = (
     "nominal_size", "insulation",
 )
 
+PROJECT_IMPORT_TEMPLATE_HEADERS = (
+    "Drawing line number",
+    "流水號.sort",
+    "數量",
+    "單位",
+    "型號",
+    "管徑",
+    "保溫厚度",
+)
+
+
+def append_import_problem(
+    report: dict | None,
+    *,
+    row_number: int,
+    severity: str,
+    field: str,
+    issue: str,
+    raw: str,
+    resolution: str,
+) -> None:
+    """Append one source-row problem in the shared preview-report format."""
+    if report is None:
+        return
+    report.setdefault("problems", []).append(
+        {
+            "row": int(row_number),
+            "severity": str(severity),
+            "field": str(field),
+            "issue": str(issue),
+            "raw": str(raw),
+            "resolution": str(resolution),
+        }
+    )
+
+
+def format_import_raw(values, headers=None) -> str:
+    """Return a compact, readable snapshot of one original source row."""
+    headers = list(headers or [])
+    parts = []
+    if isinstance(values, dict):
+        items = values.items()
+    else:
+        items = enumerate(values)
+    for key, value in items:
+        if value is None or not str(value).strip():
+            continue
+        if isinstance(key, int):
+            label = headers[key] if key < len(headers) and headers[key] else f"欄{key + 1}"
+        else:
+            label = str(key or "欄位")
+        text = str(value).strip().replace("\r", " ").replace("\n", " ")
+        if len(text) > 80:
+            text = text[:77] + "…"
+        parts.append(f"{label}={text}")
+    result = "；".join(parts) or "（空白列）"
+    return result if len(result) <= 500 else result[:497] + "…"
+
+
+def write_project_import_template(filepath: str) -> str:
+    """Create a blank, documented workbook accepted by the project importer."""
+    from openpyxl import Workbook
+    from openpyxl.comments import Comment
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "支撐清單"
+    ws.append(PROJECT_IMPORT_TEMPLATE_HEADERS)
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = "A1:G1"
+
+    header_fill = PatternFill("solid", fgColor="D9EAF7")
+    required_fill = PatternFill("solid", fgColor="FFF2CC")
+    for column, header in enumerate(PROJECT_IMPORT_TEMPLATE_HEADERS, start=1):
+        cell = ws.cell(1, column)
+        cell.font = Font(bold=True, color="1F4E78")
+        cell.fill = required_fill if header in {"數量", "型號"} else header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    comments = {
+        "Drawing line number": "選填。原始圖面或管線群組，用於追溯來源。",
+        "流水號.sort": "選填。專案內排序或識別號。",
+        "數量": "必填。正整數。",
+        "單位": "選填。空白時使用「組」。",
+        "型號": "必填。例如 57-1B-A、01-2B-05A；開孔列填 PENETRATION HOLE。",
+        "管徑": "僅 PENETRATION HOLE 必填，例如 4。",
+        "保溫厚度": "僅 PENETRATION HOLE 使用；無保溫可留空。",
+    }
+    for column, header in enumerate(PROJECT_IMPORT_TEMPLATE_HEADERS, start=1):
+        ws.cell(1, column).comment = Comment(comments[header], "IEC Support Tool")
+
+    widths = (28, 14, 10, 10, 24, 12, 14)
+    for column, width in enumerate(widths, start=1):
+        ws.column_dimensions[ws.cell(1, column).column_letter].width = width
+
+    quantity_validation = DataValidation(
+        type="whole",
+        operator="greaterThan",
+        formula1="0",
+        allow_blank=False,
+    )
+    quantity_validation.error = "數量必須是大於 0 的整數"
+    quantity_validation.errorTitle = "數量格式錯誤"
+    quantity_validation.prompt = "輸入大於 0 的整數"
+    quantity_validation.promptTitle = "必要欄位"
+    quantity_validation.showErrorMessage = True
+    quantity_validation.showInputMessage = True
+    ws.add_data_validation(quantity_validation)
+    quantity_validation.add("C2:C5000")
+
+    unit_validation = DataValidation(
+        type="list",
+        formula1='"組,set,kg,ea,pc,m"',
+        allow_blank=True,
+    )
+    ws.add_data_validation(unit_validation)
+    unit_validation.add("D2:D5000")
+
+    guide = wb.create_sheet("填寫說明")
+    guide.column_dimensions["A"].width = 95
+    instructions = (
+        "使用方式：在「支撐清單」分頁由第 2 列開始填寫，一列代表一筆支撐。",
+        "必要欄：型號、數量。黃色表頭代表必要欄位。",
+        "建議欄：Drawing line number、流水號.sort、單位；缺少時仍可計算，但不利於追溯與核對。",
+        "一般範例：Drawing=43--1-1.2-S11UG-N4-60371，流水號=43，數量=1，單位=組，型號=23-L75-07C-10。",
+        "開孔範例：型號=PENETRATION HOLE，並填寫管徑與保溫厚度。",
+        "也可以直接匯入原始 Support MTO Excel，程式會先要求確認欄位對應。",
+    )
+    for row, text in enumerate(instructions, start=1):
+        cell = guide.cell(row, 1, text)
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        if row == 1:
+            cell.font = Font(bold=True, color="1F4E78")
+        guide.row_dimensions[row].height = 30
+
+    wb.save(filepath)
+    return filepath
+
 
 def read_project_rows_xlsx(
     filepath: str,
     mapping_confirmer: ProjectXlsxMappingConfirmer | None = None,
+    report: dict | None = None,
 ) -> list[ProjectInputRow]:
     """Read project rows from xlsx/xlsm without importing PyQt UI classes."""
     from openpyxl import load_workbook
@@ -61,8 +202,30 @@ def read_project_rows_xlsx(
         if mapping.get("quantity") is None:
             raise ValueError("xlsx 匯入至少需要指定「數量」欄。")
 
+        if report is not None:
+            report.update(
+                {
+                    "sheet": ws.title,
+                    "header_row": header_row,
+                    "mapped_fields": [
+                        field for field, column in mapping.items() if column is not None
+                    ],
+                    "source_rows": 0,
+                    "skipped_missing_designation": 0,
+                    "skipped_invalid_quantity": 0,
+                    "quantity_defaulted": 0,
+                    "unit_defaulted": 0,
+                    "problems": [],
+                }
+            )
+
         rows: list[ProjectInputRow] = []
         for row_idx, values in enumerate(ws.iter_rows(min_row=header_row + 1, values_only=True), start=header_row + 1):
+            if not any(value is not None and str(value).strip() for value in values):
+                continue
+            if report is not None:
+                report["source_rows"] += 1
+            raw = format_import_raw(values, headers)
             designation = project_mapped_value(values, mapping, "designation")
             if not designation:
                 designation = (
@@ -70,9 +233,86 @@ def read_project_rows_xlsx(
                     or extract_designation_from_text(project_mapped_value(values, mapping, "item_code"))
                 )
             if not designation:
+                if report is not None:
+                    report["skipped_missing_designation"] += 1
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="error",
+                    field="型號",
+                    issue="找不到可辨識的支撐型號；此列不會匯入",
+                    raw=raw,
+                    resolution="在型號欄填入例如 57-1B-A；若資料藏在說明欄，請重新確認欄位對應。",
+                )
                 continue
 
-            quantity_text = project_mapped_value(values, mapping, "quantity") or "1"
+            quantity_value = project_mapped_value(values, mapping, "quantity")
+            unit_value = project_mapped_value(values, mapping, "unit")
+            if report is not None and not quantity_value:
+                report["quantity_defaulted"] += 1
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="warning",
+                    field="數量",
+                    issue="數量空白；本次暫按 1 組匯入",
+                    raw=raw,
+                    resolution="回原檔補上大於 0 的整數；若確實只有一組，請明確填 1。",
+                )
+            if report is not None and not unit_value:
+                report["unit_defaulted"] += 1
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="info",
+                    field="單位",
+                    issue="單位空白；本次使用「組」",
+                    raw=raw,
+                    resolution="建議回原檔填入組、set、ea 等實際單位。",
+                )
+            quantity_text = quantity_value or "1"
+            try:
+                quantity = parse_list_quantity(quantity_text, row_idx)
+            except ValueError:
+                if report is None:
+                    raise
+                if report is not None:
+                    report["skipped_invalid_quantity"] += 1
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="error",
+                    field="數量",
+                    issue=f"數量 {quantity_text!r} 不是大於 0 的整數；此列不會匯入",
+                    raw=raw,
+                    resolution="改成 1、2、3 等大於 0 的整數。",
+                )
+                continue
+
+            drawing_line_number = project_mapped_value(
+                values, mapping, "drawing_line_number"
+            )
+            serial = project_mapped_value(values, mapping, "serial")
+            if not drawing_line_number:
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="warning",
+                    field="Drawing",
+                    issue="缺少 Drawing line number；仍可計算但無法依圖面追溯",
+                    raw=raw,
+                    resolution="填入原始圖面或管線群組編號。",
+                )
+            if not serial:
+                append_import_problem(
+                    report,
+                    row_number=row_idx,
+                    severity="warning",
+                    field="流水號",
+                    issue="缺少流水號；仍可計算但逐筆核對較困難",
+                    raw=raw,
+                    resolution="填入原始 MTO 的流水號或專案排序編號。",
+                )
             overrides = None
             display_designation = ""
             if str(designation).strip().upper() == "PENETRATION HOLE":
@@ -82,15 +322,25 @@ def read_project_rows_xlsx(
                 insulation = project_mapped_value(values, mapping, "insulation")
                 overrides = {"nominal_size": nominal_size, "insulation": insulation}
                 display_designation = build_item_code(nominal_size, insulation)
+                if not nominal_size:
+                    append_import_problem(
+                        report,
+                        row_number=row_idx,
+                        severity="error",
+                        field="管徑",
+                        issue="PENETRATION HOLE 缺少管徑；型號尚不完整",
+                        raw=raw,
+                        resolution="在管徑欄填入例如 4、6 或 8。",
+                    )
 
             rows.append(
                 ProjectInputRow(
                     designation=designation,
-                    quantity=parse_list_quantity(quantity_text, row_idx),
+                    quantity=quantity,
                     enabled=True,
-                    drawing_line_number=project_mapped_value(values, mapping, "drawing_line_number"),
-                    serial=project_mapped_value(values, mapping, "serial"),
-                    unit=normalize_project_unit_value(project_mapped_value(values, mapping, "unit")),
+                    drawing_line_number=drawing_line_number,
+                    serial=serial,
+                    unit=normalize_project_unit_value(unit_value),
                     overrides=overrides,
                     display_designation=display_designation,
                 )

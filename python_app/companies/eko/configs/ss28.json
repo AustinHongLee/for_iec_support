@@ -1,0 +1,64 @@
+{
+ "company": "EKO",
+ "code": "SS28",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "L形單懸臂角鋼托架(≤4\")",
+ "material": "A36",
+ "members": [
+  {
+   "role": "立柱",
+   "sec": [
+    "Angle",
+    "75*75*9"
+   ],
+   "qty": 1,
+   "len": "H"
+  },
+  {
+   "role": "水平底座",
+   "sec": [
+    "Angle",
+    "75*75*9"
+   ],
+   "qty": 1,
+   "len": 500
+  }
+ ],
+ "base_plate": {
+  "t": 9,
+  "a": 170,
+  "b": 215,
+  "material": "A283 Gr.C",
+  "qty": 1,
+  "hole": {
+   "n": 4,
+   "dia": 15,
+   "px": 100,
+   "py": 145,
+   "edge": 35
+  }
+ },
+ "plate_fixes": [
+  "B"
+ ],
+ "nut_bolt": {
+  "spec": "M12x50L",
+  "qty": 4
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "Hmax": 1600
+ },
+ "designation_format": {
+  "pattern": "SS28{B/W}-□H",
+  "example": "SS28B-1000H"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "無L段,水平底座固定500"
+}

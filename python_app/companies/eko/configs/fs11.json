@@ -1,0 +1,167 @@
+{
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21",
+ "code": "FS11",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "立柱(DFS4)+45/60°側向懸臂",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 0.5,
+   "side": "2",
+   "A": 84,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 0.75,
+   "side": "2",
+   "A": 88,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 1,
+   "side": "2",
+   "A": 94,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 1.5,
+   "side": "2",
+   "A": 110,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 2,
+   "side": "2",
+   "A": 122,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 2.5,
+   "side": "2",
+   "A": 138,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 3,
+   "side": "2",
+   "A": 154,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 4,
+   "side": "2",
+   "A": 180,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 5,
+   "side": "2",
+   "A": 208,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 6,
+   "side": "2",
+   "A": 238,
+   "B": 130,
+   "dfs4_serial": 1
+  },
+  {
+   "max": 8,
+   "side": "4",
+   "A": 288,
+   "B": 190,
+   "dfs4_serial": 3
+  },
+  {
+   "max": 10,
+   "side": "4",
+   "A": 350,
+   "B": 190,
+   "dfs4_serial": 3
+  },
+  {
+   "max": 12,
+   "side": "4",
+   "A": 410,
+   "B": 190,
+   "dfs4_serial": 3
+  },
+  {
+   "max": 14,
+   "side": "4",
+   "A": 442,
+   "B": 190,
+   "dfs4_serial": 3
+  }
+ ],
+ "components": [
+  {
+   "kind": "subref",
+   "code": "DFS4",
+   "len": "H",
+   "serial_field": "dfs4_serial"
+  },
+  {
+   "kind": "pipe",
+   "name": "側支撐管",
+   "size_field": "side",
+   "sch": "SCH.40",
+   "len": "L"
+  },
+  {
+   "kind": "plate",
+   "name": "側支撐板",
+   "t": 9,
+   "w_field": "A",
+   "l_field": "B",
+   "qty": 1,
+   "material": "A36",
+   "approx": true
+  },
+  {
+   "kind": "ubolt",
+   "qty": 1
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": [
+    "A",
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W"
+ ],
+ "limits": {
+  "applicable": "1/2\"~14\""
+ },
+ "extra_warnings": [
+  "側支撐板厚度圖上未標,近似9t;側撐45°/60°;DFS4序號依側管徑(2\"→1,4\"→3)"
+ ],
+ "designation_format": {
+  "pattern": "FS11{A/B/E/W}-□\"-□L-□H-□H1",
+  "example": "FS11E-4\"-500L-800H-300H1"
+ },
+ "data_update_note": "立柱引用DFS4(序號依側管徑);側支撐管依載重表2\"/4\";側板A×B依管徑近似"
+}

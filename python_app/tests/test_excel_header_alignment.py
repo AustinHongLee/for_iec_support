@@ -128,8 +128,10 @@ def test_leader_detail_headers_align_with_trace_values():
     )
     assert ws.cell(row=detail_row, column=columns["來源圖號"]).value == "DL-001"
     assert ws.cell(row=detail_row, column=columns["流水號"]).value == "S-001"
-    assert ws.cell(row=detail_row, column=columns["數量"]).value == 10
-    assert ws.cell(row=detail_row, column=columns["單位"]).value == "組"
+    assert ws.cell(row=detail_row, column=columns["專案組數"]).value == 10
+    assert ws.cell(row=detail_row, column=columns["計價單位"]).value == "組"
+    assert ws.cell(row=detail_row, column=columns["合約總量"]).value == 10
+    assert ws.cell(row=detail_row, column=columns["本列計入"]).value == 10
 
 
 def test_calculation_basis_multitype_rows_align_every_exported_column():
@@ -222,21 +224,19 @@ def test_leader_detail_pipe_shoe_row_aligns_every_exported_column():
     _assert_row_values(
         _row_values_by_header(ws, pipe_shoe_row, LEADER_DETAIL_HEADERS),
         {
-            "狀態": "命中",
-            "類別": "Pipe Shoe",
-            "統計項目": 'PIPE SHOE 5"~10" 熱浸鍍鋅',
+            "合約名稱": '管鞋(PIPE SHOE) 5"~10"',
+            "合約總量": 3,
+            "計價單位": "組",
             "來源圖號": "DL-002",
             "流水號": "S-002",
-            "數量": 3,
-            "單位": "組",
             "型號": "54-10B-A-150-250",
-            "型號類別": "54",
-            "管徑(吋)": 10,
-            "計入數量": 3,
+            "專案組數": 3,
+            "支撐單組總重(kg)": 16.45,
+            "分類門檻 / 原因": 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304',
+            "本列請款計算": "1 組/支撐 × 3 = 3 組",
+            "本列計入": 3,
             "計入單位": "組",
-            "命中明細": 'Type 54 Pipe Shoe，10"',
-            "材質判定": "整組材質 -> HDG/CS",
-            "統計條件": 'Type 52/53/54/55/66/67/80/85，管徑 5"~10"，整組不含 SUS304',
-            "備註": None,
+            "命中材料 / 零件": 'Type 54 Pipe Shoe，10"；整組材質 -> HDG/CS',
+            "狀態 / 備註": "命中",
         },
     )

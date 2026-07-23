@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QAbstractItemView, QHeaderView, QTableWidget, QTableWidgetItem
 
+from core.calculator import uses_global_upper_material
 from ui.theme import TOKENS
 
 
@@ -29,6 +30,7 @@ class SupportMasterTable(QTableWidget):
         super().__init__(parent)
         self._project_rows = []
         self._row_results = {}
+        self._global_material_confirmed = True
         self.setColumnCount(len(MASTER_HEADERS))
         self.setHorizontalHeaderLabels(MASTER_HEADERS)
         self.verticalHeader().setVisible(False)
@@ -43,10 +45,18 @@ class SupportMasterTable(QTableWidget):
             self.setColumnWidth(index, width)
         self.itemSelectionChanged.connect(self._emit_selection)
 
-    def set_project(self, rows, project_result=None, *, global_material="SUS304") -> None:
+    def set_project(
+        self,
+        rows,
+        project_result=None,
+        *,
+        global_material="SUS304",
+        global_material_confirmed=True,
+    ) -> None:
         self.setUpdatesEnabled(False)
         try:
             self._project_rows = list(rows)
+            self._global_material_confirmed = bool(global_material_confirmed)
             self._row_results = {}
             if project_result is not None:
                 result_index = 0
@@ -80,7 +90,8 @@ class SupportMasterTable(QTableWidget):
 
     def _values(self, row, row_result, global_material: str):
         overrides = row.overrides or {}
-        if overrides.get("upper_material_unknown"):
+        material_pending = self._material_pending(row)
+        if material_pending:
             material = f"{global_material}(假設)"
         elif overrides.get("upper_material"):
             material = f"{overrides['upper_material']}(覆寫)"
@@ -96,7 +107,7 @@ class SupportMasterTable(QTableWidget):
                 status = "✗"
                 note = result.error
             else:
-                status = "⚠" if overrides.get("upper_material_unknown") else "✓"
+                status = "⚠" if material_pending else "✓"
                 total_weight = f"{row_result.scaled_result.total_weight:.3f}"
                 reasons = (result.meta or {}).get("review_reasons", [])
                 note = reasons[0] if reasons else (result.warnings[0] if result.warnings else "")
@@ -130,20 +141,84 @@ class SupportMasterTable(QTableWidget):
         finally:
             self.blockSignals(False)
 
-    def apply_filter(self, query: str, *, pending_only: bool = False) -> int:
+    def apply_filter(
+        self,
+        query: str,
+        *,
+        pending_only: bool = False,
+        column_filters: dict[str, str] | None = None,
+    ) -> int:
         terms = [term for term in query.casefold().split() if term]
+        filters = {
+            key: str(value).strip().casefold()
+            for key, value in (column_filters or {}).items()
+            if str(value).strip()
+        }
+        filter_columns = {
+            "status": 0,
+            "drawing": 1,
+            "serial": 2,
+            "designation": 3,
+            "material": 6,
+        }
         visible = 0
         for row_index, project_row in enumerate(self._project_rows):
-            text = " ".join(
+            values = [
                 self.item(row_index, column).text()
                 for column in range(self.columnCount())
                 if self.item(row_index, column) is not None
-            ).casefold()
-            pending = bool((project_row.overrides or {}).get("upper_material_unknown"))
+            ]
+            text = " ".join(values).casefold()
+            pending = self._material_pending(project_row)
             show = all(term in text for term in terms) and (not pending_only or pending)
+            if show:
+                for key, needle in filters.items():
+                    column = filter_columns.get(key)
+                    if column is None:
+                        continue
+                    item = self.item(row_index, column)
+                    value = item.text().casefold() if item is not None else ""
+                    if key == "status":
+                        matches = value == needle
+                    else:
+                        matches = needle in value
+                    if not matches:
+                        show = False
+                        break
             self.setRowHidden(row_index, not show)
             visible += int(show)
         return visible
+
+    def _material_pending(self, row) -> bool:
+        if not uses_global_upper_material(row.designation):
+            return False
+        overrides = row.overrides or {}
+        if overrides.get("upper_material_unknown"):
+            return True
+        if overrides.get("upper_material"):
+            return False
+        return not self._global_material_confirmed
+
+    def filter_options(self) -> dict[str, list[str]]:
+        """Return unique values for Excel-like filter drop-downs."""
+        columns = {
+            "drawing": 1,
+            "serial": 2,
+            "designation": 3,
+            "material": 6,
+        }
+        options = {}
+        for key, column in columns.items():
+            options[key] = sorted(
+                {
+                    self.item(row, column).text().strip()
+                    for row in range(self.rowCount())
+                    if self.item(row, column) is not None
+                    and self.item(row, column).text().strip()
+                },
+                key=str.casefold,
+            )
+        return options
 
     def row_result(self, project_index: int):
         return self._row_results.get(project_index)

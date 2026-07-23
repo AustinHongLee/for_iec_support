@@ -3,12 +3,18 @@ import sys
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
 
 from core.calculator import (
     analyze_single,
     get_analysis_setting,
     set_analysis_setting,
+    uses_global_upper_material,
+)
+from export.excel.confidence_summary import (
+    build_export_context,
+    final_export_allowed,
 )
 from ui.main_window import MainWindow, SidePanel, _RESULT_HEADERS
 
@@ -54,6 +60,23 @@ def test_unknown_material_flag_does_not_emit_material_sentinel(monkeypatch):
     panel.close()
 
 
+def test_global_upper_material_scope_and_internal_consumers_emit_evidence():
+    assert uses_global_upper_material("01-2B-05A")
+    assert uses_global_upper_material("01T-2B-05A")
+    assert uses_global_upper_material("09-2B-05B")
+    assert uses_global_upper_material("11-2B-06G")
+    assert not uses_global_upper_material("51-1.1/2B")
+
+    for designation in ("09-2B-05B", "11-2B-06G"):
+        result = analyze_single(
+            designation,
+            {"upper_material_unknown": True},
+        )
+        assert not result.error
+        assert result.evidence[-1]["field"] == "upper_material"
+        assert result.evidence[-1]["basis"] == "assumption"
+
+
 def test_unknown_material_marks_input_and_project_result(monkeypatch):
     monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
     window = MainWindow()
@@ -90,7 +113,8 @@ def test_material_completion_and_pending_filter_follow_enabled_rows(monkeypatch)
         assert window.project_header.completion_label.text() == "材質確認：1/2"
 
         window._on_analyze()
-        window.pending_material_filter_button.setChecked(True)
+        status_filter = window.result_column_filters["status"]
+        status_filter.setCurrentIndex(status_filter.findData("⚠"))
         _APP.processEvents()
 
         visible_text = " ".join(
@@ -101,6 +125,54 @@ def test_material_completion_and_pending_filter_follow_enabled_rows(monkeypatch)
         assert "01-2b-05a" in visible_text
         assert "01-3b-05a" not in visible_text
         assert "01-4b-05a" not in visible_text
+    finally:
+        window.close()
+
+
+def test_inherited_global_material_requires_explicit_project_confirmation(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        window._auto_analyze_timer.setInterval(10)
+        window._add_item_to_list("01-2B-05A")
+        window._add_item_to_list("01-3B-05A")
+
+        assert "未確認" in window.material_combo.currentText()
+        assert window.summary_material_label.text() == "0/2"
+        assert window.project_header.completion_label.text() == "材質確認：0/2"
+
+        window._on_analyze()
+        estimate_context = build_export_context(
+            window._project_result,
+            mode="精算",
+        )
+        assert estimate_context["assumption_count"] == 2
+        assert not final_export_allowed(estimate_context)
+
+        window.material_combo.setCurrentText("SUS304")
+        assert window.summary_material_label.text() == "2/2"
+        assert window._project_result is None
+        QTest.qWait(40)
+        _APP.processEvents()
+
+        confirmed_context = build_export_context(
+            window._project_result,
+            mode="精算",
+        )
+        assert confirmed_context["assumption_count"] == 0
+        assert final_export_allowed(confirmed_context)
+    finally:
+        window.close()
+
+
+def test_material_completion_excludes_types_that_do_not_use_global_material(monkeypatch):
+    monkeypatch.setattr(SidePanel, "_load_pdf_for_type", lambda self, type_code: None)
+    window = MainWindow()
+    try:
+        window._add_item_to_list("51-1.1/2B")
+
+        assert window.summary_material_label.text() == "不適用"
+        assert window.project_header.completion_label.text() == "材質確認：不適用"
     finally:
         window.close()
 

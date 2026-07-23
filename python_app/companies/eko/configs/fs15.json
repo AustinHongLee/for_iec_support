@@ -1,0 +1,96 @@
+{
+ "code": "FS15",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "角鋼立柱(型式H頂承/V靠夾)",
+ "table_key": "serial",
+ "table": {
+  "1": {
+   "angle": "50*50*6",
+   "A": 260,
+   "B": 190,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 260,
+   "base_l": 260
+  },
+  "2": {
+   "angle": "75*75*9",
+   "A": 260,
+   "B": 190,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 260,
+   "base_l": 260
+  }
+ },
+ "members": [
+  {
+   "role": "立柱(垂直)",
+   "sec": "row",
+   "qty": 1,
+   "len": "H"
+  },
+  {
+   "role": "頂臂(水平,Γ型)",
+   "sec": "row",
+   "qty": 1,
+   "len": 300
+  }
+ ],
+ "base": {
+  "t": 9,
+  "qty": 1,
+  "material": "A36",
+  "approx": true,
+  "hole": {
+   "n": 4,
+   "dia_field": "d",
+   "px": 190,
+   "py": 190,
+   "edge": 35
+  }
+ },
+ "bolt_qty": 4,
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W"
+ ],
+ "ubolt_separate": {
+  "variant": "V",
+  "note": "型式V(垂直靠夾)之U型螺栓：FS15本體不自帶，請另以 UB1-□\" 單獨標註計算(FS15編號不帶管徑；目前多搭配 CS1G 保冷支撐)"
+ },
+ "pier": {
+  "type": "CM1A",
+  "qty": 1
+ },
+ "limits": {
+  "Hmax": 1500
+ },
+ "extra_warnings": [
+  "角鋼為Γ型單支彎料：立柱(垂直,長=H)+頂臂(水平,長≈300)；逐桿分列2支、長度近似",
+  "型式H=水平頂承(管擱於頂臂) / 型式V=垂直靠夾；FS15本體★不自帶U型螺栓，型式V之U型螺栓另以 UB1-□\" 單獨標註計算(多搭配CS1G保冷支撐)",
+  "荷重表(kg)：序1(L50×50×6) H500=80 / H1000=40 / H1500=不可；序2(L75×75×9) H500=190 / H1000=190 / H1500=135",
+  "FS15A/FS15E 含水泥墩(CM1A)；H1 未指定則不製作水泥墩"
+ ],
+ "serial_hmax": {
+  "1": 1000,
+  "2": 1500
+ },
+ "designation_format": {
+  "pattern": "FS15{A/B/E/W}-{H/V}[-□\"]-序號-□H[-□H1]",
+  "example": "FS15E-H-1-600H-300H1 / FS15W-V-1\\\"-2-1500H"
+ },
+ "data_update_note": "依FS15.pdf件號表+尺寸表；序1=L50×50×6/序2=L75×75×9；Γ型=立柱H+頂臂300(逐桿分列,長度近似)；FS15不帶管徑、本體不自帶U型螺栓(型式V之UB1另計,使用者2026-07-21確認);底板260×190近似",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_portal",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

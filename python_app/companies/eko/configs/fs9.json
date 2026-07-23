@@ -1,0 +1,80 @@
+{
+ "code": "FS9",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "單立柱(DFS4)+槽鋼橫樑+U-bolt",
+ "table_key": "serial",
+ "table": {
+  "1": {
+   "col": "2",
+   "g": 75
+  },
+  "2": {
+   "col": "3",
+   "g": 110
+  },
+  "3": {
+   "col": "4",
+   "g": 130
+  }
+ },
+ "section_weights": {
+  "150*75*6.5": 18.6
+ },
+ "components": [
+  {
+   "kind": "subref",
+   "code": "DFS4",
+   "len": "H"
+  },
+  {
+   "kind": "steel",
+   "name": "槽鋼",
+   "type": "Channel",
+   "dim": "150*75*6.5",
+   "len": "L",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "座板",
+   "t": 6,
+   "w_field": "g",
+   "l_field": "g",
+   "qty": 1,
+   "material": "A36"
+  },
+  {
+   "kind": "ubolt",
+   "qty": "site"
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": [
+    "A",
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W"
+ ],
+ "limits": {
+  "Hmax": 4000
+ },
+ "designation_format": {
+  "pattern": "FS9{A/B/E/W}-序號-□L-□H-□H1",
+  "example": "FS9E-2-400L-3000H-300H1"
+ },
+ "data_update_note": "立柱引用DFS4;槽鋼C150x75x6.5(每米重後援)長=L;gusset鋼板依序號",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

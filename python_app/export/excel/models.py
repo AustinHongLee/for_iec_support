@@ -30,3 +30,6 @@ class LeaderHitDetail:
     material_basis: str
     criteria: str
     note: str = ""
+    single_weight: float = 0.0
+    project_weight: float = 0.0
+    claim_calculation: str = ""

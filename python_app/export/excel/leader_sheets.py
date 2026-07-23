@@ -3,7 +3,6 @@
 from core.parser import get_lookup_value, get_part
 from core.project_aggregation import ProjectAnalysisResult
 
-from .column_roles import apply_default_visibility
 from .headers import LEADER_DETAIL_HEADERS
 from .models import LeaderHitDetail, LeaderStatRow
 from .styles import (
@@ -90,6 +89,8 @@ def _leader_procurement_stats(
     pipe_shoe_types = {"52", "53", "54", "55", "66", "67", "80", "85"}
     ubolt_contract_types = {"57", "58"}
     current_drawing_line_number = ""
+    current_single_weight = 0.0
+    current_project_weight = 0.0
 
     def material_label(is_304: bool) -> str:
         return "SUS304" if is_304 else "HDG/CS"
@@ -116,6 +117,26 @@ def _leader_procurement_stats(
         stat_row = template_by_key.get(key)
         if stat_row is None:
             return
+        if status != "命中":
+            claim_calculation = note or "未計入；需先確認分類"
+        elif key == "cs_support_gt15":
+            claim_calculation = (
+                f"{current_single_weight:.3f} kg/組 × {project_qty:g} 組"
+                f" = {amount:.3f} kg"
+            )
+        elif key == "cs_support_le15":
+            claim_calculation = (
+                f"單組 {current_single_weight:.3f} kg ≤ 15 kg；"
+                f"1 組/支撐 × {project_qty:g} = {amount:g} 組"
+            )
+        elif key.startswith("uband_"):
+            per_support = amount / project_qty if project_qty else 0.0
+            claim_calculation = (
+                f"單組命中 {per_support:g} {unit} × {project_qty:g} 組"
+                f" = {amount:g} {unit}"
+            )
+        else:
+            claim_calculation = f"1 組/支撐 × {project_qty:g} = {amount:g} {unit}"
         details.append(
             LeaderHitDetail(
                 stat_key=stat_row.key,
@@ -134,6 +155,9 @@ def _leader_procurement_stats(
                 material_basis=material_basis,
                 criteria=stat_row.criteria,
                 note=note,
+                single_weight=current_single_weight,
+                project_weight=current_project_weight,
+                claim_calculation=claim_calculation,
             )
         )
 
@@ -205,17 +229,23 @@ def _leader_procurement_stats(
                     if has_304
                     else "未符合目前支撐分類統計規則，請確認是否需要新增採購/製裝分類。"
                 ),
+                single_weight=current_single_weight,
+                project_weight=current_project_weight,
+                claim_calculation="未計入；需先確認是否屬於合約請款項目",
             )
         )
 
     for row_result in project.rows:
-        designation = row_result.input_row.designation
+        source_designation = row_result.input_row.designation
+        designation = row_result.input_row.display_designation or source_designation
         project_qty = row_result.input_row.quantity
         current_drawing_line_number = row_result.input_row.drawing_line_number
         source_serial = row_result.input_row.serial
         source_unit = row_result.input_row.unit or "組"
-        type_id = _parse_designation_type(designation)
-        pipe_size = _parse_designation_pipe_size(designation)
+        current_single_weight = row_result.single_result.total_weight
+        current_project_weight = row_result.scaled_result.total_weight
+        type_id = _parse_designation_type(source_designation)
+        pipe_size = _parse_designation_pipe_size(source_designation)
         detail_count_before = len(details)
         is_separate_contract_item = (
             type_id in ubolt_contract_types
@@ -393,6 +423,21 @@ def _leader_procurement_stats(
     return stats, sources, details
 
 
+def _ordered_leader_details(details: list[LeaderHitDetail]) -> list[LeaderHitDetail]:
+    """Keep every contract item's evidence contiguous for one-click claim review."""
+    order = {item.key: index for index, item in enumerate(_leader_stat_template())}
+    return sorted(
+        details,
+        key=lambda detail: (
+            order.get(detail.stat_key, len(order)),
+            detail.drawing_line_number or "",
+            str(detail.serial or ""),
+            detail.designation or "",
+            detail.status or "",
+        ),
+    )
+
+
 def _boss_summary_rows(stats: dict[str, float]) -> list[dict]:
     """Fixed leader-facing summary rows. Details remain in 查核-支撐明細."""
 
@@ -402,25 +447,27 @@ def _boss_summary_rows(stats: dict[str, float]) -> list[dict]:
     return [
         {
             "group": "1",
+            "key": "",
             "label": "防靜電片(兩端附銅壓端子披覆型跨接線)廠商提供",
             "unit": "組",
             "qty": 0,
             "note": "含SUS鋼片(3t)及導線",
         },
-        {"group": "2", "label": 'U-Bolt & Band ≦ 6" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_le6"), "note": ""},
-        {"group": "2", "label": 'U-Bolt & Band ≧ 8" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_ge8"), "note": ""},
-        {"group": "2", "label": 'U-Bolt & Band ≦ 6"(SUS 304)', "unit": "組", "qty": qty("uband_304_le6"), "note": ""},
-        {"group": "2", "label": 'U-Bolt & Band ≧ 8"(SUS 304)', "unit": "組", "qty": qty("uband_304_ge8"), "note": ""},
-        {"group": "3", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_hdg_le4"), "note": "依長春規範"},
-        {"group": "3", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_hdg_5_10"), "note": "依長春規範"},
-        {"group": "3", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_hdg_12_24"), "note": "依長春規範"},
-        {"group": "3", "label": '管鞋(PIPE SHOE)≧26"', "unit": "組", "qty": qty("shoe_hdg_ge26"), "note": "依長春規範"},
-        {"group": "3", "label": "保冷支撐座(長春帶料)", "unit": "組", "qty": qty("cold_support"), "note": "依長春規範"},
-        {"group": "4", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_304_le4"), "note": "CLAMP"},
-        {"group": "4", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_304_5_10"), "note": "CLAMP"},
-        {"group": "4", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_304_12_24"), "note": "CLAMP"},
+        {"group": "2", "key": "uband_hdg_le6", "label": 'U-Bolt & Band ≦ 6" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_le6"), "note": ""},
+        {"group": "2", "key": "uband_hdg_ge8", "label": 'U-Bolt & Band ≧ 8" 熱浸鍍鋅', "unit": "組", "qty": qty("uband_hdg_ge8"), "note": ""},
+        {"group": "2", "key": "uband_304_le6", "label": 'U-Bolt & Band ≦ 6"(SUS 304)', "unit": "組", "qty": qty("uband_304_le6"), "note": ""},
+        {"group": "2", "key": "uband_304_ge8", "label": 'U-Bolt & Band ≧ 8"(SUS 304)', "unit": "組", "qty": qty("uband_304_ge8"), "note": ""},
+        {"group": "3", "key": "shoe_hdg_le4", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_hdg_le4"), "note": "依長春規範"},
+        {"group": "3", "key": "shoe_hdg_5_10", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_hdg_5_10"), "note": "依長春規範"},
+        {"group": "3", "key": "shoe_hdg_12_24", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_hdg_12_24"), "note": "依長春規範"},
+        {"group": "3", "key": "shoe_hdg_ge26", "label": '管鞋(PIPE SHOE)≧26"', "unit": "組", "qty": qty("shoe_hdg_ge26"), "note": "依長春規範"},
+        {"group": "3", "key": "cold_support", "label": "保冷支撐座(長春帶料)", "unit": "組", "qty": qty("cold_support"), "note": "依長春規範"},
+        {"group": "4", "key": "shoe_304_le4", "label": '管鞋(PIPE SHOE)≦4"', "unit": "組", "qty": qty("shoe_304_le4"), "note": "CLAMP"},
+        {"group": "4", "key": "shoe_304_5_10", "label": '管鞋(PIPE SHOE) 5"~10"', "unit": "組", "qty": qty("shoe_304_5_10"), "note": "CLAMP"},
+        {"group": "4", "key": "shoe_304_12_24", "label": '管鞋(PIPE SHOE) 12"~24"', "unit": "組", "qty": qty("shoe_304_12_24"), "note": "CLAMP"},
         {
             "group": "5",
+            "key": "cs_support_le15",
             "label": "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg",
             "unit": "組",
             "qty": qty("cs_support_le15"),
@@ -428,29 +475,35 @@ def _boss_summary_rows(stats: dict[str, float]) -> list[dict]:
         },
         {
             "group": "5",
+            "key": "cs_support_gt15",
             "label": "CS(熱鍍鋅)管支撐(Pipe Support)製裝>15Kg",
             "unit": "KG",
             "qty": qty("cs_support_gt15"),
             "note": "熱浸鍍鋅，依長春規範",
         },
-        {"group": "6", "label": "管夾", "unit": "組", "qty": 0, "note": "CLAMP"},
-        {"group": "7", "label": "管支撐小基礎制裝工料(一樓)", "unit": "組", "qty": 0, "note": "依長春規範"},
+        {"group": "6", "key": "", "label": "管夾", "unit": "組", "qty": 0, "note": "CLAMP"},
+        {"group": "7", "key": "", "label": "管支撐小基礎制裝工料(一樓)", "unit": "組", "qty": 0, "note": "依長春規範"},
     ]
 
 
 def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.styles import Alignment, Font, PatternFill
 
     styles = _styles()
-    stats, _, _ = _leader_procurement_stats(project)
+    stats, _, details = _leader_procurement_stats(project)
+    template_by_key = {item.key: item for item in _leader_stat_template()}
+    detail_rows_by_key: dict[str, list[tuple[int, LeaderHitDetail]]] = {}
+    ordered_details = _ordered_leader_details(details)
+    for detail_index, detail in enumerate(ordered_details, start=4):
+        detail_rows_by_key.setdefault(detail.stat_key, []).append((detail_index, detail))
 
     _setup_sheet(ws, "支撐分類統計", "I1")
     ws.cell(
         row=2,
         column=1,
         value=(
-            "業主/長官摘要：固定列示採購與製裝統計項目；"
-            "型號來源與判定依據請見「查核-支撐明細」。"
+            "請款查核表：每個合約名稱旁直接列出判定規則與本批命中範例；"
+            "需要逐筆舉證時，點「開啟明細」查看完整來源。"
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
@@ -467,74 +520,93 @@ def _write_leader_procurement_sheet(ws, project: ProjectAnalysisResult):
     row += 1
 
     boss_rows = _boss_summary_rows(stats)
-    start_row = row
-    thin = Side(style="thin", color="000000")
-    table_border = Border(left=thin, right=thin, top=thin, bottom=thin)
-    body_font = Font(name="Microsoft JhengHei", size=12, color="000000")
+    headers = ["類", "合約名稱", "單位", "本批數量", "合約名稱怎麼來的", "本批命中型號例", "來源圖號 / 流水號", "逐筆舉證", "備註"]
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.fill = styles["header_fill"]
+        cell.font = styles["header_font"]
+        cell.alignment = styles["center"]
+        cell.border = styles["border"]
+    ws.row_dimensions[row].height = 30
+    row += 1
 
     for item in boss_rows:
+        key = item["key"]
+        stat = template_by_key.get(key)
+        hit_rows = [pair for pair in detail_rows_by_key.get(key, []) if pair[1].status == "命中"]
+        first_detail_row, example = hit_rows[0] if hit_rows else (None, None)
         ws.cell(row=row, column=1, value=item["group"])
         ws.cell(row=row, column=2, value=item["label"])
-        ws.cell(row=row, column=5, value=item["unit"])
-        ws.cell(row=row, column=6, value=round(item["qty"], 2) if item["unit"] == "KG" else int(item["qty"]))
+        ws.cell(row=row, column=3, value=item["unit"])
+        ws.cell(row=row, column=4, value=round(item["qty"], 2) if item["unit"] == "KG" else int(item["qty"]))
+        ws.cell(
+            row=row,
+            column=5,
+            value=stat.criteria if stat else "目前沒有自動判定規則；數量固定為 0，需依合約另行確認。",
+        )
+        ws.cell(row=row, column=6, value=example.designation if example else "本批未命中")
+        ws.cell(
+            row=row,
+            column=7,
+            value=(
+                f"{example.drawing_line_number or '—'} / {example.serial or '—'}"
+                if example else "—"
+            ),
+        )
+        trace_cell = ws.cell(
+            row=row,
+            column=8,
+            value=f"查看 {len(hit_rows):,} 筆來源" if first_detail_row else "本批無明細",
+        )
+        if first_detail_row:
+            trace_cell.hyperlink = f"#'查核-支撐明細'!A{first_detail_row}"
+            trace_cell.style = "Hyperlink"
         ws.cell(row=row, column=9, value=item["note"])
         for col in range(1, 10):
             cell = ws.cell(row=row, column=col)
-            cell.border = table_border
-            cell.font = body_font
-            cell.alignment = Alignment(vertical="center", wrap_text=True)
+            cell.border = styles["border"]
+            if col != 8 or not first_detail_row:
+                cell.font = Font(name="Microsoft JhengHei", size=10, color="000000")
+            cell.alignment = Alignment(vertical="center", wrap_text=True, horizontal="center" if col in {1, 3, 4, 8} else "left")
+            if row % 2 == 0:
+                cell.fill = styles["zebra_fill"]
         ws.cell(row=row, column=1).alignment = Alignment(horizontal="center", vertical="center")
-        ws.cell(row=row, column=5).alignment = Alignment(horizontal="center", vertical="center")
-        ws.cell(row=row, column=6).alignment = Alignment(horizontal="center", vertical="center")
-        ws.cell(row=row, column=6).number_format = NUMFMT["WEIGHT_KG"] if item["unit"] == "KG" else NUMFMT["QTY_INT"]
-        ws.row_dimensions[row].height = 24
+        ws.cell(row=row, column=4).number_format = NUMFMT["WEIGHT_KG"] if item["unit"] == "KG" else NUMFMT["QTY_INT"]
+        ws.row_dimensions[row].height = 46
         row += 1
 
-    by_group: dict[str, list[int]] = {}
-    by_note: dict[tuple[str, str], list[int]] = {}
-    for offset, item in enumerate(boss_rows):
-        data_row = start_row + offset
-        by_group.setdefault(item["group"], []).append(data_row)
-        if item["note"]:
-            by_note.setdefault((item["group"], item["note"]), []).append(data_row)
-
-    for rows in by_group.values():
-        if len(rows) > 1:
-            ws.merge_cells(start_row=rows[0], start_column=1, end_row=rows[-1], end_column=1)
-            ws.cell(row=rows[0], column=1).alignment = Alignment(horizontal="center", vertical="center")
-
-    for rows in by_note.values():
-        if len(rows) > 1:
-            ws.merge_cells(start_row=rows[0], start_column=9, end_row=rows[-1], end_column=9)
-            ws.cell(row=rows[0], column=9).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
     last_row = row - 1
-    ws.freeze_panes = "A5"
-    _set_widths(ws, [8, 34, 10, 10, 8, 12, 8, 8, 34])
-    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:I{last_row}", footer_title="支撐分類統計")
+    ws.freeze_panes = "A6"
+    ws.auto_filter.ref = f"A5:I{last_row}"
+    _set_widths(ws, [6, 34, 8, 12, 50, 24, 22, 12, 22])
+    set_print_layout(ws, orientation="landscape", title_rows="5:5", area=f"A1:I{last_row}", footer_title="支撐分類統計")
 
 
 def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
     from openpyxl.utils import get_column_letter
 
     styles = _styles()
-    _, _, details = _leader_procurement_stats(project)
+    stats, _, details = _leader_procurement_stats(project)
+    details = _ordered_leader_details(details)
+    contract_label_by_key = {
+        item["key"]: item["label"] for item in _boss_summary_rows(stats) if item["key"]
+    }
     col_idx = {header: index + 1 for index, header in enumerate(LEADER_DETAIL_HEADERS)}
-    status_col = col_idx["狀態"]
-    project_qty_col = col_idx["數量"]
-    pipe_size_col = col_idx["管徑(吋)"]
-    amount_col = col_idx["計入數量"]
-    numeric_cols = {project_qty_col, pipe_size_col, amount_col}
+    contract_total_col = col_idx["合約總量"]
+    project_qty_col = col_idx["專案組數"]
+    single_weight_col = col_idx["支撐單組總重(kg)"]
+    amount_col = col_idx["本列計入"]
+    status_col = col_idx["狀態 / 備註"]
+    numeric_cols = {contract_total_col, project_qty_col, single_weight_col, amount_col}
 
     last_col_letter = get_column_letter(len(LEADER_DETAIL_HEADERS))
-    _setup_sheet(ws, "支撐統計明細（製表者查核）", f"{last_col_letter}1")
+    _setup_sheet(ws, "請款分類來源（逐筆舉證）", f"{last_col_letter}1")
     ws.cell(
         row=2,
         column=1,
         value=(
-            "本表逐筆列出支撐分類統計的命中、需確認與未納入來源；"
-            "圖例：命中=綠、需確認=紅、未納入=橘；"
-            "追溯欄預設收起，可用 Excel 欄位展開檢視。"
+            "用法：從「長官-支撐分類」點開來源，或直接篩選合約名稱。"
+            "同一合約的來源會連續排列；合約總量、單組重、判定門檻、本列算式與計入量都在同一列。"
         ),
     )
     ws.cell(row=2, column=1).font = styles["section_font"]
@@ -547,23 +619,26 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         row += 1
     else:
         for detail in details:
+            contract_total = stats.get(detail.stat_key, "")
+            status_note = detail.status if not detail.note else f"{detail.status}：{detail.note}"
+            evidence = "；".join(
+                part for part in (detail.matched_detail, detail.material_basis) if part
+            )
             row_values = {
-                "狀態": detail.status,
-                "類別": detail.category,
-                "統計項目": detail.label,
+                "合約名稱": contract_label_by_key.get(detail.stat_key, detail.label),
+                "合約總量": round(contract_total, 3) if contract_total != "" else "",
+                "計價單位": detail.unit,
                 "來源圖號": detail.drawing_line_number,
                 "流水號": detail.serial,
-                "數量": detail.project_qty,
-                "單位": detail.source_unit or "組",
                 "型號": detail.designation,
-                "型號類別": _parse_designation_type(detail.designation),
-                "管徑(吋)": "" if detail.pipe_size is None else detail.pipe_size,
-                "計入數量": round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
+                "專案組數": detail.project_qty,
+                "支撐單組總重(kg)": round(detail.single_weight, 3),
+                "分類門檻 / 原因": detail.criteria,
+                "本列請款計算": detail.claim_calculation,
+                "本列計入": round(detail.amount, 3) if detail.unit == "KG" else int(detail.amount),
                 "計入單位": detail.unit,
-                "命中明細": detail.matched_detail,
-                "材質判定": detail.material_basis,
-                "統計條件": detail.criteria,
-                "備註": detail.note,
+                "命中材料 / 零件": evidence,
+                "狀態 / 備註": status_note,
             }
             values = [row_values[header] for header in LEADER_DETAIL_HEADERS]
             for col, value in enumerate(values, 1):
@@ -574,30 +649,31 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
                     cell.alignment = styles["right"]
                 if col == status_col:
                     apply_status_fill(cell, detail.status)
-                    cell.alignment = styles["center"]
             ws.cell(row=row, column=project_qty_col).number_format = NUMFMT["QTY_INT"]
-            ws.cell(row=row, column=pipe_size_col).number_format = NUMFMT["PIPE_IN"]
+            ws.cell(row=row, column=single_weight_col).number_format = NUMFMT["WEIGHT_KG3"]
+            ws.cell(row=row, column=contract_total_col).number_format = (
+                NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            )
             ws.cell(row=row, column=amount_col).number_format = NUMFMT["WEIGHT_KG3"] if detail.unit == "KG" else NUMFMT["QTY_INT"]
+            ws.row_dimensions[row].height = 42
             row += 1
 
     last_row = max(row - 1, 3)
     width_by_header = {
-        "狀態": 10,
-        "類別": 16,
-        "統計項目": 34,
-        "來源圖號": 18,
-        "流水號": 12,
-        "數量": 8,
-        "單位": 7,
-        "型號": 22,
-        "型號類別": 8,
-        "管徑(吋)": 10,
-        "計入數量": 12,
-        "計入單位": 8,
-        "命中明細": 36,
-        "材質判定": 22,
-        "統計條件": 52,
-        "備註": 42,
+        "合約名稱": 38,
+        "合約總量": 14,
+        "計價單位": 10,
+        "來源圖號": 22,
+        "流水號": 10,
+        "型號": 24,
+        "專案組數": 10,
+        "支撐單組總重(kg)": 18,
+        "分類門檻 / 原因": 48,
+        "本列請款計算": 42,
+        "本列計入": 14,
+        "計入單位": 10,
+        "命中材料 / 零件": 42,
+        "狀態 / 備註": 38,
     }
     apply_report_table(
         ws,
@@ -607,12 +683,12 @@ def _write_leader_detail_sheet(ws, project: ProjectAnalysisResult):
         last_row,
         col_formats={
             project_qty_col: NUMFMT["QTY_INT"],
-            pipe_size_col: NUMFMT["PIPE_IN"],
-            amount_col: NUMFMT["WEIGHT_KG3"],
+            single_weight_col: NUMFMT["WEIGHT_KG3"],
         },
         widths=[width_by_header[header] for header in LEADER_DETAIL_HEADERS],
     )
-    apply_default_visibility(ws, LEADER_DETAIL_HEADERS)
     for data_row in range(4, last_row + 1):
-        apply_status_fill(ws.cell(row=data_row, column=status_col), ws.cell(row=data_row, column=status_col).value)
-    set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="支撐統計明細")
+        status = str(ws.cell(row=data_row, column=status_col).value or "").split("：", 1)[0]
+        apply_status_fill(ws.cell(row=data_row, column=status_col), status)
+    ws.freeze_panes = "D4"
+    set_print_layout(ws, title_rows="3:3", area=f"A1:{last_col_letter}{last_row}", footer_title="請款分類來源")

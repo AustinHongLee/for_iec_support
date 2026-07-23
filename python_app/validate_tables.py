@@ -125,7 +125,7 @@ try:
     def _stat_value(ws, label: str):
         for row_index in range(1, ws.max_row + 1):
             if ws.cell(row=row_index, column=2).value == label:
-                return ws.cell(row=row_index, column=6).value if ws.cell(row=row_index, column=6).value is not None else ws.cell(row=row_index, column=5).value
+                return ws.cell(row=row_index, column=4).value
         raise AssertionError(f"stat label not found: {label}")
 
     def _has_cell_value(ws, column: int, value: str) -> bool:
@@ -242,6 +242,7 @@ try:
             "長官-摘要",
             "專案摘要",
             "重量明細表",
+            "單組重量明細",
             "計算標準與假設",
             "長官-支撐分類",
             "查核-支撐明細",
@@ -251,16 +252,15 @@ try:
             "下料圖示",
         ], f"project package workbook sheets changed: {wb.sheetnames}"
         ws_manager = wb["長官-摘要"]
-        assert ws_manager.cell(row=1, column=1).value == "長官摘要", "manager cover title failed"
+        assert ws_manager.cell(row=1, column=1).value == "請款分類查核入口", "manager cover title failed"
         assert "$A$1:$H$" in str(ws_manager.print_area), "manager cover should be A4 portrait width"
         assert ws_manager.page_setup.orientation == "portrait", "manager cover should be portrait"
         assert _sheet_contains_text(ws_manager, "分頁索引"), "manager cover should include sheet index"
         _assert_sheet_index_links(ws_manager, wb.sheetnames)
-        assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover should show simple support fabrication count"
+        assert _sheet_contains_text(ws_manager, "合約名稱怎麼來的？"), "manager cover should start from claim questions"
         assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover should point to leader classification sheet"
         assert _sheet_contains_text(ws_manager, "查核-支撐明細"), "manager cover should point to support detail sheet"
-        assert _sheet_contains_text(ws_manager, "資料可信度"), "manager cover should expose data confidence summary"
-        assert _sheet_contains_text(ws_manager, "最低"), "manager cover confidence summary should show worst confidence"
+        assert _sheet_contains_text(ws_manager, "單組重量明細"), "manager cover should point to unit weight evidence"
         assert _sheet_contains_text(ws_manager, "下料圖示"), "manager cover should expose full workbook index"
         assert not _sheet_contains_text(ws_manager, "51-1.1/2B"), "manager cover should not expose source designations"
         ws_summary = wb["專案摘要"]
@@ -317,26 +317,29 @@ try:
         assert _sheet_contains_text(ws_leader, "二、管支撐(連工帶料，含油漆)"), "leader summary fixed title missing"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 0, "Type 51 should not be counted as Pipe Shoe"
         assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 12, "Type 51 should be counted as CS fabrication by support count"
-        assert not _sheet_contains_text(ws_leader, "命中型號依據"), "leader-facing summary should not expose source trace"
+        assert _sheet_contains_text(ws_leader, "合約名稱怎麼來的"), "leader-facing summary should explain contract names"
+        assert _sheet_contains_text(ws_leader, "本批命中型號例"), "leader-facing summary should show an evidence example"
+        assert _sheet_contains_text(ws_leader, "查看 2 筆來源"), "leader-facing summary should link to row-level evidence"
         assert not ws_leader._charts, "leader-facing summary should not include charts"
         ws_leader_detail = wb["查核-支撐明細"]
-        _assert_default_trace_columns_hidden(ws_leader_detail, LEADER_DETAIL_HEADERS)
-        assert ws_leader_detail.cell(row=3, column=1).value == "狀態", "leader detail status header failed"
+        assert ws_leader_detail.cell(row=3, column=1).value == "合約名稱", "claim evidence contract header failed"
         assert ws_leader_detail.cell(row=3, column=4).value == "來源圖號", "leader detail drawing header failed"
         assert ws_leader_detail.cell(row=3, column=5).value == "流水號", "leader detail serial header failed"
-        assert ws_leader_detail.cell(row=3, column=8).value == "型號", "leader detail designation header failed"
-        assert ws_leader_detail.cell(row=3, column=9).value == "型號類別", "leader detail type header failed"
+        assert ws_leader_detail.cell(row=3, column=6).value == "型號", "leader detail designation header failed"
+        assert ws_leader_detail.cell(row=3, column=8).value == "支撐單組總重(kg)", "leader detail single-weight header failed"
+        assert ws_leader_detail.cell(row=3, column=10).value == "本列請款計算", "leader detail calculation header failed"
+        assert not any(ws_leader_detail.column_dimensions[col].hidden for col in ("D", "E", "F", "H", "J")), "claim evidence columns must stay visible"
         assert any(
             ws_leader_detail.cell(row=r, column=4).value == "DL-001"
             and ws_leader_detail.cell(row=r, column=5).value == "S-001"
-            and ws_leader_detail.cell(row=r, column=8).value == "51-1.1/2B"
-            and ws_leader_detail.cell(row=r, column=9).value == "51"
-            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
+            and ws_leader_detail.cell(row=r, column=6).value == "51-1.1/2B"
+            and ws_leader_detail.cell(row=r, column=1).value == "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg"
+            and "≤ 15 kg" in str(ws_leader_detail.cell(row=r, column=10).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail should classify Type 51 as CS fabrication"
         assert not any(
-            ws_leader_detail.cell(row=r, column=8).value == "51-1.1/2B"
-            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("PIPE SHOE")
+            ws_leader_detail.cell(row=r, column=6).value == "51-1.1/2B"
+            and "PIPE SHOE" in str(ws_leader_detail.cell(row=r, column=1).value or "")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "Type 51 should not be classified as Pipe Shoe"
         ws_visual = wb["下料圖示"]
@@ -360,7 +363,7 @@ try:
         export_project_workbook(leader_project, path)
         wb = openpyxl.load_workbook(path, data_only=True)
         ws_manager = wb["長官-摘要"]
-        assert _sheet_contains_text(ws_manager, "管支撐製裝 <=15Kg"), "manager cover leader rows missing"
+        assert _sheet_contains_text(ws_manager, "合約名稱怎麼來的？"), "manager cover claim question missing"
         assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover detail pointer missing"
         assert not _sheet_contains_text(ws_manager, "57-1/2B-A"), "manager cover should hide source designations"
         ws_leader = wb["長官-支撐分類"]
@@ -369,33 +372,30 @@ try:
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE) 5"~10"') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 5, "leader procurement should merge only SUS304 generic <=15kg supports into CS count"
         assert not _sheet_contains_text(ws_leader, "SUS304 管支撐製裝"), "leader summary should not expose separate SUS304 support fabrication rows"
-        assert not _sheet_contains_text(ws_leader, "57-1/2B-A"), "leader summary should not expose source designations"
+        assert _sheet_contains_text(ws_leader, "57-1/2B-A"), "leader summary should expose a source example"
         assert not _sheet_contains_text(ws_leader, "無命中"), "leader-facing summary should hide no-hit categories"
         ws_leader_detail = wb["查核-支撐明細"]
         assert not _sheet_contains_text(ws_leader_detail, "SUS304 管支撐製裝"), "leader detail should not expose separate SUS304 support fabrication rows"
         assert any(
-            ws_leader_detail.cell(row=r, column=8).value == "59-1.1/2B-B(S)"
-            and ws_leader_detail.cell(row=r, column=9).value == "59"
-            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 <= 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=14).value)
+            ws_leader_detail.cell(row=r, column=6).value == "59-1.1/2B-B(S)"
+            and ws_leader_detail.cell(row=r, column=1).value == "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg"
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=13).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 <=15kg support should be listed under CS fabrication detail"
         assert any(
-            ws_leader_detail.cell(row=r, column=8).value == "10-6B-16"
-            and ws_leader_detail.cell(row=r, column=9).value == "10"
-            and ws_leader_detail.cell(row=r, column=3).value == "CS 管支撐製裝 > 15 kg/組"
-            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=14).value)
+            ws_leader_detail.cell(row=r, column=6).value == "10-6B-16"
+            and ws_leader_detail.cell(row=r, column=1).value == "CS(熱鍍鋅)管支撐(Pipe Support)製裝>15Kg"
+            and "併入 CS" in str(ws_leader_detail.cell(row=r, column=13).value)
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 >15kg support should be listed under CS fabrication detail"
         assert any(
-            ws_leader_detail.cell(row=r, column=8).value == "57-1/2B-A"
-            and ws_leader_detail.cell(row=r, column=9).value == "57"
-            and ws_leader_detail.cell(row=r, column=2).value == "U-Bolt / Band"
+            ws_leader_detail.cell(row=r, column=6).value == "57-1/2B-A"
+            and str(ws_leader_detail.cell(row=r, column=1).value).startswith("U-Bolt & Band")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"
         assert not any(
-            ws_leader_detail.cell(row=r, column=8).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
-            and str(ws_leader_detail.cell(row=r, column=3).value or "").startswith("CS 管支撐製裝")
+            ws_leader_detail.cell(row=r, column=6).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
+            and str(ws_leader_detail.cell(row=r, column=1).value or "").startswith("CS(熱鍍鋅)")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "U-Bolt and Pipe Shoe rows should not be double counted as CS fabrication"
     finally:

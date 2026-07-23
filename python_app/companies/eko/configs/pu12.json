@@ -1,0 +1,73 @@
+{
+ "name": "托撐管架(單槽鋼臂)",
+ "structure": "托撐(單槽鋼)",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": null,
+ "fix_letters": [
+  "W",
+  "B",
+  "E"
+ ],
+ "components": [
+  {
+   "kind": "steel",
+   "name": "槽鋼",
+   "stype": "Channel",
+   "sec": [
+    "Channel",
+    "100*50*5"
+   ],
+   "len": "L",
+   "qty": 1
+  },
+  {
+   "kind": "ubolt",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": 12,
+   "w": 200,
+   "l": 150,
+   "when": [
+    "B",
+    "E"
+   ],
+   "qty": 1,
+   "hole": {
+    "n": 4,
+    "dia": 14,
+    "px": 100,
+    "py": 150,
+    "edge": 25
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "by_fix": {
+    "E": {
+     "name": "擴展螺栓",
+     "spec": "EB2-M12x70L",
+     "mat": "碳鋼(鍍鋅)",
+     "qty": 4
+    },
+    "B": {
+     "name": "螺栓連帽",
+     "spec": "M12x45L",
+     "mat": "A307-B 鍍鋅",
+     "qty": 4
+    }
+   }
+  }
+ ],
+ "extra_warnings": [
+  "PU12 適用2\"(含)以下並排垂直配管托撐；槽鋼臂 L≤700；管以U型螺栓(詳UB1)固定"
+ ],
+ "data_update_note": "依PU12.pdf件號表；槽鋼C100×50×5(len=L)+U型螺栓+底板12t×200×150(B/E)",
+ "code": "PU12",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

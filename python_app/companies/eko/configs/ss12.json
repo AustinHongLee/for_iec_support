@@ -1,0 +1,72 @@
+{
+ "company": "EKO",
+ "code": "SS12",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "斜撐重載托架(L100)",
+ "material": "A36",
+ "members": [
+  {
+   "role": "水平臂",
+   "sec": [
+    "Angle",
+    "100*100*10"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "base_plate": {
+  "t": 12,
+  "a": 210,
+  "b": 240,
+  "material": "A36",
+  "qty": 2,
+  "approx": true,
+  "hole": {
+   "n": 4,
+   "dia": 22,
+   "px": 150,
+   "py": 180,
+   "edge": 30
+  }
+ },
+ "plate_fixes": [
+  "B",
+  "E"
+ ],
+ "nut_bolt": {
+  "spec": "M20x50L",
+  "qty": 8
+ },
+ "exp_bolt": {
+  "spec": "EB2-M20-140L",
+  "qty": 8
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "E": "擴展螺栓+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "Hmax": null
+ },
+ "serial_limits": {
+  "1": 1050,
+  "2": 1200,
+  "3": 1350,
+  "4": 1500
+ },
+ "extra_warnings": [
+  "含30°斜撐,長度未列表需另計",
+  "SS12W須t1≥6mm否則另行設計"
+ ],
+ "designation_format": {
+  "pattern": "SS12{B/E/W}-序號-□L",
+  "example": "SS12B-1-1000L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "序號1~4僅改Lmax/荷重;斜撐長度未列表"
+}

@@ -1,0 +1,65 @@
+{
+ "company": "EKO",
+ "code": "SS25",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "倒ㄇH型鋼吊架",
+ "material": "A36",
+ "members": [
+  {
+   "role": "立柱",
+   "sec": [
+    "H Beam",
+    "150*150*7"
+   ],
+   "qty": 2,
+   "len": "H"
+  },
+  {
+   "role": "水平桿",
+   "sec": [
+    "H Beam",
+    "150*150*7"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "base_plate": {
+  "t": 12,
+  "a": 195,
+  "b": 290,
+  "material": "A283 Gr.C",
+  "qty": 2,
+  "hole": {
+   "n": 4,
+   "dia": 19,
+   "px": 125,
+   "py": 220,
+   "edge": 35
+  }
+ },
+ "plate_fixes": [
+  "B"
+ ],
+ "nut_bolt": {
+  "spec": "M16x60L",
+  "qty": 8
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "max_load_kg": 1500,
+  "Lmax": 3000,
+  "Hmax": 1600
+ },
+ "designation_format": {
+  "pattern": "SS25{B/W}-□H-□L",
+  "example": "SS25B-1000H-800L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21"
+}

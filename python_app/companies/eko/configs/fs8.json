@@ -1,0 +1,96 @@
+{
+ "code": "FS8",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "鋼管立柱+管夾CL5",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 1.5,
+   "col": "1",
+   "d": 15,
+   "anchor": "M12x200L",
+   "nut": "M12x50L",
+   "exp": "EB2-M12x110L"
+  },
+  {
+   "max": 8,
+   "col": "2",
+   "d": 15,
+   "anchor": "M12x200L",
+   "nut": "M12x50L",
+   "exp": "EB2-M12x110L"
+  },
+  {
+   "max": 24,
+   "col": "4",
+   "d": 19,
+   "anchor": "M16x250L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L"
+  }
+ ],
+ "components": [
+  {
+   "kind": "ref",
+   "name": "管夾",
+   "note": "詳見 CL5(依配管管徑)"
+  },
+  {
+   "kind": "pipe_col",
+   "name": "管支撐",
+   "size_field": "col",
+   "sch": "SCH.40",
+   "len": "H"
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": 9,
+   "w": 200,
+   "l": 135,
+   "material": "A36",
+   "hole": {
+    "n": 2,
+    "dia_field": "d",
+    "px": 150,
+    "py": 0,
+    "edge": 25
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "qty": 2
+  },
+  {
+   "kind": "pier",
+   "type": "CM1D",
+   "when": [
+    "A",
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "N",
+  "W"
+ ],
+ "limits": {
+  "Hmax": 2000,
+  "applicable": "1\"~24\""
+ },
+ "designation_format": {
+  "pattern": "FS8{A/B/E/N/W}-□\"-□H-□H1",
+  "example": "FS8N-4\"-600H-300H1"
+ },
+ "data_update_note": "依FS8.pdf;管夾以引用列示;底板200×135;水泥墩CM1D",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

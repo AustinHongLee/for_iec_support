@@ -1,0 +1,75 @@
+{
+ "name": "托撐管架(重型槽鋼)",
+ "structure": "托撐(雙槽鋼L+橫L1)",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": null,
+ "fix_letters": [
+  "W",
+  "B"
+ ],
+ "section_weights": {},
+ "components": [
+  {
+   "kind": "steel",
+   "name": "槽鋼(縱)",
+   "stype": "Channel",
+   "sec": [
+    "Channel",
+    "150*75*9"
+   ],
+   "len": "L",
+   "qty": 2
+  },
+  {
+   "kind": "steel",
+   "name": "槽鋼(橫)",
+   "stype": "Channel",
+   "sec": [
+    "Channel",
+    "150*75*9"
+   ],
+   "len": "L1",
+   "qty": 1
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": 12,
+   "w": 200,
+   "l": 215,
+   "material": "A283 Gr.C",
+   "when": [
+    "B"
+   ],
+   "qty": 1,
+   "hole": {
+    "n": 4,
+    "dia": 19,
+    "px": 100,
+    "py": 110,
+    "edge": 35
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "by_fix": {
+    "B": {
+     "name": "螺栓連帽",
+     "spec": "M16x60L",
+     "mat": "A307 Gr.B",
+     "qty": 4
+    }
+   }
+  }
+ ],
+ "extra_warnings": [
+  "PU23 無管徑代號(PU23{W/B}-□L-□L1)；適用2.1/2\"~14\"管線；Lmax=1400、L1max=900、L1現場切割配合",
+  "逐桿分列：縱槽鋼×2(len=L)、橫槽鋼×1(len=L1)"
+ ],
+ "data_update_note": "依PU23.pdf件號表；C150×75×9(縱×2=L,橫×1=L1)+底板12t×200×215(A283,僅B)+螺栓M16×60L",
+ "code": "PU23",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

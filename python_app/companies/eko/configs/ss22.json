@@ -1,0 +1,67 @@
+{
+ "company": "EKO",
+ "code": "SS22",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "槽鋼單懸臂托架",
+ "material": "A36",
+ "fix_scheme": "double",
+ "members": [
+  {
+   "role": "主桿槽鋼",
+   "sec": [
+    "Channel",
+    "150*75*9"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "extra_plates": [
+  {
+   "name": "鋼板(擋板)",
+   "t": 3,
+   "a": 50,
+   "b": 50,
+   "material": "A283 Gr.C",
+   "qty": 1
+  }
+ ],
+ "base_plate": {
+  "t": 9,
+  "a": 170,
+  "b": 290,
+  "material": "A283 Gr.C",
+  "qty": 1,
+  "hole": {
+   "n": 4,
+   "dia": 19,
+   "px": 100,
+   "py": 220,
+   "edge": 35
+  }
+ },
+ "plate_fixes": [
+  "B"
+ ],
+ "nut_bolt": {
+  "spec": "M16x60L",
+  "qty": 4
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "max_load_kg": 900,
+  "Lmax": 1000
+ },
+ "designation_format": {
+  "pattern": "SS22{S/V}{B/W}-□L",
+  "example": "SS22SB-700L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "雙字母;S向Lmax1100"
+}

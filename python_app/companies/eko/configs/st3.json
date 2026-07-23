@@ -1,0 +1,114 @@
+{
+ "name": "支撐套管(SUPPORT TRUNNION)",
+ "structure": "套管trunnion+托架",
+ "engine": "eko_generic",
+ "material": "A53 Gr.B",
+ "table_key": "pipe",
+ "fix_letters": null,
+ "table": [
+  {
+   "max": 2,
+   "trunnion": 2,
+   "B": 300,
+   "C": 90
+  },
+  {
+   "max": 3,
+   "trunnion": 2,
+   "B": 340,
+   "C": 130
+  },
+  {
+   "max": 4,
+   "trunnion": 3,
+   "B": 350,
+   "C": 150
+  },
+  {
+   "max": 5,
+   "trunnion": 4,
+   "B": 360,
+   "C": 160
+  },
+  {
+   "max": 6,
+   "trunnion": 4,
+   "B": 380,
+   "C": 170
+  },
+  {
+   "max": 8,
+   "trunnion": 6,
+   "B": 400,
+   "C": 200
+  },
+  {
+   "max": 10,
+   "trunnion": 6,
+   "B": 430,
+   "C": 220
+  },
+  {
+   "max": 12,
+   "trunnion": 6,
+   "B": 450,
+   "C": 250
+  },
+  {
+   "max": 14,
+   "trunnion": 8,
+   "B": 480,
+   "C": 270
+  },
+  {
+   "max": 16,
+   "trunnion": 8,
+   "B": 500,
+   "C": 300
+  },
+  {
+   "max": 18,
+   "trunnion": 8,
+   "B": 530,
+   "C": 320
+  },
+  {
+   "max": 20,
+   "trunnion": 10,
+   "B": 550,
+   "C": 350
+  },
+  {
+   "max": 24,
+   "trunnion": 10,
+   "B": 600,
+   "C": 400
+  }
+ ],
+ "components": [
+  {
+   "kind": "pipe",
+   "name": "支撐套管",
+   "size": "trunnion",
+   "sch": "SCH.40",
+   "len": "B",
+   "field_fit": true
+  },
+  {
+   "kind": "ref",
+   "name": "托架",
+   "spec": "詳 Cr",
+   "material": "A36",
+   "qty": 1
+  }
+ ],
+ "extra_warnings": [
+  "ST3 套管以DUMMY WELD焊於管外壁(不開孔)；長度現場配合(SUIT IN FIELD)，B為參考投影",
+  "套管尺寸依配管管徑查表(如4\"→套管3\")；托架CRADLE詳Cr圖(A36)"
+ ],
+ "data_update_note": "依ST3.pdf尺寸表(配管管徑→套管尺寸/B/C)；長度採B近似",
+ "code": "ST3",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

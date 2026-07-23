@@ -6,7 +6,11 @@ from core.cutting_optimizer import CuttingPlan, optimize_from_summary
 from core.material_summary import MaterialSummary, aggregate_project
 from core.project_aggregation import ProjectAnalysisResult
 
-from .calculation_sheets import _write_calc_reference_sheet, _write_calculation_basis_sheet
+from .calculation_sheets import (
+    _write_calc_reference_sheet,
+    _write_calculation_basis_sheet,
+    _write_unit_weight_sheet,
+)
 from .cutting_sheets import _write_cutting_detail_sheet, _write_cutting_visual_sheet
 from .leader_sheets import _write_leader_detail_sheet, _write_leader_procurement_sheet
 from .manager_cover_sheet import _write_manager_cover_sheet
@@ -19,6 +23,7 @@ FULL_WORKBOOK_SHEETS = (
     "長官-摘要",
     "專案摘要",
     "重量明細表",
+    "單組重量明細",
     "計算標準與假設",
     "長官-支撐分類",
     "查核-支撐明細",
@@ -33,11 +38,14 @@ WORKBOOK_PACKAGE_PROFILES = {
     "長官業主包": (
         "長官-摘要",
         "專案摘要",
+        "單組重量明細",
         "長官-支撐分類",
+        "查核-支撐明細",
     ),
     "工程明細包": (
         "專案摘要",
         "重量明細表",
+        "單組重量明細",
         "計算標準與假設",
         "重量分析",
     ),
@@ -154,6 +162,8 @@ def _write_project_sheet(
         _write_project_summary_sheet(ws, project, summary, cutting_plans, available_sheets=available_sheets)
     elif sheet_name == "重量明細表":
         _write_calculation_basis_sheet(ws, project)
+    elif sheet_name == "單組重量明細":
+        _write_unit_weight_sheet(ws, project)
     elif sheet_name == "計算標準與假設":
         _write_calc_reference_sheet(ws, project, export_context=export_context)
     elif sheet_name == "長官-支撐分類":
@@ -187,6 +197,7 @@ def _polish_workbook(wb) -> None:
         "長官-摘要": "1F3864",
         "專案摘要": "1F3864",
         "重量明細表": "2E5395",
+        "單組重量明細": "5B9BD5",
         "計算標準與假設": "DEE3EE",
         "長官-支撐分類": "BF8F00",
         "查核-支撐明細": "ED7D31",
@@ -196,7 +207,7 @@ def _polish_workbook(wb) -> None:
         "下料圖示": "4472C4",
     }
     for ws in wb.worksheets:
-        ws.sheet_view.zoomScale = 90 if ws.title in {"重量明細表", "查核-支撐明細"} else ws.sheet_view.zoomScale or 100
+        ws.sheet_view.zoomScale = 90 if ws.title in {"重量明細表", "單組重量明細", "查核-支撐明細"} else ws.sheet_view.zoomScale or 100
         ws.sheet_view.zoomScaleNormal = ws.sheet_view.zoomScale
         color = tab_colors.get(ws.title)
         if color:

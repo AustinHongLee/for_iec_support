@@ -1,0 +1,135 @@
+{
+ "code": "FS23",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "大型立管:鋼管立柱+底板+4片gusset+頂板",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 4,
+   "col": "6",
+   "col_sch": "SCH.40",
+   "blt": 9,
+   "bw": 280,
+   "tt": 6,
+   "tw": 300,
+   "exp": "EB2-M16x125L",
+   "ba": 200,
+   "bd": 19
+  },
+  {
+   "max": 6,
+   "col": "8",
+   "col_sch": "SCH.40",
+   "blt": 16,
+   "bw": 380,
+   "tt": 6,
+   "tw": 350,
+   "exp": "EB2-M20x150L",
+   "ba": 300,
+   "bd": 22
+  },
+  {
+   "max": 12,
+   "col": "12",
+   "col_sch": "STD.WT",
+   "blt": 16,
+   "bw": 500,
+   "tt": 9,
+   "tw": 450,
+   "exp": "EB2-M23x180L",
+   "ba": 410,
+   "bd": 26
+  },
+  {
+   "max": 18,
+   "col": "16",
+   "col_sch": "STD.WT",
+   "blt": 16,
+   "bw": 640,
+   "tt": 12,
+   "tw": 530,
+   "exp": "EB2-M23x180L",
+   "ba": 550,
+   "bd": 26
+  }
+ ],
+ "components": [
+  {
+   "kind": "pipe_col",
+   "name": "管支撐",
+   "size_field": "col",
+   "sch_field": "col_sch",
+   "len": "H",
+   "material": "A53Gr.B"
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t_field": "blt",
+   "w_field": "bw",
+   "l_field": "bw",
+   "material": "A36",
+   "hole": {
+    "n": 4,
+    "dia_field": "bd",
+    "px_field": "ba",
+    "py_field": "ba",
+    "edge": 40
+   }
+  },
+  {
+   "kind": "plate",
+   "name": "頂板",
+   "t_field": "tt",
+   "w_field": "tw",
+   "l_field": "tw",
+   "material": "A36"
+  },
+  {
+   "kind": "plate",
+   "name": "補強角板",
+   "t": 6,
+   "w": 55,
+   "l": 55,
+   "qty": 4,
+   "material": "A36",
+   "shape": {
+    "kind": "triangle",
+    "spec": "三角補強板(兩股=長×寬)"
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "qty": 4
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": [
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "E",
+  "W"
+ ],
+ "limits": {
+  "Hmax": 3000
+ },
+ "extra_warnings": [
+  "支撐高度 1500<H≤3000;頂部管支撐另見FS5;M23為原圖字樣(非常見規格)"
+ ],
+ "designation_format": {
+  "pattern": "FS23{E/W}-□\"-□H-□H1",
+  "example": "FS23E-1500H-50H1"
+ },
+ "data_update_note": "依FS23.pdf;E→擴展螺栓+水泥墩,W→焊接;gusset 6t×55×55×4",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

@@ -11,6 +11,7 @@ import csv
 import json
 import os
 import re
+from copy import deepcopy
 from dataclasses import replace
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -19,9 +20,9 @@ from PyQt6.QtWidgets import (
     QComboBox, QHeaderView, QStatusBar, QTabWidget, QSpinBox,
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
     QListWidget, QListWidgetItem, QRadioButton, QButtonGroup, QCheckBox,
-    QFrame, QScrollArea, QTextBrowser, QInputDialog, QMenu,
+    QAbstractItemView, QFrame, QScrollArea, QTextBrowser, QInputDialog, QMenu,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt6.QtGui import (
     QCursor, QFont, QColor, QIcon, QImage, QPixmap, QShortcut, QKeySequence,
 )
@@ -34,11 +35,16 @@ except ImportError:
 
 from core.calculator import (
     analyze_single, get_supported_types,
-    set_analysis_setting, get_analysis_setting,
+    set_analysis_setting, get_analysis_setting, uses_global_upper_material,
 )
 from core.models import AnalysisResult
 from core.parser import get_type_code, get_part, get_lookup_value
-from core.project_import import read_project_rows_xlsx
+from core.project_import import (
+    append_import_problem,
+    format_import_raw,
+    read_project_rows_xlsx,
+    write_project_import_template,
+)
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict, get_variation_axes
 from ui.theme import TOKENS, build_stylesheet
@@ -49,6 +55,10 @@ from ui.project_header import ProjectHeader
 from ui.data_maintenance_page import DataMaintenancePage
 from ui.support_master_table import SupportMasterTable
 from ui.bom_detail_panel import BomDetailPanel, is_header_visible_for_view
+from ui.project_import_dialog import (
+    ProjectImportGuideDialog,
+    ProjectImportPreviewDialog,
+)
 
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -83,6 +93,10 @@ _RESULT_DATA_ROW_HEIGHT = 28
 _RESULT_GROUP_ROW_HEIGHT = 30
 _RESULT_SUBTOTAL_ROW_HEIGHT = 26
 _UNKNOWN_MATERIAL_LABEL = "未定(用預設概算)"
+_DEFAULT_ESTIMATE_MATERIAL = "SUS304"
+_UNCONFIRMED_GLOBAL_MATERIAL_LABEL = (
+    f"未確認（暫用 {_DEFAULT_ESTIMATE_MATERIAL} 概算）"
+)
 
 _PROJECT_ROW_ALIASES = {
     "drawing_line_number": (
@@ -123,6 +137,24 @@ class MainWindow(QMainWindow):
         self._results = []
         self._project_result = None
         self._selected_index = -1
+        self._last_import_report = {}
+        self._analysis_has_run = False
+        self._analysis_in_progress = False
+        self._export_in_progress = False
+        self._pending_weight_delta_from = None
+        self._pending_weight_delta_reason = ""
+        self._locator_matches = []
+        self._locator_match_position = -1
+        self._undo_snapshot = None
+        self._undo_restoring = False
+        self._pending_undo_completion_message = ""
+        self._last_global_material_text = _UNCONFIRMED_GLOBAL_MATERIAL_LABEL
+        self._global_material_confirmed = False
+        set_analysis_setting("upper_material", _DEFAULT_ESTIMATE_MATERIAL)
+        self._auto_analyze_timer = QTimer(self)
+        self._auto_analyze_timer.setSingleShot(True)
+        self._auto_analyze_timer.setInterval(450)
+        self._auto_analyze_timer.timeout.connect(self._run_auto_analysis)
         self._apply_stylesheet()
         self._init_ui()
 
@@ -162,6 +194,9 @@ class MainWindow(QMainWindow):
         self.data_maintenance_page.statusMessage.connect(
             lambda text: self._set_status("ok", text)
         )
+        self.data_maintenance_page.configSaved.connect(
+            self._on_type_config_saved
+        )
         self.main_tabs.addTab(self.data_maintenance_page, "🛠 數據維護")
 
         # Tab 5: 支撐架構
@@ -190,6 +225,109 @@ class MainWindow(QMainWindow):
             "}"
         )
         self.statusBar().showMessage(text)
+
+    def _capture_undo_state(
+        self,
+        description: str,
+        *,
+        material_text: str | None = None,
+    ) -> None:
+        """Keep exactly one safe project snapshot before a user mutation."""
+        if self._undo_restoring or not hasattr(self, "btn_undo"):
+            return
+        self._pending_undo_completion_message = ""
+        current_material = (
+            material_text
+            if material_text is not None
+            else self.material_combo.currentText()
+        )
+        self._undo_snapshot = {
+            "description": str(description),
+            "project_rows": deepcopy(self._project_rows),
+            "selected_index": self._selected_index,
+            "global_material_text": str(current_material),
+            "global_material_confirmed": self._global_material_confirmed,
+            "project_name": self.project_header.project_name_label.text(),
+            "analysis_has_run": self._analysis_has_run,
+        }
+        self.btn_undo.setEnabled(True)
+        self.btn_undo.setToolTip(f"復原上一步：{description}（Ctrl+Z）")
+
+    def _rebuild_item_list_from_project_rows(self) -> None:
+        self.item_list.blockSignals(True)
+        try:
+            self.item_list.clear()
+            for index, row in enumerate(self._project_rows):
+                item = QListWidgetItem(row.designation)
+                item.setCheckState(
+                    Qt.CheckState.Checked
+                    if row.enabled
+                    else Qt.CheckState.Unchecked
+                )
+                self._update_item_display(index, item)
+                self.item_list.addItem(item)
+        finally:
+            self.item_list.blockSignals(False)
+        self._apply_input_filter()
+
+    def _on_undo(self) -> None:
+        snapshot = self._undo_snapshot
+        if not snapshot:
+            return
+        description = snapshot["description"]
+        self._undo_snapshot = None
+        self.btn_undo.setEnabled(False)
+        self.btn_undo.setToolTip("目前沒有可復原的專案變更（Ctrl+Z）")
+        self._auto_analyze_timer.stop()
+        self._undo_restoring = True
+        try:
+            material_text = snapshot["global_material_text"]
+            self._global_material_confirmed = snapshot[
+                "global_material_confirmed"
+            ]
+            effective_material = (
+                material_text
+                if self._global_material_confirmed
+                else _DEFAULT_ESTIMATE_MATERIAL
+            )
+            set_analysis_setting("upper_material", effective_material)
+            self.material_combo.blockSignals(True)
+            self.material_combo.setCurrentText(material_text)
+            self.material_combo.blockSignals(False)
+            self._last_global_material_text = material_text
+
+            self._project_rows = deepcopy(snapshot["project_rows"])
+            self._rebuild_item_list_from_project_rows()
+            self.project_header.set_project_name(snapshot["project_name"])
+            self._analysis_has_run = bool(snapshot["analysis_has_run"])
+            self._selected_index = -1
+            self._invalidate_analysis_outputs(f"已復原：{description}")
+
+            selected_index = int(snapshot["selected_index"])
+            if self._project_rows:
+                if not (0 <= selected_index < len(self._project_rows)):
+                    selected_index = 0
+                self.item_list.setCurrentRow(selected_index)
+            else:
+                self.side_panel.clear_panel()
+
+            if self._analysis_has_run and self._project_rows:
+                self._pending_undo_completion_message = description
+                self._auto_analyze_timer.start()
+                self._update_export_readiness()
+                self.side_panel.set_apply_state(
+                    f"已復原「{description}」，正在自動重新分析…",
+                    "busy",
+                )
+                self._set_status(
+                    "busy",
+                    f"已復原「{description}」，正在自動重新分析…",
+                )
+            else:
+                self._pending_undo_completion_message = ""
+                self._set_status("ok", f"已復原「{description}」")
+        finally:
+            self._undo_restoring = False
 
     def _install_shortcuts(self):
         """Keyboard shortcuts for high-volume input work."""
@@ -220,6 +358,11 @@ class MainWindow(QMainWindow):
                 activated=self._focus_result_filter,
             ),
             QShortcut(
+                QKeySequence("Ctrl+Z"),
+                self,
+                activated=self._on_undo,
+            ),
+            QShortcut(
                 QKeySequence("Escape"),
                 self.result_filter_input,
                 activated=self.result_filter_input.clear,
@@ -239,6 +382,11 @@ class MainWindow(QMainWindow):
             current_material=get_analysis_setting("upper_material", "SUS304"),
         )
         self.material_combo = self.project_header.material_combo
+        self.material_combo.insertItem(0, _UNCONFIRMED_GLOBAL_MATERIAL_LABEL)
+        self.material_combo.setCurrentIndex(0)
+        self.material_combo.setToolTip(
+            "未確認時暫用 SUS304 概算；主動選定材質後，繼承列才算確認完成"
+        )
         self.material_combo.currentTextChanged.connect(self._on_material_changed)
         self.project_header.enable_mode_selector()
         self.project_header.mode_combo.currentTextChanged.connect(
@@ -253,6 +401,12 @@ class MainWindow(QMainWindow):
         info_label.setStyleSheet("color: #555; font-size: 12px;")
         toolbar.addWidget(info_label)
         toolbar.addStretch()
+
+        self.btn_undo = QPushButton("↶ 復原")
+        self.btn_undo.setEnabled(False)
+        self.btn_undo.setToolTip("目前沒有可復原的專案變更（Ctrl+Z）")
+        self.btn_undo.clicked.connect(self._on_undo)
+        toolbar.addWidget(self.btn_undo)
 
         self.btn_config = QPushButton("⚙ 數據維護")
         self.btn_config.clicked.connect(self._on_open_config)
@@ -277,7 +431,9 @@ class MainWindow(QMainWindow):
         self.side_panel.advanceRequested.connect(self._advance_to_next_pending)
         splitter.addWidget(self.side_panel)
 
-        splitter.setSizes([260, 680, 300])
+        left_panel.setMinimumWidth(310)
+        self.side_panel.setMinimumWidth(340)
+        splitter.setSizes([340, 820, 380])
         page_layout.addWidget(splitter)
         self._update_material_completion()
 
@@ -290,7 +446,7 @@ class MainWindow(QMainWindow):
         # 新增列
         add_row = QHBoxLayout()
         self.add_input = QLineEdit()
-        self.add_input.setPlaceholderText("型號，或 Drawing 流水號 數量 單位 型號")
+        self.add_input.setPlaceholderText("單筆新增型號，例如 57-1B-A")
         self.add_input.setFont(QFont("Consolas", 11))
         self.add_input.returnPressed.connect(self._on_add_item)
         add_row.addWidget(self.add_input)
@@ -299,6 +455,25 @@ class MainWindow(QMainWindow):
         btn_add.clicked.connect(self._on_add_item)
         add_row.addWidget(btn_add)
         layout.addLayout(add_row)
+
+        input_filter_scope = QLabel("篩選輸入清單（不影響右側分析結果）")
+        input_filter_scope.setStyleSheet(
+            f"color: {TOKENS['color']['metric_label']}; font-size: 11px;"
+        )
+        layout.addWidget(input_filter_scope)
+        filter_row = QHBoxLayout()
+        self.input_filter = QLineEdit()
+        self.input_filter.setPlaceholderText("Drawing／流水號／型號")
+        self.input_filter.setClearButtonEnabled(True)
+        self.input_filter.textChanged.connect(self._apply_input_filter)
+        filter_row.addWidget(self.input_filter, 1)
+        self.input_filter_count = QLabel("0 筆")
+        self.input_filter_count.setStyleSheet(
+            f"color: {TOKENS['color']['text_muted']}; "
+            f"font-size: {TOKENS['font']['metric_label']}px;"
+        )
+        filter_row.addWidget(self.input_filter_count)
+        layout.addLayout(filter_row)
 
         # 清單
         self.item_list = QListWidget()
@@ -309,39 +484,34 @@ class MainWindow(QMainWindow):
         self.item_list.customContextMenuRequested.connect(
             self._show_item_context_menu
         )
-        self.item_list.setFont(QFont("Consolas", 10))
+        self.item_list.setFont(QFont("Microsoft JhengHei UI", 10))
+        self.item_list.setSpacing(1)
         layout.addWidget(self.item_list)
 
-        # 按鈕列
-        btn_row1 = QHBoxLayout()
-        btn_batch = QPushButton("批次貼上...")
+        # 常用操作留在第一層，其餘收進選單，避免按鈕牆壓縮清單。
+        action_row = QHBoxLayout()
+        btn_batch = QPushButton("貼上多筆")
         btn_batch.clicked.connect(self._on_batch_paste)
-        btn_row1.addWidget(btn_batch)
-        btn_qty = QPushButton("流水號/組數...")
-        btn_qty.clicked.connect(self._on_set_quantities)
-        btn_row1.addWidget(btn_qty)
-        layout.addLayout(btn_row1)
-
-        btn_row2 = QHBoxLayout()
-        btn_load = QPushButton("從檔案載入...")
-        btn_load.clicked.connect(self._on_load_file)
-        btn_row2.addWidget(btn_load)
-        btn_save_list = QPushButton("儲存清單...")
-        btn_save_list.clicked.connect(self._on_save_file)
-        btn_row2.addWidget(btn_save_list)
-        layout.addLayout(btn_row2)
-
-        btn_row3 = QHBoxLayout()
-        btn_del = QPushButton("刪除選中")
-        btn_del.clicked.connect(self._on_delete_item)
-        btn_row3.addWidget(btn_del)
-        btn_clear = QPushButton("全部清除")
-        btn_clear.clicked.connect(self._on_clear_all)
-        btn_row3.addWidget(btn_clear)
-        layout.addLayout(btn_row3)
+        btn_batch.setToolTip("貼上純文字、Excel 儲存格或逗號分隔資料")
+        action_row.addWidget(btn_batch)
+        btn_import = QPushButton("匯入 Excel／CSV")
+        btn_import.clicked.connect(self._on_load_file)
+        btn_import.setToolTip("匯入原始 Support MTO、已儲存清單或標準範本")
+        action_row.addWidget(btn_import)
+        more_button = QPushButton("清單工具 ▾")
+        more_menu = QMenu(more_button)
+        more_menu.addAction("編輯 Drawing／流水號／數量…", self._on_set_quantities)
+        more_menu.addAction("儲存目前清單…", self._on_save_file)
+        more_menu.addAction("下載空白匯入範本…", self._on_save_import_template)
+        more_menu.addSeparator()
+        more_menu.addAction("刪除選中", self._on_delete_item)
+        more_menu.addAction("全部清除", self._on_clear_all)
+        more_button.setMenu(more_menu)
+        action_row.addWidget(more_button)
+        layout.addLayout(action_row)
 
         # 分析按鈕
-        self.btn_analyze = QPushButton("▶ 開始分析")
+        self.btn_analyze = QPushButton("▶ 分析整份清單")
         self.btn_analyze.setStyleSheet(
             "QPushButton { background-color: #1976D2; color: white; "
             "border: 1px solid #1565C0; padding: 8px; "
@@ -378,7 +548,7 @@ class MainWindow(QMainWindow):
         overview_splitter.addWidget(self.bom_detail_panel)
         overview_splitter.setSizes([360, 260])
         overview_layout.addWidget(overview_splitter)
-        self.result_views.addTab(overview, "支撐總覽")
+        self.result_views.addTab(overview, "支撐總覽（一列一筆）")
 
         detail_view = QWidget()
         detail_layout = QVBoxLayout(detail_view)
@@ -398,7 +568,7 @@ class MainWindow(QMainWindow):
         self.result_table.verticalHeader().setDefaultSectionSize(_RESULT_DATA_ROW_HEIGHT)
         self.result_table.verticalHeader().setVisible(False)
         detail_layout.addWidget(self.result_table)
-        self.result_views.addTab(detail_view, "全部明細")
+        self.result_views.addTab(detail_view, "全部明細（零件級）")
         self.result_views.currentChanged.connect(self._apply_result_filter)
         layout.addWidget(self.result_views)
 
@@ -408,6 +578,17 @@ class MainWindow(QMainWindow):
         self.export_format.addItems(["Excel (.xlsx)", "Excel 分包資料夾", "CSV (.csv)", "PDF (.pdf)"])
         export_row.addWidget(QLabel("匯出格式:"))
         export_row.addWidget(self.export_format)
+        self.export_readiness_label = QLabel("尚未建立清單")
+        self.export_readiness_label.setMinimumWidth(210)
+        self.export_readiness_label.setAlignment(
+            Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
+        )
+        self._set_export_readiness_label(
+            "尚未建立清單",
+            "info",
+            "先在左側新增或匯入支撐清單。",
+        )
+        export_row.addWidget(self.export_readiness_label, 1)
         self.btn_export = QPushButton("匯出結果")
         self.btn_export.setEnabled(False)
         self.btn_export.clicked.connect(self._on_export)
@@ -418,36 +599,106 @@ class MainWindow(QMainWindow):
         return panel
 
     def _build_result_filter_row(self):
-        row = QHBoxLayout()
-        row.setSpacing(6)
+        area = QVBoxLayout()
+        area.setSpacing(5)
 
-        label = QLabel("搜尋:")
-        label.setStyleSheet("color: #607080; font-size: 12px;")
-        row.addWidget(label)
+        locator_row = QHBoxLayout()
+        locator_row.setSpacing(5)
+        locator_label = QLabel("定位結果:")
+        locator_label.setStyleSheet("color: #607080; font-size: 12px;")
+        locator_label.setToolTip("只移動到匹配項目，不會隱藏其他結果")
+        locator_row.addWidget(locator_label)
 
         self.result_filter_input = QLineEdit()
-        self.result_filter_input.setPlaceholderText("Drawing / 流水號 / 型號 / 品名 / 規格 / 材質 / 零件ID / 庫存ID / 說明")
+        self.result_filter_input.setPlaceholderText("Drawing／流水號／型號／品名／說明")
         self.result_filter_input.setClearButtonEnabled(True)
-        self.result_filter_input.textChanged.connect(self._apply_result_filter)
-        row.addWidget(self.result_filter_input, 1)
-
-        self.show_advanced_columns_checkbox = QCheckBox("顯示進階欄")
-        self.show_advanced_columns_checkbox.toggled.connect(
-            self._apply_result_column_visibility
+        self.result_filter_input.setToolTip(
+            "輸入後定位到第一筆；按 Enter 或「下一筆」繼續尋找。其他列不會被隱藏。"
         )
-        row.addWidget(self.show_advanced_columns_checkbox)
+        self.result_filter_input.textChanged.connect(self._on_result_locator_changed)
+        self.result_filter_input.returnPressed.connect(self._locate_next_result)
+        self.result_filter_input.setMaximumWidth(270)
+        locator_row.addWidget(self.result_filter_input, 1)
+
+        previous_match = QPushButton("‹")
+        previous_match.setFixedWidth(30)
+        previous_match.setToolTip("上一筆匹配結果")
+        previous_match.clicked.connect(self._locate_previous_result)
+        locator_row.addWidget(previous_match)
+        next_match = QPushButton("›")
+        next_match.setFixedWidth(30)
+        next_match.setToolTip("下一筆匹配結果（Enter）")
+        next_match.clicked.connect(self._locate_next_result)
+        locator_row.addWidget(next_match)
+        self.result_locator_count_label = QLabel("")
+        self.result_locator_count_label.setMinimumWidth(64)
+        self.result_locator_count_label.setStyleSheet(
+            f"color: {TOKENS['color']['text_muted']}; font-size: 11px;"
+        )
+        locator_row.addWidget(self.result_locator_count_label)
+        locator_row.addStretch()
+
+        view_label = QLabel("欄位顯示:")
+        view_label.setStyleSheet("color: #607080; font-size: 12px;")
+        locator_row.addWidget(view_label)
 
         self.result_view_preset = QComboBox()
         self.result_view_preset.addItems(["工程", "採購", "查核"])
         self.result_view_preset.currentTextChanged.connect(
             self._apply_result_view_preset
         )
-        row.addWidget(self.result_view_preset)
+        locator_row.addWidget(self.result_view_preset)
 
-        self.pending_material_filter_button = QPushButton("僅看待確認")
-        self.pending_material_filter_button.setCheckable(True)
-        self.pending_material_filter_button.toggled.connect(self._apply_result_filter)
-        row.addWidget(self.pending_material_filter_button)
+        self.show_advanced_columns_checkbox = QCheckBox("全部欄位")
+        self.show_advanced_columns_checkbox.setToolTip(
+            "顯示目前角色視圖隱藏的進階欄位"
+        )
+        self.show_advanced_columns_checkbox.toggled.connect(
+            self._apply_result_column_visibility
+        )
+        locator_row.addWidget(self.show_advanced_columns_checkbox)
+        area.addLayout(locator_row)
+
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(5)
+        filter_label = QLabel("篩選結果:")
+        filter_label.setStyleSheet("color: #607080; font-size: 12px;")
+        filter_label.setToolTip("逐欄縮小結果範圍，會隱藏不符合條件的列")
+        filter_row.addWidget(filter_label)
+
+        self.result_column_filters = {}
+        filter_specs = (
+            ("drawing", "Drawing"),
+            ("serial", "流水號"),
+            ("designation", "型號"),
+            ("material", "材質"),
+        )
+        for key, placeholder in filter_specs:
+            combo = QComboBox()
+            combo.setEditable(True)
+            combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+            combo.lineEdit().setPlaceholderText(placeholder)
+            combo.setMinimumWidth(92)
+            combo.setCurrentIndex(-1)
+            combo.currentTextChanged.connect(self._apply_result_filter)
+            self.result_column_filters[key] = combo
+            filter_row.addWidget(combo, 1)
+
+        status_combo = QComboBox()
+        status_combo.addItem("全部狀態", "")
+        status_combo.addItem("✓ 正常", "✓")
+        status_combo.addItem("⚠ 待確認", "⚠")
+        status_combo.addItem("✗ 錯誤", "✗")
+        status_combo.addItem("— 未分析", "—")
+        status_combo.currentIndexChanged.connect(self._apply_result_filter)
+        self.result_column_filters["status"] = status_combo
+        filter_row.addWidget(status_combo)
+
+        clear_filters = QPushButton("清除條件")
+        clear_filters.setToolTip("清除逐欄篩選；不會清除上方定位文字")
+        clear_filters.clicked.connect(self._clear_result_filters)
+        filter_row.addWidget(clear_filters)
+        filter_row.addStretch()
 
         self.result_filter_count_label = QLabel("顯示 0 列")
         self.result_filter_count_label.setMinimumWidth(86)
@@ -457,8 +708,16 @@ class MainWindow(QMainWindow):
         self.result_filter_count_label.setStyleSheet(
             "color: #607080; font-size: 12px;"
         )
-        row.addWidget(self.result_filter_count_label)
-        return row
+        filter_row.addWidget(self.result_filter_count_label)
+        area.addLayout(filter_row)
+
+        self.active_filter_bar = QWidget()
+        self.active_filter_chip_layout = QHBoxLayout(self.active_filter_bar)
+        self.active_filter_chip_layout.setContentsMargins(0, 0, 0, 0)
+        self.active_filter_chip_layout.setSpacing(5)
+        self.active_filter_bar.hide()
+        area.addWidget(self.active_filter_bar)
+        return area
 
     def _build_result_summary_bar(self):
         color = TOKENS["color"]
@@ -499,8 +758,17 @@ class MainWindow(QMainWindow):
         self.summary_material_label = self._make_summary_value_label(
             "--", color["status_warn"], font["metric_value"]
         )
+        self.weight_delta_label = QLabel("")
+        self.weight_delta_label.setFont(
+            QFont("Microsoft JhengHei UI", font["metric_label"], QFont.Weight.Bold)
+        )
+        self.weight_delta_label.setStyleSheet(
+            f"color: {color['primary']}; background: transparent;"
+        )
+        self.weight_delta_label.hide()
 
         row.addLayout(self._make_summary_metric("總重量", self.total_weight_label))
+        row.addWidget(self.weight_delta_label)
         row.addWidget(self._make_summary_separator())
         row.addLayout(self._make_summary_metric("成功項目", self.summary_success_label))
         row.addWidget(self._make_summary_separator())
@@ -630,6 +898,8 @@ class MainWindow(QMainWindow):
         drawing_line_number: str = "",
         display_designation: str = "",
     ):
+        if invalidate:
+            self._capture_undo_state("新增支撐")
         idx = len(self._project_rows)
         self._project_rows.append(
             ProjectInputRow(
@@ -649,6 +919,7 @@ class MainWindow(QMainWindow):
         )
         self._update_item_display(idx, item_widget)
         self.item_list.addItem(item_widget)
+        self._apply_input_filter()
         if invalidate:
             self._invalidate_analysis_outputs("輸入清單已變更，請重新分析")
 
@@ -659,31 +930,39 @@ class MainWindow(QMainWindow):
         if item_widget is None:
             return
         row = self._project_rows[idx]
-        source_bits = [part for part in (row.drawing_line_number, row.serial) if part]
-        text = f"{' | '.join(source_bits)} | {row.designation}" if source_bits else row.designation
+        source_bits = []
+        if row.drawing_line_number:
+            source_bits.append(row.drawing_line_number)
+        if row.serial:
+            source_bits.append(f"#{row.serial}")
+        source_line = "  ·  ".join(source_bits) or "未指定 Drawing／流水號"
+        designation = row.display_designation or row.designation
         overrides = row.overrides or {}
+        material_pending = self._row_material_pending(row)
         tags = []
-        if row.quantity != 1 or row.serial:
-            tags.append(f"{row.quantity}{row.unit or '組'}")
+        tags.append(f"{row.quantity} {row.unit or '組'}")
         if overrides.get("connection"):
             tags.append("Tee" if overrides["connection"] == "tee" else "Elbow")
         if overrides.get("upper_material"):
             tags.append(overrides["upper_material"])
         if overrides.get("upper_material_unknown"):
             tags.append("⚠ 材質未定")
+        elif material_pending:
+            tags.append("⚠ 全域材質未確認")
         if any(overrides.get(k) for k in ("pipe_size", "schedule", "l_value")):
             tags.append("自訂值")
 
-        if tags:
-            item_widget.setText(f"{text}  ◆ [{', '.join(tags)}]")
+        primary_line = f"{designation}  ·  {'  ·  '.join(tags)}"
+        item_widget.setText(f"{primary_line}\n{source_line}")
+        item_widget.setSizeHint(QSize(0, 48))
+        if overrides:
             color = (
                 TOKENS["color"]["status_warn"]
-                if overrides.get("upper_material_unknown")
+                if material_pending
                 else TOKENS["color"]["primary"]
             )
             item_widget.setForeground(QColor(color))
         else:
-            item_widget.setText(text)
             item_widget.setForeground(QColor("black"))
         item_widget.setToolTip(
             f"Drawing line number: {row.drawing_line_number or '-'}\n"
@@ -705,14 +984,53 @@ class MainWindow(QMainWindow):
             )
             self._update_item_display(idx, item_widget)
         self.item_list.blockSignals(False)
+        self._apply_input_filter()
+
+    def _apply_input_filter(self):
+        """Filter the dense input list without changing project-row indices."""
+        if not hasattr(self, "item_list"):
+            return
+        query = self.input_filter.text().strip().casefold() if hasattr(
+            self, "input_filter"
+        ) else ""
+        terms = [term for term in query.split() if term]
+        visible = 0
+        for index, row in enumerate(self._project_rows):
+            haystack = " ".join(
+                str(value)
+                for value in (
+                    row.drawing_line_number,
+                    row.serial,
+                    row.display_designation,
+                    row.designation,
+                    row.quantity,
+                    row.unit,
+                )
+            ).casefold()
+            show = all(term in haystack for term in terms)
+            item = self.item_list.item(index)
+            if item is not None:
+                item.setHidden(not show)
+            visible += int(show)
+        if hasattr(self, "input_filter_count"):
+            total = len(self._project_rows)
+            self.input_filter_count.setText(
+                f"{visible}/{total} 筆" if query else f"{total} 筆"
+            )
 
     def _on_batch_paste(self):
         """批次貼上多筆"""
         dlg = QDialog(self)
-        dlg.setWindowTitle("批次貼上")
-        dlg.setMinimumSize(400, 300)
+        dlg.setWindowTitle("貼上多筆支撐")
+        dlg.setMinimumSize(520, 360)
         lay = QVBoxLayout(dlg)
-        lay.addWidget(QLabel("每行一筆支撐編碼；也可貼 Drawing line number,流水號.sort,數量,單位,型號:"))
+        guide = QLabel(
+            "<b>從 Excel 複製多列後直接貼上即可。</b><br>"
+            "最簡格式：每行一個型號<br>"
+            "完整格式：Drawing line number、流水號.sort、數量、單位、型號"
+        )
+        guide.setWordWrap(True)
+        lay.addWidget(guide)
         text_edit = QTextEdit()
         text_edit.setFont(QFont("Consolas", 11))
         text_edit.setPlaceholderText(
@@ -724,7 +1042,7 @@ class MainWindow(QMainWindow):
         count_label = QLabel("已輸入 0 筆")
         count_label.setStyleSheet("color: #666; font-size: 12px;")
         lay.addWidget(count_label)
-        btn = QPushButton("加入清單")
+        btn = QPushButton("加入這些支撐")
         btn.clicked.connect(dlg.accept)
         lay.addWidget(btn)
 
@@ -779,6 +1097,9 @@ class MainWindow(QMainWindow):
             except ValueError as exc:
                 QMessageBox.warning(self, "批次格式錯誤", str(exc))
                 return
+            if not rows:
+                return
+            self._capture_undo_state("批次貼上")
             for row in rows:
                 self._add_item_to_list(
                     row.designation,
@@ -794,8 +1115,15 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"已加入 {len(rows)} 筆支撐編碼")
 
     def _on_load_file(self):
+        guide = ProjectImportGuideDialog(self)
+        if not guide.exec():
+            return
+        if guide.selected_action == "template":
+            self._on_save_import_template()
+            return
+
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "載入支撐清單", "",
+            self, "選擇專案支撐清單", "",
             "Excel/CSV/Text (*.xlsx *.xlsm *.csv *.txt);;Excel (*.xlsx *.xlsm);;CSV (*.csv);;文字檔 (*.txt);;所有檔案 (*)"
         )
         if not filepath:
@@ -811,24 +1139,22 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "載入支撐清單", "檔案內沒有可載入的支撐編碼。")
             return
 
-        replace_existing = False
-        if self._project_rows:
-            choice = QMessageBox.question(
-                self,
-                "載入支撐清單",
-                "要取代目前清單嗎？\n\n選「否」會將檔案內容追加到目前清單後方。",
-                QMessageBox.StandardButton.Yes
-                | QMessageBox.StandardButton.No
-                | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Yes,
-            )
-            if choice == QMessageBox.StandardButton.Cancel:
-                return
-            replace_existing = choice == QMessageBox.StandardButton.Yes
+        preview = ProjectImportPreviewDialog(
+            filepath,
+            rows,
+            existing_count=len(self._project_rows),
+            import_report=self._last_import_report,
+            parent=self,
+        )
+        if not preview.exec():
+            return
+        replace_existing = preview.replace_existing
+        self._capture_undo_state("匯入檔案")
 
         if replace_existing:
             self._project_rows.clear()
             self.item_list.clear()
+            self._reset_global_material_confirmation()
 
         for row in rows:
             self._add_item_to_list(
@@ -842,10 +1168,37 @@ class MainWindow(QMainWindow):
                 drawing_line_number=row.drawing_line_number,
                 display_designation=row.display_designation,
             )
-        self._invalidate_analysis_outputs("載入檔案已更新清單，請重新分析")
+        self._invalidate_analysis_outputs(
+            "載入檔案已更新清單，請重新分析",
+            track_weight_delta=not replace_existing,
+        )
         self.project_header.set_project_name(os.path.basename(filepath))
         action = "取代並載入" if replace_existing else "追加載入"
         self.statusBar().showMessage(f"已{action} {len(rows)} 筆: {filepath}")
+
+    def _on_save_import_template(self):
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "儲存專案清單匯入範本",
+            "IEC_支撐清單匯入範本.xlsx",
+            "Excel (*.xlsx)",
+        )
+        if not filepath:
+            return
+        if not filepath.lower().endswith(".xlsx"):
+            filepath += ".xlsx"
+        try:
+            write_project_import_template(filepath)
+        except Exception as exc:
+            QMessageBox.critical(self, "範本建立失敗", str(exc))
+            return
+        QMessageBox.information(
+            self,
+            "範本已建立",
+            "已建立空白匯入範本。\n\n黃色欄位「型號、數量」必填；"
+            "Drawing、流水號與單位建議保留，方便後續追溯。\n\n"
+            f"{filepath}",
+        )
 
     def _on_save_file(self):
         if not self._project_rows:
@@ -894,6 +1247,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"已儲存 {len(self._project_rows)} 筆清單: {filepath}")
 
     def _read_project_rows_file(self, filepath: str) -> list[ProjectInputRow]:
+        self._last_import_report = {}
         ext = os.path.splitext(filepath)[1].lower()
         if ext in {".xlsx", ".xlsm"}:
             return self._read_project_rows_xlsx(filepath)
@@ -918,7 +1272,17 @@ class MainWindow(QMainWindow):
     def _read_project_rows_csv(self, lines: list[str]) -> list[ProjectInputRow]:
         rows: list[ProjectInputRow] = []
         reader = csv.DictReader(lines)
+        self._last_import_report = {
+            "source_rows": 0,
+            "skipped_missing_designation": 0,
+            "skipped_invalid_quantity": 0,
+            "quantity_defaulted": 0,
+            "unit_defaulted": 0,
+            "problems": [],
+        }
         for idx, raw in enumerate(reader, start=2):
+            self._last_import_report["source_rows"] += 1
+            raw_preview = format_import_raw(raw)
             designation = self._project_field_value(raw, _PROJECT_ROW_ALIASES["designation"])
             if not designation:
                 designation = (
@@ -930,40 +1294,178 @@ class MainWindow(QMainWindow):
                     )
                 )
             if not designation:
+                self._last_import_report["skipped_missing_designation"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="error",
+                    field="型號",
+                    issue="找不到可辨識的支撐型號；此列不會匯入",
+                    raw=raw_preview,
+                    resolution="在型號欄填入例如 57-1B-A，或確認說明／料號欄是否正確。",
+                )
                 continue
-            quantity_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["quantity"]) or "1"
+            quantity_value = self._project_field_value(raw, _PROJECT_ROW_ALIASES["quantity"])
+            unit_value = self._project_field_value(raw, _PROJECT_ROW_ALIASES["unit"])
+            if not quantity_value:
+                self._last_import_report["quantity_defaulted"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="數量",
+                    issue="數量空白；本次暫按 1 組匯入",
+                    raw=raw_preview,
+                    resolution="回原檔補上大於 0 的整數；若確實只有一組，請明確填 1。",
+                )
+            if not unit_value:
+                self._last_import_report["unit_defaulted"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="info",
+                    field="單位",
+                    issue="單位空白；本次使用「組」",
+                    raw=raw_preview,
+                    resolution="建議回原檔填入組、set、ea 等實際單位。",
+                )
+            quantity_text = quantity_value or "1"
+            try:
+                quantity = self._parse_list_quantity(quantity_text, idx)
+            except ValueError:
+                self._last_import_report["skipped_invalid_quantity"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="error",
+                    field="數量",
+                    issue=f"數量 {quantity_text!r} 不是大於 0 的整數；此列不會匯入",
+                    raw=raw_preview,
+                    resolution="改成 1、2、3 等大於 0 的整數。",
+                )
+                continue
             enabled_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["enabled"]) or "1"
             overrides_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["overrides"])
+            drawing = self._project_field_value(
+                raw, _PROJECT_ROW_ALIASES["drawing_line_number"]
+            )
+            serial = self._project_field_value(raw, _PROJECT_ROW_ALIASES["serial"])
+            if not drawing:
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="Drawing",
+                    issue="缺少 Drawing line number；仍可計算但無法依圖面追溯",
+                    raw=raw_preview,
+                    resolution="填入原始圖面或管線群組編號。",
+                )
+            if not serial:
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="流水號",
+                    issue="缺少流水號；仍可計算但逐筆核對較困難",
+                    raw=raw_preview,
+                    resolution="填入原始 MTO 的流水號或專案排序編號。",
+                )
             rows.append(
                 ProjectInputRow(
                     designation=designation,
-                    quantity=self._parse_list_quantity(quantity_text, idx),
+                    quantity=quantity,
                     enabled=self._parse_list_enabled(enabled_text),
                     overrides=self._parse_list_overrides(overrides_text, idx),
-                    drawing_line_number=self._project_field_value(raw, _PROJECT_ROW_ALIASES["drawing_line_number"]),
-                    serial=self._project_field_value(raw, _PROJECT_ROW_ALIASES["serial"]),
+                    drawing_line_number=drawing,
+                    serial=serial,
                     unit=self._normalize_project_unit_value(
-                        self._project_field_value(raw, _PROJECT_ROW_ALIASES["unit"])
+                        unit_value
                     ),
                 )
             )
         return rows
 
     def _read_project_rows_xlsx(self, filepath: str) -> list[ProjectInputRow]:
+        self._last_import_report = {}
         return read_project_rows_xlsx(
             filepath,
             mapping_confirmer=self._confirm_project_xlsx_mapping,
+            report=self._last_import_report,
         )
 
     def _read_project_rows_text(self, lines: list[str]) -> list[ProjectInputRow]:
         rows: list[ProjectInputRow] = []
+        self._last_import_report = {
+            "source_rows": len(lines),
+            "skipped_missing_designation": 0,
+            "skipped_invalid_quantity": 0,
+            "quantity_defaulted": 0,
+            "unit_defaulted": 0,
+            "problems": [],
+        }
         for idx, line in enumerate(lines, start=1):
             parts = self._split_project_row_parts(line)
             if not parts or not parts[0]:
                 continue
             if self._looks_like_project_header(parts):
+                self._last_import_report["source_rows"] -= 1
                 continue
-            rows.append(self._project_row_from_text_parts(parts, idx))
+            if len(parts) == 1:
+                self._last_import_report["quantity_defaulted"] += 1
+                self._last_import_report["unit_defaulted"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="數量",
+                    issue="數量空白；本次暫按 1 組匯入",
+                    raw=line,
+                    resolution="在型號後補上大於 0 的整數，或使用標準 Excel 範本。",
+                )
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="info",
+                    field="單位",
+                    issue="單位空白；本次使用「組」",
+                    raw=line,
+                    resolution="建議補上組、set、ea 等實際單位。",
+                )
+            try:
+                project_row = self._project_row_from_text_parts(parts, idx)
+            except ValueError:
+                self._last_import_report["skipped_invalid_quantity"] += 1
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="error",
+                    field="數量",
+                    issue="數量不是大於 0 的整數；此列不會匯入",
+                    raw=line,
+                    resolution="改成 1、2、3 等大於 0 的整數，或使用標準 Excel 範本。",
+                )
+                continue
+            if not project_row.drawing_line_number:
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="Drawing",
+                    issue="缺少 Drawing line number；仍可計算但無法依圖面追溯",
+                    raw=line,
+                    resolution="建議改用標準 Excel 範本並填入原始圖面編號。",
+                )
+            if not project_row.serial:
+                append_import_problem(
+                    self._last_import_report,
+                    row_number=idx,
+                    severity="warning",
+                    field="流水號",
+                    issue="缺少流水號；仍可計算但逐筆核對較困難",
+                    raw=line,
+                    resolution="建議補上原始 MTO 流水號或專案排序編號。",
+                )
+            rows.append(project_row)
         return rows
 
     def _detect_project_xlsx_layout(self, wb):
@@ -1521,6 +2023,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "校正格式錯誤", str(exc))
             return
 
+        if updated_rows == self._project_rows:
+            self._set_status("info", "清單內容沒有變更")
+            return
+        self._capture_undo_state("編輯清單資料")
         self._project_rows = updated_rows
         self._refresh_item_list_display()
         if 0 <= self._selected_index < len(self._project_rows):
@@ -1537,6 +2043,100 @@ class MainWindow(QMainWindow):
     def _focus_result_filter(self):
         self.result_filter_input.setFocus()
         self.result_filter_input.selectAll()
+
+    def _clear_result_filters(self):
+        for key, combo in self.result_column_filters.items():
+            combo.blockSignals(True)
+            if key == "status":
+                combo.setCurrentIndex(0)
+            else:
+                combo.setCurrentIndex(-1)
+                combo.setEditText("")
+            combo.blockSignals(False)
+        self._apply_result_filter()
+
+    def _clear_one_result_filter(self, key: str):
+        combo = self.result_column_filters.get(key)
+        if combo is None:
+            return
+        combo.blockSignals(True)
+        if key == "status":
+            combo.setCurrentIndex(0)
+        else:
+            combo.setCurrentIndex(-1)
+            combo.setEditText("")
+        combo.blockSignals(False)
+        self._apply_result_filter()
+
+    def _rebuild_active_filter_chips(self, filters: dict[str, str]) -> None:
+        while self.active_filter_chip_layout.count():
+            item = self.active_filter_chip_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        if not filters:
+            self.active_filter_bar.hide()
+            return
+
+        label = QLabel("作用中條件:")
+        label.setStyleSheet(
+            f"color: {TOKENS['color']['metric_label']}; font-size: 11px;"
+        )
+        self.active_filter_chip_layout.addWidget(label)
+        field_labels = {
+            "drawing": "Drawing",
+            "serial": "流水號",
+            "designation": "型號",
+            "material": "材質",
+            "status": "狀態",
+        }
+        for key, value in filters.items():
+            display_value = value
+            if key == "status":
+                combo = self.result_column_filters[key]
+                display_value = combo.currentText().replace("✓ ", "").replace(
+                    "⚠ ", ""
+                ).replace("✗ ", "").replace("— ", "")
+            chip = QPushButton(f"{field_labels.get(key, key)}: {display_value}  ×")
+            chip.setToolTip("按一下移除此條件")
+            chip.setStyleSheet(
+                f"QPushButton {{ color: {TOKENS['color']['primary_dark']}; "
+                f"background: {TOKENS['color']['primary_weak']}; "
+                f"border: 1px solid {TOKENS['color']['primary']}; "
+                "padding: 2px 7px; min-height: 20px; }}"
+            )
+            chip.clicked.connect(
+                lambda _checked=False, filter_key=key: self._clear_one_result_filter(
+                    filter_key
+                )
+            )
+            self.active_filter_chip_layout.addWidget(chip)
+        self.active_filter_chip_layout.addStretch()
+        self.active_filter_bar.show()
+
+    def _current_result_filters(self) -> dict[str, str]:
+        filters = {}
+        for key, combo in self.result_column_filters.items():
+            if key == "status":
+                value = combo.currentData() or ""
+            else:
+                value = combo.currentText().strip()
+            if value:
+                filters[key] = str(value)
+        return filters
+
+    def _refresh_result_filter_options(self):
+        if not hasattr(self, "result_column_filters"):
+            return
+        for key, values in self.support_master_table.filter_options().items():
+            combo = self.result_column_filters[key]
+            current = combo.currentText()
+            combo.blockSignals(True)
+            combo.clear()
+            combo.addItems(values)
+            combo.setCurrentIndex(-1)
+            combo.setEditText(current)
+            combo.blockSignals(False)
 
     def _set_result_row_group(self, row: int, group_key: str):
         item = self.result_table.item(row, 0)
@@ -1561,15 +2161,133 @@ class MainWindow(QMainWindow):
                 values.append(item.text())
         return " ".join(values).casefold()
 
+    def _result_locator_haystack(self, project_index: int) -> str:
+        values = []
+        for column in range(self.support_master_table.columnCount()):
+            item = self.support_master_table.item(project_index, column)
+            if item is not None and item.text():
+                values.append(item.text())
+        row_result = self.support_master_table.row_result(project_index)
+        if row_result is not None:
+            values.append(row_result.single_result.fullstring)
+            for entry in row_result.scaled_result.entries:
+                values.extend(
+                    str(getattr(entry, field, "") or "")
+                    for field in (
+                        "name",
+                        "display_spec",
+                        "material",
+                        "display_remark",
+                        "part_key",
+                        "stock_id",
+                    )
+                )
+        return " ".join(values).casefold()
+
+    def _matching_result_locator_rows(self) -> tuple[list[int], int]:
+        terms = [
+            term
+            for term in self.result_filter_input.text().strip().casefold().split()
+            if term
+        ]
+        if not terms:
+            return [], 0
+        all_matches = [
+            index
+            for index in range(self.support_master_table.rowCount())
+            if all(
+                term in self._result_locator_haystack(index)
+                for term in terms
+            )
+        ]
+        visible_matches = [
+            index
+            for index in all_matches
+            if not self.support_master_table.isRowHidden(index)
+        ]
+        return visible_matches, len(all_matches)
+
+    def _on_result_locator_changed(self):
+        self._cycle_result_locator(reset=True)
+
+    def _locate_next_result(self):
+        self._cycle_result_locator(step=1)
+
+    def _locate_previous_result(self):
+        self._cycle_result_locator(step=-1)
+
+    def _cycle_result_locator(self, *, step: int = 0, reset: bool = False):
+        query = self.result_filter_input.text().strip()
+        if not query:
+            self._locator_matches = []
+            self._locator_match_position = -1
+            self.result_locator_count_label.clear()
+            self.result_locator_count_label.setToolTip("")
+            return
+
+        matches, all_match_count = self._matching_result_locator_rows()
+        self._locator_matches = matches
+        if not matches:
+            self._locator_match_position = -1
+            if all_match_count:
+                self.result_locator_count_label.setText(f"篩選外 {all_match_count} 筆")
+                self.result_locator_count_label.setToolTip(
+                    "有匹配資料被目前欄位條件隱藏；可移除下方作用中條件。"
+                )
+            else:
+                self.result_locator_count_label.setText("找不到")
+                self.result_locator_count_label.setToolTip("目前結果沒有匹配資料。")
+            return
+
+        if reset or self._locator_match_position < 0:
+            self._locator_match_position = 0
+        elif step:
+            self._locator_match_position = (
+                self._locator_match_position + step
+            ) % len(matches)
+        else:
+            self._locator_match_position = min(
+                self._locator_match_position, len(matches) - 1
+            )
+        project_index = matches[self._locator_match_position]
+        self.result_locator_count_label.setText(
+            f"第 {self._locator_match_position + 1}/{len(matches)} 筆"
+        )
+        self.result_locator_count_label.setToolTip(
+            "定位只會選取並捲動到匹配項目，不會隱藏其他結果。"
+        )
+        self.support_master_table.selectRow(project_index)
+        master_item = self.support_master_table.item(project_index, 0)
+        if master_item is not None:
+            self.support_master_table.scrollToItem(
+                master_item,
+                QAbstractItemView.ScrollHint.PositionAtCenter,
+            )
+        if self.result_views.currentIndex() == 1:
+            target_group = f"project:{project_index}"
+            for row in range(self.result_table.rowCount()):
+                if (
+                    self._result_row_group(row) == target_group
+                    and not self.result_table.isRowHidden(row)
+                ):
+                    item = self.result_table.item(row, 0)
+                    if item is not None:
+                        self.result_table.scrollToItem(
+                            item,
+                            QAbstractItemView.ScrollHint.PositionAtCenter,
+                        )
+                    break
+
     def _apply_result_filter(self):
         if not hasattr(self, "result_table"):
             return
-        query = self.result_filter_input.text().strip().casefold()
-        terms = [term for term in query.split() if term]
+        column_filters = self._current_result_filters()
+        self._rebuild_active_filter_chips(column_filters)
         row_count = self.result_table.rowCount()
-        pending_only = self.pending_material_filter_button.isChecked()
         master_visible = self.support_master_table.apply_filter(
-            query, pending_only=pending_only
+            "",
+            pending_only=False,
+            column_filters=column_filters,
         )
 
         def update_count(detail_visible: int):
@@ -1583,33 +2301,50 @@ class MainWindow(QMainWindow):
                     f"顯示 {detail_visible}/{row_count} 列"
                 )
 
-        if not terms and not pending_only:
+        if not column_filters:
             for row in range(row_count):
                 self.result_table.setRowHidden(row, False)
             update_count(row_count)
+            self._cycle_result_locator(reset=True)
             return
 
         row_groups = [self._result_row_group(row) for row in range(row_count)]
-        if terms:
+        detail_columns = {
+            "drawing": _RESULT_HEADERS.index("Drawing line number"),
+            "serial": _RESULT_HEADERS.index("流水號.sort"),
+            "designation": _RESULT_HEADERS.index("型號"),
+            "material": _RESULT_HEADERS.index("材質"),
+        }
+        status_filter = column_filters.get("status", "")
+        text_filters = {
+            key: value.casefold()
+            for key, value in column_filters.items()
+            if key in detail_columns and value
+        }
+        if text_filters:
             matched_groups = set()
             for row, group_key in enumerate(row_groups):
-                row_text = self._result_row_text(row)
-                if all(term in row_text for term in terms):
+                matches = True
+                if matches:
+                    for key, needle in text_filters.items():
+                        item = self.result_table.item(row, detail_columns[key])
+                        value = item.text().casefold() if item is not None else ""
+                        if needle not in value:
+                            matches = False
+                            break
+                if matches:
                     matched_groups.add(group_key)
         else:
             matched_groups = set(row_groups)
 
-        if pending_only:
-            pending_groups = {
+        if status_filter:
+            status_groups = {
                 f"project:{index}"
-                for index, row_result in enumerate(
-                    self._project_result.rows if self._project_result else []
-                )
-                if (row_result.input_row.overrides or {}).get(
-                    "upper_material_unknown"
-                )
+                for index in range(self.support_master_table.rowCount())
+                if self.support_master_table.item(index, 0) is not None
+                and self.support_master_table.item(index, 0).text() == status_filter
             }
-            matched_groups &= pending_groups
+            matched_groups &= status_groups
 
         visible_count = 0
         for row, group_key in enumerate(row_groups):
@@ -1619,6 +2354,7 @@ class MainWindow(QMainWindow):
                 visible_count += 1
 
         update_count(visible_count)
+        self._cycle_result_locator(reset=True)
 
     def _set_result_summary(
         self,
@@ -1664,26 +2400,197 @@ class MainWindow(QMainWindow):
             )
             self.summary_material_label.setText(text)
 
+    def _set_export_readiness_label(
+        self,
+        text: str,
+        kind: str,
+        tooltip: str,
+    ) -> None:
+        """Show an explicit export state without relying on color alone."""
+        color_key = {
+            "info": "status_info",
+            "busy": "status_busy",
+            "ok": "status_ok",
+            "warn": "status_warn",
+            "error": "status_error",
+        }.get(kind, "status_info")
+        color = TOKENS["color"]
+        self.export_readiness_label.setText(text)
+        self.export_readiness_label.setToolTip(tooltip)
+        self.export_readiness_label.setStyleSheet(
+            "QLabel {"
+            f"color: {color[color_key]};"
+            f"background: {color['surface_soft']};"
+            f"border: 1px solid {color['border_soft']};"
+            f"border-radius: {TOKENS['radius']['sm']}px;"
+            "padding: 4px 8px;"
+            "font-weight: bold;"
+            "}"
+        )
+
+    def _update_export_readiness(self) -> None:
+        """Summarize the actual analysis/export gate beside the export action."""
+        if self._analysis_in_progress:
+            self._set_export_readiness_label(
+                "正在分析…",
+                "busy",
+                "分析完成後會自動更新匯出狀態。",
+            )
+            return
+        if self._export_in_progress:
+            self._set_export_readiness_label(
+                "正在匯出…",
+                "busy",
+                "正在產生匯出檔案。",
+            )
+            return
+
+        enabled_count = sum(1 for row in self._project_rows if row.enabled)
+        if not self._project_rows:
+            self._set_export_readiness_label(
+                "尚未建立清單",
+                "info",
+                "先在左側新增或匯入支撐清單。",
+            )
+            return
+        if self._project_result is None:
+            if self._analysis_has_run:
+                auto_text = (
+                    "，已排程自動重新分析"
+                    if self._auto_analyze_timer.isActive()
+                    else "，請重新分析"
+                )
+                self._set_export_readiness_label(
+                    "結果已過期",
+                    "warn",
+                    f"輸入或設定已變更{auto_text}；舊結果不可匯出。",
+                )
+            else:
+                self._set_export_readiness_label(
+                    "待分析",
+                    "info",
+                    f"目前有 {enabled_count} 筆啟用項目；分析後才能匯出。",
+                )
+            return
+
+        error_count = sum(1 for result in self._results if result.error)
+        from export.excel.confidence_summary import build_export_context
+
+        mode = self.project_header.mode_combo.currentText()
+        context = build_export_context(self._project_result, mode=mode)
+        assumption_count = context["assumption_count"]
+        checklist = (
+            f"啟用項目：{enabled_count} 筆\n"
+            f"分析錯誤：{error_count} 筆\n"
+            f"假設值：{assumption_count} 筆\n"
+            f"匯出模式：{context['mode_label']}"
+        )
+        if error_count:
+            self._set_export_readiness_label(
+                f"尚未完成：{error_count} 筆分析錯誤",
+                "error",
+                checklist + "\n可匯出查核結果，但應先處理錯誤列。",
+            )
+        elif context["mode"] == "final" and assumption_count:
+            self._set_export_readiness_label(
+                f"精算未就緒：{assumption_count} 筆假設",
+                "warn",
+                checklist + "\n精算匯出需要先處理假設值，或填寫例外放行原因。",
+            )
+        elif assumption_count:
+            self._set_export_readiness_label(
+                f"概算可匯出：含 {assumption_count} 筆假設",
+                "warn",
+                checklist + "\n匯出檔會保留假設值證據。",
+            )
+        else:
+            self._set_export_readiness_label(
+                "已就緒：可匯出",
+                "ok",
+                checklist + "\n目前沒有會阻擋匯出的問題。",
+            )
+
+    def _hide_weight_delta(self) -> None:
+        self.weight_delta_label.clear()
+        self.weight_delta_label.setToolTip("")
+        self.weight_delta_label.hide()
+
+    def _show_weight_delta(self, previous: float, current: float, reason: str) -> None:
+        delta = current - previous
+        delta_text = f"{delta:+.3f} kg"
+        if previous:
+            percent = delta / abs(previous) * 100
+            percent_text = f"{percent:+.2f}%"
+        else:
+            percent_text = "無百分比"
+        self.weight_delta_label.setText(
+            f"{previous:.3f} → {current:.3f} kg（{percent_text}）"
+        )
+        self.weight_delta_label.setToolTip(
+            f"總重量差異：{delta_text}（{percent_text}）\n"
+            f"觸發原因：{reason or '輸入或設定變更'}"
+        )
+        self.weight_delta_label.show()
+
     def _material_confirmation_counts(self) -> tuple[int, int]:
-        enabled_rows = [row for row in self._project_rows if row.enabled]
+        enabled_rows = [
+            row
+            for row in self._project_rows
+            if row.enabled and uses_global_upper_material(row.designation)
+        ]
         confirmed = sum(
             1
             for row in enabled_rows
-            if not (row.overrides or {}).get("upper_material_unknown")
+            if not self._row_material_pending(row)
         )
         return confirmed, len(enabled_rows)
 
+    def _row_material_pending(self, row: ProjectInputRow) -> bool:
+        if not uses_global_upper_material(row.designation):
+            return False
+        overrides = row.overrides or {}
+        if overrides.get("upper_material_unknown"):
+            return True
+        if overrides.get("upper_material"):
+            return False
+        return not self._global_material_confirmed
+
+    def _project_rows_for_analysis(self) -> list[ProjectInputRow]:
+        """Inject estimate evidence without mutating the editable input list."""
+        rows = []
+        for row in self._project_rows:
+            if not self._row_material_pending(row):
+                rows.append(row)
+                continue
+            overrides = dict(row.overrides or {})
+            overrides["upper_material_unknown"] = True
+            rows.append(replace(row, overrides=overrides))
+        return rows
+
+    def _reset_global_material_confirmation(self) -> None:
+        self._global_material_confirmed = False
+        self._last_global_material_text = _UNCONFIRMED_GLOBAL_MATERIAL_LABEL
+        set_analysis_setting("upper_material", _DEFAULT_ESTIMATE_MATERIAL)
+        if not hasattr(self, "material_combo"):
+            return
+        self.material_combo.blockSignals(True)
+        self.material_combo.setCurrentText(_UNCONFIRMED_GLOBAL_MATERIAL_LABEL)
+        self.material_combo.blockSignals(False)
+        self._refresh_item_list_display()
+        self._update_material_completion()
+
     def _update_material_completion(self) -> None:
         confirmed, total = self._material_confirmation_counts()
-        self.summary_material_label.setText(f"{confirmed}/{total}")
+        self.summary_material_label.setText(
+            f"{confirmed}/{total}" if total else "不適用"
+        )
         self.project_header.set_material_completion(confirmed, total)
 
-    def _clear_analysis_outputs(self):
+    def _clear_analysis_outputs(self, *, preserve_weight_delta: bool = False):
         """Clear stale analysis/material outputs after project inputs change."""
         self._results.clear()
         self._project_result = None
         self.result_table.setRowCount(0)
-        self._apply_result_filter()
         self.btn_export.setEnabled(False)
         self._set_result_summary(reset=True)
         self.material_cutting_page.set_results_ready(False)
@@ -1692,19 +2599,38 @@ class MainWindow(QMainWindow):
         self.support_master_table.set_project(
             self._project_rows,
             global_material=get_analysis_setting("upper_material", "SUS304"),
+            global_material_confirmed=self._global_material_confirmed,
         )
+        self._refresh_result_filter_options()
+        self._apply_result_filter()
         self.bom_detail_panel.clear_result()
         self.project_header.reset_data_versions()
         self._update_material_completion()
+        self._hide_weight_delta()
+        if not preserve_weight_delta:
+            self._pending_weight_delta_from = None
+            self._pending_weight_delta_reason = ""
+        self._update_export_readiness()
 
-    def _invalidate_analysis_outputs(self, message: str = ""):
+    def _invalidate_analysis_outputs(
+        self,
+        message: str = "",
+        *,
+        track_weight_delta: bool = True,
+    ):
         """Invalidate analysis/material outputs after input rows change."""
         had_outputs = (
             bool(self._results)
             or self._project_result is not None
             or self.result_table.rowCount() > 0
         )
-        self._clear_analysis_outputs()
+        if track_weight_delta and self._project_result is not None:
+            self._pending_weight_delta_from = self._project_result.total_weight
+            self._pending_weight_delta_reason = message
+        elif not track_weight_delta:
+            self._pending_weight_delta_from = None
+            self._pending_weight_delta_reason = ""
+        self._clear_analysis_outputs(preserve_weight_delta=track_weight_delta)
         if message:
             suffix = "，已清除舊結果" if had_outputs else ""
             self._set_status("info", f"{message}{suffix}")
@@ -1716,6 +2642,7 @@ class MainWindow(QMainWindow):
         enabled = item.checkState() == Qt.CheckState.Checked
         if self._project_rows[row].enabled == enabled:
             return
+        self._capture_undo_state("變更啟用狀態")
         self._project_rows[row] = replace(self._project_rows[row], enabled=enabled)
         self._invalidate_analysis_outputs("啟用項目已變更，請重新分析")
 
@@ -1735,6 +2662,7 @@ class MainWindow(QMainWindow):
         new_designation = new_designation.strip()
         if not new_designation or new_designation == old_designation:
             return
+        self._capture_undo_state("編輯支撐型號")
         overrides = self._project_rows[row].overrides
         if get_type_code(new_designation) != get_type_code(old_designation):
             overrides = None
@@ -1755,6 +2683,7 @@ class MainWindow(QMainWindow):
         row = self.item_list.currentRow()
         if row < 0:
             return
+        self._capture_undo_state("刪除支撐")
         deleted_designation = self._project_rows[row].designation
         self.item_list.blockSignals(True)
         self.item_list.takeItem(row)
@@ -1800,6 +2729,7 @@ class MainWindow(QMainWindow):
         )
         if not valid_indexes:
             return
+        self._capture_undo_state("批次套用材質")
         for index in valid_indexes:
             overrides = dict(self._project_rows[index].overrides or {})
             if material == _UNKNOWN_MATERIAL_LABEL:
@@ -1813,8 +2743,14 @@ class MainWindow(QMainWindow):
             )
             self._update_item_display(index)
         self._invalidate_analysis_outputs(
-            f"已套用材質到 {len(valid_indexes)} 筆，請重新分析"
+            f"已套用材質到 {len(valid_indexes)} 筆"
         )
+        if self._analysis_has_run:
+            self._auto_analyze_timer.start()
+            self._update_export_readiness()
+            self.side_panel.set_apply_state(
+                "批次修改已儲存，正在自動重新分析…", "busy"
+            )
 
     def _advance_to_next_pending(self, current_index: int):
         count = len(self._project_rows)
@@ -1823,7 +2759,7 @@ class MainWindow(QMainWindow):
         order = [*range(current_index + 1, count), *range(0, current_index)]
         for index in order:
             row = self._project_rows[index]
-            if row.enabled and (row.overrides or {}).get("upper_material_unknown"):
+            if row.enabled and self._row_material_pending(row):
                 self.item_list.setCurrentRow(index)
                 self.item_list.scrollToItem(self.item_list.item(index))
                 return
@@ -1840,9 +2776,13 @@ class MainWindow(QMainWindow):
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
+        self._capture_undo_state("全部清除")
         self.item_list.clear()
         self._project_rows.clear()
+        self._reset_global_material_confirmation()
+        self._apply_input_filter()
         self._clear_analysis_outputs()
+        self._analysis_has_run = False
         self._selected_index = -1
         self.side_panel.clear_panel()
         self.project_header.set_project_name(None)
@@ -1884,12 +2824,26 @@ class MainWindow(QMainWindow):
             row, project_row.designation, project_row.overrides or {}
         )
         self.support_master_table.select_support(row)
-        self.bom_detail_panel.set_row_result(
-            self._row_result_for_project_index(row)
-        )
+        row_result = self._row_result_for_project_index(row)
+        self.bom_detail_panel.set_row_result(row_result)
         # 若已有分析結果，一併顯示
-        if 0 <= row < len(self._results):
-            self.side_panel.update_result(self._results[row])
+        if row_result is not None:
+            self.side_panel.update_result(row_result.scaled_result)
+
+    def _invalidate_and_schedule_reanalysis(
+        self,
+        message: str,
+        *,
+        apply_message: str,
+    ) -> bool:
+        """Invalidate stale outputs and re-run when this project was analyzed."""
+        self._invalidate_analysis_outputs(message)
+        if not self._analysis_has_run or not self._project_rows:
+            return False
+        self._auto_analyze_timer.start()
+        self._update_export_readiness()
+        self.side_panel.set_apply_state(apply_message, "busy")
+        return True
 
     def _on_override_changed(self, idx: int, overrides: dict):
         """Side Panel 發出覆寫變更"""
@@ -1899,19 +2853,34 @@ class MainWindow(QMainWindow):
             old_clean = self._project_rows[idx].overrides or {}
             if old_clean == clean:
                 return
+            self._capture_undo_state("修改覆寫設定")
             self._project_rows[idx] = replace(
                 self._project_rows[idx],
                 overrides=clean or None,
             )
             self._update_item_display(idx)
-            self._invalidate_analysis_outputs("覆寫設定已變更，請重新分析")
+            scheduled = self._invalidate_and_schedule_reanalysis(
+                "覆寫設定已套用",
+                apply_message="已儲存修改，正在自動重新分析…",
+            )
+            if not scheduled:
+                self.side_panel.set_apply_state(
+                    "修改已儲存；首次分析請按左側按鈕", "info"
+                )
+
+    def _run_auto_analysis(self):
+        if self._analysis_in_progress or not self._project_rows:
+            return
+        self._on_analyze()
 
     # ══════════════════════════════════════════
     #  分析
     # ══════════════════════════════════════════
     def _set_analyze_busy(self, busy: bool):
+        self._analysis_in_progress = busy
         self.btn_analyze.setEnabled(not busy)
-        self.btn_analyze.setText("分析中..." if busy else "▶ 開始分析")
+        self.btn_analyze.setText("分析中..." if busy else "▶ 分析整份清單")
+        self._update_export_readiness()
 
     def _on_analyze(self):
         if not self._project_rows:
@@ -1932,14 +2901,18 @@ class MainWindow(QMainWindow):
                     enabled=w.checkState() == Qt.CheckState.Checked,
                 )
 
-            self._project_result = analyze_project_rows(self._project_rows)
+            self._project_result = analyze_project_rows(
+                self._project_rows_for_analysis()
+            )
             self._results = [row.scaled_result for row in self._project_result.rows]
             self._display_results()
             self.support_master_table.set_project(
                 self._project_rows,
                 self._project_result,
                 global_material=get_analysis_setting("upper_material", "SUS304"),
+                global_material_confirmed=self._global_material_confirmed,
             )
+            self._refresh_result_filter_options()
             self.project_header.set_data_versions(
                 sorted(
                     {
@@ -1965,12 +2938,40 @@ class MainWindow(QMainWindow):
             )
 
             # 更新 side panel 的計算結果
-            if 0 <= self._selected_index < len(self._results):
-                self.side_panel.update_result(self._results[self._selected_index])
+            selected_result = self._row_result_for_project_index(
+                self._selected_index
+            )
+            if selected_result is not None:
+                self.side_panel.update_result(selected_result.scaled_result)
+                self.side_panel.set_apply_state("修改已套用，結果已更新", "ok")
+
+            self._analysis_has_run = True
+
+            if self._pending_weight_delta_from is not None:
+                self._show_weight_delta(
+                    self._pending_weight_delta_from,
+                    self._project_result.total_weight,
+                    self._pending_weight_delta_reason,
+                )
+                self._pending_weight_delta_from = None
+                self._pending_weight_delta_reason = ""
 
             # 啟用材料合計 Tab
             self.material_cutting_page.set_results_ready(True)
+            self._update_export_readiness()
+            if self._pending_undo_completion_message:
+                undo_description = self._pending_undo_completion_message
+                self._pending_undo_completion_message = ""
+                self._set_status(
+                    "ok",
+                    f"已復原「{undo_description}」，分析結果已更新",
+                )
+                self.side_panel.set_apply_state(
+                    f"已復原「{undo_description}」，結果已更新",
+                    "ok",
+                )
         except Exception as exc:
+            self._pending_undo_completion_message = ""
             self._set_status("error", "分析失敗")
             error_message = str(exc)
         finally:
@@ -2053,6 +3054,9 @@ class MainWindow(QMainWindow):
         total_weight = 0.0
         g_idx = 0  # 群組色輪 index
 
+        enabled_project_indexes = [
+            index for index, row in enumerate(self._project_rows) if row.enabled
+        ]
         for result_index, row_result in enumerate(self._project_result.rows):
             input_row = row_result.input_row
             single_result = row_result.single_result
@@ -2060,7 +3064,12 @@ class MainWindow(QMainWindow):
             material_unknown = bool(
                 (input_row.overrides or {}).get("upper_material_unknown")
             )
-            group_key = f"project:{result_index}"
+            project_index = (
+                enabled_project_indexes[result_index]
+                if result_index < len(enabled_project_indexes)
+                else result_index
+            )
+            group_key = f"project:{project_index}"
             hdr_color, body_color = _RESULT_GROUP_COLORS[g_idx % len(_RESULT_GROUP_COLORS)]
             g_idx += 1
 
@@ -2184,11 +3193,14 @@ class MainWindow(QMainWindow):
     #  匯出 / 設定
     # ══════════════════════════════════════════
     def _set_export_busy(self, busy: bool):
+        self._export_in_progress = busy
         self.btn_export.setEnabled(False if busy else bool(self._results))
         self.btn_export.setText("匯出中..." if busy else "匯出結果")
+        self._update_export_readiness()
 
     def _on_project_mode_changed(self, mode: str):
         self._set_status("info", f"專案模式：{mode}")
+        self._update_export_readiness()
 
     def _prepare_export_context(self):
         if self._project_result is None:
@@ -2390,8 +3402,65 @@ class MainWindow(QMainWindow):
         self.main_tabs.setCurrentWidget(self.material_cutting_page)
 
     def _on_material_changed(self, text):
-        set_analysis_setting("upper_material", text)
-        self._set_status("info", f"全域上段管材質: {text}")
+        text = str(text or "").strip()
+        previous_text = self._last_global_material_text
+        if text != previous_text:
+            self._capture_undo_state(
+                "變更全域材質",
+                material_text=previous_text,
+            )
+        self._last_global_material_text = text
+        self._global_material_confirmed = bool(
+            text and text != _UNCONFIRMED_GLOBAL_MATERIAL_LABEL
+        )
+        material = (
+            text if self._global_material_confirmed else _DEFAULT_ESTIMATE_MATERIAL
+        )
+        set_analysis_setting("upper_material", material)
+        self._refresh_item_list_display()
+        self._update_material_completion()
+        if not self._project_rows:
+            message = (
+                f"全域上段管材質已確認：{material}"
+                if self._global_material_confirmed
+                else f"全域材質未確認；暫用 {material} 概算"
+            )
+            self._set_status("info", message)
+            return
+        change_message = (
+            f"全域上段管材質已確認為 {material}"
+            if self._global_material_confirmed
+            else f"全域材質改為未確認，暫用 {material} 概算"
+        )
+        scheduled = self._invalidate_and_schedule_reanalysis(
+            change_message,
+            apply_message="全域材質狀態已變更，正在自動重新分析…",
+        )
+        if not scheduled:
+            self.side_panel.set_apply_state(
+                "全域材質已變更；首次分析請按左側按鈕", "info"
+            )
+
+    def _on_type_config_saved(self, type_id: str):
+        affected = any(
+            row.enabled and get_type_code(row.designation) == str(type_id)
+            for row in self._project_rows
+        )
+        if not affected:
+            self._set_status(
+                "ok",
+                f"Type {type_id} 資料已儲存；目前清單未使用此 Type",
+            )
+            return
+        scheduled = self._invalidate_and_schedule_reanalysis(
+            f"Type {type_id} 計算資料已更新",
+            apply_message=f"Type {type_id} 資料已更新，正在自動重新分析…",
+        )
+        if not scheduled:
+            self._set_status(
+                "warn",
+                f"Type {type_id} 資料已更新；首次分析請按左側按鈕",
+            )
 
     def _on_open_config(self):
         self.main_tabs.setCurrentWidget(self.data_maintenance_page)
@@ -2451,6 +3520,8 @@ class SidePanel(QGroupBox):
         self._variation_axes = {}
         self._axis_widgets = {}
         self._result_browser = None
+        self._calc_logic_browser = None
+        self._apply_status_label = None
         self._btn_inventor = None
         self._current_result = None
         self._current_designation = ""
@@ -2558,10 +3629,16 @@ class SidePanel(QGroupBox):
     # ══════════════════════════════════════════
     def _build_detail_panel(self):
         pane = QWidget()
-        pane.setStyleSheet("background: white;")
         vbox = QVBoxLayout(pane)
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.setSpacing(0)
+        vbox.setContentsMargins(2, 2, 2, 2)
+        vbox.setSpacing(2)
+
+        self._detail_tabs = QTabWidget()
+        self._detail_tabs.setDocumentMode(True)
+
+        correction_page = QWidget()
+        correction_layout = QVBoxLayout(correction_page)
+        correction_layout.setContentsMargins(0, 0, 0, 0)
 
         self._detail_scroll = QScrollArea()
         self._detail_scroll.setWidgetResizable(True)
@@ -2577,7 +3654,36 @@ class SidePanel(QGroupBox):
         self._detail_layout.addStretch()
 
         self._detail_scroll.setWidget(self._detail_content)
-        vbox.addWidget(self._detail_scroll)
+        correction_layout.addWidget(self._detail_scroll)
+        self._detail_tabs.addTab(correction_page, "修正")
+
+        result_page = QWidget()
+        result_layout = QVBoxLayout(result_page)
+        result_layout.setContentsMargins(8, 8, 8, 8)
+        self._result_browser = QTextBrowser()
+        self._result_browser.setFont(QFont("Microsoft JhengHei UI", 10))
+        self._result_browser.setStyleSheet(
+            f"QTextBrowser {{ border: 1px solid {TOKENS['color']['border_soft']}; "
+            f"background: {TOKENS['color']['surface']}; color: {TOKENS['color']['ink']}; "
+            f"padding: 8px; border-radius: {TOKENS['radius']['sm']}px; }}"
+        )
+        result_layout.addWidget(self._result_browser)
+        self._detail_tabs.addTab(result_page, "計算結果")
+
+        logic_page = QWidget()
+        logic_layout = QVBoxLayout(logic_page)
+        logic_layout.setContentsMargins(8, 8, 8, 8)
+        self._calc_logic_browser = QTextBrowser()
+        self._calc_logic_browser.setFont(QFont("Consolas", 10))
+        self._calc_logic_browser.setStyleSheet(
+            f"QTextBrowser {{ border: 1px solid {TOKENS['color']['border_soft']}; "
+            f"background: {TOKENS['color']['surface_soft']}; color: {TOKENS['color']['ink']}; "
+            f"padding: 8px; border-radius: {TOKENS['radius']['sm']}px; }}"
+        )
+        logic_layout.addWidget(self._calc_logic_browser)
+        self._detail_tabs.addTab(logic_page, "計算說明")
+
+        vbox.addWidget(self._detail_tabs)
         self._splitter.addWidget(pane)
 
         self._detail_widgets: list = []
@@ -2682,7 +3788,7 @@ class SidePanel(QGroupBox):
         self._l_edit = None
         self._variation_axes = {}
         self._axis_widgets = {}
-        self._result_browser = None
+        self._apply_status_label = None
         self._btn_inventor = None
 
     def _add_dw(self, w: QWidget):
@@ -2718,6 +3824,10 @@ class SidePanel(QGroupBox):
         )
         self._lbl_zoom_pct.setText("—")
         self._clear_detail()
+        self._result_browser.clear()
+        self._calc_logic_browser.clear()
+        self._detail_tabs.setCurrentIndex(0)
+        self._detail_tabs.setTabText(1, "計算結果")
         self._splitter.setVisible(False)
         self._placeholder.setVisible(True)
 
@@ -2729,8 +3839,20 @@ class SidePanel(QGroupBox):
         if self._result_browser is not None:
             self._result_browser.setHtml(
                 '<p style="color:#AAA; font-size:10pt;">'
-                '（輸入已變更，請重新執行分析）</p>'
+                '（輸入已變更，等待重新分析）</p>'
             )
+            self._detail_tabs.setTabText(1, "計算結果 …")
+
+    def set_apply_state(self, text: str, state: str = "info"):
+        if self._apply_status_label is None:
+            return
+        color = TOKENS["color"].get(f"status_{state}", TOKENS["color"]["status_info"])
+        self._apply_status_label.setText(text)
+        self._apply_status_label.setStyleSheet(
+            f"color: {color}; background: {TOKENS['color']['surface_soft']}; "
+            f"border: 1px solid {TOKENS['color']['border_soft']}; "
+            f"border-radius: {TOKENS['radius']['sm']}px; padding: 6px;"
+        )
 
     def show_item(self, idx: int, item_text: str, current_overrides: dict):
         self._building = True
@@ -2741,6 +3863,8 @@ class SidePanel(QGroupBox):
         self._clear_detail()
         self._placeholder.setVisible(False)
         self._splitter.setVisible(True)
+        self._detail_tabs.setCurrentIndex(0)
+        self._detail_tabs.setTabText(1, "計算結果")
 
         type_code = get_type_code(item_text)
         self._current_type_code = type_code
@@ -2766,6 +3890,13 @@ class SidePanel(QGroupBox):
         info_lbl.setStyleSheet("color: #666; font-size: 11px; padding-bottom: 2px;")
         self._add_dw(info_lbl)
 
+        self._apply_status_label = QLabel(
+            "在這裡修改；若已有分析結果，系統會自動重新計算"
+        )
+        self._apply_status_label.setWordWrap(True)
+        self._add_dw(self._apply_status_label)
+        self.set_apply_state(self._apply_status_label.text(), "info")
+
         self._add_sep()
 
         # ── 覆寫設定 ──
@@ -2785,45 +3916,19 @@ class SidePanel(QGroupBox):
         btn_reset.clicked.connect(self._on_reset)
         self._add_dw(btn_reset)
 
-        self._add_sep()
-
-        # ── 計算邏輯 ──
-        self._add_dw(self._section_label("計算邏輯"))
         calc_logic = cat.get("calc_logic", "")
         if not calc_logic and config:
             calc_logic = config.get("calc_logic", "")
-        calc_browser = QTextBrowser()
-        calc_browser.setFont(QFont("Consolas", 10))
-        calc_browser.setStyleSheet(
-            "QTextBrowser { border: 1px solid #E0E0E0; background: #FAFAFA; "
-            "color: #212121; padding: 8px; border-radius: 4px; }"
-        )
-        calc_browser.setMinimumHeight(70)
-        calc_browser.setMaximumHeight(220)
         if calc_logic:
-            calc_browser.setPlainText(calc_logic)
+            self._calc_logic_browser.setPlainText(calc_logic)
         else:
-            calc_browser.setHtml(
+            self._calc_logic_browser.setHtml(
                 '<p style="color:#AAA; font-size:10pt;">（尚未填寫計算邏輯）</p>'
             )
-        self._add_dw(calc_browser)
-
-        self._add_sep()
-
-        # ── 計算結果（等候 update_result 填入）──
-        self._add_dw(self._section_label("計算結果"))
-        self._result_browser = QTextBrowser()
-        self._result_browser.setFont(QFont("Microsoft JhengHei UI", 10))
-        self._result_browser.setStyleSheet(
-            "QTextBrowser { border: 1px solid #E0E0E0; background: #F8FFF8; "
-            "color: #222; padding: 8px; border-radius: 4px; }"
-        )
-        self._result_browser.setMinimumHeight(60)
         self._result_browser.setHtml(
             '<p style="color:#AAA; font-size:10pt;">'
-            '（尚未計算，請按「▶ 開始分析」）</p>'
+            '（尚未計算；首次請按「分析整份清單」）</p>'
         )
-        self._add_dw(self._result_browser)
 
         # ── Inventor 匯出（僅 Pipe Shoe 家族）────────────────────────────────
         from core.pipe_shoe_engine import PIPE_SHOE_TYPE_IDS
@@ -2857,6 +3962,7 @@ class SidePanel(QGroupBox):
             )
             if self._btn_inventor:
                 self._btn_inventor.setEnabled(False)
+            self._detail_tabs.setTabText(1, "計算結果 ✗")
             return
 
         html = (
@@ -2905,6 +4011,7 @@ class SidePanel(QGroupBox):
                 + '</p>'
             )
         self._result_browser.setHtml(html)
+        self._detail_tabs.setTabText(1, "計算結果 ✓")
 
         # 計算成功後啟用 Inventor 匯出按鈕
         if self._btn_inventor:

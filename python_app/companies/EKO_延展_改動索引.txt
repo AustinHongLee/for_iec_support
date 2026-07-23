@@ -1,0 +1,230 @@
+================================================================
+益高（E-KO ENGINEERING）規則延展 — 改動索引 / 搶修地圖
+建立: 2026-07-21   階段: Phase 1 pilot (FS12)
+用途: 讓日後搶修或另一個 AI Agent 快速知道「動了什麼、去哪裡改」。
+================================================================
+
+【設計原則】(使用者指定)
+- 盡量不動原始核心 core/；工作集中在本延展套件 companies/。
+- 動到原始核心時，務必在本檔「原始核心改動記錄」區塊登記。
+- Claude 不自行 git commit；檔案交由使用者提交。
+
+【原始核心改動記錄】(★搶修先看這裡★)
+  截至 2026-07-21，原始核心僅動 1 處(其餘全為 companies/ 新增延展檔)：
+  ▸ core/calculator.py 的 analyze_single()：在「IEC 查無 Type handler」的分支加了益高 fallback——
+    若 companies.eko.dispatch.can_handle(fullstring) 為真，就轉交 EKO 判讀並回傳(同樣走
+    apply_truth_contract + _attach_config_metadata)。程式碼區塊以「益高(E-KO)延展 fallback」註解框住。
+    目的：讓主程式 GUI(run_app) 免改即可判讀益高編號(FS12/UB1/CM1…)，與 Type 系列同一條入口。
+    影響：IEC 既有 Type 完全不變(fallback 只在查無 handler 時觸發)；已由 tests/test_eko_main_integration.py 鎖定。
+    要回復純淨核心：移除該 fallback 區塊即可，益高判讀仍可經 companies.api.analyze 獨立使用。
+  其餘 companies/**、tests/test_eko_*.py 皆為新增，未改動其他 core 檔。
+
+【新增檔案清單 (extension)】
+  companies/__init__.py                 延展套件說明
+  companies/api.py                      統一入口 analyze(fullstring, company=...) ← GUI 未來接這裡
+  companies/registry.py                 公司模板註冊表 (EKO / IEC)
+  companies/eko/__init__.py
+  companies/eko/parser.py               益高編號解析 (FS 家族: FS<n><fix>-<serial>-<L>L-<H>H[-<H1>H1])
+  companies/eko/config_loader.py        讀 companies/eko/configs/<code>.json
+  companies/eko/dispatch.py             code -> 計算器 (HANDLERS: FS12)；新增支撐在此註冊
+  companies/eko/types/__init__.py
+  companies/eko/types/fs12.py           FS12 計算器 (冂型角鋼門架)
+  companies/eko/configs/fs12.json       FS12 資料 (序號→角鋼/底板、負荷表、固定方式、負荷表)
+  tests/test_eko_fs12.py                FS12 golden 回歸測試 (7 例)
+
+【FS12 判讀規則 (source: SUPPORT-單張/FS12.pdf)】
+  角鋼: 序號1=L50*50*6 / 序號2=L75*75*9；冂型展開長 = L + 2H, ×1
+  底板: 9t A36, ×2 (W 焊接免鑽孔)
+  固定方式: A=基礎螺栓(③,含水泥墩) B=螺栓錨帽(⑥) E=擴展螺栓(④,含水泥墩) W=焊接(免螺栓/免水泥墩)
+  U型螺栓 UB1: 數量配合現場 (重量另計)
+  水泥墩: A/E 且有 H1 才出；詳見 CM1A (另計)
+  尺寸為字面 mm (與 IEC Type 的 ×100 不同)
+
+【如何新增下一支益高支撐 (Phase 2)】
+  1. 讀該圖 PDF，於 companies/eko/configs/<code>.json 建資料。
+  2. 於 companies/eko/types/<code>.py 建 calculate(parsed, config, overrides)。
+  3. 於 companies/eko/dispatch.py 的 HANDLERS 註冊 code。
+  4. 若該家族編號文法與 FS 不同，於 companies/eko/parser.py 增家族規則。
+  5. 於 tests/ 加 golden 測試。
+
+【驗證指令 (改動後必跑到綠燈)】
+  python -m compileall -q python_app
+  python python_app/validate_tables.py        # 需 "=== VALIDATION COMPLETE ==="，無 "X ... ERROR"
+  QT_QPA_PLATFORM=offscreen python -m pytest -q # GUI 測試需 PyQt6 + libegl1
+  基線: pytest 157 passed (原 150 + FS12 新 7)；validate 21 個預期警告
+
+【Excel 10 分頁串接 (task 6, 已完成, 仍零核心改動)】
+  既有 core.project_aggregation.analyze_project_rows(rows, calculate_type=...) 本就有
+  「判讀函式注入點」；companies/api.py 用它注入益高判讀，再呼叫既有
+  export.excel.workbook.export_project_workbook，益高結果即灌進全部 10 分頁。
+  入口: companies/api.py -> analyze_project(rows, company) / export_project(rows, path, company)
+  實測 5 種 FS12、15 組樣本 → 10 分頁全渲染 (重量明細/重量分析/材料合計採購清單/
+  下料明細+圖示/單組重量/支撐分類/查核…)，總重 329.08kg，無錯誤。
+  註: 分類頁「CS 管支撐」是依重量/材質判定 (與公司無關)，益高角鋼件自動正確歸類。
+
+【已知待處理 (cosmetic / 後續)】
+  - 部分分頁標題硬編為「IEC 管架支撐」；跨公司需做「公司標籤」參數化 (會碰 export/，另案)。
+  - U型螺栓/螺栓 重量目前 0 (另計)；如需入重量再補 UB1/螺栓單重表。
+
+【變更紀錄】
+  2026-07-21 fs12.json v1.1：螺栓改 config 驅動材質 (A307-B/碳鋼鍍鋅)，修正誤標 SUS304。
+  2026-07-21 companies/api.py：新增 analyze_project / export_project 專案級入口。
+  2026-07-21 Phase 2 普查：71 張圖編號文法對照表 → companies/eko/EKO_圖面普查_2026-07-21.md + 桌面 artifact。
+  2026-07-21 Phase 2 批1(子件先行)：
+    - parser.py 泛化：^([A-Z]+)(\d*)([A-Z]*)$ 抽 code+修飾字母 + 泛用段分類(管徑/序號/L/H/H1/C/M/T)。FS12 相容。
+    - dispatch.py：已知 code 後以該 code 重解析(精準取修飾字母)。
+    - 新增子件 UB1(U型螺栓)、EB2(擴展螺栓)：configs/ub1.json(21列)、eb2.json(4列) + types/ub1.py、eb2.py。重量以彎鋼棒/螺桿近似。
+    - 子件核對資料存檔：companies/eko/子件圖面資料_2026-07-21.md(含 UB1/EB2/CM1/CL5/DFS4/S1 表)。
+    - tests/test_eko_subcomponents.py(8例)。全套件 pytest 165 passed、validate COMPLETE、核心零改動。
+  2026-07-21 Phase 2 批2(子件完成)：再建 CL5(管夾)、DFS4(FS下支架)、S1(管蹄)、CM1(水泥墩)。
+    - configs/cl5.json,dfs4.json,s1.json,cm1.json + types/ 對應 4 檔;dispatch 註冊。
+    - 幾何近似(已於各 config data_update_note 與 remark 標明,非臆造硬值)：
+        CL5 管夾重量=彎板 π(A+t)×E寬×t厚;DFS4 底板B×B方形、補強板三角肋75×75近似、支撐管長=H;
+        S1 管蹄柱/加強板高=H、底板寬=A、補強板(SUS)需 sus_pipe override;CM1 混凝土量=平面積×高(高由H/預設300)。
+    - tests/test_eko_subcomponents_b.py(8例)。全套件 pytest 173 passed、validate COMPLETE、核心零改動。
+    - 6 個共用子件全部完成(UB1/EB2/CL5/DFS4/S1/CM1)。
+  2026-07-21 主程式整合(★)：core/calculator.py analyze_single 加益高 fallback(唯一核心改動,見上『原始核心改動記錄』)。
+    + companies/eko/dispatch.py 新增 can_handle();+ companies/eko_cli.py(試用CLI,選配);+ tests/test_eko_main_integration.py(5例)。
+    效果：跑 run_app.cmd 輸入 FS12W-2-1300H-400L 等益高編號,即與 Type 系列同樣分析/進結果表/算重量/匯出;GUI 未改。
+    全套件 pytest 178 passed、validate COMPLETE。
+  2026-07-21 FS12 修正(使用者回饋)：冂型角鋼改為 3 支獨立下料件 = 立柱×2(長H)+上橫樑×1(長L)，
+    不再併成單一 L+2H 長料。重量不變(29.88/組)，但下料明細/材料合計才正確(6段套排)。
+    ★設計原則(適用全 FS/SS/PU 家族)：每個長度維度(L/H/H1/H2/L1…)都是各自的實體下料件，
+     必須以各自長度+數量分列(同品名/規格/材質仍會在材料合計彙總、下料依長度套排)；嚴禁把多支不同長度併成一支長料。
+    下一步：FS 家族一張一張做(FS2/FS3/FS13/FS15…),做3~4張後抽 FS 共用引擎(rule of three)。
+  2026-07-21 Phase 2 批3(SS托架共用引擎)：一支引擎吃 6 張(rule of three 首個共用引擎)。
+    - companies/eko/engines/ss_bracket.py + engines/__init__.py;configs ss24/25/26/27/28/37.json;dispatch 6碼→ss_bracket。
+    - 結構:垂直桿(立柱,長H)+水平桿(長L或固定)+[B型]底板+螺栓連帽;W型焊接無;逐桿分列。
+    - SS28 無 L 段(水平底座固定500);角鋼用L75、H鋼用H150/H125;底板A283 Gr.C。
+    - tests/test_eko_ss_bracket.py(6例)。全套件 pytest 184 passed、validate COMPLETE、核心零改動(此批)。
+    - 目前可試益高編號共 13 種:FS12,UB1,EB2,CL5,DFS4,S1,CM1,SS24,SS25,SS26,SS27,SS28,SS37。
+    - engines/ 為共用引擎落點;未來 FS/PU 引擎亦放此。
+  2026-07-21 Phase 2 批4(SS 家族收齊 17 張)：ss_bracket 升級為「通用 SS 引擎」，一支吃全 17 張。
+    - parser 加 L_list(收集多個□L,供 SS34 兩側懸挑 A+B)。
+    - 引擎新 schema:members[]逐桿(sec 可 serial 查型鋼)、extra_plates、base_plate(可 by_serial)、
+      nut_bolt/exp_bolt(B→螺栓連帽/E→擴展螺栓,可 serial)、fix_scheme=double(方向S/V+B/W)、
+      always_welded(無固定字母)、ubolt_ref(SS33)、section_weights(核心鋼表無的斷面後援,如 C75x40x5/C150x75x6.5)、serial_limits、extra_warnings。
+    - 新增 config:ss1/6/8/11/12/13/15/21/22/33/34;既有 ss24/25/26/27/28/37 遷移到新 schema(v1.1)。
+    - 近似(已標註):SS6/11/13 底板尺寸由孔位 a/b/C 近似(C+2a)×b、材質 A36;SS12 斜撐長度未列表(警告);SS34 橫樑取A+B。
+    - tests/test_eko_ss_family.py(8例)+既有 test_eko_ss_bracket.py。全套件 pytest 192 passed、validate COMPLETE、此批核心零改動。
+    - 益高目前可試共 24 種:FS12,UB1,EB2,CL5,DFS4,S1,CM1,SS1,SS6,SS8,SS11,SS12,SS13,SS15,SS21,SS22,SS24~28,SS33,SS34,SS37。
+    - SS 全家族完成。
+  2026-07-21 Phase 2 批5(FS 角鋼型)：engines/fs_portal.py 引擎;configs fs2/fs3/fs13/fs14/fs15.json;dispatch 註冊。
+    - 涵蓋 FS2(A字斜腳,斜長=√(H²+((B-A)/2)²)幾何算)、FS3(ㄇ門架序號)、FS13(雙立柱)、FS14(單立柱)、FS15(型式H/V序號)。
+    - 通則:角鋼成員逐桿分列;底板9t恆有(A/B/E鑽孔,W/N免鑽);螺栓僅A/B/E;水泥墩僅A/E且有H1;U-bolt引用UB1。
+    - 近似(標註):FS13/14/15 底板外形由孔位A/B近似;FS2斜腳幾何算。table_key=pipe(依管徑)/serial(依序號)。
+    - tests/test_eko_fs_portal.py(7例)。全套件 pytest 199 passed、validate COMPLETE、此批核心零改動。
+    - 益高可試共 29 種(+FS2/FS3/FS13/FS14/FS15)。FS12 仍用專用版(types/fs12.py),之後可併入 fs_portal。
+    - FS 剩:鋼管立柱型(FS4/FS5/FS8/FS9/FS11/FS19/FS22/FS23,用 A53-B 管柱,接彎頭/管夾CL5/DFS4/gusset)、保冷型(FS31/FS33,需FS32 BLOCK-無)。
+  2026-07-21 Phase 2 批6(FS 鋼管立柱型)：engines/fs_pipe.py 元件清單式引擎;configs fs4/fs5/fs8/fs9/fs11/fs19/fs22/fs23。
+    - 元件種類:pipe_col/pipe、steel(含section_weights後援 C150x75x6.5)、plate、bolt_by_fix(A/B/E)、bolt_fixed(FS19恆有)、
+      ubolt、pier(when A/E或always)、ref(FS8管夾詳CL5)、subref(FS4/9/11 就地展開 DFS4,序號可由row取如FS11側管徑)。
+    - FS22 無墩無螺栓(底板A283 Gr.C);FS23 gusset×4+頂板(E→擴展螺栓+墩,W→焊接);FS19=尚得富SATURN(無固定字母,螺栓連帽恆有)。
+    - 近似(標註):FS11側板厚9t、FS4封板尺寸;M23(FS23)為原圖字樣。
+    - tests/test_eko_fs_pipe.py(8例)。全套件 pytest 207 passed、validate COMPLETE、此批核心零改動。
+    - 益高可試共 37 種。FS 家族已 14/17(FS12+角鋼5+鋼管8)。
+    - FS 僅剩保冷 stanchion 型 FS31/FS33(需 FS32 BLOCK-使用者確認無此圖,只能 best-effort)。
+  2026-07-21 Phase 2 批7(FS 保冷型,FS 家族收齊)：configs fs31/fs33 (fs_pipe 引擎);dispatch 註冊。
+    - FS33 best-effort可建(固定1.1/2\"SCH80立柱+不鏽鋼夾板A240-304+stud A193 Gr.B8);BLOCK-1/底板在FS32(缺)以 ref 標註。
+    - FS31 幾乎全在FS32(支撐管徑符號B/夾塊N/間隔板/底板),僅列已知+⚠警告,不可正式取料。
+    - tests 追加 2 例。全套件 pytest 209 passed、validate COMPLETE。
+    - ★FS 家族 17/17 完成(FS12+角鋼FS2/3/13/14/15+鋼管FS4/5/8/9/11/19/22/23+保冷FS31/33)。益高共 39 種可試。
+    - 之後:PU 家族(8)→單段徑導架/錨定(A3/G1/G2/VA1/VA2/VG1/VG2,可用普查件號表+引用S1)→保冷CS2/SUB1/SUB2(CS1/VG5待第2頁)→ST/DS。
+    - 待補圖:FS32、CS1 2/2、VG5 2/2。
+  2026-07-21 FS31 升級(使用者補入第2頁尺寸表)：fs31.json v1.1 正式可用——支撐管徑(配管2\"~16\"→撐1.5\"~10\")、
+    間隔板C×D×E、底板A×B×厚、∅d、L型基礎/螺栓連帽/擴展螺栓、stud bolt J(A193 Gr.B8)、夾塊數量N 全列。
+    引擎 ref 元件加 qty_field(夾塊×N)。FS31 不再 best-effort(僅夾塊幾何仍為另件,數量已含)。全套件 209 passed。
+    → FS 家族待補圖僅剩「夾塊幾何詳圖」;FS33 仍待其 BLOCK-1(FS32);CS1/VG5 第2頁仍待補。
+  2026-07-21 Phase 3 批8(單段家族 + 實務清單容錯)：新引擎 engines/eko_generic.py;
+    新 config g1/g2/a3/va1/va2/vg5/ds3/st3/fs1/pu4/pu9/pu11/pu12/pu23;dispatch 註冊 + OPEN 委派 + 無圖佔位。
+    - eko_generic:元件清單式(steel/plate/pipe/bolt_by_fix/ubolt/ref/pier),table_key=pipe/serial/null,
+      值來源 數字/大寫維度(H/L/L1/L2/A/H1/H2)/pipe/其餘=row欄位。★注意:單一大寫字母(尤其"A"/"B")為保留維度,
+      config 的 row 欄位名勿用這些(A3 因此改用 lug_a/lug_b/lug_c)。section_weights 後援(25*25*3、150*75*6.5)。
+    - 家族:G1(導架無保溫,角鋼依管徑帶)、G2(導架保溫,管蹄柱+底板+導架;補強板/加強板條件)、A3(支撐座lug依管徑)、
+      VA1(lug+角鋼+引用S1)、VA2(lug+U型螺栓)、DS3(虛設撐管同管徑len=L)、ST3(套管trunnion依表,長度採B近似)、
+      FS1(落地槽鋼,序號1/2/3選斷面,A→CM1C墩)、PU4/9/11/12(托撐,角鋼/槽鋼臂+U型螺栓+底板/螺栓B/E)、PU23(重型雙槽鋼,無管徑)。
+    - OPEN-□":dispatch._open 委派核心 core/types/type_penetration_hole(管徑經 overrides.nominal_size 傳入)——不改核心。
+    - 無圖面 FS24/PU22:dispatch._NO_DRAWING 給明確訊息(非崩潰);can_handle 納入委派/無圖碼。
+    - ★容錯策略(使用者要求實務清單「跑得起來」):三引擎(fs_pipe/fs_portal/ss_bracket)+eko_generic 一律
+      缺/未知序號→預設首序號+警告;管徑超表→採最大列+警告;非標準/缺固定字母→視為不固定或焊接+警告;
+      缺成員尺寸→略過該桿+警告(非硬錯)。S1 缺H→僅出底板+警告。
+      ↳ 對應調整既有測試 test_eko_ss_bracket.test_ss_missing_dims_and_fix(由「應硬錯」改為「應警告且可產出」)。
+    - 實務清單 support_list.txt(109 筆)全數「跑得起來」:107 產出完整BOM、2(FS24/PU22)為無圖明確訊息。
+    - tests/test_eko_generic.py(14例)。全套件 pytest 223 passed、validate COMPLETE、此批核心零改動(OPEN 為委派非改動)。
+    - 益高可試共 53 種(+G1/G2/A3/VA1/VA2/VG5/DS3/ST3/FS1/PU4/PU9/PU11/PU12/PU23,另 OPEN 委派)。
+    ⚠【待使用者確認】FS31 原圖分 Tee 型 / Elbow 型兩種型態,目前一律默認 ELBOW 型。待補完整清單後區分。
+    2026-07-21 加工件繪圖幾何 批1(單段家族) + 逐支複核發現：
+      核心模型本就支援(entry.length/width/spec厚 + geometry.holes[HolePattern:pattern/pitch_x/pitch_y/diameter/count]
+      + shape_spec/shape_kind + gross/cutout/net_area + manufacturing_type)。新增 companies/eko/plating.py attach_geom()
+      把孔位/輪廓填進 geometry;eko_generic plate 元件支援 config 的 hole{n,dia,px,py,edge,(*_field)} 與 shape{kind,spec,net_area},
+      免鑽孔(W/N)不掛孔;異形板自動歸 shaped_plate。已補:A3(三角肋板 triangle)、VA1/VA2(lug 五邊形)、
+      PU4/9/11/12/23 底板孔(∅14/∅19,pitch/edge)、VG5E 底板孔(∅22,依row hpx/hedge)。逐圖複核資料由子代理轉錄。
+      ★【逐支複核發現,待使用者確認—影響重量】部分底板「方板尺寸」疑似把『螺栓中心距』當成板寬存了:
+        FS14 圖上明標 邊距35、pitch B=190、板 C×C=260×260(190+2×35=260 ✓);但 config 存成 260×190(短邊=pitch)。
+        同型:FS12(260×190應為260×260)、FS15(同)、FS13(待查)、FS5(存120×160,應B×B=160×160)。
+        FS23 底板已是方板(380×380✓)。修正會改板重與 test_eko_fs12 的 36.86/6.98。→ 待確認後 批2 一起修 FS/SS 底板尺寸+補孔位。
+      批1 全套件 229 passed、validate COMPLETE。coverage:板件48,已存幾何8(單段家族),FS/SS 底板孔待批2。
+    2026-07-21 加工件繪圖幾何 批2(FS/SS,使用者核准「依圖修正+補全孔位」)：
+      三引擎(fs_portal/fs_pipe/ss_bracket)接上 plating.attach_geom;plating.py 加 resolve_hole(literal 或 *_field)。
+      ★方板尺寸修正(改板重,已更新測試 test_eko_fs12=39.43/底板9.55、main_integration=39.43):
+        FS12 底板 260×190→260×260(方板A×A,B=190為孔距)、FS13/14/15 短邊190→260、FS5 底板 A×B→B×B(160×160)。fs12.py 改方板+掛孔。
+      孔位補齊(∅/中心距/邊距):FS2/3(單角落∅d)、FS12/13/14/15(4-∅19@190,edge35)、FS5(4-∅d@A)、FS8(2孔@150)、
+        FS23(4-∅@ba,rows加ba/bd)、FS33(2-∅16@85)、FS19(單孔)、SS12/21/22/24/25/26/27/28/37(4孔,px/py/edge依圖)、
+        SS6/11/13(by_serial_hole,每板2孔@b,edge a)。異形輪廓:A3三角肋板、FS19/FS23補強角板(triangle)、VA1/VA2/SS33耳板(lug)。
+      焊接/免鑽(W/N)不掛孔;頂板/座板/支撐塊/擋板pad 本就無孔(非缺漏)。
+      全套件 233 passed、validate COMPLETE、清單 109/109。coverage:抽樣板件28→有孔18/異形5/其餘無孔矩形。
+      加工繪圖資料存取:entry.length×width×spec(厚) + geometry.holes(count/diameter/pitch_x/pitch_y) + shape_kind/shape_spec + manufacturing_type(shaped_plate/plate_cut)。
+      待補圖細節:FS31(參數式無數值)、DFS4底板(配合現場鑽孔)、FS33 9t×60夾板(我方config暫未列)。
+    2026-07-21 FS31 補幾何(使用者提供第2頁尺寸表,確認非參數式)：批2曾略過FS31(誤以為純參數),
+      實則第2頁有全數值表(已於v1.1納入)。今補加工幾何+修方板:間隔板 C×D→D×D方(八角octagon)+4-∅G孔@中心距C;
+      底板 base_a×base_b→base_b×base_b方(B×B)+4-∅bd孔@中心距base_a(=A);N/W免鑽不掛孔。全套件233 passed、清單109/109。
+      FS31 仍存的唯一缺口:夾持塊 BLOCK 幾何在 FS32(未有圖),只列數量N;Fixed vs Guide 型式(圖示兩種)BOM是否相同待確認。
+    2026-07-21 品名整理(使用者:非直觀名稱)：先改 ⚠ 中英混雜/太籠統者(益高側,不動 core/Type)。
+      鋼板→座板(fs9)、支撐板→補強角板(fs19/fs23)、特殊螺栓(stud)→柱頭螺栓(fs31/fs33)、
+      夾持塊 BLOCK/BLOCK-1→夾持塊(fs31/fs33)、托架(CRADLE)→托架(st3)、
+      DS3撐管(虛設)→撐管、ST3支撐套管(trunnion)→支撐套管(eko_generic pipe 元件覆寫 entry.name,取代核心「管路」)、
+      OPEN 的 FB50×6開孔補強→開孔補強扁鐵(dispatch._open 益高側覆寫,規格FB50×6留spec;不動核心/IEC)。
+      對照:IEC Type 品名本身更亂(U.bolt/U-BOLT/EXP.BOLT/PIPE CLAMP/Plate_a_無鑽孔/檔板_54Type…中英混),無乾淨標準可對齊,故益高走乾淨中文、不模仿 Type 英文;跨系統同物異名(U型螺栓 vs U.bolt 等)僅記錄不動 core。
+      對應更新 tests(fs_pipe/generic)。全套件 229 passed、validate COMPLETE。
+      【核心來源、未動之品名】角鋼/槽鐵/H型鋼(core steel)、管路(core pipe,FS鋼管型/DFS4/IEC仍用)。
+    2026-07-21 FS15 複審修正(使用者要求自查)：重看 FS15.pdf 抓到 2 個 BOM 錯 + 補強:
+      (1)★角鋼為Γ型單支彎料,漏了水平頂臂:原本只列立柱(len=H),補上頂臂(len≈300,固定);逐桿分列2支(fs15.json members)。
+      (2)★U型螺栓:FS15本體★不自帶U型螺栓(使用者再確認:FS15不帶管徑,多搭配CS1G保冷;型式V之U型螺栓另以 UB1 單獨標註計算)。
+         fs15.json 改用 "ubolt_separate":{"variant":"V","note":...};fs_portal 讀 parsed.flags 判 H/V,型式V→僅出提醒(不出BOM),
+         若編號帶管徑則附參考規格(_ubolt.lookup/spec_text)。FS2/13/14 仍走 "ubolt" 自帶路徑(那些圖確有U型螺栓)。
+         (先前一版曾用 only_variant 自動出V的U-bolt,經使用者澄清後改為不自帶,僅提醒。)
+      (3)序號-高度荷重上限:序1(L50×50×6)H1500不可→fs15.json serial_hmax{1:1000,2:1500},fs_portal 超限警告。
+      注意:型式 H/V 走 parser 的 flags(單字母段);fs_portal 新增 serial_hmax 檢查與 ubolt.only_variant 為通用(其他FS config未設則行為不變)。
+      tests 追加 test_fs15_gamma_two_pieces_and_variant_ubolt / test_fs15_serial1_over_h_warns。全套件 229 passed。
+    2026-07-21 U型螺栓具體化(使用者)：父支撐引用 UB1 不再只寫「詳 UB1-X"」,改算實際規格+師傅叫料說法。
+      新增 companies/eko/ubolt.py(共用):lookup(pipe)→{分/寸俗稱, 公制Mxx牙, 英制UNC, 線徑φd1, 展開長≈πR+2H, 重量};
+      add_ubolt(result,pipe,qty,extra_note,material,name) 產出 name預設「U型螺栓」、spec=「4分 M10(3/8"-16UNC) 1/2"管用」、
+      remark=師傅叫料(幾分/幾寸+牙+線徑+展開長+腳長H/內寬P/牙長E)、實際重量。分/寸 _FEN、公制→UNC _UNC 皆在該檔。
+      改用處:fs_portal(FS2/14/15…)、fs_pipe(ubolt元件)、eko_generic(ubolt元件)、ss_bracket(SS33 name=U型螺栓連帽)、
+      types/ub1.py(重構為呼叫共用)。★名稱維持「U型螺栓」/「U型螺栓連帽」(彙總與既有測試相容);查不到管徑→退回參照(不硬錯)。
+      例 FS14W-1/2"-575H → 4分 M10(3/8"-16UNC), 線徑φ10, 展開長≈132mm, 單重0.081kg。UB1-6" 單重1.039kg(與舊測試一致)。
+    2026-07-21 FS12 兩項(使用者)：
+      (1)★FS12 不含 U型螺栓：管線固定另由 VA2 系列接手。types/fs12.py 移除 U型螺栓元件(及 U_BOLT import),
+         總重不變(U型螺栓原本重量另計=0);對應 test_eko_fs12 改為斷言「無 U型螺栓」。
+      (2)★parser 支援「無字母純位置」編號(字母仍優先,順序無關)：parser.py 收集裸數字,第1個=序號,
+         其後依代號文法順序填未設定維度(FS12=序號→L→H→H1,見 _POSITIONAL_ORDER,預設 L/H/H1),並記 parse_warnings。
+         混用(部分帶字母部分裸數字)亦可:裸數字補到剩餘未設定槽。dispatch.analyze 把 parse_warnings 前置到 result.warnings。
+         注意:僅「2個以上裸數字」才觸發位置備援(原本就會誤判),帶字母編號行為完全不變(向後相容)。
+         如清單出現順序與文法圖不同的無字母碼,警告會提醒改用帶字母寫法。tests 追加 4 例(順序無關/位置備援/混用)。
+    2026-07-21 DS3 定案(使用者)：維持舊版簡單做法——只輸出「撐管一支/長度L/材質」,不做型態二的細列。
+      ★依 Note1 加材質提醒：撐管須與母材(彎頭/管線)同材質且同管徑;預設碳鋼 A53 Gr.B,若母材為不鏽鋼/合金鋼須改。
+      實作:config 加旗標 "material_reminder":true → eko_generic 於 pipe 元件 remark 附「⚠材質須同母材」+ extra_warnings 詳述。
+      (Type61 為 CTCI 套管撐參照,已了解但不納入 DS3;正式查表套管仍用 ST3。)
+    2026-07-21 A3 修正(使用者指正)：A3 為對稱支撐座=三角肋板(B1/B2)×2 + 水平座板(A1/A2)×2,共4片(各2片),
+      非單片 lug。eko_generic plate kind 加 "tri"(直角三角形→淨面積取外接矩形一半, net_area_mm2)。
+      肋板底=A×高=C(三角)、座板長=A×寬=B、厚=t;A/B/C 對應仍為推估(已於warning請使用者確認)。test 更新。
+    ⚠【近似/待補】ST3 套管長度採 B(參考投影)近似,實為 SUIT IN FIELD;A3 尺寸 A/B/C 對應為推估(件數4已正確);
+      VG5 第2頁件號清單缺→元件 best-effort 推估(僅導架角鋼,VG5E 底板);VA1 之管蹄 S1 需 H 故僅列引用另計。
+    - 尚未建:PU1/5/21(有圖未建)、VG1/VG2/CS1/CS2/SUB1/SUB2(保冷)、DS1/ST(其餘 trunnion/dummy)。
+
+【尚未啟用的另一顆種子 (刻意不動)】
+  core/config_loader.py 的 load_config(variant=) overlay 引擎仍為 NotImplementedError。
+  該引擎適用「同形狀、換數字」的 overlay；FS12 是新形狀，走原生計算器不需它。
+  待某支益高支撐能疊在既有 IEC Type 上時再啟用；屆時會修改 core/config_loader.py
+  與 tests/test_config_loader.py，並於本檔登記。
+================================================================

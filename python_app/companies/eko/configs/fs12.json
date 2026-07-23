@@ -1,0 +1,75 @@
+{
+    "company": "EKO",
+    "company_name_zh": "益高工程有限公司",
+    "company_name_en": "E-KO ENGINEERING., LTD",
+    "code": "FS12",
+    "name": "FIELD SUPPORT 管架 FS12",
+    "drawing_no": "FS12",
+    "kind": "field_support_portal",
+    "dim_unit": "mm_literal",
+    "h_limit_mm": 1500,
+    "fixing_methods": {
+        "A": "基礎螺栓固定 (含水泥墩)",
+        "B": "螺栓錨帽固定",
+        "E": "擴展螺栓固定 (含水泥墩)",
+        "W": "焊接固定 (免螺栓、免鑽孔、無水泥墩)"
+    },
+    "serials": {
+        "1": {"angle_code": "L50", "angle": "50*50*6", "h_max_mm": 500,
+              "base_plate": {"A": 180, "B": 110, "C": 25, "hole_dia": 15}},
+        "2": {"angle_code": "L75", "angle": "75*75*9", "h_max_mm": 1500,
+              "base_plate": {"A": 260, "B": 190, "C": 35, "hole_dia": 19}}
+    },
+    "bolts": {
+        "1": {
+            "anchor_bolt": {"spec": "M12x200L", "material": "A307-B"},
+            "nut_bolt": {"spec": "M12x40L", "material": "A307-B 鍍鋅"},
+            "exp_bolt": {"spec": "EB2-M12x110L", "material": "碳鋼(鍍鋅)"}
+        },
+        "2": {
+            "anchor_bolt": {"spec": "M16x200L", "material": "A307-B"},
+            "nut_bolt": {"spec": "M16x50L", "material": "A307-B 鍍鋅"},
+            "exp_bolt": {"spec": "EB2-M16x125L", "material": "碳鋼(鍍鋅)"}
+        }
+    },
+    "load_table": [
+        {"serial": 1, "L": 500,  "H": 500,  "safe_kg": 240, "thrust_kgm": 140},
+        {"serial": 1, "L": 1000, "H": 500,  "safe_kg": 155, "thrust_kgm": 140},
+        {"serial": 2, "L": 500,  "H": 500,  "safe_kg": 735, "thrust_kgm": 480},
+        {"serial": 2, "L": 1000, "H": 500,  "safe_kg": 540, "thrust_kgm": 480},
+        {"serial": 2, "L": 500,  "H": 1000, "safe_kg": 500, "thrust_kgm": 240},
+        {"serial": 2, "L": 1000, "H": 1000, "safe_kg": 300, "thrust_kgm": 240},
+        {"serial": 2, "L": 500,  "H": 1500, "safe_kg": 240, "thrust_kgm": 140},
+        {"serial": 2, "L": 1000, "H": 1500, "safe_kg": 300, "thrust_kgm": 140}
+    ],
+    "components": [
+        {"item": 1, "name": "角鋼", "material": "A36", "qty": 1, "note": "冂型門架, 長度=L+2H"},
+        {"item": 2, "name": "底板 9t", "material": "A36", "qty": 2},
+        {"item": 3, "name": "L型基礎螺栓", "material": "A307-B", "qty": 8, "applies_to": "A"},
+        {"item": 4, "name": "擴展螺栓", "qty": 8, "applies_to": "E"},
+        {"item": 5, "name": "U型螺栓 UB1", "qty": "site", "note": "數量配合現場需要"},
+        {"item": 6, "name": "螺栓錨帽", "material": "A307-B 鍍鋅", "qty": 8, "applies_to": "B"},
+        {"item": 7, "name": "水泥墩", "qty": 2, "applies_to": "A,E", "note": "詳見 CM1A"}
+    ],
+    "designation_format": {
+        "pattern": "FS12{fix}-{serial}-{L}L-{H}H[-{H1}H1]",
+        "example": "FS12E-1-500L-500H-300H1",
+        "fields": {
+            "fix": "固定方式 A/B/E/W",
+            "serial": "序號 1(L50*50*6) / 2(L75*75*9)",
+            "L": "管架長度 (mm)",
+            "H": "管架高度 (mm, <1500)",
+            "H1": "水泥墩高度 (mm, 未指定則不製作)"
+        }
+    },
+    "notes": [
+        "FS12A / FS12E 包括水泥墩製作",
+        "管架長度L、高度H 配合現場；水泥墩高度H1 未指定則不製作",
+        "FS12A=基礎螺栓固定, FS12B=螺栓錨帽固定, FS12E=擴展螺栓固定, FS12W=焊接固定",
+        "冂型角鋼展開長 = L + 2H (未計底板厚與轉角搭接損耗)"
+    ],
+    "version": "1.1",
+    "data_updated_at": "2026-07-21",
+    "data_update_note": "v1.1 螺栓改 config 驅動材質：③L型基礎螺栓/⑥錨帽=A307-B(鍍鋅)、④擴展螺栓=碳鋼(鍍鋅)，修正先前誤標 SUS304。v1.0 依 SUPPORT-單張/FS12.pdf 首版。",
+    "source_drawing": "SUPPORT-單張/FS12.pdf"
+}

@@ -1,0 +1,78 @@
+{
+ "name": "保冷管垂直導架",
+ "structure": "保冷垂直導架",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": "pipe",
+ "fix_letters": [
+  "W",
+  "E"
+ ],
+ "table": [
+  {
+   "max": 2,
+   "base_w": 200,
+   "base_l": 200,
+   "hpx": 120,
+   "hedge": 35
+  },
+  {
+   "max": 4,
+   "base_w": 260,
+   "base_l": 260,
+   "hpx": 180,
+   "hedge": 50
+  }
+ ],
+ "components": [
+  {
+   "kind": "steel",
+   "name": "導架角鋼(推估)",
+   "sec": [
+    "Angle",
+    "50*50*6"
+   ],
+   "len": "L",
+   "qty": 2
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t": 9,
+   "w": "base_w",
+   "l": "base_l",
+   "when": [
+    "E"
+   ],
+   "qty": 1,
+   "approx": true,
+   "hole": {
+    "n": 4,
+    "dia": 22,
+    "px_field": "hpx",
+    "py_field": "hpx",
+    "edge_field": "hedge"
+   }
+  },
+  {
+   "kind": "bolt_by_fix",
+   "by_fix": {
+    "E": {
+     "name": "擴展螺栓",
+     "spec": "M20x?L",
+     "mat": "碳鋼(鍍鋅)",
+     "qty": 4
+    }
+   }
+  }
+ ],
+ "extra_warnings": [
+  "⚠ VG5 第2頁(件號名稱/材質/數量清單)缺，元件為 best-effort 推估，待補第2頁後修正",
+  "VG5E 才有底板(4-φ22孔)；≤2\"底板200×200、3~4\"底板260×260"
+ ],
+ "data_update_note": "依VG5.pdf第1頁(僅圖形/底板詳圖)；件號清單在第2頁(未提供)→推估",
+ "code": "VG5",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

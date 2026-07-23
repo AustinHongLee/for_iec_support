@@ -1,0 +1,128 @@
+{
+ "code": "FS22",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "鋼管立柱+底板(直立於鋼構/混凝土,無水泥墩)",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 2,
+   "col": "1.1/2",
+   "col_sch": "SCH.80",
+   "base_t": 9,
+   "base": 150
+  },
+  {
+   "max": 3,
+   "col": "2",
+   "col_sch": "SCH.40",
+   "base_t": 9,
+   "base": 180
+  },
+  {
+   "max": 4,
+   "col": "3",
+   "col_sch": "SCH.40",
+   "base_t": 12,
+   "base": 200
+  },
+  {
+   "max": 6,
+   "col": "4",
+   "col_sch": "SCH.40",
+   "base_t": 12,
+   "base": 250
+  },
+  {
+   "max": 10,
+   "col": "6",
+   "col_sch": "SCH.40",
+   "base_t": 12,
+   "base": 300
+  },
+  {
+   "max": 16,
+   "col": "8",
+   "col_sch": "SCH.40",
+   "base_t": 12,
+   "base": 350
+  },
+  {
+   "max": 20,
+   "col": "10",
+   "col_sch": "SCH.40",
+   "base_t": 12,
+   "base": 400
+  },
+  {
+   "max": 22,
+   "col": "12",
+   "col_sch": "SCH.40",
+   "base_t": 16,
+   "base": 450
+  },
+  {
+   "max": 24,
+   "col": "14",
+   "col_sch": "SCH.40",
+   "base_t": 16,
+   "base": 500
+  },
+  {
+   "max": 28,
+   "col": "16",
+   "col_sch": "SCH.30",
+   "base_t": 16,
+   "base": 550
+  },
+  {
+   "max": 32,
+   "col": "18",
+   "col_sch": "SCH.30",
+   "base_t": 16,
+   "base": 600
+  },
+  {
+   "max": 36,
+   "col": "18",
+   "col_sch": "SCH.30",
+   "base_t": 16,
+   "base": 600
+  }
+ ],
+ "components": [
+  {
+   "kind": "pipe_col",
+   "name": "管支撐",
+   "size_field": "col",
+   "sch_field": "col_sch",
+   "len": "H",
+   "material": "A53Gr.B"
+  },
+  {
+   "kind": "plate",
+   "name": "底板",
+   "t_field": "base_t",
+   "w_field": "base",
+   "l_field": "base",
+   "material": "A283 Gr.C"
+  }
+ ],
+ "fix_letters": null,
+ "limits": {
+  "Hmax": 1600
+ },
+ "extra_warnings": [
+  "Hmax=1600(≥12\"管線可2000);無水泥墩無U-bolt;禁用:溫度<-10或>400°C、壓力>70kg/cm²G"
+ ],
+ "designation_format": {
+  "pattern": "FS22-□\"-□H",
+  "example": "FS22-4\"-1000H"
+ },
+ "data_update_note": "依FS22.pdf 全12列;底板A283 Gr.C方板",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

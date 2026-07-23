@@ -1,0 +1,79 @@
+{
+ "name": "FIELD SUPPORT 管架(落地/型鋼)",
+ "structure": "槽鋼管架",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": "serial",
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W",
+  "N"
+ ],
+ "section_weights": {
+  "150*75*6.5": 18.6
+ },
+ "table": {
+  "1": {
+   "channel": "100*50*5"
+  },
+  "2": {
+   "channel": "150*75*6.5"
+  },
+  "3": {
+   "channel": "200*80*7.5"
+  }
+ },
+ "components": [
+  {
+   "kind": "steel",
+   "name": "槽鋼",
+   "stype": "Channel",
+   "sec_field": "channel",
+   "len": "L",
+   "qty": 1
+  },
+  {
+   "kind": "bolt_by_fix",
+   "by_fix": {
+    "A": {
+     "name": "L型基礎螺栓",
+     "spec": "M16x350L",
+     "mat": "A307-B",
+     "qty": 2
+    },
+    "E": {
+     "name": "擴展螺栓",
+     "spec": "EB2-M16x125L",
+     "mat": "A307-B",
+     "qty": 2
+    },
+    "B": {
+     "name": "螺栓連帽",
+     "spec": "M16x50L",
+     "mat": "A307-B 鍍鋅",
+     "qty": 2
+    }
+   }
+  },
+  {
+   "kind": "pier",
+   "type": "CM1C",
+   "when": [
+    "A"
+   ],
+   "needs_h1": false,
+   "qty": 1
+  }
+ ],
+ "extra_warnings": [
+  "FS1 序號選斷面：1=C100×50×5、2=C150×75×6.5、3=C200×80×7.5；長度=L、高度=H",
+  "FS1A含水泥墩(CM1C)製作；H為區域積水最大深度(≤600mm)；FS1W焊於型鋼"
+ ],
+ "data_update_note": "依FS1.pdf件號表；無管徑代號 FS1{固定}-{序號}-□L-□H",
+ "code": "FS1",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

@@ -72,9 +72,15 @@ class ProjectHeader(QFrame):
         self.project_name_label.setText((name or "").strip() or "未命名清單")
 
     def set_material_completion(self, confirmed: int, total: int) -> None:
-        self.completion_label.setText(f"材質確認：{confirmed}/{total}")
+        if total:
+            text = f"材質確認：{confirmed}/{total}"
+            tooltip = "使用全域上段管材質之啟用項目，其材質已確認的筆數"
+        else:
+            text = "材質確認：不適用"
+            tooltip = "目前清單沒有使用全域上段管材質的 Type"
+        self.completion_label.setText(text)
         self.completion_label.setEnabled(True)
-        self.completion_label.setToolTip("啟用項目中已確認上段管材質的筆數")
+        self.completion_label.setToolTip(tooltip)
 
     def enable_mode_selector(self) -> None:
         self.mode_combo.setEnabled(True)

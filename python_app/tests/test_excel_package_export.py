@@ -6,6 +6,7 @@ from export.excel_export import (
     WORKBOOK_PACKAGE_PROFILES,
     export_project_workbook_package,
 )
+from export.excel.workbook import build_project_workbook
 
 
 def _sample_project():
@@ -71,3 +72,37 @@ def test_package_internal_links_only_target_included_sheets(tmp_path):
                             assert sheet in sheet_names, f"{label}: {ws.title}!{cell.coordinate} -> {sheet}"
         finally:
             wb.close()
+
+
+def test_claim_summary_drills_into_reconciled_weight_sources():
+    project = analyze_project_rows(
+        [
+            ProjectInputRow("10-6B-16", 2, drawing_line_number="DL-010", serial="10"),
+            ProjectInputRow("15-8B-1532", 1, drawing_line_number="DL-015", serial="15"),
+        ]
+    )
+    workbook = build_project_workbook(project, ("長官-支撐分類", "查核-支撐明細"))
+    summary = workbook["長官-支撐分類"]
+    evidence = workbook["查核-支撐明細"]
+    contract = "CS(熱鍍鋅)管支撐(Pipe Support)製裝>15Kg"
+
+    summary_row = next(
+        row for row in range(1, summary.max_row + 1)
+        if summary.cell(row, 2).value == contract
+    )
+    evidence_rows = [
+        row for row in range(4, evidence.max_row + 1)
+        if evidence.cell(row, 1).value == contract
+    ]
+    expected_total = round(sum(row.scaled_result.total_weight for row in project.rows), 3)
+
+    assert summary.cell(summary_row, 4).value == expected_total
+    assert summary.cell(summary_row, 8).value == "查看 2 筆來源"
+    assert summary.cell(summary_row, 8).hyperlink.target == f"#'查核-支撐明細'!A{evidence_rows[0]}"
+    assert evidence_rows == list(range(evidence_rows[0], evidence_rows[-1] + 1))
+    assert {evidence.cell(row, 2).value for row in evidence_rows} == {expected_total}
+    assert round(sum(evidence.cell(row, 11).value for row in evidence_rows), 3) == expected_total
+    for row, project_row in zip(evidence_rows, project.rows):
+        assert evidence.cell(row, 8).value == round(project_row.single_result.total_weight, 3)
+        assert evidence.cell(row, 11).value == round(project_row.scaled_result.total_weight, 3)
+        assert "kg/組 ×" in evidence.cell(row, 10).value

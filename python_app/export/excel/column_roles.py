@@ -27,6 +27,9 @@ COLUMN_ROLE: dict[str, dict] = {
     "總數量":      {"role": "manager",  "default_visible": True},
     "總重(kg)":    {"role": "manager",  "default_visible": True},
     "總重合計":    {"role": "manager",  "default_visible": True},
+    "合約名稱":    {"role": "manager",  "default_visible": True},
+    "合約總量":    {"role": "manager",  "default_visible": True},
+    "本列計入":    {"role": "manager",  "default_visible": True},
 
     # —— procure 採購：採購量／需求量 ——
     "建議採購量":      {"role": "procure", "default_visible": True},
@@ -34,6 +37,8 @@ COLUMN_ROLE: dict[str, dict] = {
     "需求件數/數量":   {"role": "procure", "default_visible": True},
     "原料長度(mm)":    {"role": "procure", "default_visible": True},
     "來源編碼":        {"role": "procure", "default_visible": True},
+    "計價單位":        {"role": "procure", "default_visible": True},
+    "專案組數":        {"role": "procure", "default_visible": True},
 
     # —— engineer 工程：規格／材質／尺寸／切割等 ——
     "規格":        {"role": "engineer", "default_visible": True},
@@ -54,6 +59,7 @@ COLUMN_ROLE: dict[str, dict] = {
     "每米重":      {"role": "engineer", "default_visible": True},
     "單重":        {"role": "engineer", "default_visible": True},
     "單組重(kg)":  {"role": "engineer", "default_visible": True},
+    "單組重量(kg)": {"role": "engineer", "default_visible": True},
     "單件重(kg)":  {"role": "engineer", "default_visible": True},
     "單組小計(kg)": {"role": "engineer", "default_visible": True},
     "總重小計":    {"role": "engineer", "default_visible": True},
@@ -69,6 +75,11 @@ COLUMN_ROLE: dict[str, dict] = {
     "命中明細":    {"role": "engineer", "default_visible": True},
     "材質判定":    {"role": "engineer", "default_visible": True},
     "備註":        {"role": "engineer", "default_visible": True},
+    "支撐單組總重(kg)": {"role": "engineer", "default_visible": True},
+    "分類門檻 / 原因": {"role": "engineer", "default_visible": True},
+    "本列請款計算": {"role": "engineer", "default_visible": True},
+    "命中材料 / 零件": {"role": "engineer", "default_visible": True},
+    "狀態 / 備註": {"role": "engineer", "default_visible": True},
     # 切割表（工程／現場用）
     "材料":        {"role": "engineer", "default_visible": True},
     "原料 #":      {"role": "engineer", "default_visible": True},

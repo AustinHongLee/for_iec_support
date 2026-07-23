@@ -1,0 +1,25 @@
+{
+  "company":"EKO","code":"CL5","name":"PIPE CLAMP 管夾","drawing_no":"CL5","kind":"pipe_clamp","dim_unit":"mm",
+  "clamp_material":"A36","bolt_material":"A307-B 鍍鋅",
+  "designation_format":{"pattern":"CL5-□\"","fields":{"pipe":"公稱管徑(吋)"},"example":"CL5-6\""},
+  "note":"2 半片鋼帶；帶寬=E、帶厚=t、內徑=A；展開長近似 π(A+t)(全圈)。螺栓連帽 ×2。",
+  "table":[
+    {"size":1,"A":36,"E":30,"t":6,"bolt":"M10x40L"},
+    {"size":1.5,"A":51,"E":30,"t":6,"bolt":"M10x40L"},
+    {"size":2,"A":63,"E":40,"t":6,"bolt":"M12x40L"},
+    {"size":3,"A":91,"E":40,"t":6,"bolt":"M12x40L"},
+    {"size":4,"A":117,"E":50,"t":9,"bolt":"M16x50L"},
+    {"size":5,"A":143,"E":50,"t":9,"bolt":"M16x50L"},
+    {"size":6,"A":170,"E":50,"t":9,"bolt":"M16x50L"},
+    {"size":8,"A":221,"E":50,"t":9,"bolt":"M16x50L"},
+    {"size":10,"A":275,"E":60,"t":9,"bolt":"M20x60L"},
+    {"size":12,"A":326,"E":60,"t":9,"bolt":"M20x60L"},
+    {"size":14,"A":358,"E":60,"t":9,"bolt":"M20x60L"},
+    {"size":16,"A":409,"E":70,"t":12,"bolt":"M24x70L"},
+    {"size":18,"A":459,"E":70,"t":12,"bolt":"M24x70L"},
+    {"size":20,"A":510,"E":70,"t":12,"bolt":"M24x70L"},
+    {"size":22,"A":561,"E":80,"t":12,"bolt":"M27x80L"},
+    {"size":24,"A":612,"E":80,"t":12,"bolt":"M27x80L"}
+  ],
+  "version":"1.0","data_updated_at":"2026-07-21","data_update_note":"依 CL5.pdf 全16列(子代理核對)。管夾重量以彎板 π(A+t)×E×t 近似。"
+}

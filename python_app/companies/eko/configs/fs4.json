@@ -1,0 +1,76 @@
+{
+ "code": "FS4",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "單立柱鋼管(DFS4)+上頂管T頭",
+ "table_key": "serial",
+ "table": {
+  "1": {
+   "col": "2",
+   "A": 80,
+   "B": 115
+  },
+  "2": {
+   "col": "3",
+   "A": 110,
+   "B": 165
+  },
+  "3": {
+   "col": "4",
+   "A": 135,
+   "B": 210
+  }
+ },
+ "components": [
+  {
+   "kind": "subref",
+   "code": "DFS4",
+   "len": "H"
+  },
+  {
+   "kind": "pipe",
+   "name": "上頂管",
+   "size_field": "col",
+   "sch": "SCH.40",
+   "len": "L"
+  },
+  {
+   "kind": "plate",
+   "name": "封板",
+   "t": 6,
+   "w_field": "A",
+   "l_field": "B",
+   "qty": 2,
+   "material": "A36",
+   "approx": true
+  },
+  {
+   "kind": "pier",
+   "type": "CM1A",
+   "when": [
+    "A",
+    "E"
+   ],
+   "qty": 1
+  }
+ ],
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "W"
+ ],
+ "limits": {
+  "Hmax": 4000
+ },
+ "designation_format": {
+  "pattern": "FS4{A/B/E/W}-序號-□L-□H-□H1",
+  "example": "FS4E-2-400L-3000H-300H1"
+ },
+ "data_update_note": "立柱引用DFS4就地展開;上頂管同撐管徑,長=L;封板6t×2",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_pipe",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

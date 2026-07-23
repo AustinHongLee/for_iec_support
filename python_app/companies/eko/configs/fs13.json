@@ -1,0 +1,71 @@
+{
+ "code": "FS13",
+ "name": "FIELD SUPPORT 管架",
+ "structure": "角鋼雙立柱+U-bolt(垂直管≤2\")",
+ "table_key": "pipe",
+ "table": [
+  {
+   "max": 1.5,
+   "angle": "75*75*9",
+   "A": 190,
+   "B": 260,
+   "d": 19,
+   "anchor": "M16x200L",
+   "nut": "M16x50L",
+   "exp": "EB2-M16x125L",
+   "base_w": 260,
+   "base_l": 260
+  }
+ ],
+ "members": [
+  {
+   "role": "立柱",
+   "sec": "row",
+   "qty": 2,
+   "len": "H"
+  }
+ ],
+ "base": {
+  "t": 9,
+  "qty": 1,
+  "material": "A36",
+  "approx": true,
+  "hole": {
+   "n": 4,
+   "dia_field": "d",
+   "px": 190,
+   "py": 190,
+   "edge": 35
+  }
+ },
+ "bolt_qty": 4,
+ "fix_letters": [
+  "A",
+  "B",
+  "E",
+  "N",
+  "W"
+ ],
+ "ubolt": {
+  "qty": 1
+ },
+ "pier": {
+  "type": "CM1A",
+  "qty": 1
+ },
+ "limits": {
+  "Hmax": 1500,
+  "applicable": "≤2\""
+ },
+ "designation_format": {
+  "pattern": "FS13{A/B/E/N/W}-□\"-□H-□H1",
+  "example": "FS13E-1\"-500H-300H1"
+ },
+ "data_update_note": "依FS13.pdf;角鋼×2立柱;底板外形由孔位A/B近似",
+ "company": "EKO",
+ "kind": "fs",
+ "engine": "fs_portal",
+ "material": "A36",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

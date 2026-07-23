@@ -139,19 +139,45 @@ def _write_manager_cover_sheet(
     styles = _styles()
     stats, _, details = _leader_procurement_stats(project)
     type_count = _project_type_count(project)
-    cover_rows = _cover_support_rows(stats, details)
-    confidence_counts = project_confidence_counts(project)
-    worst_confidence = worst_confidence_level(confidence_counts)
-    cover_rows.append(
+    confirm_count = sum(1 for detail in details if detail.status == "需確認")
+    unmatched_count = sum(1 for detail in details if detail.status == "未納入")
+    cover_rows = [
         {
-            "item": "資料可信度",
-            "qty": review_required_count(project),
-            "unit": "列",
-            "where": "計算標準與假設",
-            "note": f"最低 {worst_confidence}；{format_confidence_counts(confidence_counts)}",
-            "confidence_level": worst_confidence,
-        }
-    )
+            "item": "合約名稱怎麼來的？",
+            "qty": len(_boss_summary_rows(stats)),
+            "unit": "項",
+            "where": "長官-支撐分類",
+            "note": "每列直接顯示判定規則、本批命中型號例與逐筆舉證連結。",
+        },
+        {
+            "item": "某支撐計入哪個合約？",
+            "qty": len(details),
+            "unit": "筆",
+            "where": "查核-支撐明細",
+            "note": "用來源圖號、流水號或 OPEN / Type 型號篩選，查看完整判定鏈。",
+        },
+        {
+            "item": "一組支撐本身多重？",
+            "qty": len(project.rows),
+            "unit": "型號列",
+            "where": "單組重量明細",
+            "note": "直接查型號與單組重量；不展開材料，專案組數不會乘入。",
+        },
+        {
+            "item": "全案請款重量是多少？",
+            "qty": summary.total_weight,
+            "unit": "KG",
+            "where": "重量明細表",
+            "note": "本頁保留專案組數乘算後的材料與重量。",
+        },
+        {
+            "item": "哪些資料不能直接說明？",
+            "qty": confirm_count + unmatched_count,
+            "unit": "筆",
+            "where": "查核-支撐明細",
+            "note": f"需確認 {confirm_count} 筆；未納入 {unmatched_count} 筆。請款前先處理。",
+        },
+    ]
 
     ws.title = "長官-摘要"
     subtitle = (
@@ -160,16 +186,16 @@ def _write_manager_cover_sheet(
         f"使用 Type {type_count:,} 種    "
         f"全案總重 {summary.total_weight:,.2f} kg"
     )
-    _setup_sheet(ws, "長官摘要", "H1", subtitle=subtitle, audience="主管 / 業主", freeze_title=False)
+    _setup_sheet(ws, "請款分類查核入口", "H1", subtitle=subtitle, audience="主管 / 請款 / 業主", freeze_title=False)
     _set_widths(ws, [22, 14, 10, 18, 22, 22, 14, 14])
     ws.sheet_view.zoomScale = 105
 
     ws.merge_cells("A4:H4")
     intro = ws["A4"]
     if _sheet_available("查核-支撐明細", available_sheets):
-        intro.value = "本頁只放快速結論；合約項目分段請看「長官-支撐分類」，型號與判定依據請看「查核-支撐明細」。"
+        intro.value = "不要從摘要猜數字：先選對方問的問題，再點詳細位置取得可展示的規則、型號與來源。"
     else:
-        intro.value = "本頁只放快速結論；合約項目分段請看「長官-支撐分類」，型號與判定依據請看完整活頁簿或採購材料包。"
+        intro.value = "本頁是請款問答入口；完整規則與逐筆來源請使用完整活頁簿或採購材料包。"
     intro.font = Font(name=FONT_CJK, size=11, color=COLORS["ink"])
     intro.fill = styles["subtitle_fill"]
     intro.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
@@ -204,7 +230,7 @@ def _write_manager_cover_sheet(
         ws.row_dimensions[5].height = 30
 
     header_row = 6
-    headers = ["項目", "數量", "單位", "詳細位置", "備註"]
+    headers = ["對方可能會問", "可查資料量", "單位", "直接看哪裡", "可以怎麼回答"]
     for col in range(1, 9):
         cell = ws.cell(row=header_row, column=col)
         cell.fill = styles["header_fill"]
@@ -291,15 +317,11 @@ def _write_manager_cover_sheet(
 
     row += 2
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=8)
-    note_text = (
-        "註：長官摘要不列型號來源；若數字需要追溯，請直接進入查核分頁。"
-        if _sheet_available("查核-支撐明細", available_sheets)
-        else "註：長官摘要不列型號來源；若數字需要追溯，請開啟完整活頁簿或採購材料包。"
-    )
+    note_text = "請款原則：先展示合約分類規則，再以來源圖號 / 流水號 / 型號逐筆舉證；不要只提供總量摘要。"
     note = ws.cell(row=row, column=1, value=note_text)
     note.font = Font(name=FONT_CJK, size=10, italic=True, color=COLORS["text_mute"])
     note.fill = PatternFill("solid", fgColor="FFFFFF")
     note.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
     ws.row_dimensions[row].height = 24
 
-    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:H{row}", footer_title="長官摘要")
+    set_print_layout(ws, orientation="portrait", title_rows=None, area=f"A1:H{row}", footer_title="請款分類查核入口")

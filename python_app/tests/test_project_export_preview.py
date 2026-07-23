@@ -33,6 +33,7 @@ def test_project_export_preview_summarizes_workbook_before_save():
         "長官-摘要",
         "專案摘要",
         "重量明細表",
+        "單組重量明細",
         "計算標準與假設",
         "長官-支撐分類",
         "查核-支撐明細",

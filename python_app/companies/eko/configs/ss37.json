@@ -1,0 +1,65 @@
+{
+ "company": "EKO",
+ "code": "SS37",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "L形H型鋼側掛懸臂(貼柱)",
+ "material": "A36",
+ "members": [
+  {
+   "role": "立柱",
+   "sec": [
+    "H Beam",
+    "125*125*6.5"
+   ],
+   "qty": 1,
+   "len": "H"
+  },
+  {
+   "role": "水平懸臂",
+   "sec": [
+    "H Beam",
+    "125*125*6.5"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "base_plate": {
+  "t": 12,
+  "a": 170,
+  "b": 265,
+  "material": "A283 Gr.C",
+  "qty": 2,
+  "hole": {
+   "n": 4,
+   "dia": 19,
+   "px": 100,
+   "py": 195,
+   "edge": 35
+  }
+ },
+ "plate_fixes": [
+  "B"
+ ],
+ "nut_bolt": {
+  "spec": "M16x60L",
+  "qty": 8
+ },
+ "fix_methods": {
+  "B": "螺栓連帽+底板",
+  "W": "焊接"
+ },
+ "limits": {
+  "max_load_kg": 1500,
+  "Lmax": 2000,
+  "Hmax": 1000
+ },
+ "designation_format": {
+  "pattern": "SS37{B/W}-□H-□L",
+  "example": "SS37B-500H-1800L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21"
+}

@@ -75,11 +75,46 @@ def test_penetration_hole_uses_mto_code_in_weight_analysis_output():
             )
         ]
     )
-    wb = build_project_workbook(project, ("重量明細表", "重量分析"))
+    wb = build_project_workbook(
+        project,
+        ("重量明細表", "單組重量明細", "查核-支撐明細", "重量分析"),
+    )
 
     weight_detail = wb["重量分析"]
     basis = wb["重量明細表"]
+    unit_weight = wb["單組重量明細"]
+    leader_detail = wb["查核-支撐明細"]
     assert weight_detail["A4"].value == 'OPEN-1"'
     assert weight_detail["D4"].value == "FB50×6 開孔補強"
     assert basis["A4"].value == 'OPEN-1"'
     assert basis["O4"].value == 0.848
+    assert unit_weight["A4"].value == 'OPEN-1"'
+    assert unit_weight["B3"].value == "單組重量(kg)"
+    assert unit_weight["B4"].value == 0.848
+    assert unit_weight.max_column == 2
+    assert leader_detail["F4"].value == 'OPEN-1"'
+    assert leader_detail["H4"].value == 0.848
+    assert "單組 0.848 kg ≤ 15 kg" in leader_detail["J4"].value
+    assert not any(
+        cell.value == "PENETRATION HOLE"
+        for row in leader_detail.iter_rows()
+        for cell in row
+    )
+
+
+def test_unit_weight_sheet_does_not_multiply_project_groups():
+    project = analyze_project_rows(
+        [
+            ProjectInputRow(
+                "PENETRATION HOLE",
+                2,
+                overrides={"nominal_size": "1", "insulation": ""},
+                display_designation='OPEN-1"',
+            )
+        ]
+    )
+    wb = build_project_workbook(project, ("重量明細表", "單組重量明細"))
+
+    assert wb["重量明細表"]["O4"].value == 1.696
+    assert wb["單組重量明細"]["B4"].value == 0.848
+    assert wb["單組重量明細"].max_column == 2

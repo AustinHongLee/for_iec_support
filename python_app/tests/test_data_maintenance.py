@@ -6,12 +6,23 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from core import config_loader
 from ui.data_maintenance_page import (
+    DataMaintenancePage,
     build_candidate_config,
     diff_configs,
     editable_config_summaries,
     prepare_config_for_save,
     validation_commands,
 )
+from ui.theme import TOKENS
+
+
+def _maintenance_page():
+    from PyQt6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    page = DataMaintenancePage()
+    app.processEvents()
+    return app, page
 
 
 def test_toolbar_data_entry_switches_to_maintenance_page():
@@ -114,3 +125,77 @@ def test_golden_guidance_exposes_the_four_validation_commands():
         "python python_app\\validate_tables.py | Select-String '^X'",
         "python -m pytest -q",
     ]
+
+
+def test_maintenance_type_search_filters_navigation():
+    app, page = _maintenance_page()
+    try:
+        total = page.type_list.count()
+        page.type_search.setText("Type 01")
+        app.processEvents()
+
+        visible = [
+            page.type_list.item(index)
+            for index in range(total)
+            if not page.type_list.item(index).isHidden()
+        ]
+        assert visible
+        assert all("Type 01" in item.text() for item in visible)
+        assert page.type_count_label.text() == f"{len(visible)}/{total} 個"
+    finally:
+        page.close()
+
+
+def test_table_edit_updates_diff_highlight_and_save_readiness():
+    app, page = _maintenance_page()
+    try:
+        headers = [
+            page.table.horizontalHeaderItem(index).toolTip().removeprefix("設定鍵：")
+            for index in range(page.table.columnCount())
+        ]
+        l_column = headers.index("L")
+        item = page.table.item(0, l_column)
+        original = int(item.text())
+        item.setText(str(original + 1))
+        page._refresh_review()
+
+        assert len(page._last_changes) == 1
+        assert "L" in page.diff_browser.toPlainText()
+        assert (
+            item.background().color().name()
+            == TOKENS["color"]["primary_weak"].lower()
+        )
+        assert page.reset_button.isEnabled()
+        assert not page.save_button.isEnabled()
+        assert "補齊" in page.change_status_label.text()
+
+        page.source_edit.setText("STM-05.01 Rev.2")
+        page.description_edit.setPlainText("依新版原圖微調 L 尺寸")
+        page._refresh_review()
+
+        assert page.save_button.isEnabled()
+        assert "可安全儲存" in page.change_status_label.text()
+    finally:
+        page.close()
+
+
+def test_invalid_numeric_cell_blocks_save_with_clear_status():
+    app, page = _maintenance_page()
+    try:
+        headers = [
+            page.table.horizontalHeaderItem(index).toolTip().removeprefix("設定鍵：")
+            for index in range(page.table.columnCount())
+        ]
+        l_column = headers.index("L")
+        page.table.item(0, l_column).setText("不是數字")
+        page.source_edit.setText("STM-05.01 Rev.2")
+        page.description_edit.setPlainText("測試錯誤輸入")
+        page._refresh_review()
+
+        assert page.change_status_label.text() == "輸入格式有誤"
+        assert "請先修正輸入格式" in page.diff_browser.toPlainText()
+        assert "第 1 列「L (mm)」格式不正確" in page.issues_label.text()
+        assert not page.save_button.isEnabled()
+        assert page.reset_button.isEnabled()
+    finally:
+        page.close()

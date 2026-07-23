@@ -1,0 +1,81 @@
+{
+ "name": "配管支撐座(支撐lug)",
+ "structure": "焊接支撐座",
+ "engine": "eko_generic",
+ "material": "A36",
+ "table_key": "pipe",
+ "fix_letters": null,
+ "table": [
+  {
+   "max": 8,
+   "lug_a": 75,
+   "lug_b": 50,
+   "lug_c": 45,
+   "t": 9
+  },
+  {
+   "max": 12,
+   "lug_a": 125,
+   "lug_b": 75,
+   "lug_c": 125,
+   "t": 12
+  },
+  {
+   "max": 18,
+   "lug_a": 125,
+   "lug_b": 100,
+   "lug_c": 125,
+   "t": 12
+  },
+  {
+   "max": 24,
+   "lug_a": 125,
+   "lug_b": 150,
+   "lug_c": 125,
+   "t": 12
+  },
+  {
+   "max": 32,
+   "lug_a": 125,
+   "lug_b": 200,
+   "lug_c": 125,
+   "t": 12
+  }
+ ],
+ "components": [
+  {
+   "kind": "plate",
+   "name": "三角肋板",
+   "t": "t",
+   "w": "lug_a",
+   "l": "lug_c",
+   "qty": 2,
+   "tri": true,
+   "approx": true,
+   "shape": {
+    "kind": "triangle",
+    "spec": "直角三角肋板(兩股=長×寬,厚t)"
+   }
+  },
+  {
+   "kind": "plate",
+   "name": "水平座板",
+   "t": "t",
+   "w": "lug_a",
+   "l": "lug_b",
+   "qty": 2,
+   "approx": true
+  }
+ ],
+ "extra_warnings": [
+  "A3 為對稱支撐座：三角肋板(B1/B2)×2 + 水平座板(A1/A2)×2，共4片(各2片)",
+  "A3 材質依管種：碳鋼/低合金→A36、不鏽鋼→A240-304、特殊合金→同管材",
+  "保溫管線 A 值須加保溫厚度；焊接腳長 d：tp≤9→d=tp、tp>9→d=9",
+  "⚠尺寸對應為推估：肋板底=A×高=C(三角淨面積半)、座板長=A×寬=B，厚=t；A/B/C 對應如與圖不符請告知修正"
+ ],
+ "data_update_note": "依A3.pdf尺寸表(公稱管徑→A/B/C/t);4片(肋板×2三角+座板×2矩形);A/B/C對應為推估",
+ "code": "A3",
+ "company": "EKO",
+ "version": "1.0",
+ "data_updated_at": "2026-07-21"
+}

@@ -1,0 +1,15 @@
+{
+  "company":"EKO","code":"DFS4","name":"FS LOWER SUPPORT FS下支架","drawing_no":"DFS4","kind":"fs_lower_support","dim_unit":"mm",
+  "plate_material":"A36","pipe_material":"A53Gr.B","pipe_schedule":"SCH.40",
+  "designation_format":{"pattern":"DFS4{A/B/E/W}-序號-□H","fields":{"fix":"A/B/E/W","serial":"1/2/3","H":"支架高度"},"example":"DFS4E-1-500H"},
+  "fixing_methods":{"A":"L型基礎螺栓","B":"螺栓連帽","E":"擴展螺栓","W":"焊接(免鑽孔)"},
+  "note":"底板9t 為正方形 B×B；A=孔距(4-∅22)；補強板6t×4片(三角肋,近似75×75);支撐管A53-B 長度=H。",
+  "serials":{
+    "1":{"pipe":"2","B":210,"hole_pitch":115},
+    "2":{"pipe":"3","B":240,"hole_pitch":140},
+    "3":{"pipe":"4","B":265,"hole_pitch":165}
+  },
+  "bolts":{"anchor_bolt":{"spec":"M20x200L","material":"A307-B"},"nut_bolt":{"spec":"M20x50L","material":"A307-B 鍍鋅"},"exp_bolt":{"spec":"EB2-M20x140L","material":"碳鋼(鍍鋅)"}},
+  "bolt_qty":4,
+  "version":"1.0","data_updated_at":"2026-07-21","data_update_note":"依 DFS4.pdf(子代理核對)。底板B×B方形;補強板三角肋以75×75近似(圖上以60°/75mm reach幾何,非表列)。"
+}

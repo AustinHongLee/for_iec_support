@@ -1,0 +1,48 @@
+{
+ "company": "EKO",
+ "code": "SS33",
+ "name": "STRUCTURE SUPPORT 結構管架",
+ "kind": "ss",
+ "engine": "ss_bracket",
+ "structure": "耳板+槽鋼+U型螺栓(≤4\")",
+ "material": "A36",
+ "always_welded": true,
+ "members": [
+  {
+   "role": "槽鋼",
+   "sec": [
+    "Channel",
+    "100*50*5"
+   ],
+   "qty": 1,
+   "len": "L"
+  }
+ ],
+ "extra_plates": [
+  {
+   "name": "耳板",
+   "t": 9,
+   "a": 150,
+   "b": 100,
+   "material": "A283 Gr.C",
+   "qty": 1,
+   "net_area_mm2": 11250,
+   "note": "梯形lug 底100頂50高150",
+   "shape": {
+    "kind": "lug",
+    "spec": "五邊形lug 高150×底100×頂50×踵25×9t(DETAIL A)"
+   }
+  }
+ ],
+ "ubolt_ref": true,
+ "fix_methods": {},
+ "limits": {},
+ "length_formula": "L=D+2ti+75",
+ "designation_format": {
+  "pattern": "SS33-□\"-□L",
+  "example": "SS33-1\"-200L"
+ },
+ "version": "1.1",
+ "data_updated_at": "2026-07-21",
+ "data_update_note": "焊接;U型螺栓詳UB1;耳板梯形淨面積11250"
+}

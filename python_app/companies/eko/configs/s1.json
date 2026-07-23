@@ -1,0 +1,13 @@
+{
+  "company":"EKO","code":"S1","name":"PIPE SHOE 管蹄","drawing_no":"S1","kind":"pipe_shoe","dim_unit":"mm",
+  "material":"A36","sus_reinf_material":"A240-304",
+  "designation_format":{"pattern":"S1-□\"-□H","fields":{"pipe":"配管管徑(吋)","H":"管蹄高(=保溫厚+25)"},"example":"S1-6\"-100H"},
+  "note":"H=保溫厚度+25。件:①管蹄柱(t×L長×H高)②底板(t×L長×A寬)③加強板(10\"~24\",t12×W×H,×2)④補強板(不銹鋼管線,A240-304,×1;弧寬≈πOD/3,依需要)。接觸角120°。",
+  "bands":[
+    {"max_size":2.5,"stem_t":6,"stem_L":150,"base_t":6,"base_L":150,"base_W":75,"stiff_t":0,"stiff_W":0,"reinf_t":3,"reinf_L":200},
+    {"max_size":8,"stem_t":9,"stem_L":300,"base_t":9,"base_L":300,"base_W":150,"stiff_t":0,"stiff_W":0,"reinf_t":6,"reinf_L":350},
+    {"max_size":16,"stem_t":12,"stem_L":250,"base_t":12,"base_L":300,"base_W":300,"stiff_t":12,"stiff_W":200,"reinf_t":9,"reinf_L":350},
+    {"max_size":24,"stem_t":12,"stem_L":250,"base_t":12,"base_L":300,"base_W":300,"stiff_t":12,"stiff_W":250,"reinf_t":9,"reinf_L":350}
+  ],
+  "version":"1.0","data_updated_at":"2026-07-21","data_update_note":"依 S1.pdf 4段(子代理核對)。管蹄柱高與加強板高=H;補強板弧寬需管OD,預設不出(以 sus_pipe override 啟用)。"
+}
