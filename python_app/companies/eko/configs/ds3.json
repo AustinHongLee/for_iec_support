@@ -1,6 +1,6 @@
 {
  "name": "虛設管支撐(DUMMY SUPPORT)",
- "structure": "虛設撐管",
+ "structure": "鋼管附撐",
  "engine": "eko_generic",
  "material": "A53 Gr.B",
  "table_key": null,
@@ -9,7 +9,7 @@
  "components": [
   {
    "kind": "pipe",
-   "name": "撐管",
+   "name": "鋼管",
    "size": "pipe",
    "sch": "SCH.40",
    "len": "L",
@@ -17,13 +17,13 @@
   }
  ],
  "extra_warnings": [
-  "⚠【材質提醒 Note1】撐管須與母材(彎頭/管線)同材質且同管徑；預設碳鋼 A53 Gr.B，若母材為不鏽鋼/合金鋼，請改為與母材相同之材質(既定概念多為碳鋼，仍請逐案確認)",
-  "DS3 料件：撐管一支(同配管管徑、長度L詳SPOOL)；適用1.1/2\"及以下",
+  "⚠【材質提醒 Note1】鋼管須與母材(彎頭/管線)材質相容且同管徑；預設碳鋼 A53 Gr.B，若母材為不鏽鋼/合金鋼，請改為與母材相同之材質(既定概念多為碳鋼，仍請逐案確認)",
+  "DS3 料件：附撐用鋼管一支(同配管管徑、長度L詳SPOOL)；適用1.1/2\"及以下",
   "鑄鐵/可鍛鑄鐵/鍍鋅配件時另加鍛鋼塞(FORGED STEEL PLUG，詳SPOOL)"
  ],
- "data_update_note": "依DS3.pdf；撐管同管徑、材質同母材(Note1，預設A53 Gr.B並提醒)；長度L詳SPOOL",
+ "data_update_note": "依DS3.pdf的 PIPE STUB / STEEL PIPE 標註，BOM品名由「撐管」改為「鋼管」；用途保留於備註，同配管管徑、材質相容(Note1)，長度L詳SPOOL",
  "code": "DS3",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-24"
 }

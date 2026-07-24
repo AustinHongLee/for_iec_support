@@ -4,13 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QSizePolicy
 
 from ui.theme import TOKENS
 
 
 class ProjectHeader(QFrame):
-    """Keep project-wide inputs and future workflow status in one visible strip."""
+    """Keep project-wide inputs and workflow status in one visible strip.
+
+    Layout is grouped so intent is obvious at a glance:
+      [清單名]  |  設定：全域材質 · 模式  |  狀態：材質確認 · 資料版本
+    The left/middle groups are things the user sets; the right group is
+    passive read-only status that populates after analysis.
+    """
 
     def __init__(
         self,
@@ -29,19 +36,27 @@ class ProjectHeader(QFrame):
             TOKENS["space"]["summary_x"],
             TOKENS["space"]["summary_y"],
         )
-        layout.setSpacing(TOKENS["space"]["summary_gap"])
+        layout.setSpacing(TOKENS["space"]["metric_gap"])
 
+        # ── 清單名稱 ──
         layout.addWidget(self._caption("清單"))
         self.project_name_label = QLabel("未命名清單")
         self.project_name_label.setObjectName("projectName")
-        layout.addWidget(self.project_name_label, 1)
+        layout.addWidget(self.project_name_label)
 
+        layout.addSpacing(TOKENS["space"]["summary_gap"])
+        layout.addWidget(self._separator())
+        layout.addSpacing(TOKENS["space"]["summary_gap"])
+
+        # ── 設定群組（使用者操作）──
         layout.addWidget(self._caption("全域上段管材質"))
         self.material_combo = QComboBox()
         self.material_combo.addItems(list(materials))
         self.material_combo.setEditable(True)
         self.material_combo.setCurrentText(current_material)
         layout.addWidget(self.material_combo)
+
+        layout.addSpacing(TOKENS["space"]["summary_gap"])
 
         layout.addWidget(self._caption("模式"))
         self.mode_combo = QComboBox()
@@ -50,14 +65,26 @@ class ProjectHeader(QFrame):
         self.mode_combo.setToolTip("概算／精算模式將於後續模組啟用")
         layout.addWidget(self.mode_combo)
 
-        self.completion_label = QLabel("完成度：待接入")
+        layout.addStretch(1)
+
+        layout.addWidget(self._separator())
+        layout.addSpacing(TOKENS["space"]["summary_gap"])
+
+        # ── 狀態群組（分析後回填的唯讀資訊）──
+        self.completion_label = QLabel("材質確認：待分析")
+        self.completion_label.setObjectName("projectHeaderStatus")
         self.completion_label.setEnabled(False)
-        self.completion_label.setToolTip("材質確認完成度將於後續模組啟用")
+        self.completion_label.setToolTip(
+            "分析後顯示：使用全域上段管材質的啟用項目中，材質已確認的筆數"
+        )
         layout.addWidget(self.completion_label)
 
-        self.version_label = QLabel("資料版本：待接入")
+        self.version_label = QLabel("資料版本：待分析")
+        self.version_label.setObjectName("projectHeaderStatus")
         self.version_label.setEnabled(False)
-        self.version_label.setToolTip("資料版本提示將於後續模組啟用")
+        self.version_label.setToolTip(
+            "分析後顯示：本次分析實際使用的 Type 計算資料版本"
+        )
         layout.addWidget(self.version_label)
 
         self.setStyleSheet(self._stylesheet())
@@ -67,6 +94,14 @@ class ProjectHeader(QFrame):
         label = QLabel(text)
         label.setObjectName("projectHeaderCaption")
         return label
+
+    @staticmethod
+    def _separator() -> QFrame:
+        line = QFrame()
+        line.setObjectName("projectHeaderSep")
+        line.setFixedSize(1, 18)
+        line.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        return line
 
     def set_project_name(self, name: str | None) -> None:
         self.project_name_label.setText((name or "").strip() or "未命名清單")
@@ -121,7 +156,14 @@ class ProjectHeader(QFrame):
                 color: {color['primary_dark']};
                 font-weight: bold;
             }}
+            QFrame#projectHeader QLabel#projectHeaderStatus {{
+                color: {color['metric_label']};
+            }}
             QFrame#projectHeader QLabel:disabled {{
                 color: {color['text_disabled']};
+            }}
+            QFrame#projectHeader QFrame#projectHeaderSep {{
+                background: {color['summary_border']};
+                border: none;
             }}
         """

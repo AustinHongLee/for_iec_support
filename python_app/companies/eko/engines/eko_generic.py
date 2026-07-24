@@ -157,12 +157,12 @@ def calculate(parsed, config, overrides=None):
             if size is None or length is None:
                 result.warnings.append(f"{code}: {c.get('name','管')} 缺尺寸/長度，略過"); continue
             add_pipe_entry(result, str(size), c.get("sch", "SCH.40"), length, SUPPORT_PIPE_A53GRB)
-            if c.get("name"):        # 品名用元件名(撐管/支撐套管)取代核心預設「管路」
+            if c.get("name"):        # 品名用元件名(鋼管/支撐套管)取代核心預設「管路」
                 result.entries[-1].name = c["name"]
             set_remark(result.entries[-1],
                        f"{c.get('name','管')} {size}\"{c.get('sch','SCH.40')}, 長={length}mm"
                        + ("; 長度現場配合" if c.get("field_fit") else "")
-                       + ("; ⚠材質須同母材(預設碳鋼A53 Gr.B)" if config.get("material_reminder") else ""))
+                       + ("; ⚠材質須與母材相容(預設碳鋼A53 Gr.B)" if config.get("material_reminder") else ""))
 
         elif kind == "bolt_by_fix":
             bf = c.get("by_fix", {})

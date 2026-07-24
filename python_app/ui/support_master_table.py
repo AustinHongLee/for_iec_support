@@ -7,6 +7,7 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QAbstractItemView, QHeaderView, QTableWidget, QTableWidgetItem
 
 from core.calculator import uses_global_upper_material
+from companies.registry import design_company_label
 from ui.theme import TOKENS
 
 
@@ -20,6 +21,7 @@ MASTER_HEADERS = [
     "材質",
     "總重(kg)",
     "備註/錯誤摘要",
+    "設計公司",
 ]
 
 
@@ -40,7 +42,7 @@ class SupportMasterTable(QTableWidget):
         self.setAlternatingRowColors(True)
         self.setSortingEnabled(False)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        widths = [52, 150, 90, 155, 58, 52, 150, 90, 280]
+        widths = [62, 150, 90, 155, 58, 52, 150, 90, 280, 82]
         for index, width in enumerate(widths):
             self.setColumnWidth(index, width)
         self.itemSelectionChanged.connect(self._emit_selection)
@@ -74,7 +76,7 @@ class SupportMasterTable(QTableWidget):
                 for column, value in enumerate(values):
                     item = QTableWidgetItem(str(value))
                     item.setData(Qt.ItemDataRole.UserRole, index)
-                    if column in (0, 4, 5, 7):
+                    if column in (0, 4, 5, 7, 9):
                         item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     if column == 0:
                         color = {
@@ -83,8 +85,22 @@ class SupportMasterTable(QTableWidget):
                             "✗": TOKENS["color"]["status_error"],
                         }.get(status, TOKENS["color"]["text_muted"])
                         item.setForeground(QColor(color))
+                        if status == "✗":
+                            font = item.font()
+                            font.setBold(True)
+                            font.setPointSize(max(font.pointSize(), 10))
+                            item.setFont(font)
+                            item.setToolTip("錯誤：本列未能計算，未納入重量")
+                    if status == "✗":
+                        item.setBackground(QColor("#FFF0F0"))
+                        if column == 8:
+                            item.setForeground(QColor(TOKENS["color"]["status_error"]))
+                            font = item.font()
+                            font.setBold(True)
+                            item.setFont(font)
+                            item.setToolTip(str(value))
                     self.setItem(index, column, item)
-                self.setRowHeight(index, 28)
+                self.setRowHeight(index, 32 if status == "✗" else 28)
         finally:
             self.setUpdatesEnabled(True)
 
@@ -122,6 +138,7 @@ class SupportMasterTable(QTableWidget):
             material,
             total_weight,
             note,
+            design_company_label(row.designation),
         ], status
 
     def _emit_selection(self):

@@ -70,6 +70,14 @@ _NO_DRAWING = {
     "FS24": "益高(EKO): FS24 無對應圖面(未提供)，暫無法建表；請補圖或確認編號",
     "PU22": "益高(EKO): PU22 無對應圖面(未提供)，暫無法建表；文法近似 PU23(□L-□L1)，請補圖確認",
 }
+# 已確認屬於益高、但計算規則尚未匯入主系統的型號。
+# 保留在分派器中，讓主程式能正確標示公司，同時明確拒絕套用其他 Type 猜測。
+_NOT_IMPORTED = {
+    "PU1", "PU5", "PU21",
+    "VG1", "VG2",
+    "CS1", "CS2", "SUB1", "SUB2",
+    "DS1", "ST",
+}
 # 特殊委派碼（無獨立 config，借用核心計算器）
 _DELEGATES = {"OPEN"}
 
@@ -94,6 +102,13 @@ def analyze(fullstring, overrides=None):
     code = parsed.get("code", "")
     if code == "OPEN":
         return _open(fullstring, overrides)
+    if code in _NOT_IMPORTED:
+        r = AnalysisResult(fullstring=fullstring)
+        r.error = (
+            f"益高型號 {code} 已識別，但計算規則尚未匯入；"
+            "本筆不計算，也不會套用其他 Type 猜測。"
+        )
+        return r
     if code in _NO_DRAWING:
         r = AnalysisResult(fullstring=fullstring)
         r.error = _NO_DRAWING[code]
@@ -120,10 +135,15 @@ def analyze(fullstring, overrides=None):
 
 
 def can_handle(fullstring):
-    """本 fullstring 的代碼是否為益高支撐（含委派/無圖佔位；供主程式 analyze_single fallback 判斷）。"""
+    """本 fullstring 是否為已知益高代碼（含尚未匯入/委派/無圖佔位）。"""
     try:
         code = _parser.parse_designation(fullstring).get("code", "")
-        return code in HANDLERS or code in _NO_DRAWING or code in _DELEGATES
+        return (
+            code in HANDLERS
+            or code in _NOT_IMPORTED
+            or code in _NO_DRAWING
+            or code in _DELEGATES
+        )
     except Exception:
         return False
 

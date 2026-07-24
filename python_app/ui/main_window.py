@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox, QLineEdit, QFormLayout, QDialog,
     QListWidget, QListWidgetItem, QRadioButton, QButtonGroup, QCheckBox,
     QAbstractItemView, QFrame, QScrollArea, QTextBrowser, QInputDialog, QMenu,
+    QStackedWidget, QSizePolicy,
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt6.QtGui import (
@@ -47,6 +48,7 @@ from core.project_import import (
 )
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict, get_variation_axes
+from companies.registry import design_company_label
 from ui.theme import TOKENS, build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
 from ui.ontology_browser import OntologyBrowserWidget
@@ -126,6 +128,16 @@ _PROJECT_XLSX_FIELD_LABELS = {
     "nominal_size": "管徑（開孔必填）",
     "insulation": "保溫厚度（開孔用）",
 }
+
+
+class _ClickableCard(QFrame):
+    """A QFrame that emits `clicked` on press — hosts a layout, unlike QPushButton."""
+
+    clicked = pyqtSignal()
+
+    def mousePressEvent(self, event):  # noqa: N802 (Qt override)
+        self.clicked.emit()
+        super().mousePressEvent(event)
 
 
 class MainWindow(QMainWindow):
@@ -397,8 +409,24 @@ class MainWindow(QMainWindow):
         # ── 頂部工具列 ──
         toolbar = QHBoxLayout()
         supported = get_supported_types()
-        info_label = QLabel(f"已支援 Type: {', '.join(supported)}")
-        info_label.setStyleSheet("color: #555; font-size: 12px;")
+        info_label = QLabel(f"ⓘ 已支援 {len(supported)} 種 Type")
+        info_label.setToolTip(
+            "本工具目前可計算的型式代碼：\n" + "、".join(supported)
+        )
+        info_label.setStyleSheet(
+            "QLabel {{"
+            "  color: {muted};"
+            "  background: {bg};"
+            "  border: 1px solid {border};"
+            "  border-radius: {radius}px;"
+            "  padding: 3px 10px;"
+            "}}".format(
+                muted=TOKENS["color"]["text_muted"],
+                bg=TOKENS["color"]["surface_soft"],
+                border=TOKENS["color"]["border"],
+                radius=TOKENS["radius"]["sm"],
+            )
+        )
         toolbar.addWidget(info_label)
         toolbar.addStretch()
 
@@ -414,30 +442,270 @@ class MainWindow(QMainWindow):
 
         page_layout.addLayout(toolbar)
 
-        # ── 三面板 ──
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        # ── 引導式流程列（可自由跳，不鎖頁）──
+        page_layout.addWidget(self._build_step_rail())
 
-        # [左] 輸入清單
+        # ── 主區：左側輸入清單（骨幹，永遠在）｜右側依階段切換 ──
+        main_split = QSplitter(Qt.Orientation.Horizontal)
+
         left_panel = self._build_left_panel()
-        splitter.addWidget(left_panel)
+        main_split.addWidget(left_panel)
 
-        # [中] 結果表格
+        # 右側是二選一：尚無結果→引導卡；已分析→工作台
+        self._workspace_stack = QStackedWidget()
+        self._workspace_stack.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        self._workspace_stack.addWidget(self._build_onboarding_guide())  # index 0
+
+        workbench = QWidget()
+        wb_layout = QVBoxLayout(workbench)
+        wb_layout.setContentsMargins(0, 0, 0, 0)
+        wb_split = QSplitter(Qt.Orientation.Horizontal)
         center_panel = self._build_center_panel()
-        splitter.addWidget(center_panel)
-
-        # [右] Side Panel
+        wb_split.addWidget(center_panel)
         self.side_panel = SidePanel()
         self.side_panel.overrideChanged.connect(self._on_override_changed)
         self.side_panel.advanceRequested.connect(self._advance_to_next_pending)
-        splitter.addWidget(self.side_panel)
-
-        left_panel.setMinimumWidth(310)
+        wb_split.addWidget(self.side_panel)
         self.side_panel.setMinimumWidth(340)
-        splitter.setSizes([340, 820, 380])
-        page_layout.addWidget(splitter)
+        wb_split.setSizes([840, 380])
+        wb_layout.addWidget(wb_split)
+        self._workspace_stack.addWidget(workbench)  # index 1
+
+        main_split.addWidget(self._workspace_stack)
+        left_panel.setMinimumWidth(310)
+        main_split.setStretchFactor(0, 0)
+        main_split.setStretchFactor(1, 1)
+        main_split.setSizes([340, 1220])
+        page_layout.addWidget(main_split, 1)
+
         self._update_material_completion()
+        self._update_workflow_stage()
 
         return page
+
+    # ────────────────────────── 引導式流程 ──────────────────────────
+    _WORKFLOW_STEPS = [
+        ("input", "1", "輸入清單"),
+        ("analyze", "2", "分析"),
+        ("review", "3", "檢視 · 核對"),
+        ("export", "4", "匯出"),
+    ]
+
+    def _build_step_rail(self) -> QWidget:
+        """A clickable stage indicator. Guides, but never locks a page."""
+        rail = QFrame()
+        rail.setObjectName("stepRail")
+        row = QHBoxLayout(rail)
+        row.setContentsMargins(4, 2, 4, 2)
+        row.setSpacing(4)
+        self._step_buttons = {}
+        for i, (name, num, label) in enumerate(self._WORKFLOW_STEPS):
+            btn = QPushButton(f"  {num}   {label}")
+            btn.setObjectName("stepBtn")
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setProperty("state", "todo")
+            btn.clicked.connect(lambda _=False, n=name: self._goto_stage(n))
+            self._step_buttons[name] = btn
+            row.addWidget(btn)
+            if i < len(self._WORKFLOW_STEPS) - 1:
+                arrow = QLabel("→")
+                arrow.setObjectName("stepArrow")
+                row.addWidget(arrow)
+        row.addStretch()
+        rail.setStyleSheet(self._step_rail_stylesheet())
+        return rail
+
+    @staticmethod
+    def _step_rail_stylesheet() -> str:
+        c = TOKENS["color"]
+        return f"""
+            QFrame#stepRail {{ background: transparent; }}
+            QLabel#stepArrow {{ color: #C4CDD9; font-size: 14px; }}
+            QPushButton#stepBtn {{
+                border: none; background: transparent;
+                color: {c['text_disabled']}; font-size: 13px; font-weight: 600;
+                padding: 6px 14px; border-radius: 999px; min-height: 20px;
+            }}
+            QPushButton#stepBtn:hover {{ background: {c['surface_hover']}; color: {c['ink']}; }}
+            QPushButton#stepBtn[state="done"] {{ color: {c['status_ok']}; }}
+            QPushButton#stepBtn[state="active"] {{
+                background: {c['primary_weak']}; color: {c['primary_dark']}; font-weight: 700;
+            }}
+        """
+
+    def _build_onboarding_guide(self) -> QWidget:
+        """Empty/ready-state guidance shown in place of the results workbench."""
+        wrap = QFrame()
+        wrap.setObjectName("guideCard")
+        outer = QVBoxLayout(wrap)
+        outer.addStretch()
+
+        self._guide_num = QLabel("①")
+        self._guide_num.setObjectName("guideNum")
+        self._guide_num.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        outer.addWidget(self._guide_num)
+
+        self._guide_title = QLabel("先建立你的支撐清單")
+        self._guide_title.setObjectName("guideTitle")
+        self._guide_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        outer.addWidget(self._guide_title)
+
+        self._guide_sub = QLabel(
+            "選一種方式開始 — 分析結果、篩選與匯出會在完成後自動出現，現在不用管。"
+        )
+        self._guide_sub.setObjectName("guideSub")
+        self._guide_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._guide_sub.setWordWrap(True)
+        outer.addWidget(self._guide_sub)
+
+        outer.addSpacing(18)
+        choices = QHBoxLayout()
+        choices.setSpacing(14)
+        choices.addStretch()
+        for icon, title, desc, handler in [
+            ("⌨", "單筆輸入", "逐筆鍵入型號\n例如 57-1B-A",
+             lambda: self.add_input.setFocus()),
+            ("📋", "貼上多筆", "從 Excel 或文字\n直接貼一整批", self._on_batch_paste),
+            ("📄", "匯入檔案", "Excel / CSV\n支援清單", self._on_load_file),
+        ]:
+            choices.addWidget(self._build_guide_choice(icon, title, desc, handler))
+        choices.addStretch()
+        outer.addLayout(choices)
+
+        outer.addSpacing(18)
+        hint = QLabel("不確定型號怎麼寫？可到「Type 總覽」查看已支援的型式")
+        hint.setObjectName("guideHint")
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        outer.addWidget(hint)
+        outer.addStretch()
+
+        wrap.setStyleSheet(self._guide_stylesheet())
+        return wrap
+
+    def _build_guide_choice(self, icon, title, desc, handler) -> QWidget:
+        card = _ClickableCard()
+        card.setObjectName("guideChoice")
+        card.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        card.setMinimumWidth(180)
+        card.clicked.connect(lambda: handler())
+        v = QVBoxLayout(card)
+        v.setContentsMargins(16, 18, 16, 18)
+        v.setSpacing(6)
+        ic = QLabel(icon)
+        ic.setObjectName("choiceIcon")
+        ic.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        t = QLabel(title)
+        t.setObjectName("choiceTitle")
+        t.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        d = QLabel(desc)
+        d.setObjectName("choiceDesc")
+        d.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        for w in (ic, t, d):
+            v.addWidget(w)
+        return card
+
+    @staticmethod
+    def _guide_stylesheet() -> str:
+        c = TOKENS["color"]
+        return f"""
+            QFrame#guideCard {{ background: {c['surface']}; border: 1px solid {c['border']};
+                border-radius: {TOKENS['radius']['md']}px; }}
+            QLabel#guideNum {{ color: {c['primary_dark']}; font-size: 30px; font-weight: 800; }}
+            QLabel#guideTitle {{ color: {c['ink']}; font-size: 21px; font-weight: 700; }}
+            QLabel#guideSub {{ color: {c['text_muted']}; font-size: 14px; }}
+            QLabel#guideHint {{ color: {c['text_disabled']}; font-size: 12px; }}
+            QFrame#guideChoice {{ background: {c['surface']}; border: 1px solid {c['border']};
+                border-radius: 10px; }}
+            QFrame#guideChoice:hover {{ border: 1px solid {c['primary']};
+                background: {c['list_hover']}; }}
+            QFrame#guideChoice QLabel {{ background: transparent; border: none; }}
+            QLabel#choiceIcon {{ font-size: 24px; }}
+            QLabel#choiceTitle {{ color: {c['ink']}; font-size: 14px; font-weight: 700; }}
+            QLabel#choiceDesc {{ color: {c['text_muted']}; font-size: 12px; }}
+        """
+
+    def _current_stage(self) -> str:
+        if getattr(self, "_project_result", None) is not None:
+            return "review"
+        if getattr(self, "_project_rows", None):
+            return "ready"
+        return "input"
+
+    def _set_rail_state(self, active: str, done: set) -> None:
+        buttons = getattr(self, "_step_buttons", None)
+        if not buttons:
+            return
+        for name, btn in buttons.items():
+            state = "active" if name == active else ("done" if name in done else "todo")
+            if btn.property("state") != state:
+                btn.setProperty("state", state)
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+
+    def _update_workflow_stage(self) -> None:
+        """Sync the right-side page + step rail to the current analysis state."""
+        if not hasattr(self, "_workspace_stack"):
+            return
+        stage = self._current_stage()
+        rows = getattr(self, "_project_rows", []) or []
+        n = sum(1 for r in rows if getattr(r, "enabled", True))
+
+        self._workspace_stack.setCurrentIndex(1 if stage == "review" else 0)
+
+        if hasattr(self, "_guide_title"):
+            if stage == "input":
+                self._guide_num.setText("①")
+                self._guide_title.setText("先建立你的支撐清單")
+                self._guide_sub.setText(
+                    "選一種方式開始 — 分析結果、篩選與匯出會在完成後自動出現，現在不用管。"
+                )
+            else:  # ready
+                self._guide_num.setText("②")
+                self._guide_title.setText(f"已加入 {n} 筆，準備分析")
+                self._guide_sub.setText(
+                    "按左下藍色的【▶ 分析整份清單】即可；也可以繼續新增或匯入。"
+                )
+
+        if stage == "review":
+            self._set_rail_state("review", {"input", "analyze"})
+        elif stage == "ready":
+            self._set_rail_state("analyze", {"input"})
+        else:
+            self._set_rail_state("input", set())
+
+    def _goto_stage(self, name: str) -> None:
+        """Rail click. Guides without trapping — jump where it makes sense."""
+        analyzed = getattr(self, "_project_result", None) is not None
+        has_rows = bool(getattr(self, "_project_rows", None))
+        if name == "input":
+            self._workspace_stack.setCurrentIndex(0)
+            if analyzed and hasattr(self, "_guide_title"):
+                self._guide_num.setText("＋")
+                self._guide_title.setText("新增更多支撐")
+                self._guide_sub.setText("加入後重新分析即可更新結果；隨時可回「檢視 · 核對」。")
+            self._set_rail_state("input", {"analyze", "review"} if analyzed else set())
+            self.add_input.setFocus()
+        elif name == "analyze":
+            if has_rows:
+                self._on_analyze()
+            else:
+                self.statusBar().showMessage("先在左側加入至少一筆支撐，才能分析。", 4000)
+        elif name == "review":
+            if analyzed:
+                self._workspace_stack.setCurrentIndex(1)
+                self._set_rail_state("review", {"input", "analyze"})
+            else:
+                self.statusBar().showMessage("尚未分析；先按【▶ 分析整份清單】。", 4000)
+        elif name == "export":
+            if analyzed:
+                self._workspace_stack.setCurrentIndex(1)
+                self._set_rail_state("export", {"input", "analyze", "review"})
+                if hasattr(self, "btn_export"):
+                    self.btn_export.setFocus()
+            else:
+                self.statusBar().showMessage("尚未分析；分析並檢視後才能匯出。", 4000)
 
     def _build_left_panel(self):
         panel = QGroupBox("輸入清單")
@@ -530,6 +798,8 @@ class MainWindow(QMainWindow):
         panel = QGroupBox("分析結果")
         layout = QVBoxLayout(panel)
 
+        layout.addWidget(self._build_analysis_error_banner())
+        layout.addWidget(self._build_material_banner())
         layout.addWidget(self._build_result_summary_bar())
         layout.addLayout(self._build_result_filter_row())
 
@@ -597,6 +867,80 @@ class MainWindow(QMainWindow):
         layout.addLayout(export_row)
 
         return panel
+
+    def _build_analysis_error_banner(self) -> QWidget:
+        """Prominent analysis-failure state; hidden when no errors exist."""
+        banner = QFrame()
+        banner.setObjectName("analysisErrorBanner")
+        row = QHBoxLayout(banner)
+        row.setContentsMargins(14, 10, 12, 10)
+        row.setSpacing(10)
+
+        self.analysis_error_banner_label = QLabel("")
+        self.analysis_error_banner_label.setObjectName("analysisErrorBannerText")
+        self.analysis_error_banner_label.setWordWrap(True)
+        row.addWidget(self.analysis_error_banner_label, 1)
+
+        self.analysis_error_banner_btn = QPushButton("只看錯誤列")
+        self.analysis_error_banner_btn.setObjectName("analysisErrorBannerBtn")
+        self.analysis_error_banner_btn.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor)
+        )
+        self.analysis_error_banner_btn.clicked.connect(self._show_error_rows)
+        row.addWidget(self.analysis_error_banner_btn)
+
+        banner.setStyleSheet(
+            """
+            QFrame#analysisErrorBanner {
+                background: #FDE8E8;
+                border: 2px solid #DC2626;
+                border-radius: 7px;
+            }
+            QLabel#analysisErrorBannerText {
+                color: #991B1B;
+                background: transparent;
+                border: none;
+                font-size: 14px;
+                font-weight: 700;
+            }
+            QPushButton#analysisErrorBannerBtn {
+                background: #FFFFFF;
+                color: #B91C1C;
+                border: 1px solid #B91C1C;
+                border-radius: 6px;
+                padding: 5px 14px;
+                font-weight: 700;
+            }
+            QPushButton#analysisErrorBannerBtn:hover {
+                background: #FFF5F5;
+            }
+            """
+        )
+        banner.hide()
+        self.analysis_error_banner = banner
+        return banner
+
+    def _show_error_rows(self) -> None:
+        """Switch to the support overview and apply the explicit error filter."""
+        self.result_views.setCurrentIndex(0)
+        status_combo = self.result_column_filters.get("status")
+        if status_combo is not None:
+            index = status_combo.findData("✗")
+            if index >= 0:
+                status_combo.setCurrentIndex(index)
+
+    def _update_analysis_error_banner(self, error_count: int | None) -> None:
+        if not hasattr(self, "analysis_error_banner"):
+            return
+        count = int(error_count or 0)
+        if count:
+            self.analysis_error_banner_label.setText(
+                f"⛔ 分析未完成：{count} 筆無法計算。"
+                "紅色列未納入重量，請先核對型號或匯入對應規則。"
+            )
+            self.analysis_error_banner.show()
+        else:
+            self.analysis_error_banner.hide()
 
     def _build_result_filter_row(self):
         area = QVBoxLayout()
@@ -940,6 +1284,7 @@ class MainWindow(QMainWindow):
         overrides = row.overrides or {}
         material_pending = self._row_material_pending(row)
         tags = []
+        tags.append(design_company_label(row.designation))
         tags.append(f"{row.quantity} {row.unit or '組'}")
         if overrides.get("connection"):
             tags.append("Tee" if overrides["connection"] == "tee" else "Elbow")
@@ -2387,6 +2732,7 @@ class MainWindow(QMainWindow):
             self.summary_error_label.setStyleSheet(
                 f"color: {color}; background: transparent;"
             )
+            self._update_analysis_error_banner(error_count)
 
         if reset or support_count is not None:
             text = "--" if support_count is None else f"{support_count} 組"
@@ -2430,6 +2776,8 @@ class MainWindow(QMainWindow):
 
     def _update_export_readiness(self) -> None:
         """Summarize the actual analysis/export gate beside the export action."""
+        self._update_workflow_stage()
+        self._update_material_banner()
         if self._analysis_in_progress:
             self._set_export_readiness_label(
                 "正在分析…",
@@ -2585,6 +2933,87 @@ class MainWindow(QMainWindow):
             f"{confirmed}/{total}" if total else "不適用"
         )
         self.project_header.set_material_completion(confirmed, total)
+        self._update_material_banner()
+
+    def _build_material_banner(self) -> QWidget:
+        """A top-of-workbench call-to-action for the material-confirmation task."""
+        banner = QFrame()
+        banner.setObjectName("materialBanner")
+        banner.setProperty("tone", "warn")
+        row = QHBoxLayout(banner)
+        row.setContentsMargins(14, 9, 12, 9)
+        row.setSpacing(10)
+        self.material_banner_label = QLabel("")
+        self.material_banner_label.setObjectName("materialBannerText")
+        self.material_banner_label.setWordWrap(True)
+        row.addWidget(self.material_banner_label, 1)
+        self.material_banner_btn = QPushButton("前往核對 →")
+        self.material_banner_btn.setObjectName("materialBannerBtn")
+        self.material_banner_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.material_banner_btn.clicked.connect(self._on_goto_confirm)
+        row.addWidget(self.material_banner_btn)
+        banner.setStyleSheet(
+            """
+            QFrame#materialBanner[tone="warn"] {
+                background: #FEF3E7; border: 1px solid #F4D6B4; border-radius: 7px;
+            }
+            QFrame#materialBanner[tone="ok"] {
+                background: #E9F9EE; border: 1px solid #BBEFCB; border-radius: 7px;
+            }
+            QFrame#materialBanner QLabel#materialBannerText { border: none; }
+            QFrame#materialBanner[tone="warn"] QLabel#materialBannerText { color: #8A4A10; }
+            QFrame#materialBanner[tone="ok"] QLabel#materialBannerText { color: #15803D; }
+            QPushButton#materialBannerBtn {
+                background: #FFFFFF; color: #C2570A; border: 1px solid #C2570A;
+                border-radius: 6px; padding: 5px 14px; font-weight: 600;
+            }
+            QPushButton#materialBannerBtn:hover { background: #FFF3E9; }
+            """
+        )
+        banner.hide()
+        self.material_banner = banner
+        return banner
+
+    def _update_material_banner(self) -> None:
+        if not hasattr(self, "material_banner"):
+            return
+        analyzed = getattr(self, "_project_result", None) is not None
+        confirmed, total = self._material_confirmation_counts()
+        if not analyzed or total == 0:
+            self.material_banner.hide()
+            return
+        pending = total - confirmed
+        if pending > 0:
+            self.material_banner_label.setText(
+                f"⚠ 有 {pending} 筆材質尚未確認，目前以 "
+                f"{_DEFAULT_ESTIMATE_MATERIAL} 概算；確認後才能以「精算」匯出。"
+            )
+            self.material_banner_btn.show()
+            tone = "warn"
+        else:
+            self.material_banner_label.setText(
+                f"✓ 材質已全部確認（{confirmed}/{total}），可用「精算」匯出。"
+            )
+            self.material_banner_btn.hide()
+            tone = "ok"
+        if self.material_banner.property("tone") != tone:
+            self.material_banner.setProperty("tone", tone)
+            self.material_banner.style().unpolish(self.material_banner)
+            self.material_banner.style().polish(self.material_banner)
+        self.material_banner.show()
+
+    def _on_goto_confirm(self) -> None:
+        """Banner action: surface the workbench, enter review mode, jump to first pending."""
+        if hasattr(self, "_workspace_stack"):
+            self._workspace_stack.setCurrentIndex(1)
+            self._set_rail_state("review", {"input", "analyze"})
+        if hasattr(self, "review_mode_checkbox"):
+            self.review_mode_checkbox.setChecked(True)
+        for index, row in enumerate(self._project_rows):
+            if row.enabled and self._row_material_pending(row):
+                self.item_list.setCurrentRow(index)
+                self.item_list.scrollToItem(self.item_list.item(index))
+                break
 
     def _clear_analysis_outputs(self, *, preserve_weight_delta: bool = False):
         """Clear stale analysis/material outputs after project inputs change."""
@@ -2930,12 +3359,20 @@ class MainWindow(QMainWindow):
                 error_count=error_count,
                 support_count=self._project_result.total_support_count,
             )
-            self._set_status(
-                "ok",
-                f"分析完成: {len(self._results)} 筆 / "
-                f"{self._project_result.total_support_count} 組 "
-                f"(成功 {success_count}, 錯誤 {error_count})"
-            )
+            if error_count:
+                self._set_status(
+                    "error",
+                    f"分析未完成：{error_count} 筆錯誤；"
+                    f"{success_count} 筆成功、"
+                    f"{self._project_result.total_support_count} 組"
+                )
+            else:
+                self._set_status(
+                    "ok",
+                    f"分析完成: {len(self._results)} 筆 / "
+                    f"{self._project_result.total_support_count} 組 "
+                    f"(成功 {success_count}, 錯誤 0)"
+                )
 
             # 更新 side panel 的計算結果
             selected_result = self._row_result_for_project_index(

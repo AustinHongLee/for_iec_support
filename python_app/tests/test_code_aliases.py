@@ -45,7 +45,9 @@ def test_analyze_with_designation_alias_does_not_scan_without_alias_ref():
     result = analyze_with_designation_alias("ACME-PS01-2B-05A")
 
     assert result.fullstring == "ACME-PS01-2B-05A"
-    assert result.error == "Type ACME not implemented"
+    assert result.error is not None
+    assert "找不到型號 'ACME' 的可驗證計算規則" in result.error
+    assert "避免無依據判斷" in result.error
     assert "alias_resolution" not in result.meta
 
 

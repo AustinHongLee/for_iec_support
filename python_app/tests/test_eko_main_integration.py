@@ -22,9 +22,10 @@ def test_analyze_single_iec_type_unaffected():
     assert any(e.name == "管路" for e in r.entries)
 
 
-def test_unknown_code_still_not_implemented():
+def test_unknown_code_is_not_guessed_as_iec_or_eko():
     r = analyze_single("ZZ9-1-500H")           # 既非 IEC 也非 EKO
-    assert r.error and "not implemented" in r.error
+    assert r.error and "找不到型號" in r.error
+    assert "避免無依據判斷" in r.error
 
 
 def test_mixed_iec_eko_project():

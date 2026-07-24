@@ -172,7 +172,13 @@ def analyze_single(fullstring: str, overrides: dict = None) -> AnalysisResult:
             pass
         # ─────────────────────────────────────────────────────────
         result = AnalysisResult(fullstring=fullstring)
-        result.error = f"Type {type_code} not implemented"
+        if type_code and not type_code[:1].isdigit():
+            result.error = (
+                f"找不到型號 {type_code!r} 的可驗證計算規則；"
+                "為避免無依據判斷，本筆不計算。請確認型號，或提供圖面後匯入規則。"
+            )
+        else:
+            result.error = f"Type {type_code} not implemented"
         apply_truth_contract(
             result,
             type_id=type_code,

@@ -6,7 +6,7 @@
 
 - Pre-checkpoint baseline commit: `dc68dcd` (`docs: record green Linux validation`)
 - Active plan: `施工單_G1-G4_功能延伸與主介面重整_2026-07-12.md`
-- Local validation after the repository hygiene sweep: 233 passed; `VALIDATION COMPLETE`; 0 lines beginning with `X`; GUI launch check passed
+- Local validation after the latest error-state/company-routing correction: 238 passed; `VALIDATION COMPLETE`; 0 lines beginning with `X`; targeted GUI render check passed
 - Last pre-wave GitHub Actions run: `29213757536` passed
 - Expected warnings: 21 `phase 2L-A unmanaged material entry` warnings
 
@@ -46,6 +46,8 @@
 - Export readiness and change feedback: the export row now states whether the project is unbuilt, waiting, stale, error-bearing, estimate-ready, final-blocked, or ready; automatic reanalysis also shows the previous and current total weight with delta details in the tooltip
 - Import problem-row details: Excel, CSV, and text imports retain source row numbers, original row snapshots, severity, handling outcome, and concrete repair guidance; the preview shows a copyable issue table and skips invalid quantities without aborting the remaining valid rows
 - Search/filter responsibility cleanup: the left search explicitly filters only the input list; central free text is now a non-hiding result locator with previous/next navigation; Excel-like column conditions alone reduce rows, pending material is part of the status condition, and removable active-condition chips expose every applied filter
+- Error-state and company-routing correction: failed rows now use a prominent red banner and full-row error treatment; CS1-family rows are identified as EKO/益高 but explicitly reported as calculation rules not yet imported; unmatched alphanumeric codes remain `待判定` and are never guessed as IEC/長春 or calculated through another Type
+- EKO DS3 drawing-backed naming correction: the BOM component is now `鋼管` rather than the functional shorthand `撐管`, matching the drawing's `PIPE STUB` / `STEEL PIPE` labels; dummy-support purpose, same-size requirement, spool-defined length, and material-compatibility warning remain in the structure/remarks
 - One-step project undo: a visible toolbar action and Ctrl+Z restore the latest input, enable-state, list edit, import/clear, row override, batch material, or global-material change; projects that had been analyzed automatically recompute after restoration instead of reviving stale result objects
 - Excel claim-audit wave: `PENETRATION HOLE` now exports as its `OPEN-…` display family in support-audit evidence; the existing project-scaled weight sheet remains, while `單組重量明細` is a two-column model-to-single-weight lookup without BOM expansion or project quantity scaling; the manager cover is now a claim-question entry point, and `長官-支撐分類` directly shows each contract name's rule, one current-project example, source reference, and row-level evidence link
 - Excel real-project verification: the 704-row / 1,045-support MTO exported with 0 analysis errors and 5,520.702 kg total; all 11 sheets rendered for visual review, the workbook error scan found no formula errors, and the OPEN audit output contains 87 OPEN evidence rows with no exported `PENETRATION HOLE` label

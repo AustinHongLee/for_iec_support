@@ -77,7 +77,9 @@ def test_va2_lug_and_ubolt():
 def test_ds3_dummy_pipe_len_l():
     r = _a('DS3-1"-450L')
     assert not r.error, r.error
-    assert _n(r, "撐管")[0].length == 450            # 品名=撐管(非核心「管路」), 長=L
+    pipe = _n(r, "鋼管")[0]
+    assert pipe.length == 450
+    assert "材質須與母材相容" in pipe.remark
 
 
 def test_st3_trunnion_size_from_table():
