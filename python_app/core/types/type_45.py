@@ -1,132 +1,233 @@
-"""
-Type 45 計算器 — 曲面設備直接夾持支撐 (D-54, D-55)
-格式: 45-{line_size}B-{MEMBER}-{H} {A|B}
+"""Type 45 source-aware lug-mounted vessel frame (D-54/D-55)."""
+from __future__ import annotations
 
-H = P - √(R² - Q²) - 60 - t
-無 Trunnion, 有 Lug Plate, 僅 8"~14"
-⚠️ Detail Y/Z 反轉: Y=Vessel端 M-35/36, Z=管線端 M-34
-
-BOM: ① Channel(H) ② L50斜撐(條件: H>1140) ③ LUG PLATE TYPE-C (M-34, Detail Z)
-     ④ LUG PLATE TYPE-D/E (M-35/36, Detail Y) ⑤ K BOLT
-"""
-from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value
-from ..steel import add_steel_section_entry
-from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
-from ..material_specs import (
-    ANCHOR_BOLT_SUS304,
-    PLATE_LUG_A36_SS400,
-    STRUCTURAL_A36_SS400,
-)
-from data.steel_sections import get_section_details
-from data.type45_table import get_type45_q, get_type45_member, get_type45_brace, TYPE45_BRACE_H_MIN
+from ..config_loader import load_config
+from ..material_specs import ANCHOR_BOLT_SUS304, PLATE_LUG_A36_SS400, STRUCTURAL_A36_SS400, SUPPORT_PLATE_A36_SS400
+from ..models import AnalysisResult, set_remark
+from ..parser import get_lookup_value
+from ..plate import add_plate_entry
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
+from ._lug_plate_common import lug_hole_count
 from data.m34_table import get_m34_by_member
 from data.m35_table import get_m35_by_member
 from data.m36_table import get_m36_by_member
+from data.steel_sections import get_section_details
+from data.type45_table import get_type45_brace
 
 
-_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
-_PLATE_LUG_MATERIAL = PLATE_LUG_A36_SS400
-_ANCHOR_BOLT_MATERIAL = ANCHOR_BOLT_SUS304
-
-
-def calculate(fullstring: str) -> AnalysisResult:
-    result = AnalysisResult(fullstring=fullstring)
-
-    # 第二段: 管徑
-    part2 = get_part(fullstring, 2)
-    if not part2:
-        result.error = "Type 45: 缺少管徑"
-        return result
-    line_size = get_lookup_value(part2)
-    q_val = get_type45_q(line_size)
-    if q_val is None:
-        result.error = f"Type 45: 管徑 {part2} ({line_size}\") 不在範圍 (8\"/10\"/12\"/14\")"
-        return result
-
-    # 第三段: 型鋼代碼
-    part3 = get_part(fullstring, 3)
-    if not part3:
-        result.error = "Type 45: 缺少型鋼代碼"
-        return result
-    member_code = part3.strip()
-    t45_member = get_type45_member(member_code)
-    if not t45_member:
-        result.error = f"Type 45: 未知型鋼 {member_code} (支援 C100/C125/C150)"
-        return result
-    details = get_section_details(member_code)
-    if not details:
-        result.error = f"Type 45: steel_sections 無 {member_code}"
-        return result
-
-    # 第四段: "H FIG"
-    part4 = get_part(fullstring, 4)
-    if not part4:
-        result.error = "Type 45: 缺少 H 值與 FIG 類型"
-        return result
-    parts4 = part4.strip().split()
-    h_mm = int(parts4[0])
-    fig_type = parts4[1].upper() if len(parts4) > 1 else "A"
-
-    section_type = details["type"]
-    section_dim = details["size"][1:]
-    theta = 30 if fig_type == "A" else 45
-
-    # ① Channel 主柱 — length = H + A
-    main_len = h_mm + t45_member["A"]
-    add_steel_section_entry(
-        result, section_type, section_dim, main_len, material=_STRUCTURAL_MATERIAL
+def _add_lug(result, lug, *, label, qty, drawing, component_id, bolt_spec, hole_diameter=None):
+    holes = lug_hole_count(lug)
+    diameter = hole_diameter or lug["J"]
+    add_plate_entry(
+        result, lug["A"], lug["B"], lug["T"], f"LUG PLATE {label}",
+        material=PLATE_LUG_A36_SS400, plate_qty=qty,
+        plate_role="lug_plate", bolt_switch=True,
+        bolt_x=2 * lug["E"] + lug["F"], bolt_y=2 * (lug.get("G") or 0),
+        bolt_hole=diameter, bolt_size=bolt_spec,
     )
-    result.entries[-1].remark = f"主柱, H={h_mm}+A={t45_member['A']}={main_len}mm"
+    entry = result.entries[-1]
+    entry.geometry.component_id = component_id
+    entry.geometry.source_drawing = drawing
+    entry.geometry.source_revision = "1"
+    entry.geometry.shape_kind = "standard_lug_plate"
+    entry.geometry.shape_spec = (
+        f'{lug["type"]}; {lug["A"]}x{lug["B"]}x{lug["T"]}t; '
+        f'{holes}-HOLE DIA{diameter}; QTY {qty}'
+    )
+    entry.geometry.holes.count = holes
+    entry.geometry.parameters.update(
+        {
+            "lgp_type": lug["type"], "hole_count_per_plate": holes,
+            "quantity": qty, "E_mm": lug["E"], "F_mm": lug["F"],
+            "G_mm": lug.get("G"), "H_mm": lug.get("H"),
+        }
+    )
+    entry.geometry.fabrication_ready = True
+    return holes * qty
 
-    # ② L50 斜撐 (條件: H > 1140)
-    if h_mm > TYPE45_BRACE_H_MIN:
-        brace = get_type45_brace(fig_type)
-        if brace:
-            add_steel_section_entry(
-                result, "Angle", "50*50*6", brace["length"],
-                material=_STRUCTURAL_MATERIAL,
-            )
-            result.entries[-1].remark = (
-                f"斜撐 FIG-{fig_type}(θ={theta}°), "
-                f"L={brace['length']}mm, H>{TYPE45_BRACE_H_MIN}"
-            )
 
-    # ③ LUG PLATE TYPE-C (M-34, Detail Z — 管線端)
-    m34 = get_m34_by_member(member_code)
-    if m34:
-        add_plate_entry(result, plate_a=m34["A"], plate_b=m34["B"],
-                        plate_thickness=m34["T"], plate_name="LUG PLATE TYPE-C",
-                            plate_role="lug_plate",
-                        material=_PLATE_LUG_MATERIAL, plate_qty=1)
-        result.entries[-1].remark = f"Detail Z(管線端), {m34['type']}"
+def calculate(fullstring, overrides=None, source_profile=None):
+    result = AnalysisResult(fullstring=fullstring)
+    config = load_config("45", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 45: 尚未建立來源 profile {profile_id}"
+        return result
+    parts = str(fullstring).split("-")
+    if len(parts) not in (4, 5):
+        result.error = "Type 45: 格式應為 45-{line size}B-{M}-{H} {A/B}[-{Q mm}]"
+        return result
+    line_size = get_lookup_value(parts[1])
+    member = parts[2].upper()
+    details = get_section_details(member)
+    row = config["TYPE45_MEMBER"].get(member)
+    try:
+        token = parts[3].split()
+        h_mm = int(token[0])
+        fig = token[1].upper() if len(token) > 1 else "A"
+        q_mm = int(parts[4]) if len(parts) == 5 else config["TYPE45_PIPE_Q"][str(int(line_size))]
+    except (KeyError, TypeError, ValueError):
+        result.error = "Type 45: line size/H/Q無法依D-54/D-55解析"
+        return result
+    if not row or not details:
+        result.error = f"Type 45: D-55未支援MEMBER {member}"
+        return result
+    if fig not in ("A", "B") or h_mm <= 0 or q_mm <= 0:
+        result.error = "Type 45: H/Q需大於0，FIG需為A/B"
+        return result
+    longitudinal = h_mm - row["A"] + q_mm + 3
+    transverse = 2 * q_mm + 6
+    if longitudinal <= 0:
+        result.error = f"Type 45: H-A+Q+3={longitudinal}mm，縱向member無有效長度"
+        return result
 
-    # ④ LUG PLATE TYPE-D/E (M-35/36, Detail Y — Vessel端)
-    if fig_type == "B":
-        m_dy = get_m35_by_member(member_code)
-        dy_label = "TYPE-D"
-    else:
-        m_dy = get_m36_by_member(member_code)
-        dy_label = "TYPE-E"
-    if m_dy:
-        add_plate_entry(result, plate_a=m_dy["A"], plate_b=m_dy["B"],
-                        plate_thickness=m_dy["T"],
-                        plate_name=f"LUG PLATE {dy_label}",
-                            plate_role="lug_plate",
-                        material=_PLATE_LUG_MATERIAL, plate_qty=1)
-        result.entries[-1].remark = f"Detail Y(Vessel端), {dy_label}"
+    drawing = " / ".join(profile["drawings"])
+    blockers = [
+        "D-55的MIN. CHANNEL REQUIRED圖表尚未完整轉成可驗證選型矩陣",
+        "H-A+Q+3的vessel端起點與實際曲面端切需設備幾何確認",
+    ]
+    for cid, role, length, qty, formula in (
+        ("D54-LONGITUDINAL", "縱向member", longitudinal, 2, "H - A + Q + 3"),
+        ("D54-TRANSVERSE", "橫向member", transverse, 2, "2Q + 6"),
+    ):
+        add_steel_section_entry(
+            result, details["type"], details["size"][1:], length,
+            material=STRUCTURAL_A36_SS400, steel_qty=qty,
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.formula = formula
+        entry.geometry.parameters = {
+            "H_mm": h_mm, "A_mm": row["A"], "Q_mm": q_mm,
+            "quantity": qty, "figure": fig,
+        }
+        entry.geometry.fabrication_ready = cid == "D54-TRANSVERSE"
+        if cid == "D54-LONGITUDINAL":
+            entry.geometry.fabrication_blockers = [blockers[1]]
+        set_remark(entry, f"{role}，{length}mm ×{qty}")
 
-    # ⑤ K BOLT
-    # Detail Z: 3/4"×50 (Ø22), Detail Y: 5/8"×40 (Ø19)
-    add_custom_entry(result, name="K BOLT", spec='3/4"x50',
-                     material=_ANCHOR_BOLT_MATERIAL, quantity=1,
-                     unit_weight=0.8, unit="SET")
-    result.entries[-1].remark = "Detail Z(管線端), Ø22"
+    braced = h_mm > config["TYPE45_BRACE_H_MIN"]
+    if braced:
+        brace_data = get_type45_brace(fig)
+        add_steel_section_entry(
+            result, "Angle", "50*50*6", brace_data["length"],
+            material=STRUCTURAL_A36_SS400,
+        )
+        brace = result.entries[-1]
+        brace.geometry.component_id = "D54-L50-BRACE"
+        brace.geometry.source_drawing = drawing
+        brace.geometry.source_revision = profile["revision"]
+        brace.geometry.shape_kind = "stock_section_cut"
+        brace.geometry.parameters = {
+            "figure": fig, "theta_deg": 30 if fig == "A" else 45,
+            "cut_length_mm": brace_data["length"],
+        }
+        brace.geometry.fabrication_ready = False
+        brace.geometry.fabrication_blockers = ["斜撐兩端切角/貼合輪廓未完整尺寸化"]
+        blockers.append("斜撐兩端切角/貼合輪廓未完整尺寸化")
 
-    add_custom_entry(result, name="K BOLT", spec='5/8"x40',
-                     material=_ANCHOR_BOLT_MATERIAL, quantity=1,
-                     unit_weight=0.5, unit="SET")
-    result.entries[-1].remark = "Detail Y(Vessel端), Ø19"
+    add_plate_entry(
+        result, 90, 45, 6, "CLIP PLATE",
+        material=SUPPORT_PLATE_A36_SS400, plate_qty=2,
+        plate_role="generic_plate", bolt_switch=True,
+        bolt_hole=16, bolt_size='1/2"x30',
+    )
+    clip = result.entries[-1]
+    clip.geometry.component_id = "D54-CLIP-PLATE"
+    clip.geometry.source_drawing = drawing
+    clip.geometry.source_revision = profile["revision"]
+    clip.geometry.shape_kind = "rectangular_plate"
+    clip.geometry.holes.count = 1
+    clip.geometry.parameters.update({"quantity": 2, "fillet_weld_mm": 6})
+    clip.geometry.fabrication_ready = True
+    add_custom_entry(
+        result, name="M.BOLT", spec='1/2"x30',
+        material=ANCHOR_BOLT_SUS304, quantity=2, unit_weight=0, unit="PC",
+    )
+    clip_bolt = result.entries[-1]
+    clip_bolt.geometry.component_id = "D54-M-BOLT"
+    clip_bolt.geometry.source_drawing = drawing
+    clip_bolt.geometry.source_revision = profile["revision"]
+    clip_bolt.geometry.shape_kind = "purchased_fastener"
+    clip_bolt.geometry.parameters = {"spec": '1/2"x30', "quantity": 2}
+    clip_bolt.geometry.fabrication_ready = True
 
+    m34 = get_m34_by_member(member)
+    if not m34:
+        result.error = f"Type 45: M-34缺少 {member}"
+        result.entries.clear()
+        return result
+    z_bolts = _add_lug(
+        result, m34, label="TYPE-C", qty=2,
+        drawing="LUG-PLATE_TYPE-C_M-34.pdf",
+        component_id=f'M34-{m34["type"]}', bolt_spec=row["K"],
+    )
+    add_custom_entry(
+        result, name="K BOLT", spec=row["K"],
+        material=ANCHOR_BOLT_SUS304, quantity=z_bolts,
+        unit_weight=0, unit="PC",
+    )
+    zbolt = result.entries[-1]
+    zbolt.geometry.component_id = "D54-DETAIL-Z-K-BOLT"
+    zbolt.geometry.source_drawing = drawing
+    zbolt.geometry.source_revision = profile["revision"]
+    zbolt.geometry.shape_kind = "purchased_fastener"
+    zbolt.geometry.parameters = {"spec": row["K"], "quantity": z_bolts}
+    zbolt.geometry.fabrication_ready = True
+
+    y_bolts = 0
+    if braced:
+        my = get_m36_by_member(member) if fig == "A" else get_m35_by_member(member)
+        if not my:
+            result.error = f"Type 45: M-35/M-36缺少 {member}"
+            result.entries.clear()
+            return result
+        y_bolts = _add_lug(
+            result, my, label="TYPE-E" if fig == "A" else "TYPE-D", qty=1,
+            drawing="LUG-PLATE_TYPE-D_E_M-35_M-36.pdf",
+            component_id=f'{"M36" if fig == "A" else "M35"}-{my["type"]}',
+            bolt_spec='5/8"x40', hole_diameter=19,
+        )
+        add_custom_entry(
+            result, name="K BOLT", spec='5/8"x40',
+            material=ANCHOR_BOLT_SUS304, quantity=y_bolts,
+            unit_weight=0, unit="PC",
+        )
+        ybolt = result.entries[-1]
+        ybolt.geometry.component_id = "D54-DETAIL-Y-K-BOLT"
+        ybolt.geometry.source_drawing = drawing
+        ybolt.geometry.source_revision = profile["revision"]
+        ybolt.geometry.shape_kind = "purchased_fastener"
+        ybolt.geometry.parameters = {"spec": '5/8"x40', "quantity": y_bolts, "hole_diameter_mm": 19}
+        ybolt.geometry.fabrication_ready = True
+
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": drawing,
+        "source_revision": profile["revision"],
+        "branch": f'{member}/FIG-{fig}/{"BRACED" if braced else "UNBRACED"}',
+        "bom_ready": True,
+        "fabrication_ready": False,
+        "blockers": blockers,
+        "longitudinal_cut_length_mm": longitudinal,
+        "transverse_cut_length_mm": transverse,
+        "detail_z_bolt_quantity": z_bolts,
+        "detail_y_bolt_quantity": y_bolts,
+        "Q_mm": q_mm,
+    }
+    result.warnings.extend(blockers)
+    result.evidence.append(
+        make_evidence(
+            "type45_dimensions",
+            {"line_size": line_size, "Q": q_mm, "H": h_mm, "member": member, "A": row["A"]},
+            "visual_transcription", source=drawing, confidence=0.95,
+        )
+    )
     return result

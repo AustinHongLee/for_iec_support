@@ -62,35 +62,40 @@ def parse_designation(fullstring, code=None):
         "serial": None, "pipe": None,
         "L": None, "L1": None, "H": None, "H1": None, "H2": None,
         "cold": None, "msize": None, "tcount": None,
-        "flags": [], "extra": [], "L_list": [], "parse_warnings": [],
+        "flags": [], "extra": [], "duplicates": [], "L_list": [], "parse_warnings": [],
     }
+
+    def assign(field, value):
+        if parsed.get(field) is not None:
+            parsed["duplicates"].append(field)
+        parsed[field] = value
 
     bare_ints = []          # 無字母裸數字(位置備援用)
     for s in parts[1:]:
         u = s.upper()
         m = re.fullmatch(r"(\d+)H1", u)
-        if m: parsed["H1"] = int(m.group(1)); continue
+        if m: assign("H1", int(m.group(1))); continue
         m = re.fullmatch(r"(\d+)H2", u)
-        if m: parsed["H2"] = int(m.group(1)); continue
+        if m: assign("H2", int(m.group(1))); continue
         m = re.fullmatch(r"(\d+)H", u)
-        if m: parsed["H"] = int(m.group(1)); continue
+        if m: assign("H", int(m.group(1))); continue
         m = re.fullmatch(r"(\d+)L1", u)
-        if m: parsed["L1"] = int(m.group(1)); continue
+        if m: assign("L1", int(m.group(1))); continue
         m = re.fullmatch(r"(\d+)L", u)
         if m:
-            parsed["L"] = int(m.group(1))
+            assign("L", int(m.group(1)))
             parsed["L_list"].append(int(m.group(1)))
             continue
         m = re.fullmatch(r"C(\d+)", u)
-        if m: parsed["cold"] = int(m.group(1)); continue
+        if m: assign("cold", int(m.group(1))); continue
         m = re.fullmatch(r"M(\d+)", u)
-        if m: parsed["msize"] = int(m.group(1)); continue
+        if m: assign("msize", int(m.group(1))); continue
         m = re.fullmatch(r"T(\d+)", u)
-        if m: parsed["tcount"] = int(m.group(1)); continue
+        if m: assign("tcount", int(m.group(1))); continue
         if s.endswith('"'):
             val = parse_inch(s)
             if val is not None:
-                parsed["pipe"] = val; continue
+                assign("pipe", val); continue
         if re.fullmatch(r"\d+", s):
             bare_ints.append(int(s)); continue
         if re.fullmatch(r"[A-Za-z]\d*", s):

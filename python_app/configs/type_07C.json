@@ -1,0 +1,64 @@
+{
+  "type_id": "07C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-7/C-8/N-9/N-10/N-11/N-27 複驗：限制 lower type 為 G/J/R；G 依 N-11/N-10 接入 4 支 EB 尺寸/鑽孔/荷重，J 因 N-11 Note 未列而保留衝突警告。PUBK-2U~6U 依 320 kg/m3 精算；H/pan/sliding interface 仍保留 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/07C.pdf",
+      "drawing_no": "C-7/C-8",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-7", "C-8"],
+      "title": "C-7/C-8 TYPE 07C SLIDING DEEP-COLD STANCHION",
+      "component_id": "C7-C8-TYPE07C-ASSEMBLY",
+      "source_spec": "2in TO 16in; -9C TO -254C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 07C 格式應為 07C-{LINE}B-{H/100}{LOWER}",
+      "allowed_values": {
+        "lower_component": ["G", "J", "R"]
+      },
+      "lookups": [
+        {
+          "name": "line_size",
+          "field": "line_size_in",
+          "rows": {
+            "2": {"pipe_B": "1-1/2in SCH.80", "E_mm": 140, "pu_block_no": "2U"},
+            "3": {"pipe_B": "2in SCH.40", "E_mm": 140, "pu_block_no": "2U"},
+            "4": {"pipe_B": "3in SCH.40", "E_mm": 200, "pu_block_no": "3U"},
+            "6": {"pipe_B": "4in SCH.40", "E_mm": 200, "pu_block_no": "3U"},
+            "8": {"pipe_B": "6in SCH.40", "E_mm": 250, "pu_block_no": "4U"},
+            "10": {"pipe_B": "8in SCH.40", "E_mm": 300, "pu_block_no": "5U"},
+            "12": {"pipe_B": "8in SCH.40", "E_mm": 300, "pu_block_no": "5U"},
+            "14": {"pipe_B": "10in SCH.40", "E_mm": 350, "pu_block_no": "6U"},
+            "16": {"pipe_B": "10in SCH.40", "E_mm": 350, "pu_block_no": "6U"}
+          }
+        }
+      ],
+      "static_parameters": {
+        "pan_plate": "3t SUS A240 Gr.304",
+        "sliding_plate_thickness_mm": 9,
+        "wood_screws": "4-diameter0.372in x 40L A193 Gr.B8"
+      },
+      "component_bindings": [
+        {
+          "component_id": "N-9",
+          "supporting_pipe_field": "source_rows.line_size.pipe_B"
+        },
+        {
+          "component_id": "N27-PU BLOCK",
+          "block_no_field": "source_rows.line_size.pu_block_no"
+        }
+      ],
+      "references": ["N-9 LOWER COMPONENT", "N-27 PU BLOCK"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "N-9/N-10 do not identify lower-component plate material or release the host interface",
+        "pan/sliding-plate net interfaces remain incomplete",
+        "wood-screw, plate and supporting-pipe interfaces do not define a released assembly BOM"
+      ]
+    }
+  }
+}

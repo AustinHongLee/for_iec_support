@@ -1,0 +1,63 @@
+{
+  "type_id": "15C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-21 與 N-1~N-3/N-5/N-20~N-26 複驗：CR/pipe 反查 insulation、F/H/R/T1、層構造、密度與來源載重；多解時要求 insulation_thickness_mm，30in+ 嚴格限 30/36/42/48/54/60。2026-07-30 獨立稽核確認 N-24 標 KG、N-25/N-26 標 LB 且數值相同，裁決前只保留 raw value/source sheet，不輸出 canonical kg/lb。guide/cradle 展開仍保持零重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/15C.pdf",
+      "drawing_no": "C-21",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-21"],
+      "title": "C-21 TYPE 15C COLD RISER GUIDE",
+      "component_id": "C21-TYPE15C-ASSEMBLY",
+      "source_spec": "RISER GUIDE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["A", "B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        },
+        {
+          "fields": [
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ],
+          "defaults": {"cradle_length_code": "NONE"}
+        }
+      ],
+      "designation_error": "Type 15C 格式應為 15C-[A|B-]{CR#}-{LINE}B",
+      "branch_selections": [
+        {
+          "name": "pipe_group",
+          "field": "line_size_in",
+          "branches": {
+            "half_to_six": {
+              "values": [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6],
+              "cradle_lengths_mm": {"NONE": 150, "A": 300, "B": 600}
+            },
+            "eight_to_twenty_four": {
+              "values": [8, 10, 12, 14, 16, 18, 20, 22, 24],
+              "cradle_lengths_mm": {"NONE": 200, "A": 300, "B": 600}
+            },
+            "thirty_to_sixty": {
+              "values": [30, 36, 42, 48, 54, 60],
+              "cradle_lengths_mm": {"NONE": 300, "B": 600}
+            }
+          }
+        }
+      ],
+      "static_parameters": {"guide_count": 2, "aluminum_jacket_thickness_mm": 26},
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE", "allow_unlisted_pipe_size": true}
+      ],
+      "references": ["N-1", "N-2", "N-3", "N-5", "N-20~N-26", "C-14/C-15"],
+      "blockers": [
+        "guide/cradle piece contours and finished cuts are not uniquely dimensioned"
+      ]
+    }
+  }
+}

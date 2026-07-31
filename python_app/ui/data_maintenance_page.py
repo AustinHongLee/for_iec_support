@@ -445,7 +445,15 @@ class DataMaintenancePage(QWidget):
         visible = 0
         for index in range(self.type_list.count()):
             item = self.type_list.item(index)
-            show = all(term in item.text().casefold() for term in terms)
+            item_text = item.text().casefold()
+            # Keep an entered Type prefix contiguous.  Splitting "Type 01"
+            # into independent terms also matched "Type 101" once that
+            # drawing-backed config became editable.
+            show = (
+                query in item_text
+                if query.startswith("type ")
+                else all(term in item_text for term in terms)
+            )
             item.setHidden(not show)
             visible += int(show)
         total = self.type_list.count()

@@ -8,12 +8,12 @@ Source status:
   table by AI visual inspection.
 
 The drawing gives `PUBS3-{line_size}B-{fig_no}` as the designation pattern and
-states material as carbon steel.  Unit weight is calculated from the developed
-strap blank (`B x C x T`) with Fig.2 bolt holes subtracted.
+states material as carbon steel.  B is an assembled outside span, not a proven
+flat-blank development.  The former `B x C x T` weight was therefore retired
+after direct visual re-verification on 2026-07-30.
 """
 from __future__ import annotations
 
-import math
 from copy import deepcopy
 
 from .component_size_utils import normalize_fractional_size
@@ -34,7 +34,7 @@ M54_COMPONENT_INFO = {
     "project": "E19-06",
     "table_kind": "dimensional_lookup",
     "lookup_ready": True,
-    "weight_ready": True,
+    "weight_ready": False,
     "transcription_status": "ai_visual_transcribed",
 }
 
@@ -48,16 +48,6 @@ _RAW_M54_ROWS = [
     ("PUBS3-3 1/2B", '3 1/2"', 105.0, 240, 9, 65, 50.8, 52.5, 40),
     ("PUBS3-4B", '4"', 117.6, 255, 9, 65, 57.2, 58.8, 40),
 ]
-
-
-def _calc_weight_kg(row: dict, *, fig_no: int = 2) -> float:
-    blank_area_mm2 = row["B"] * row["C"]
-    if fig_no == 2:
-        hole_area_mm2 = M54_FIG2_HOLE_COUNT * math.pi * (M54_FIG2_HOLE_DIA_MM / 2) ** 2
-    else:
-        hole_area_mm2 = 0
-    volume_mm3 = max(blank_area_mm2 - hole_area_mm2, 0) * row["T"]
-    return round(volume_mm3 * STEEL_DENSITY_KG_PER_MM3, 2)
 
 
 M54_TABLE = {}
@@ -81,8 +71,11 @@ for _base_type, _line_size, _a, _b, _t, _c, _h, _r, _d in _RAW_M54_ROWS:
         "fig_no_supported": [1, 2],
         "fig2_hole_dia_mm": M54_FIG2_HOLE_DIA_MM,
         "fig2_hole_count": M54_FIG2_HOLE_COUNT,
-        "weight_status": "calculated_from_B_C_T_minus_fig2_holes",
-        "source_note": "AI visual transcription from rendered vector PDF; reviewer spot-check recommended.",
+        "weight_status": "blocked_B_is_assembled_span_not_developed_blank",
+        "source_note": (
+            "2026-07-30 direct visual re-verification: dimensions are readable, "
+            "but flat development/bend allowance is not uniquely stated."
+        ),
     }
 
 
@@ -97,6 +90,7 @@ def get_m54_component() -> dict:
                 "Dimension table transcribed by AI visual inspection after vector-PDF rasterization.",
                 "Designation pattern from drawing note: PUBS3-{line_size}B-{fig_no}.",
                 'Fig.2 includes 2-phi11 bolt holes for 3/8" expansion bolt.',
+                "B is an assembled outside span; do not use B*C*T as flat-blank weight.",
             ],
         }
     )
@@ -112,7 +106,7 @@ def get_m54_by_line_size(line_size, *, fig_no: int = 2) -> dict | None:
     item = deepcopy(row)
     item["fig_no"] = fig_no
     item["designation"] = f'{item["designation_base"]}-{fig_no}'
-    item["unit_weight_kg"] = _calc_weight_kg(item["dimensions_mm"], fig_no=fig_no)
+    item["unit_weight_kg"] = 0.0
     return item
 
 

@@ -15,7 +15,7 @@ def test_project_header_shows_versions_after_analysis():
         window._on_analyze()
         app.processEvents()
         assert window.project_header.version_label.isEnabled()
-        assert "1.1" in window.project_header.version_label.text()
+        assert "1.2" in window.project_header.version_label.text()
 
         window._invalidate_analysis_outputs("test")
         assert not window.project_header.version_label.isEnabled()
@@ -28,14 +28,14 @@ def test_analyze_single_records_json_config_version():
     result = analyze_single("01-2B-05A")
 
     assert not result.error
-    assert result.meta["config_version"] == "1.1"
+    assert result.meta["config_version"] == "1.2"
     assert result.meta["config_updated"]
 
 
-def test_calculator_only_version_marker_is_explicit():
+def test_rebuilt_type03_config_version_is_explicit():
     assert config_loader.get_config_version_info("03") == (
-        "(calculator-only)",
-        "",
+        "2.0",
+        "2026-07-31",
     )
 
 

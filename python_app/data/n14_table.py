@@ -1,16 +1,7 @@
-"""N-14 Vessel Clips metadata table."""
-from .component_metadata_registry import build_metadata_component, clone_metadata_component
+"""N-14 vessel-clip compatibility exports."""
 
+from .cold_interface_tables import N14_COMPONENT, get_n14_component
 
-N14_TABLE = build_metadata_component(
-    component_id="N-14",
-    name_en="VESSEL CLIPS",
-    category="component_cold",
-    pdf_file="N-14-VESSEL CLIPS.pdf",
-    summary="Metadata-only intake entry for N-14 vessel clips.",
-    notes=["Vessel clip dimensions require PDF visual transcription."],
-)
+N14_TABLE = N14_COMPONENT
 
-
-def get_n14_component() -> dict:
-    return clone_metadata_component(N14_TABLE)
+__all__ = ["N14_COMPONENT", "N14_TABLE", "get_n14_component"]

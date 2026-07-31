@@ -1,101 +1,185 @@
-"""
-Type 46 計算器 — 曲面設備直接支撐含 D-80 接口 (D-56)
-格式: 46-{line_size}B-{MEMBER}-{H} {A|B}
+"""Type 46 vessel-mounted four-channel frame (D-56).
 
-H = P - √(R² - Q²)
-無 Trunnion, 無 Lug Plate, 管線端連接 D-80, 2"~14"
-
-BOM: ① Channel(H) ② L50斜撐(條件: H>1200) ③ Plate 90×45×6 ④ M.B.
+The D-56 plan dimensions the two longitudinal cuts as H + Q + 50 and the
+two transverse cuts as 2Q.  The repeated 3 mm callout is the D-80 interface
+clearance; it is not stock added to either channel cut.
 """
-from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value
-from ..steel import add_steel_section_entry
-from ..plate import add_plate_entry
+from __future__ import annotations
+
 from ..bolt import add_custom_entry
-from ..material_specs import (
-    ANCHOR_BOLT_SUS304,
-    STRUCTURAL_A36_SS400,
-    SUPPORT_PLATE_A36_SS400,
-)
+from ..config_loader import load_config
+from ..models import AnalysisResult, set_remark
+from ..parser import get_lookup_value
+from ..plate import add_plate_entry
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
 from data.steel_sections import get_section_details
-from data.type46_table import (get_type46_47_q, TYPE46_BRACE, TYPE46_BRACE_H_MIN)
 
 
-_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
-_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
-_ANCHOR_BOLT_MATERIAL = ANCHOR_BOLT_SUS304
+_FRAME_MATERIAL = "Carbon Steel (grade per project specification)"
+_FASTENER_MATERIAL = "Not specified in D-56"
 
 
-def calculate(fullstring: str) -> AnalysisResult:
-    result = AnalysisResult(fullstring=fullstring)
-
-    # 第二段: 管徑
-    part2 = get_part(fullstring, 2)
-    if not part2:
-        result.error = "Type 46: 缺少管徑"
-        return result
-    line_size = get_lookup_value(part2)
-    q_val = get_type46_47_q(line_size)
-    if q_val is None:
-        result.error = f"Type 46: 管徑 {part2} ({line_size}\") 不在範圍 (2\"~14\")"
-        return result
-
-    # 第三段: 型鋼代碼
-    part3 = get_part(fullstring, 3)
-    if not part3:
-        result.error = "Type 46: 缺少型鋼代碼"
-        return result
-    member_code = part3.strip()
-    details = get_section_details(member_code)
-    if not details:
-        result.error = f"Type 46: 未知型鋼 {member_code} (支援 C100/C125/C150)"
-        return result
-
-    # 第四段: "H FIG"
-    part4 = get_part(fullstring, 4)
-    if not part4:
-        result.error = "Type 46: 缺少 H 值與 FIG 類型"
-        return result
-    parts4 = part4.strip().split()
-    h_mm = int(parts4[0])
-    fig_type = parts4[1].upper() if len(parts4) > 1 else "A"
-
-    section_type = details["type"]
-    section_dim = details["size"][1:]
-    theta = 30 if fig_type == "A" else 45
-
-    # ① Channel 主柱 — length = H
-    add_steel_section_entry(
-        result, section_type, section_dim, h_mm, material=_STRUCTURAL_MATERIAL
+def _add_d80_reference(result, drawing, revision, line_size):
+    blocker = "D-56引用D-80且未標示NOT FURNISHED；須接入同來源Type 66 BOM後才能取得完整重量"
+    add_custom_entry(
+        result,
+        "D-80 PIPE SUPPORT INTERFACE",
+        f'{line_size:g}"',
+        "Per source D-80",
+        1,
+        0,
+        "SET",
+        remark=blocker,
+        category="組件類",
+        item_class="reference_only",
+        manufacturing_type="purchased",
     )
-    result.entries[-1].remark = f"主柱, H={h_mm}mm, Q={q_val}mm (含D-80偏移)"
+    entry = result.entries[-1]
+    entry.geometry.component_id = "D56-D80-REFERENCE"
+    entry.geometry.source_drawing = drawing
+    entry.geometry.source_revision = revision
+    entry.geometry.shape_kind = "referenced_standard_component"
+    entry.geometry.parameters = {"line_size_in": line_size, "referenced_drawing": "D-80"}
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
+    return blocker
 
-    # ② L50 斜撐 (條件: H > 1200)
-    if h_mm > TYPE46_BRACE_H_MIN:
-        brace = TYPE46_BRACE.get(fig_type)
-        if brace:
-            add_steel_section_entry(
-                result, "Angle", "50*50*6", brace["length"],
-                material=_STRUCTURAL_MATERIAL,
-            )
-            result.entries[-1].remark = (
-                f"斜撐 FIG-{fig_type}(θ={theta}°), "
-                f"L={brace['length']}mm, H>{TYPE46_BRACE_H_MIN}"
-            )
 
-    # ③ Plate 90×45×6 (承托板)
-    add_plate_entry(result, plate_a=90, plate_b=45,
-                    plate_thickness=6, plate_name="PLATE",
-                        plate_role="generic_plate",
-                    material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
-    result.entries[-1].remark = "承托板"
+def calculate(fullstring, overrides=None, source_profile=None):
+    result = AnalysisResult(fullstring=fullstring)
+    config = load_config("46", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 46: 尚未建立來源 profile {profile_id}"
+        return result
+    parts = str(fullstring).split("-")
+    if len(parts) not in (4, 5):
+        result.error = "Type 46: 格式應為 46-{line size}B-{M}-{H} {A/B}[-{Q mm}]"
+        return result
+    line_size = get_lookup_value(parts[1])
+    member = parts[2].upper()
+    details = get_section_details(member)
+    try:
+        token = parts[3].split()
+        h_mm = int(token[0])
+        fig = token[1].upper() if len(token) > 1 else "A"
+        q_mm = int(parts[4]) if len(parts) == 5 else profile["pipe_q"][str(int(line_size))]
+    except (KeyError, TypeError, ValueError):
+        result.error = "Type 46: line size/H/Q無法依D-56解析"
+        return result
+    if member not in profile["members"] or not details:
+        result.error = f"Type 46 / {profile_id}: D-56未表列MEMBER {member}"
+        return result
+    if fig not in ("A", "B") or h_mm <= 0 or q_mm <= 0:
+        result.error = "Type 46: H/Q需大於0，FIG需為A/B"
+        return result
 
-    # ④ M.B. 1/2"×30
-    add_custom_entry(result, name="M.BOLT", spec='1/2"x30',
-                     material=_ANCHOR_BOLT_MATERIAL, quantity=2,
-                     unit_weight=0.3, unit="SET")
+    longitudinal = h_mm + q_mm + 50
+    transverse = 2 * q_mm
+    drawing = profile["drawing"]
+    blockers = [
+        "D-56的MIN. CHANNEL REQUIRED圖表尚未完整轉成可驗證選型矩陣",
+        "縱向member的設備曲面端切與實際起點需設備幾何確認",
+    ]
+    for cid, role, length, qty, formula in (
+        ("D56-LONGITUDINAL", "縱向member", longitudinal, 2, "H + Q + 50"),
+        ("D56-TRANSVERSE", "橫向member", transverse, 2, "2Q"),
+    ):
+        add_steel_section_entry(
+            result, details["type"], details["size"][1:], length,
+            material=_FRAME_MATERIAL, steel_qty=qty,
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.formula = formula
+        entry.geometry.parameters = {
+            "H_mm": h_mm, "Q_mm": q_mm, "quantity": qty,
+            "figure": fig, "fillet_weld_mm": 6,
+            "d80_clearance_mm": 3,
+            "right_end_extension_mm": 50 if cid == "D56-LONGITUDINAL" else None,
+        }
+        entry.geometry.fabrication_ready = cid == "D56-TRANSVERSE"
+        if cid == "D56-LONGITUDINAL":
+            entry.geometry.fabrication_blockers = [blockers[1]]
+        set_remark(entry, f"{role}，{length}mm ×{qty}")
 
-    # NOTE: D-80 Shoe 由 Type 66 獨立計算, 此處不重複列入
-    result.warnings.append("管線端 D-80 Shoe 需另行計算 (Type 66)")
+    braced = h_mm > profile["brace_h_min"]
+    if braced:
+        brace = profile["brace"][fig]
+        add_steel_section_entry(
+            result, "Angle", "50*50*6", brace["length"],
+            material=_FRAME_MATERIAL, steel_qty=2,
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = "D56-L50-BRACE"
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.parameters = {
+            "figure": fig, "theta_deg": 30 if fig == "A" else 45,
+            "cut_length_mm": brace["length"], "quantity": 2,
+        }
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = ["斜撐兩端切角/貼合輪廓未完整尺寸化"]
+        blockers.append("斜撐兩端切角/貼合輪廓未完整尺寸化")
 
+    add_plate_entry(
+        result, 90, 45, 6, "CLIP PLATE",
+        material=_FRAME_MATERIAL, plate_qty=2,
+        plate_role="generic_plate", bolt_switch=True,
+        bolt_hole=16, bolt_size='1/2"x30',
+    )
+    plate = result.entries[-1]
+    plate.geometry.component_id = "D56-CLIP-PLATE"
+    plate.geometry.source_drawing = drawing
+    plate.geometry.source_revision = profile["revision"]
+    plate.geometry.shape_kind = "rectangular_plate"
+    plate.geometry.holes.count = 1
+    plate.geometry.parameters.update({"quantity": 2, "fillet_weld_mm": 6})
+    plate.geometry.fabrication_ready = True
+
+    add_custom_entry(
+        result, name="M.BOLT", spec='1/2"x30',
+        material=_FASTENER_MATERIAL, quantity=2, unit_weight=0, unit="PC",
+    )
+    bolt = result.entries[-1]
+    bolt.geometry.component_id = "D56-M-BOLT"
+    bolt.geometry.source_drawing = drawing
+    bolt.geometry.source_revision = profile["revision"]
+    bolt.geometry.shape_kind = "purchased_fastener"
+    bolt.geometry.parameters = {"spec": '1/2"x30', "quantity": 2, "hole_diameter_mm": 16}
+    bolt.geometry.fabrication_ready = True
+    d80_blocker = _add_d80_reference(
+        result, drawing, profile["revision"], line_size
+    )
+    blockers.append(d80_blocker)
+
+    result.meta["fabrication"] = {
+        "source_profile": profile_id, "source_drawing": drawing,
+        "source_revision": profile["revision"],
+        "branch": f'{member}/FIG-{fig}/{"BRACED" if braced else "UNBRACED"}',
+        "bom_ready": False, "fabrication_ready": False, "blockers": blockers,
+        "referenced_components": ["D-80"],
+        "not_furnished": [],
+        "longitudinal_cut_length_mm": longitudinal,
+        "transverse_cut_length_mm": transverse, "Q_mm": q_mm,
+    }
+    result.warnings.extend(blockers)
+    result.evidence.append(make_evidence(
+        "type46_dimensions",
+        {
+            "line_size": line_size, "Q": q_mm, "H": h_mm, "member": member,
+            "longitudinal_cut_mm": longitudinal,
+            "transverse_cut_mm": transverse,
+            "d80_clearance_mm": 3,
+            "right_end_extension_mm": 50,
+        },
+        "visual_transcription", source=drawing, confidence=0.95,
+    ))
     return result

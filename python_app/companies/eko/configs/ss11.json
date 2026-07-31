@@ -91,11 +91,20 @@
   "Lmax": 1000,
   "Hmax": 1500
  },
+ "validation": {
+  "required": ["fix", "serial", "H", "L"],
+  "allowed": ["fix", "serial", "H", "L"],
+  "fixes": ["B", "E", "W"],
+  "dimensions": {
+   "H": {"max": 1500},
+   "L": {"max": 1000}
+  }
+ },
  "designation_format": {
   "pattern": "SS11{B/E/W}-序號-□H-□L",
   "example": "SS11W-2-500H-600L"
  },
- "version": "1.1",
- "data_updated_at": "2026-07-21",
- "data_update_note": "a/b/c與SS6不同;底板尺寸近似"
+ "version": "1.2",
+ "data_updated_at": "2026-07-27",
+ "data_update_note": "v1.2 強制固定方式、序號、H、L並將H≤1500、L≤1000改為阻擋條件。a/b/c與SS6不同；底板尺寸近似。"
 }

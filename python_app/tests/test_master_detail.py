@@ -39,8 +39,13 @@ def test_master_detail_keeps_full_detail_table_and_syncs_selection(monkeypatch):
             for index in range(window.support_master_table.columnCount())
         ] == MASTER_HEADERS
         assert window.support_master_table.item(0, 0).text() == "⚠"
-        assert window.support_master_table.item(0, 6).text().endswith("(假設)")
+        assert window.support_master_table.item(0, 3).text().endswith("(假設)")
         assert window.support_master_table.item(1, 0).text() == "✓"
+        assert "Carbon Steel" in window.support_master_table.item(1, 3).text()
+        assert "SUS304" not in window.support_master_table.item(1, 3).text()
+        assert "中威" in window.support_master_table.item(1, 6).text()
+        assert "密度待核 1" in window.support_master_table.item(1, 5).text()
+        assert window.summary_review_label.text() == "2"
         assert window.result_table.rowCount() > 0
 
         window.support_master_table.selectRow(0)
@@ -48,6 +53,7 @@ def test_master_detail_keeps_full_detail_table_and_syncs_selection(monkeypatch):
         assert window.item_list.currentRow() == 0
         assert window.bom_detail_panel.table.rowCount() > 0
         assert "01-2B-05A" in window.bom_detail_panel.title_label.text()
+        assert "加工 待補" in window.bom_detail_panel.readiness_label.text()
     finally:
         window.close()
 

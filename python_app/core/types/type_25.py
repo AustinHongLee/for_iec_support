@@ -1,182 +1,133 @@
-"""
-Type 25 計算器  (判讀來源: D-27/M.DWG, E1906-DSP-500-006)
-格式: 25-L50-0505A  或  25-L50-0505C-0401
+"""Type 25 source-aware cantilever with optional D-68/D-70 or M-34 (D-27)."""
+from __future__ import annotations
 
-第二段: 型鋼代碼 (L50, L65, L75)
-第三段: LL+HH+Fig
-        前2位 = L(水平/懸臂) ×100mm
-        中間   = H(垂直)       ×100mm
-        末1位 = Fig 字母 (A / B / C)
-第四段: L1L2 (可選, 各2位×100mm, FIG-A 修改尺寸, 供建模使用)
-
-結構: 懸臂式角鋼支撐
-────────────────────────────────────────────
-FIG-A  簡易懸臂型
-  ├ Member "M" 角鋼: H段(垂直) + L段(水平)
-  └ 第四段 L1, L2 → 修改尺寸 (不影響重量, 供建模)
-
-FIG-B  附 U-bolt / Down Stopper 型
-  ├ Member "M" 角鋼: H段 + L段 (同 FIG-A)
-  ├ DOWN STOPPER (D-70) — NOT FURNISHED
-  └ STANDARD U-BOLT (D-68) — NOT FURNISHED
-
-FIG-C  附連接板型
-  ├ Member "M" 角鋼: H段 + L段 (同 FIG-A)
-  ├ LUG PLATE TYPE C (SEE M-34) — 連接板 ×1
-  └ K BOLT — 連接螺栓 ×4
-────────────────────────────────────────────
-
-DIMENSIONS TABLE (from drawing D-27):
-  MEMBER "M"  | A   | C  | D  | E  | F  | ØJ | K        | L MAX | H MAX
-  L50×50×6    | 150 | 50 | 30 | 30 | 60 | 19 | 5/8"×40  | 1000  | 500
-  L65×65×6    | 160 | 65 | 35 | 30 | 70 | 22 | 3/4"×50  | 1000  | 500
-  L75×75×9    | 160 | 75 | 40 | 30 | 70 | 22 | 3/4"×50  | 1000  | 2000
-
-NOTE: "H" & "L" SHALL BE CUT TO SUIT IN FIELD.
-"""
-from ..models import AnalysisResult, set_remark
-from ..parser import get_part
-from ..steel import add_steel_section_entry
-from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
-from data.steel_sections import get_section_details
-
-# ── D-27 尺寸表 ──────────────────────────────────────────
-_TABLE = {
-    #              A    C   D   E   F   ØJ  K bolt 規格    角鋼板厚
-    "L50": {"A": 150, "C": 50, "D": 30, "E": 30, "F": 60,
-            "OJ": 19, "K": '5/8"X40', "angle_t": 6},
-    "L65": {"A": 160, "C": 65, "D": 35, "E": 30, "F": 70,
-            "OJ": 22, "K": '3/4"X50', "angle_t": 6},
-    "L75": {"A": 160, "C": 75, "D": 40, "E": 30, "F": 70,
-            "OJ": 22, "K": '3/4"X50', "angle_t": 9},
-}
-
-_LIMITS = {
-    "L50": {"L_max": 1000, "H_max": 500},
-    "L65": {"L_max": 1000, "H_max": 500},
-    "L75": {"L_max": 1000, "H_max": 2000},
-}
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import add_issue, register_source_envelope
+from ..models import AnalysisResult
+from ..plate import add_plate_entry
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
+from data.m34_table import get_m34_by_member
+from ._lug_plate_common import lug_hole_count
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def _parse(fullstring):
+    parts = str(fullstring).split("-")
+    if len(parts) not in (3, 4):
+        raise ValueError("格式應為 25-{M}-{LL}{HH}{Fig}[-{L1}{L2}]")
+    member, token = parts[1].upper(), parts[2]
+    if len(token) != 5 or token[-1].upper() not in "ABC" or not token[:4].isdigit():
+        raise ValueError("第三段需為2位L+2位H+Fig A/B/C")
+    l_mm, h_mm, fig = int(token[:2]) * 100, int(token[2:4]) * 100, token[-1].upper()
+    l1 = l2 = None
+    if len(parts) == 4:
+        if len(parts[3]) != 4 or not parts[3].isdigit():
+            raise ValueError("第四段需為2位L1+2位L2")
+        l1, l2 = int(parts[3][:2]) * 100, int(parts[3][2:]) * 100
+    if min(l_mm, h_mm) <= 0:
+        raise ValueError("L與H必須大於0")
+    return member, l_mm, h_mm, fig, l1, l2
+
+
+def calculate(fullstring, overrides=None, source_profile=None):
     result = AnalysisResult(fullstring=fullstring)
-
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2)
-    if not details:
-        result.error = f"Type 25: 未知型鋼代碼 {part2}"
+    overrides = overrides or {}
+    config = load_config("25", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 25: 尚未建立來源 profile {profile_id}"
         return result
-
-    section_type = details["type"]   # "Angle"
-    full_size = details["size"]      # "L50*50*6"
-
-    # ── 第三段: LLHH + Fig ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 5:
-        result.error = f"Type 25: 第三段格式錯誤 '{part3}' (需至少5字元, 如 0505A)"
-        return result
-
-    fig = part3[-1].upper()
-    if fig.isdigit():
-        result.error = f"Type 25: 缺少 Fig 字母 (末位='{fig}' 不是字母)"
-        return result
-
     try:
-        section_L = int(part3[:2]) * 100   # 前兩位 = L (水平/懸臂)
-        section_H = int(part3[2:-1]) * 100  # 中間   = H (垂直)
-    except ValueError:
-        result.error = f"Type 25: 無法解析 L/H 值 '{part3}'"
+        member, l_mm, h_mm, fig, l1, l2 = _parse(fullstring)
+    except ValueError as exc:
+        result.error = f"Type 25: {exc}"
+        return result
+    row = config[profile["table"]].get(member)
+    if not row:
+        result.error = f"Type 25 / {profile_id}: D-27 未表列 MEMBER {member}"
+        return result
+    if l1 is not None and l1 + l2 != l_mm:
+        add_issue(
+            result,
+            code="DESIGNATION_L1_L2_MISMATCH",
+            severity="high",
+            message=(
+                f"Type 25 / {profile_id}: L1+L2={l1}+{l2}={l1+l2}mm，"
+                f"不等於 L={l_mm}mm；BOM仍按L/H暫算，支撐定位須確認"
+            ),
+            scope="designation_consistency",
+            calculation_allowed=True,
+            bom_allowed=False,
+            fabrication_allowed=False,
+            source="D-27",
+        )
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 25 / {profile_id}",
+        source_ref=f"D-27 {member} L/H(MAX)",
+        checks=(
+            ("L", l_mm, row["L_MAX"], True),
+            ("H", h_mm, row["H_MAX"], True),
+        ),
+    ):
         return result
 
-    # ── 第四段: L1/L2 (可選, FIG-A 修改尺寸, 供建模使用) ──
-    part4 = get_part(fullstring, 4)
-    L1 = None
-    L2 = None
-    if part4 and len(part4) >= 4:
-        try:
-            L1 = int(part4[:2]) * 100
-            L2 = int(part4[2:4]) * 100
-        except ValueError:
-            pass  # 第四段可選, 解析失敗不報錯
+    ctx = parse_hardware_material_context(overrides, legacy_material_keys=("material",), legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT, service=ctx.service, overrides=ctx.material_overrides)
+    bolt_material = resolve_hardware_material(HardwareKind.ANCHOR_BOLT, service=ctx.service, overrides=ctx.material_overrides)
+    blockers = ["兩段member交接端部切削/貼合輪廓未在D-27完整尺寸化"]
+    if l1 is None:
+        blockers.append("L1/L2未指定，無法定位supported lines於L段")
+    if profile["fire_protection_detail"] and fig == "A":
+        blockers.append("Fig-A fire-protection support spacer/no-grating條件未編入designation")
 
-    # ── 超限檢查 ──
-    limits = _LIMITS.get(part2, {"L_max": 1000, "H_max": 2000})
-    if section_L > limits["L_max"]:
-        result.warnings.append(
-            f"L={section_L}mm 超出 {part2} 適用範圍 (≤ {limits['L_max']}mm)"
-        )
-    if section_H > limits["H_max"]:
-        result.warnings.append(
-            f"H={section_H}mm 超出 {part2} 適用範圍 (≤ {limits['H_max']}mm)"
-        )
+    for cid, segment, length in (("D27-MEMBER-M-L", "L", l_mm), ("D27-MEMBER-M-H", "H", h_mm)):
+        add_steel_section_entry(result, row["section_type"], row["lookup_dim"], length, material=material)
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.shape_spec = f'{row["full_spec"]}; CUT {segment}={length}; FIG-{fig}'
+        entry.geometry.parameters = {"segment":segment,"L_mm":l_mm,"H_mm":h_mm,"L1_mm":l1,"L2_mm":l2,"figure":fig,"field_fillet_weld_mm":6}
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = blockers[:]
 
-    # ── 建構備註資訊 ──
-    fig_tag = f"Fig-{fig}"
-    l1l2_tag = ""
-    if L1 is not None and L2 is not None:
-        l1l2_tag = f", L1={L1}, L2={L2}"
-
-    # 去掉型鋼前綴字母 (L50*50*6 -> 50*50*6)
-    section_dim = full_size[1:]
-
-    # ═══════════════════════════════════════
-    # 共通: H段 + L段 角鐵 (所有 Fig 皆有)
-    # ═══════════════════════════════════════
-
-    # 1. H 段 (垂直)
-    add_steel_section_entry(result, section_type, section_dim, section_H)
-    result.entries[-1].remark = f"{fig_tag}, H段{l1l2_tag}"
-
-    # 2. L 段 (水平/懸臂)
-    add_steel_section_entry(result, section_type, section_dim, section_L)
-    result.entries[-1].remark = f"{fig_tag}, L段{l1l2_tag}"
-
-    # ═══════════════════════════════════════
-    # FIG-C 額外: 連接板 (LUG PLATE TYPE C) + K bolt
-    # ═══════════════════════════════════════
     if fig == "C":
-        table = _TABLE.get(part2, {})
-        k_spec = table.get("K", "")
-        plate_a = table.get("A", 0)
-        plate_c = table.get("C", 0)
-        plate_d = table.get("D", 0)
-        angle_t = table.get("angle_t", 6)
+        lug = get_m34_by_member(member)
+        if not lug:
+            result.error = f"Type 25: M-34無 {member} Lug Plate Type-C"
+            result.entries.clear()
+            return result
+        holes = lug_hole_count(lug)
+        add_plate_entry(result, lug["A"], lug["B"], lug["T"], "LUG_PLATE_C", material=material, plate_qty=1, bolt_switch=True, bolt_x=2*lug["E"]+lug["F"], bolt_y=0, bolt_hole=lug["J"], bolt_size=row["K"], plate_role="lug_plate")
+        plate = result.entries[-1]
+        plate.geometry.component_id = f'M34-{lug["type"]}'
+        plate.geometry.source_drawing = "LUG-PLATE_TYPE-C_M-34.pdf"
+        plate.geometry.source_revision = "1"
+        plate.geometry.shape_kind = "lug_plate_type_c"
+        plate.geometry.shape_spec = f'{lug["type"]}; {lug["A"]}x{lug["B"]}x{lug["T"]}t; {holes}-HOLE DIA{lug["J"]}'
+        plate.geometry.holes.count = holes
+        plate.geometry.parameters.update({"lgp_type":lug["type"],"A_mm":lug["A"],"B_mm":lug["B"],"T_mm":lug["T"],"hole_count":holes,"hole_diameter_mm":lug["J"],"hole_pitch_mm":2*lug["E"]+lug["F"],"G_mm":lug.get("G"),"H_mm":lug.get("H")})
+        plate.geometry.fabrication_ready = True
+        add_custom_entry(result, name="K BOLT", spec=row["K"], material=bolt_material, quantity=holes, unit_weight=0, unit="PC")
+        bolt = result.entries[-1]
+        bolt.geometry.component_id = "M34-K-BOLT"
+        bolt.geometry.source_drawing = profile["drawing"]
+        bolt.geometry.source_revision = profile["revision"]
+        bolt.geometry.shape_kind = "purchased_fastener"
+        bolt.geometry.parameters = {"spec":row["K"],"quantity":holes}
+        bolt.geometry.fabrication_ready = True
+        result.warnings.append("D-27/M-34只給K bolt規格與數量，未提供單重")
 
-        # DETAIL "Z" — LUG PLATE TYPE C (M-34)
-        # 板寬 = A, 板高 ≈ C + D (角鋼腿寬 + 延伸), 板厚 ≈ 角鋼厚度
-        # 實際尺寸以 M-34 為準, 此處為估值
-        if plate_a > 0:
-            plate_height = plate_c + plate_d
-            add_plate_entry(
-                result,
-                plate_a=plate_a,
-                plate_b=plate_height,
-                plate_thickness=angle_t,
-                plate_name="LUG_PLATE_C",
-                material="A36/SS400",
-                plate_qty=1,
-                bolt_switch=True,
-                bolt_x=2 * table.get("E", 0) + table.get("F", 0),
-                bolt_y=0,
-                bolt_hole=table.get("OJ", 0),
-                bolt_size=k_spec,
-                plate_role="lug_plate",
-            )
-            result.entries[-1].remark = f"參見 M-34，{fig_tag}"
-
-        # K BOLT ×4 (依 M-34 TYPE-C 四孔)
-        if k_spec:
-            add_custom_entry(
-                result,
-                name="BOLT",
-                spec=k_spec,
-                material="SS400",
-                quantity=4,
-                unit_weight=0.1,  # 估值, 實際依 K bolt 規格
-                unit="PC",
-            )
-            result.entries[-1].remark = f"M-34 K型螺栓，{fig_tag}"
-
+    result.meta["fabrication"] = {
+        "source_profile":profile_id,"source_drawing":profile["drawing"],"source_revision":profile["revision"],
+        "branch":f"{member}/FIG-{fig}","bom_ready":True,"fabrication_ready":False,"blockers":blockers,
+        "not_furnished": config["fabrication_contract"]["fig_b_not_furnished"] if fig == "B" else [],
+    }
+    result.evidence.append(make_evidence("type25_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99))
     return result

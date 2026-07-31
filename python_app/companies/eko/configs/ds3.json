@@ -16,14 +16,19 @@
    "field_fit": true
   }
  ],
+ "validation": {
+  "required": ["pipe", "L"],
+  "allowed": ["pipe", "L"],
+  "pipe": {"min": 0.5, "max": 1.5}
+ },
  "extra_warnings": [
   "⚠【材質提醒 Note1】鋼管須與母材(彎頭/管線)材質相容且同管徑；預設碳鋼 A53 Gr.B，若母材為不鏽鋼/合金鋼，請改為與母材相同之材質(既定概念多為碳鋼，仍請逐案確認)",
   "DS3 料件：附撐用鋼管一支(同配管管徑、長度L詳SPOOL)；適用1.1/2\"及以下",
   "鑄鐵/可鍛鑄鐵/鍍鋅配件時另加鍛鋼塞(FORGED STEEL PLUG，詳SPOOL)"
  ],
- "data_update_note": "依DS3.pdf的 PIPE STUB / STEEL PIPE 標註，BOM品名由「撐管」改為「鋼管」；用途保留於備註，同配管管徑、材質相容(Note1)，長度L詳SPOOL",
+ "data_update_note": "v1.2 強制管徑與L並依圖面限制1.1/2吋以下。原資料依DS3.pdf PIPE STUB / STEEL PIPE標註，長度L詳SPOOL。",
  "code": "DS3",
  "company": "EKO",
- "version": "1.1",
- "data_updated_at": "2026-07-24"
+ "version": "1.2",
+ "data_updated_at": "2026-07-27"
 }

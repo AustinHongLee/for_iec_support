@@ -15,6 +15,20 @@
    ],
    "qty": 1,
    "len": "L"
+  },
+  {
+   "role": "30°斜撐",
+   "sec": [
+    "Angle",
+    "100*100*10"
+   ],
+   "qty": 1,
+   "len": {
+    "formula": "diagonal",
+    "base": "L",
+    "end_offset": 200,
+    "angle_deg": 30
+   }
   }
  ],
  "base_plate": {
@@ -23,7 +37,6 @@
   "b": 240,
   "material": "A36",
   "qty": 2,
-  "approx": true,
   "hole": {
    "n": 4,
    "dia": 22,
@@ -58,15 +71,33 @@
   "3": 1350,
   "4": 1500
  },
+ "validation": {
+  "required": ["fix", "serial", "L"],
+  "allowed": ["fix", "serial", "L"],
+  "fixes": ["B", "E", "W"],
+  "serials": [1, 2, 3, 4],
+  "dimensions": {
+   "L": {
+    "min": 900,
+    "min_inclusive": false,
+    "max": 1500,
+    "max_inclusive": false
+   }
+  },
+  "serial_dimension_max": {
+   "field": "L",
+   "config_key": "serial_limits"
+  }
+ },
  "extra_warnings": [
-  "含30°斜撐,長度未列表需另計",
+  "30°斜撐依圖示以水平投影(L-200)換算長度；未含端部切角耗損",
   "SS12W須t1≥6mm否則另行設計"
  ],
  "designation_format": {
   "pattern": "SS12{B/E/W}-序號-□L",
   "example": "SS12B-1-1000L"
  },
- "version": "1.1",
- "data_updated_at": "2026-07-21",
- "data_update_note": "序號1~4僅改Lmax/荷重;斜撐長度未列表"
+ "version": "1.2",
+ "data_updated_at": "2026-07-27",
+ "data_update_note": "v1.2 依圖面強制固定方式、序號、L，限制900<L<1500且不超過各序號上限；補入30°斜撐，按水平投影(L-200)/cos30°計長；底板210×240為圖面明列，移除近似標記。"
 }

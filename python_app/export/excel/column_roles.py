@@ -44,6 +44,9 @@ COLUMN_ROLE: dict[str, dict] = {
     "規格":        {"role": "engineer", "default_visible": True},
     "尺寸/規格":   {"role": "engineer", "default_visible": True},
     "材質":        {"role": "engineer", "default_visible": True},
+    "密度(g/cm³)": {"role": "engineer", "default_visible": True},
+    "密度狀態":    {"role": "engineer", "default_visible": True},
+    "加工狀態":    {"role": "engineer", "default_visible": True},
     "材料描述欄":  {"role": "engineer", "default_visible": True},
     "長度":        {"role": "engineer", "default_visible": True},
     "寬度":        {"role": "engineer", "default_visible": True},
@@ -104,6 +107,7 @@ COLUMN_ROLE: dict[str, dict] = {
     "輸入單位":    {"role": "trace", "default_visible": False},
     "零件ID":      {"role": "trace", "default_visible": False},
     "庫存ID":      {"role": "trace", "default_visible": False},
+    "來源圖面":    {"role": "trace", "default_visible": False},
 }
 
 # 未在 COLUMN_ROLE 明確定義的欄位，預設視為此角色且可見（§B1 停損條件）。

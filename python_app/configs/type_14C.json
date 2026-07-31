@@ -1,0 +1,46 @@
+{
+  "type_id": "14C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-19/C-20 與 N-1~N-5/N-24~N-26 複驗：大型管徑嚴格限 30/36/42/48/54/60，CR/pipe 反查 insulation 與 cold-core 尺寸/材料能力；多解時要求 insulation_thickness_mm。2026-07-30 獨立稽核確認 N-24 標 KG、N-25/N-26 標 LB 且數值相同，裁決前只保留 raw value/source sheet，不輸出 canonical kg/lb。L 仍是組立尺寸，M-23/M-28 與展開未完整前不當 rod cut。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/14C.pdf",
+      "drawing_no": "C-19/C-20",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-19", "C-20"],
+      "title": "C-19/C-20 TYPE 14C LARGE-BORE COLD TRAPEZE",
+      "component_id": "C19-C20-TYPE14C-ASSEMBLY",
+      "source_spec": "TRAPEZE; PIPE 30in AND LARGER",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+"},
+            {"name": "line_size_in", "kind": "pipe_size"},
+            {"name": "rod_size_in", "kind": "positive_number"},
+            {"name": "L_mm", "kind": "positive_mm"}
+          ]
+        }
+      ],
+      "designation_error": "Type 14C 格式應為 14C-{CR#}-{LINE}B-{ROD SIZE}-{L mm}",
+      "allowed_values": {"line_size_in": [30, 36, 42, 48, 54, 60]},
+      "static_parameters": {
+        "beam_attachment": "M-28",
+        "welded_eye_rod": "M-23",
+        "cradle_width_mm": 300,
+        "jacket_foam_vapor_width_mm": 450,
+        "foam_width_mm": 550
+      },
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE", "include_shield": true, "cradle_length_field": "cradle_width_mm"}
+      ],
+      "references": ["M-23", "M-28", "N-1~N-5", "N-24~N-26", "C-14/C-15"],
+      "blockers": [
+        "L is an assembly dimension and does not directly define the M-23 finished rod cut",
+        "M-23/M-28 supplier hardware and connection lengths remain unresolved",
+        "C-14/C-15 cold-cradle host contours and finished developments remain unresolved"
+      ]
+    }
+  }
+}

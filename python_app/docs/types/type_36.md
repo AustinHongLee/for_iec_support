@@ -1,5 +1,9 @@
 # Type 36 — 夾持固定型支撐 (Restraint Clamp with Bolt + Lug Plate)
 
+H 圖示上限採有限外插分級；缺來源、未表列 member 或 M-34 row 仍停止。
+
+> **2026-07-29 原圖複核更正**：只有中威 D-41。M-34 標準 Lug Plate 依版型是 4 孔或 6 孔，K Bolt 數必須與孔數一致，不是 1 set。圖面未給 bolt 完整長度／單重時保持採購 blocker。
+
 > **圖號**: 36 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 
 焊接於 EXISTING STRUCTURE 的固定型支撐，透過 K Bolt + Lug Plate (M-34) 鎖固管線。
@@ -69,7 +73,7 @@
 |:-:|------|------|----------|:----:|------|
 | 1 | MEMBER (型鋼) | 管路類 | H×100 mm | 1 | 主構件 |
 | 2 | LUG PLATE TYPE-C | 鋼板類 | A × B × T (M-34 查表) | 1 | 見下方 M-34 對照 |
-| 3 | K BOLT | 螺栓類 | 依 M-34 K 欄位 | 1 set | |
+| 3 | K BOLT | 螺栓類 | 依 M-34 K 欄位 | 4 或 6 PC | 與 Lug Plate 孔數一致 |
 
 ---
 

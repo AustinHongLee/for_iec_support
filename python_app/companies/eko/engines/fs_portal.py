@@ -10,7 +10,7 @@ import math
 from core.models import AnalysisResult, set_remark
 from core.steel import add_steel_section_entry
 from core.plate import add_plate_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 from .. import ubolt as _ubolt
 from .. import plating as _plating
 
@@ -121,9 +121,15 @@ def calculate(parsed, config, overrides=None):
     # ── 固定螺栓（僅 A/B/E）──
     if fixm in _BOLT:
         name, bmat, field = _BOLT[fixm]
-        add_custom_entry(result, name, row.get(field, ""), bmat,
-                         config.get("bolt_qty", 4), 0.0, unit="SET",
-                         remark=f"適用 {code}{fixm}, ×{config.get('bolt_qty',4)} (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name=name,
+            spec=row.get(field, ""),
+            material=bmat,
+            quantity=config.get("bolt_qty", 4),
+            unit="SET",
+            remark=f"適用 {code}{fixm}, ×{config.get('bolt_qty',4)}",
+        )
     elif fixm == "W":
         result.warnings.append(f"{code}W 焊接固定：底板免鑽孔、不含固定螺栓")
     elif fixm == "N":

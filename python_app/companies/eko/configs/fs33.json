@@ -66,6 +66,9 @@
   "Hmax": 1500,
   "applicable": "≤1.1/2\" 保冷,-9~-254°C"
  },
+ "validation": {
+  "block_reason": "FS33 圖面引用的 FS32（BLOCK-1、底板與設計基準）尚未提供，現有資料無法產生完整 BOM；本筆暫停計算"
+ },
  "extra_warnings": [
   "BLOCK-1 與底板尺寸在 FS32(缺圖)/設計基準;不鏽鋼夾板9t/6t圖面標註不一致,取DETAIL Z之6t;水泥墩型號未標(設計基準)"
  ],
@@ -73,11 +76,11 @@
   "pattern": "FS33{A/B/E/N/W}-□\"-□H-□H1",
   "example": "FS33E-1\"-500H-300H1"
  },
- "data_update_note": "best-effort:立柱1.1/2\"SCH80+不鏽鋼夾板+stud;BLOCK-1/底板缺FS32",
+ "data_update_note": "2026-07-27安全修正：因FS32缺圖導致BLOCK-1、底板與基準資料不完整，FS33由best-effort成功結果改為硬阻擋，待補FS32後重建。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

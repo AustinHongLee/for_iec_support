@@ -1,206 +1,120 @@
-"""
-Type 27 計算器  (判讀來源: D-30, E1906-DSP-500-006)
-格式: 27-L75-0505L-0401
+"""Type 27 source-aware post support with 6t top plate and M-42 (D-30)."""
+from __future__ import annotations
 
-第二段: 型鋼代碼 (L50, L75, L100, H150)
-第三段: LL+HH+M42Letter
-        前2位 = L(頂部總寬) ×100mm
-        後2位 = H(高度, TO GRADE OR FDN) ×100mm
-        末1位 = M-42 下部組件型式字母 (NOTE 4: USE TYPE-L & P ONLY)
-第四段: L1L2 (可選, 各2位×100mm, 修改左右分配; 預設 L1=L2=L/2)
-
-結構: 立柱式管線支撐 (Column Support)
-────────────────────────────────────────────────────────────
-
-★ 角鐵版 (L50 / L75 / L100) — 簡化組構
-  角鐵本身沒有封閉中空, 不需要額外補板去形成安裝面.
-  圖面左側 ELEV 畫得比較簡單.
-
-  BOM:
-    ① MEMBER "M" 立柱 (H-15) ×1
-    ② MEMBER "M" 頂部承管 (L) ×1
-    ③ M-42 lower component ×1 set
-
-★ H150 版 — 完整板件系統
-  H型鋼是開口截面, 需要周圍板件把它轉換成可焊、可承載、
-  可與 M-42 對接的標準化組件.
-  圖面右側視圖 + Section A~A 明確顯示板件系統.
-
-  BOM:
-    ① H150×150×10 立柱 ×1
-    ② H150×150×10 頂部承管 ×1
-    ③ 6t side plate ×3 (圖面 "3 SIDES TYP." 6V)
-    ④ 9t lower side/wing plate ×2 (配合H截面形成下部轉接構造)
-    ⑤ M-42 lower component ×1 set
-
-DIMENSIONS TABLE (D-30):
-  MEMBER "M"    | L MAX | H MAX | C
-  L50×50×6      | 300   | 500   | 30
-  L75×75×9      | 500   | 500   | 35
-  L100×100×10   | 700   | 1000  | 50
-  H150×150×10   | 600   | 2500  | – (C 空白 → 截面配置不同)
-
-NOTE 2: "H" & "L" SHALL BE CUT TO SUIT IN FIELD.
-NOTE 3: IF THE FOUNDATION IS NOT USED, "H" = FROM LOWEST POINT OF PAVING.
-NOTE 4: THIS TYPE SHALL BE USED WITH M-42. USE TYPE-L & P ONLY.
-"""
-from ..models import AnalysisResult, set_remark
-from ..parser import get_part
-from ..steel import add_steel_section_entry
+from ..bolt import add_custom_entry
+from ..bom_policy import exclude_unresolved_entry
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import (
+    add_issue,
+    register_host_m42_variance,
+    register_source_envelope,
+)
+from ..m42 import perform_action_by_letter, source_allows_m42_type
+from ..models import AnalysisResult
 from ..plate import add_plate_entry
-from ..m42 import perform_action_by_letter
-from data.steel_sections import get_section_details
-
-# ── 頂端接合扣除量 (圖面 ELEV 標示 15mm TYP) ──
-_TOP_PLATE_DEDUCTION = 15
-
-# ── D-30 限制表 ──────────────────────────────────────────
-_LIMITS = {
-    "L50":  {"L_max":  300, "H_max":  500, "C": 30},
-    "L75":  {"L_max":  500, "H_max":  500, "C": 35},
-    "L100": {"L_max":  700, "H_max": 1000, "C": 50},
-    "H150": {"L_max":  600, "H_max": 2500, "C": None},
-}
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
 
 
-def calculate(fullstring: str) -> AnalysisResult:
-    result = AnalysisResult(fullstring=fullstring)
+def _parse(fullstring):
+    parts=str(fullstring).split("-")
+    if len(parts) not in (3,4) or len(parts[2])!=5 or not parts[2][:4].isdigit() or not parts[2][-1].isalpha():
+        raise ValueError("格式應為 27-{M}-{LL}{HH}{M42}[-{L1}{L2}]")
+    member=parts[1].upper(); l=int(parts[2][:2])*100; h=int(parts[2][2:4])*100; letter=parts[2][-1].upper()
+    l1=l2=None
+    if len(parts)==4:
+        if len(parts[3])!=4 or not parts[3].isdigit(): raise ValueError("第四段需為2位L1+2位L2")
+        l1=int(parts[3][:2])*100; l2=int(parts[3][2:])*100
+    return member,l,h,letter,l1,l2
 
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2)
-    if not details:
-        result.error = f"Type 27: 未知型鋼代碼 {part2}"
-        return result
 
-    section_type = details["type"]   # "Angle" or "H Beam"
-    full_size = details["size"]      # "L75*75*9" or "H150*150*10"
-    is_hbeam = (section_type == "H Beam")
+def _positive_override(overrides,key):
+    raw=overrides.get(key)
+    if raw in (None,""): return None
+    value=float(raw)
+    if value<=0: raise ValueError(f"{key}必須大於0")
+    return value
 
-    # ── 第三段: LLHH + M42Letter ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 5:
-        result.error = f"Type 27: 第三段格式錯誤 '{part3}' (需至少5字元, 如 0505L)"
-        return result
 
-    m42_letter = part3[-1].upper()
-    if m42_letter.isdigit():
-        result.error = f"Type 27: 缺少 M-42 型式字母 (末位='{m42_letter}' 不是字母)"
-        return result
+def _decorate_m42(entries,profile,ready):
+    for entry in entries:
+        entry.geometry.source_drawing=profile["drawing"]; entry.geometry.source_revision=profile["revision"]; entry.geometry.fabrication_ready=ready
+        if entry.category=="鋼板類":
+            code=entry.name.split("_")[1].upper(); entry.geometry.component_id=f"M42-PLATE-{code}"; entry.geometry.shape_kind="rectangular_base_plate"; entry.geometry.shape_spec=entry.geometry.shape_spec or f"{entry.length:g}x{entry.width:g}x{entry.spec}t"
+        elif entry.category=="螺栓類":
+            entry.geometry.component_id="M42-FASTENER"; entry.geometry.shape_kind="purchased_fastener"
 
-    # NOTE 4: USE TYPE-L & P ONLY
-    if m42_letter not in ("L", "P"):
-        result.warnings.append(
-            f"M-42 型式 '{m42_letter}' 非標準 (NOTE 4: USE TYPE-L & P ONLY)"
-        )
 
-    digits = part3[:-1]  # 去掉末位字母
+def calculate(fullstring,overrides=None,source_profile=None):
+    result=AnalysisResult(fullstring=fullstring); overrides=overrides or {}; config=load_config("27",strict=True)
+    profile_id=normalize_source_profile(source_profile); profile=config["source_profiles"].get(profile_id)
+    if not profile: result.error=f"Type 27: 尚未建立來源 profile {profile_id}"; return result
     try:
-        section_L = int(digits[:2]) * 100  # 前兩位 = L (頂部總寬)
-        section_H = int(digits[2:]) * 100  # 後兩位 = H (高度)
-    except ValueError:
-        result.error = f"Type 27: 無法解析 L/H 值 '{part3}'"
-        return result
-
-    # ── 第四段: L1/L2 修改尺寸 (可選, 預設 L1=L2=L/2) ──
-    part4 = get_part(fullstring, 4)
-    L1 = None
-    L2 = None
-    if part4 and len(part4) >= 4:
-        try:
-            L1 = int(part4[:2]) * 100
-            L2 = int(part4[2:4]) * 100
-        except ValueError:
-            pass
-
-    # ── 超限檢查 (WARNING, 不阻擋 — 可施工但非標準設計) ──
-    limits = _LIMITS.get(part2, {"L_max": 700, "H_max": 2500, "C": None})
-    if section_L > limits["L_max"]:
-        result.warnings.append(
-            f"L={section_L}mm 超出 {part2} 標準範圍 (≤ {limits['L_max']}mm), 非標準設計"
-        )
-    if section_H > limits["H_max"]:
-        result.warnings.append(
-            f"H={section_H}mm 超出 {part2} 標準範圍 (≤ {limits['H_max']}mm), 非標準設計"
-        )
-
-    # ── 備註標籤 ──
-    l1l2_tag = ""
-    if L1 is not None and L2 is not None:
-        l1l2_tag = f", L1={L1}, L2={L2}"
-
-    # 去掉型鋼前綴字母 (L75*75*9 → 75*75*9)
-    section_dim = full_size[1:]
-
-    # ═══════════════════════════════════════════════════════
-    # H150 限定 — 板件系統
-    #   H型鋼是開口截面, 需要周圍板件補成可焊、可承載、
-    #   可與 M-42 對接的標準化組件.
-    #   角鐵版不需要這些板件 (簡化結構).
-    # ═══════════════════════════════════════════════════════
-    if is_hbeam:
-        # ① H Beam — 立柱
-        #    H150 版為多結構體：落地立柱 + 頂部承管，不能合併成單一 member。
-        column_length = section_H - 150
-        add_steel_section_entry(result, section_type, section_dim, column_length)
-        set_remark(result.entries[-1], "立柱", "Column")
-
-        # ② H Beam — 頂部承管
-        add_steel_section_entry(result, section_type, section_dim, section_L)
-        set_remark(result.entries[-1], "上支撐梁", "Top support beam")
-
-        # ③ 6t side plates ×3 — "3 SIDES TYP." 6V
-        #    柱-板接合處補強/封邊, 把 H 型鋼頂端轉成承載面
-        #    尺寸估值: 150(配合H150高度) × 100 × 6mm
-        add_plate_entry(
+        member,l_mm,h_mm,letter,l1,l2=_parse(fullstring); cut=_positive_override(overrides,"member_cut_length_mm"); top_width=_positive_override(overrides,"top_plate_width_mm")
+    except ValueError as exc: result.error=f"Type 27: {exc}"; return result
+    row=config[profile["table"]].get(member)
+    if not row: result.error=f"Type 27 / {profile_id}: D-30未表列 MEMBER {member}"; return result
+    if l1 is not None and l1+l2 != l_mm:
+        add_issue(result,code="DESIGNATION_L1_L2_MISMATCH",severity="high",message=f"Type 27 / {profile_id}: L1+L2={l1}+{l2}={l1+l2}mm，不等於L={l_mm}mm；BOM暫按L/H計算，定位須確認",scope="designation_consistency",calculation_allowed=True,bom_allowed=False,fabrication_allowed=False,source="D-30")
+    if letter not in profile["allowed_m42"]:
+        if not source_allows_m42_type(profile_id,letter): result.error=f"Type 27 / {profile_id}: M-42 {letter}不存在於此來源 M-42 圖"; return result
+        register_host_m42_variance(result,type_label=f"Type 27 / {profile_id}",source_ref="D-30",letter=letter,host_allowed=profile["allowed_m42"])
+    if not register_source_envelope(result,type_label=f"Type 27 / {profile_id}",source_ref=f"D-30 {member} L/H(MAX)",checks=(("L",l_mm,row["L_MAX"],True),("H",h_mm,row["H_MAX"],True))): return result
+    ctx=parse_hardware_material_context(overrides,legacy_material_keys=("material",),legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material=resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT,service=ctx.service,overrides=ctx.material_overrides)
+    blockers=[]
+    if cut is None: blockers.append("D-30 H為組立高度且field cut；缺member_cut_length_mm")
+    if top_width is None: blockers.append("6t top plate只標長L，未標plate width")
+    if l1 is None: blockers.append("L1/L2未指定，無法定位上板中心")
+    if profile["adjustable_joint"]: blockers.append("20E NOTE5可依現場調整兩member joint，未選option")
+    add_steel_section_entry(result,row["section_type"],row["lookup_dim"],cut or 0,material=material)
+    post=result.entries[-1]; post.geometry.component_id="D30-MEMBER-M"; post.geometry.source_drawing=profile["drawing"]; post.geometry.source_revision=profile["revision"]; post.geometry.shape_kind="vertical_post_field_cut"; post.geometry.shape_spec=f'{row["full_spec"]}; FIELD CUT={cut or "TBD"}'; post.geometry.parameters={"assembly_H_mm":h_mm,"cut_length_mm":cut,"L_mm":l_mm,"L1_mm":l1,"L2_mm":l2,"C_mm":row["C"]}; post.geometry.fabrication_ready=cut is not None; post.geometry.fabrication_blockers=[] if cut else [blockers[0]]
+    if cut is None:
+        exclude_unresolved_entry(
             result,
-            plate_a=150,
-            plate_b=100,
-            plate_thickness=6,
-            plate_name="Plate_6t_Side",
-            material="A36/SS400",
-            plate_qty=3,
-            plate_role="side_plate",
+            post,
+            reason=(
+                "D-30 member is field cut；member_cut_length_mm 未提供，"
+                "故不以 0 mm 型鋼列入材料 BOM"
+            ),
         )
-        result.entries[-1].remark = "3 SIDES TYP 上部補板 150×100×6"
-
-        # ④ 9t lower side/wing plates ×2
-        #    配合 H150 截面形成下部轉接構造
-        #    左右各一片, 焊在 H 型鋼翼緣/腹板周邊
-        #    VBA 原寫 200×100×9, 圖面右側尺寸 200/100 對應
-        add_plate_entry(
-            result,
-            plate_a=200,
-            plate_b=100,
-            plate_thickness=9,
-            plate_name="Plate_9t_Wing",
-            material="A36/SS400",
-            plate_qty=2,
-            plate_role="wing_plate",
-        )
-        result.entries[-1].remark = "下部翼側板 200×100×9 ×2"
+    if top_width is not None:
+        add_plate_entry(result,l_mm,top_width,6,"D30-TOP-PLATE",material=material,plate_qty=1,plate_role="support_plate")
     else:
-        # ① MEMBER "M" — 角鐵版立柱
-        #    15mm = ELEV 圖面標示 15 TYP (頂端焊接接合偏移)
-        effective_H = section_H - _TOP_PLATE_DEDUCTION
-        add_steel_section_entry(result, section_type, section_dim, effective_H)
-        set_remark(result.entries[-1],
-                   f"立柱，H={section_H}-15={effective_H}{l1l2_tag}",
-                   f"Column, H={section_H}-15={effective_H}{l1l2_tag}")
-
-        # ② MEMBER "M" — 角鐵版頂部承管
-        add_steel_section_entry(result, section_type, section_dim, section_L)
-        set_remark(result.entries[-1],
-                   f"上支撐梁，L={section_L}{l1l2_tag}",
-                   f"Top support beam, L={section_L}{l1l2_tag}")
-
-    # ═══════════════════════════════════════════════════════
-    # M-42 下部組件 (底板 + 螺栓) — 所有 MEMBER 共通
-    #    NOTE 4: USE TYPE-L & P ONLY
-    # ═══════════════════════════════════════════════════════
-    m42_entry_start = len(result.entries)
-    perform_action_by_letter(result, m42_letter, full_size)
-    if len(result.entries) == m42_entry_start:
-        result.warnings.append("Type 27: no base plate detected (check variant)")
-
+        add_custom_entry(result,name="D30-TOP-PLATE",spec="6t; WIDTH TBD",material=material,quantity=1,unit_weight=0,unit="PC",role="support_plate")
+    top=result.entries[-1]; top.geometry.component_id="D30-TOP-PLATE"; top.geometry.source_drawing=profile["drawing"]; top.geometry.source_revision=profile["revision"]; top.geometry.shape_kind="rectangular_top_plate"; top.geometry.shape_spec=f"{l_mm}x{top_width or 'TBD'}x6t"; top.geometry.parameters={"length_L_mm":l_mm,"width_mm":top_width,"thickness_mm":6,"three_side_weld":True,"weld_mm":6}; top.geometry.fabrication_ready=top_width is not None; top.geometry.fabrication_blockers=[] if top_width else ["top plate width未標"]
+    if top_width is None:
+        exclude_unresolved_entry(
+            result,
+            top,
+            reason=(
+                "D-30 top plate width 未標且未提供 top_plate_width_mm，"
+                "故不以 0 kg plate placeholder 列入材料 BOM"
+            ),
+        )
+    gusset_needed=profile["gusset_rule"]=="always" or h_mm>=1000
+    if gusset_needed:
+        points=config["fabrication_contract"]["gusset"]["polygon_points_mm"]
+        add_plate_entry(result,100,200,9,"D30-GUSSET-PLATE",material=material,plate_qty=2,plate_role="gusset_plate",net_area_mm2=18750,shape_kind="polygon")
+        gus=result.entries[-1]; gus.geometry.component_id="D30-GUSSET-PLATE"; gus.geometry.source_drawing=profile["drawing"]; gus.geometry.source_revision=profile["revision"]; gus.geometry.shape_kind="polygon"; gus.geometry.shape_spec="9t polygon 100x200 with outer height25; QTY2"; gus.geometry.parameters={"polygon_points_mm":points,"thickness_mm":9,"quantity":2,"web_gap_callout_mm":20}; gus.geometry.fabrication_ready=True
+    start=len(result.entries); perform_action_by_letter(result,letter,row["full_spec"].replace("X","*"),source_profile=profile_id)
+    if result.error: result.entries.clear(); return result
+    if not row["m42_exact"]: blockers.append(f"{member}未在M-43精確表列，lower component row為fallback")
+    m42_entries=list(result.entries[start:])
+    _decorate_m42(m42_entries,profile,row["m42_exact"])
+    for entry in m42_entries:
+        if entry.category=="螺栓類" and entry.unit_weight<=0:
+            exclude_unresolved_entry(
+                result,
+                entry,
+                reason=(
+                    f"M-42 fastener {entry.spec} 只有名義直徑、沒有長度；"
+                    "不以 0 kg 採購件列入材料 BOM"
+                ),
+            )
+    bom_ready=cut is not None and top_width is not None and row["m42_exact"]
+    result.meta["fabrication"]={"source_profile":profile_id,"source_drawing":profile["drawing"],"source_revision":profile["revision"],"branch":f"{member}/M42-{letter}","bom_ready":bom_ready,"fabrication_ready":False,"blockers":blockers,"excluded_bom_components":result.meta.get("excluded_bom_components",[])}
+    result.evidence.append(make_evidence("type27_row",row,"visual_transcription",source=profile["drawing"],confidence=0.99))
     return result

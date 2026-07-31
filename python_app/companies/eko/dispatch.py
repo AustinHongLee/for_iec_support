@@ -2,6 +2,7 @@
 from core.models import AnalysisResult
 from . import parser as _parser
 from .config_loader import load_eko_config
+from .validation import validate_designation
 from .types import fs12, ub1, eb2, cl5, dfs4, s1, cm1
 from .engines import ss_bracket, fs_portal, fs_pipe, eko_generic
 
@@ -126,6 +127,9 @@ def analyze(fullstring, overrides=None):
         r = AnalysisResult(fullstring=fullstring)
         r.error = f"益高(EKO): 找不到設定檔 {code}.json"
         return r
+    validation_error = validate_designation(parsed, config)
+    if validation_error is not None:
+        return validation_error
     result = handler(parsed, config, overrides)
     # 解析階段的提醒(如無字母數字→位置推定)前置到警告，讓使用者看得到
     for w in reversed(parsed.get("parse_warnings", [])):

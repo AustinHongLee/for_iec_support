@@ -1,0 +1,51 @@
+{
+  "type_id": "126",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-136 逐列建立 I-Rod L/C/D、溫度級別、單點載重與各 pipe schedule 的 cross-beam 最大間距。designation 不含 schedule、並排片數與溫度級；無表列 spacing 的尺寸保留結構計算 blocker，專有 thermoplastic profile/density 與 adhesive 用量不猜估。",
+  "variation_axes": {
+    "i_rod_count": {
+      "label": "I-Rod 並排片數",
+      "kind": "choice",
+      "choices": ["", "1", "2", "3"]
+    },
+    "i_rod_temperature_class": {
+      "label": "I-Rod 溫度級",
+      "kind": "choice",
+      "choices": ["", "regular", "high_temp", "peek"]
+    },
+    "pipe_schedule": {
+      "label": "充水管 Schedule",
+      "kind": "choice",
+      "choices": ["", "STD", "SCH40", "XS", "SCH80"]
+    }
+  },
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-126_D-136.pdf",
+      "revision": "1",
+      "temperature_classes": {
+        "regular": {"label": "THERMOPLASTIC I-ROD REGULAR", "maximum_temperature_C": 83},
+        "high_temp": {"label": "THERMOPLASTIC I-ROD HIGH TEMP", "maximum_temperature_C": 171},
+        "peek": {"label": "THERMOPLASTIC I-ROD PEEK", "maximum_temperature_C": 249}
+      },
+      "single_point_load_limits_kg": {"1": 3632, "1.5": 4540},
+      "rows": {
+        "0.5": {"pipe_od_mm": 21.3, "length_L_mm": 50.8, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "0.75": {"pipe_od_mm": 26.7, "length_L_mm": 63.5, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "1": {"pipe_od_mm": 33.4, "length_L_mm": 76.2, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "1.25": {"pipe_od_mm": 42.2, "length_L_mm": 88.9, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "1.5": {"pipe_od_mm": 48.3, "length_L_mm": 101.6, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "2": {"pipe_od_mm": 60.3, "length_L_mm": 114.3, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": 406, "SCH40": 406, "XS": 348, "SCH80": 348}},
+        "2.5": {"pipe_od_mm": 73.0, "length_L_mm": 127.0, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "3": {"pipe_od_mm": 88.9, "length_L_mm": 152.4, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": 202, "SCH40": 202, "XS": 174, "SCH80": 174}},
+        "4": {"pipe_od_mm": 114.3, "length_L_mm": 177.8, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": 135, "SCH40": 135, "XS": 110, "SCH80": 110}},
+        "5": {"pipe_od_mm": 141.3, "length_L_mm": 203.2, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": null, "SCH40": null, "XS": null, "SCH80": null}},
+        "6": {"pipe_od_mm": 168.3, "length_L_mm": 228.6, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": 73, "SCH40": 71, "XS": 55, "SCH80": 55}},
+        "8": {"pipe_od_mm": 219.1, "length_L_mm": 279.4, "width_C_mm": 25.4, "height_D_mm": 11.1, "maximum_spacing_m": {"STD": 47, "SCH40": 45, "XS": 35, "SCH80": 35}},
+        "10": {"pipe_od_mm": 273.1, "length_L_mm": 342.9, "width_C_mm": 38.1, "height_D_mm": 17.5, "maximum_spacing_m": {"STD": 39, "SCH40": 38, "XS": 32, "SCH80": 29}},
+        "12": {"pipe_od_mm": 323.9, "length_L_mm": 406.4, "width_C_mm": 38.1, "height_D_mm": 17.5, "maximum_spacing_m": {"STD": 29, "SCH40": 27, "XS": 24, "SCH80": 21}}
+      }
+    }
+  }
+}

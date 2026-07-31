@@ -1,147 +1,113 @@
-"""
-Type 30 計算器  (判讀來源: D-35, E1906-DSP-500-006)
-格式: 30-L75-0505A-0401
+"""Type 30 source-aware two-member support, Fig A/B (D-35)."""
+from __future__ import annotations
 
-第二段: 型鋼代碼 (L50, L75, C150)
-第三段: LL+HH+FIG
-        前2位 = L(水平臂長) ×100mm
-        後2位 = H(垂直柱高) ×100mm
-        末1位 = FIG 字母 (A 或 B)
-第四段: L1L2 (可選, 各2位×100mm, 修改左右分配; 預設 L1=L2=L/2)
-
-結構: 夾持型支撐 — 焊接於既有鋼構之間, 無 M-42
-────────────────────────────────────────────────────────────
-
-  FIG-A:                          FIG-B:
-       ┌── L ──┐                       ┌── L ──┐
-       │L1│ L2 │                       │L1│ L2 │
-       ┌───────┐                       ┌───────┐
-       │  6V   │                       │  6V   │
-   H   │MEMBER │                   H   │MEMBER │
-       │ "M"   │                       │ "M"   │  15
-       │  6V   │                       │  6V   │──┤
-       └───────┘                       └───┬───┘
-    EXISTING STEEL                      plate/base
-       TYP.
-
-  FIG-A: 直接接 EXISTING STEEL (無板偏移)
-         Column = H, Top beam = L
-
-  FIG-B: 底部有 15mm 板厚偏移
-         Column = (H - 15), Top beam = L
-
-  ★ 無 M-42 — 直接焊接至既有鋼構, 不落地
-  ★ 與 TYPE-27/28 的本質差異: 27/28 落地需 M-42, 30 夾在結構間
-
-DIMENSIONS TABLE (D-35):
-  MEMBER "M"    | L MAX | H MAX
-  L50×50×6      |  300  |  600
-  L75×75×9      |  700  | 1000
-  C150×75×9     | 1000  | 2000
-
-NOTE 2: "H" & "L" SHALL BE CUT SUIT IN FIELD.
-
-VBA NOTE: VBA 中 Section_Length_H/L 變量名互換,
-          但因加法交換律 (L+H = H+L), 總長數值相同。
-          Python 版採結構件拆分：Column + Top beam。
-"""
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import add_issue, register_source_envelope
 from ..models import AnalysisResult, set_remark
-from ..parser import get_part
+from ..source_profiles import normalize_source_profile
 from ..steel import add_steel_section_entry
-from data.steel_sections import get_section_details
-
-# ── 15mm 底板偏移 (FIG-B 圖面標示 15) ──
-_PLATE_OFFSET = 15
-
-# ── D-35 限制表 ──────────────────────────────────────────
-_LIMITS = {
-    "L50":  {"L_max":  300, "H_max":  600},
-    "L75":  {"L_max":  700, "H_max": 1000},
-    "C150": {"L_max": 1000, "H_max": 2000},
-}
+from ..truth import make_evidence
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def _parse(fullstring):
+    parts = str(fullstring).split("-")
+    if len(parts) not in (3, 4) or len(parts[2]) != 5:
+        raise ValueError("格式應為 30-{M}-{LL}{HH}{A/B}[-{L1}{L2}]")
+    token = parts[2]
+    if not token[:4].isdigit() or token[-1].upper() not in ("A", "B"):
+        raise ValueError("第三段需為4位L/H加Fig A或B")
+    l_mm = int(token[:2]) * 100
+    h_mm = int(token[2:4]) * 100
+    if l_mm <= 0 or h_mm <= 15:
+        raise ValueError("L必須大於0且H必須大於15mm")
+    if len(parts) == 4:
+        if len(parts[3]) != 4 or not parts[3].isdigit():
+            raise ValueError("第四段需為2位L1+2位L2")
+        l1 = int(parts[3][:2]) * 100
+        l2 = int(parts[3][2:]) * 100
+    else:
+        l1 = l2 = l_mm / 2
+    return parts[1].upper(), l_mm, h_mm, token[-1].upper(), l1, l2
+
+
+def calculate(fullstring, overrides=None, source_profile=None):
     result = AnalysisResult(fullstring=fullstring)
-
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2)
-    if not details:
-        result.error = f"Type 30: 未知型鋼代碼 {part2}"
+    overrides = overrides or {}
+    config = load_config("30", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 30: 尚未建立來源 profile {profile_id}"
         return result
-
-    section_type = details["type"]   # "Angle" or "Channel"
-    full_size = details["size"]      # "L75*75*9" or "C150*75*9"
-
-    # ── 第三段: LLHH + FIG ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 5:
-        result.error = f"Type 30: 第三段格式錯誤 '{part3}' (需至少5字元, 如 0505A)"
-        return result
-
-    fig = part3[-1].upper()
-    if fig not in ("A", "B"):
-        result.error = f"Type 30: 不支援的 FIG 型式 '{fig}' (僅支援 A/B)"
-        return result
-
-    digits = part3[:-1]  # 去掉末位字母
     try:
-        section_L = int(digits[:2]) * 100  # 前兩位 = L (水平臂長)
-        section_H = int(digits[2:]) * 100  # 後兩位 = H (垂直柱高)
-    except ValueError:
-        result.error = f"Type 30: 無法解析 L/H 值 '{part3}'"
+        member, l_mm, h_mm, fig, l1, l2 = _parse(fullstring)
+    except ValueError as exc:
+        result.error = f"Type 30: {exc}"
         return result
-
-    # ── 第四段: L1/L2 修改尺寸 (可選) ──
-    part4 = get_part(fullstring, 4)
-    L1 = None
-    L2 = None
-    if part4 and len(part4) >= 4:
-        try:
-            L1 = int(part4[:2]) * 100
-            L2 = int(part4[2:4]) * 100
-        except ValueError:
-            pass
-
-    # ── 超限檢查 ──
-    limits = _LIMITS.get(part2, {"L_max": 1000, "H_max": 2000})
-    if section_L > limits["L_max"]:
-        result.warnings.append(
-            f"L={section_L}mm 超出 {part2} 標準範圍 (≤ {limits['L_max']}mm)"
+    row = config[profile["table"]].get(member)
+    if not row:
+        result.error = f"Type 30 / {profile_id}: D-35未表列 MEMBER {member}"
+        return result
+    if l1 + l2 != l_mm:
+        add_issue(
+            result,
+            code="DESIGNATION_L1_L2_MISMATCH",
+            severity="high",
+            message=(
+                f"Type 30 / {profile_id}: L1+L2={l1}+{l2}={l1+l2:g}mm，"
+                f"不等於L={l_mm}mm；BOM暫按L/H計算，定位須確認"
+            ),
+            scope="designation_consistency",
+            calculation_allowed=True,
+            bom_allowed=False,
+            fabrication_allowed=False,
+            source="D-35",
         )
-    if section_H > limits["H_max"]:
-        result.warnings.append(
-            f"H={section_H}mm 超出 {part2} 標準範圍 (≤ {limits['H_max']}mm)"
-        )
-
-    # ── 備註標籤 ──
-    l1l2_tag = ""
-    if L1 is not None and L2 is not None:
-        l1l2_tag = f", L1={L1}, L2={L2}"
-
-    # ═══════════════════════════════════════════════════════
-    # ①~② MEMBER "M" — 兩件式
-    #    FIG-A: Column = H, Top beam = L
-    #    FIG-B: Column = (H - 15), Top beam = L
-    #    ★ 無 M-42 (不落地, 焊接至 EXISTING STEEL)
-    # ═══════════════════════════════════════════════════════
-    if fig == "A":
-        effective_H = section_H
-        h_formula = f"H={section_H}"
-    else:  # FIG-B
-        effective_H = section_H - _PLATE_OFFSET
-        h_formula = f"H={section_H}-15={effective_H}"
-
-    section_dim = full_size[1:]  # 去掉前綴字母
-    add_steel_section_entry(result, section_type, section_dim, effective_H)
-    set_remark(result.entries[-1],
-               f"FIG-{fig}，立柱，{h_formula}{l1l2_tag}",
-               f"FIG-{fig}, Column, {h_formula}{l1l2_tag}")
-
-    add_steel_section_entry(result, section_type, section_dim, section_L)
-    set_remark(result.entries[-1],
-               f"FIG-{fig}，上橫梁，L={section_L}{l1l2_tag}",
-               f"FIG-{fig}, Top beam, L={section_L}{l1l2_tag}")
-
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 30 / {profile_id}",
+        source_ref=f"D-35 {member} L/H(MAX)",
+        checks=(
+            ("L", l_mm, row["L_MAX"], True),
+            ("H", h_mm, row["H_MAX"], True),
+        ),
+    ):
+        return result
+    contract = config["fabrication_contract"]
+    post_cut = h_mm - contract["post_end_inset_mm"]
+    ctx = parse_hardware_material_context(overrides, legacy_material_keys=("material",), legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT, service=ctx.service, overrides=ctx.material_overrides)
+    blockers = [
+        "D-35要求H/L依現場裁切，existing steel接合面需施工量測確認",
+        "角鋼/槽鋼在圖示左右視圖的截面朝向未編入designation",
+    ]
+    for cid, role, length, segment in (
+        ("D35-MEMBER-H", "立柱", post_cut, "H-15"),
+        ("D35-MEMBER-L", "橫向承件", l_mm, "L"),
+    ):
+        add_steel_section_entry(result, row["section_type"], row["lookup_dim"], length, material=material)
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "field_cut_stock_section"
+        entry.geometry.shape_spec = f"{row['full_spec']}; CUT={length}"
+        entry.geometry.parameters = {
+            "figure": fig, "segment": segment, "cut_length_mm": length,
+            "assembly_H_mm": h_mm, "assembly_L_mm": l_mm,
+            "L1_mm": l1, "L2_mm": l2,
+            "post_end_inset_mm": contract["post_end_inset_mm"],
+            "fillet_weld_mm": contract["fillet_weld_mm"],
+        }
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = blockers[:]
+        set_remark(entry, f"Fig.{fig} {role}，切長={length}", f"Fig.{fig} {role}, cut={length}")
+    result.meta["fabrication"] = {
+        "source_profile": profile_id, "source_drawing": profile["drawing"], "source_revision": profile["revision"],
+        "branch": f"{member}/FIG-{fig}", "bom_ready": True, "fabrication_ready": False,
+        "blockers": blockers, "L_mm": l_mm, "H_mm": h_mm, "L1_mm": l1, "L2_mm": l2,
+    }
+    result.warnings.append("型鋼BOM可算；existing steel接合面與截面朝向仍需加工圖確認")
+    result.evidence.append(make_evidence("type30_member_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99))
     return result

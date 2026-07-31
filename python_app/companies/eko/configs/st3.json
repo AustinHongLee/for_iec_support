@@ -5,6 +5,9 @@
  "material": "A53 Gr.B",
  "table_key": "pipe",
  "fix_letters": null,
+ "validation": {
+  "block_reason": "ST3 原圖將托架標為詳 Cr，但目前資料夾沒有 Cr 圖與托架規格；現有結果只算支撐套管、漏算托架鋼構，本筆暫停計算"
+ },
  "table": [
   {
    "max": 2,
@@ -106,9 +109,9 @@
   "ST3 套管以DUMMY WELD焊於管外壁(不開孔)；長度現場配合(SUIT IN FIELD)，B為參考投影",
   "套管尺寸依配管管徑查表(如4\"→套管3\")；托架CRADLE詳Cr圖(A36)"
  ],
- "data_update_note": "依ST3.pdf尺寸表(配管管徑→套管尺寸/B/C)；長度採B近似",
+ "data_update_note": "2026-07-27安全修正：圖面引用Cr托架但資料缺失，舊結果會漏算托架鋼構，改為硬阻擋。原ST3尺寸表僅保留供補圖後重建。",
  "code": "ST3",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

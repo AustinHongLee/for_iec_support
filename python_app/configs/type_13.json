@@ -1,7 +1,43 @@
 {
   "type_id": "13",
-  "source": "data/type13_table.py",
+  "_version": "1.1.0",
+  "source": "單張-本案有關/中威/TYPE-13_D-13.pdf",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對中威 E25-24 D-13、M-4與M-47；22A/20E4588均無Type 13。移除H-100猜式，依NOTE 4改為現場切長；Plate P為雙片，M-47為1.5t。2026-07-31 起 H上限採有限外插分級；缺來源圖仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-13_D-13.pdf",
+      "revision": "1",
+      "table_source": "TYPE13_TABLE",
+      "h_max_mm": 1500,
+      "maximum_line_temperature_f": 750
+    }
+  },
+  "fabrication_contract": {
+    "supporting_pipe_cut_basis": "FIELD CUT TO SUIT (D-13 NOTE 4)",
+    "supporting_pipe_material": "A53Gr.B",
+    "plate_material_class": "CARBON STEEL",
+    "plate_p_quantity": 2,
+    "cover_plate": {
+      "length_mm": 75,
+      "width_mm": 75,
+      "thickness_mm": 6,
+      "quantity": 1
+    },
+    "pipe_clamp_component": "M-4",
+    "gasket_component": "M-47",
+    "gasket_thickness_mm": 1.5,
+    "weld_mm": 6,
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null,
+    "paving_reference_lower_components": [
+      "A",
+      "B",
+      "E",
+      "G"
+    ]
+  },
   "TYPE12_TABLE": {
     "2": {
       "pipe_size_b": 1.5,

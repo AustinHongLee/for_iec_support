@@ -1,5 +1,9 @@
 {
   "type_id": "42",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對中威D-50；兩份中鼎無圖。既有H/G、line-size E/trunnion表與A/B公式符合圖面；補來源安全閘門與加工blocker，trunnion仍須D-72/73/74校核。3/4x50 M.BOLT 改列可追溯理論估重，供應商成品重量待確認。",
+  "source_profiles": {"cw_e25_24_hp6":{"drawing":"單張-本案有關/中威/TYPE-42_D-50.pdf","revision":"1"}},
   "source": "data/type42_table.py",
   "migrated": "2026-04-29",
   "TYPE42_MEMBER": {

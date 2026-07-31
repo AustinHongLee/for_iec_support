@@ -6,6 +6,7 @@ import re
 from collections.abc import Callable
 
 from .project_aggregation import ProjectInputRow
+from .source_profiles import normalize_source_profile, source_profile_choices
 
 ProjectXlsxMapping = dict[str, int | None]
 ProjectXlsxMappingConfirmer = Callable[
@@ -23,6 +24,9 @@ PROJECT_ROW_ALIASES = {
     "quantity": ("數量", "quantity", "qty", "count", "組數", "支數"),
     "unit": ("單位", "unit", "uom"),
     "enabled": ("enabled", "啟用"),
+    "source_profile": (
+        "source_profile", "圖面來源", "圖面來源覆寫", "來源設定"
+    ),
     "overrides": ("overrides_json", "overrides"),
     "description": ("description", "desc", "描述", "中文說明", "說明", "品名"),
     "item_code": ("item_code", "item code", "料號", "code"),
@@ -32,7 +36,7 @@ PROJECT_ROW_ALIASES = {
 
 PROJECT_XLSX_FIELDS = (
     "designation", "quantity", "drawing_line_number", "serial", "unit", "description", "item_code",
-    "nominal_size", "insulation",
+    "nominal_size", "insulation", "source_profile",
 )
 
 PROJECT_IMPORT_TEMPLATE_HEADERS = (
@@ -43,6 +47,7 @@ PROJECT_IMPORT_TEMPLATE_HEADERS = (
     "型號",
     "管徑",
     "保溫厚度",
+    "圖面來源覆寫",
 )
 
 
@@ -106,7 +111,7 @@ def write_project_import_template(filepath: str) -> str:
     ws.title = "支撐清單"
     ws.append(PROJECT_IMPORT_TEMPLATE_HEADERS)
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = "A1:G1"
+    ws.auto_filter.ref = "A1:H1"
 
     header_fill = PatternFill("solid", fgColor="D9EAF7")
     required_fill = PatternFill("solid", fgColor="FFF2CC")
@@ -124,11 +129,16 @@ def write_project_import_template(filepath: str) -> str:
         "型號": "必填。例如 57-1B-A、01-2B-05A；開孔列填 PENETRATION HOLE。",
         "管徑": "僅 PENETRATION HOLE 必填，例如 4。",
         "保溫厚度": "僅 PENETRATION HOLE 使用；無保溫可留空。",
+        "圖面來源覆寫": (
+            "選填。一般留空跟隨專案；混用例外才填 "
+            + "、".join(profile_id for profile_id, _ in source_profile_choices())
+            + "。"
+        ),
     }
     for column, header in enumerate(PROJECT_IMPORT_TEMPLATE_HEADERS, start=1):
         ws.cell(1, column).comment = Comment(comments[header], "IEC Support Tool")
 
-    widths = (28, 14, 10, 10, 24, 12, 14)
+    widths = (28, 14, 10, 10, 24, 12, 14, 24)
     for column, width in enumerate(widths, start=1):
         ws.column_dimensions[ws.cell(1, column).column_letter].width = width
 
@@ -154,6 +164,16 @@ def write_project_import_template(filepath: str) -> str:
     )
     ws.add_data_validation(unit_validation)
     unit_validation.add("D2:D5000")
+
+    source_validation = DataValidation(
+        type="list",
+        formula1='"' + ",".join(
+            profile_id for profile_id, _ in source_profile_choices()
+        ) + '"',
+        allow_blank=True,
+    )
+    ws.add_data_validation(source_validation)
+    source_validation.add("H2:H5000")
 
     guide = wb.create_sheet("填寫說明")
     guide.column_dimensions["A"].width = 95
@@ -315,6 +335,11 @@ def read_project_rows_xlsx(
                 )
             overrides = None
             display_designation = ""
+            source_profile = project_mapped_value(
+                values, mapping, "source_profile"
+            )
+            if source_profile:
+                source_profile = normalize_source_profile(source_profile)
             if str(designation).strip().upper() == "PENETRATION HOLE":
                 from .penetration_hole import build_item_code
 
@@ -343,6 +368,7 @@ def read_project_rows_xlsx(
                     unit=normalize_project_unit_value(unit_value),
                     overrides=overrides,
                     display_designation=display_designation,
+                    source_profile=source_profile,
                 )
             )
         return rows
@@ -405,6 +431,7 @@ def infer_project_column_mapping(headers: list[str], sample_rows: list[tuple]) -
         "item_code": 35,
         "nominal_size": 35,
         "insulation": 35,
+        "source_profile": 35,
     }
     scores = []
     for field in PROJECT_XLSX_FIELDS:

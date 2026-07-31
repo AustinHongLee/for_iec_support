@@ -1,0 +1,45 @@
+{
+  "type_id": "82",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-99/D-100 與 D-100A-1/D-100A-2 建立 guide/fixed 共用尺寸表。Member M angle 的規格、cut length、數量與 guide/fixed 間隙已可加工；Member C 與大管 saddle 的多片淨輪廓未完整前只保留零重量 reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-82_D-99.pdf",
+      "large_drawing": "TYPE-82_D-100.pdf",
+      "small_detail_no": "99",
+      "large_detail_no": "100",
+      "fixed_small_drawing": "TYPE-82A_D-100A-1.pdf",
+      "fixed_large_drawing": "TYPE-82A_D-100A-2.pdf",
+      "fixed_small_detail_no": "100A-1",
+      "fixed_large_detail_no": "100A-2",
+      "revision": "1"
+    }
+  },
+  "TYPE82_TABLE": {
+    "0.75": {"branch": "small", "A": 100, "B": 100, "D": null, "E": 6, "member_c": {"spec": "PL100x100x6"}, "guide_angle": {"spec": "50*50*6", "length_mm": 50}},
+    "1": {"branch": "small", "A": 100, "B": 100, "D": null, "E": 6, "member_c": {"spec": "PL100x100x6"}, "guide_angle": {"spec": "50*50*6", "length_mm": 50}},
+    "1.5": {"branch": "small", "A": 100, "B": 100, "D": null, "E": 6, "member_c": {"spec": "PL100x100x6"}, "guide_angle": {"spec": "50*50*6", "length_mm": 50}},
+    "2": {"branch": "small", "A": 100, "B": 100, "D": null, "E": 6, "member_c": {"spec": "PL100x100x6"}, "guide_angle": {"spec": "50*50*6", "length_mm": 100}},
+    "2.5": {"branch": "small", "A": 100, "B": 100, "D": null, "E": 6, "member_c": {"spec": "PL100x100x6"}, "guide_angle": {"spec": "50*50*6", "length_mm": 100}},
+    "3": {"branch": "small", "A": 75, "B": 100, "D": 75, "E": 6, "member_c": {"spec": "FAB. FROM 6t PLATE"}, "guide_angle": {"spec": "50*50*6", "length_mm": 125}},
+    "4": {"branch": "small", "A": 75, "B": 100, "D": 75, "E": 6, "member_c": {"spec": "FAB. FROM 6t PLATE"}, "guide_angle": {"spec": "50*50*6", "length_mm": 125}},
+    "5": {"branch": "small", "A": 100, "B": 100, "D": 100, "E": 8, "member_c": {"spec": "CUT FROM H200x100x5.5x8"}, "guide_angle": {"spec": "50*50*6", "length_mm": 125}},
+    "6": {"branch": "small", "A": 150, "B": 150, "D": 100, "E": 9, "member_c": {"spec": "CUT FROM H194x150x6x9"}, "guide_angle": {"spec": "65*65*6", "length_mm": 150}},
+    "8": {"branch": "small", "A": 150, "B": 150, "D": 100, "E": 9, "member_c": {"spec": "CUT FROM H194x150x6x9"}, "guide_angle": {"spec": "65*65*6", "length_mm": 150}},
+    "10": {"branch": "small", "A": 200, "B": 200, "D": 200, "E": 12, "member_c": {"spec": "CUT FROM H200x200x8x12"}, "guide_angle": {"spec": "65*65*6", "length_mm": 200}},
+    "12": {"branch": "small", "A": 200, "B": 200, "D": 200, "E": 12, "member_c": {"spec": "CUT FROM H200x200x8x12"}, "guide_angle": {"spec": "65*65*6", "length_mm": 200}},
+    "14": {"branch": "small", "A": 200, "B": 200, "D": 200, "E": 12, "member_c": {"spec": "CUT FROM H200x200x8x12"}, "guide_angle": {"spec": "65*65*6", "length_mm": 200}},
+    "16": {"branch": "small", "A": 300, "B": 250, "D": 300, "E": 12, "member_c": {"spec": "FAB. FROM 12t PLATE"}, "guide_angle": {"spec": "65*65*6", "length_mm": 250}},
+    "18": {"branch": "small", "A": 300, "B": 250, "D": 300, "E": 12, "member_c": {"spec": "FAB. FROM 12t PLATE"}, "guide_angle": {"spec": "65*65*6", "length_mm": 250}},
+    "20": {"branch": "small", "A": 300, "B": 250, "D": 300, "E": 12, "member_c": {"spec": "FAB. FROM 12t PLATE"}, "guide_angle": {"spec": "65*65*6", "length_mm": 250}},
+    "24": {"branch": "small", "A": 350, "B": 250, "D": 350, "E": 12, "member_c": {"spec": "FAB. FROM 12t PLATE"}, "guide_angle": {"spec": "65*65*6", "length_mm": 300}},
+    "26": {"branch": "large", "A": 350, "B": 250, "D": 350, "E": 12, "member_c": {"spec": "C125x65x6 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "28": {"branch": "large", "A": 350, "B": 250, "D": 350, "E": 12, "member_c": {"spec": "C125x65x6 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "30": {"branch": "large", "A": 450, "B": 250, "D": 350, "E": 12, "member_c": {"spec": "C125x65x6 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "32": {"branch": "large", "A": 450, "B": 250, "D": 350, "E": 12, "member_c": {"spec": "C125x65x6 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "36": {"branch": "large", "A": 450, "B": 300, "D": 400, "E": 12, "member_c": {"spec": "C150x75x9 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "40": {"branch": "large", "A": 450, "B": 300, "D": 400, "E": 12, "member_c": {"spec": "C150x75x9 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"},
+    "42": {"branch": "large", "A": 450, "B": 300, "D": 400, "E": 12, "member_c": {"spec": "C150x75x9 / MULTI-PIECE SADDLE"}, "pipe_contact_angle_deg": 80, "reinforcing_pad_reference": "D-91"}
+  }
+}

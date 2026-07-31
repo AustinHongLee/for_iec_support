@@ -1,0 +1,48 @@
+{
+  "type_id": "02C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-2 重建 2~20in cold stanchion line-to-supporting-pipe table。designation 的 H/100 與 N-9 lower component 保存；H 現場切配且接觸輪廓未定，整組保持零重量 reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/02C.pdf",
+      "drawing_no": "C-2",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-2"],
+      "title": "C-2 TYPE 02C COLD PIPE STANCHION ASSEMBLY",
+      "component_id": "C2-TYPE02C-ASSEMBLY",
+      "source_spec": "2in TO 20in; 5C TO -9C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 02C 格式應為 02C-{LINE}B-{H/100}{N9 LOWER}",
+      "lookups": [
+        {
+          "name": "line_size",
+          "field": "line_size_in",
+          "rows": {
+            "2": {"supporting_pipe": "1-1/2in SCH.80"},
+            "3": {"supporting_pipe": "2in SCH.40"},
+            "4": {"supporting_pipe": "3in SCH.40"},
+            "6": {"supporting_pipe": "4in SCH.40"},
+            "8": {"supporting_pipe": "6in SCH.40"},
+            "10": {"supporting_pipe": "8in SCH.40"},
+            "12": {"supporting_pipe": "8in SCH.40"},
+            "14": {"supporting_pipe": "10in SCH.40"},
+            "16": {"supporting_pipe": "10in SCH.40"},
+            "18": {"supporting_pipe": "12in SCH.40"},
+            "20": {"supporting_pipe": "12in SCH.40"}
+          }
+        }
+      ],
+      "static_parameters": {"H_max_mm": 1500, "weep_hole_diameter_mm": 6},
+      "references": ["N-9 LOWER COMPONENT"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "supported-line cope/attachment and special-main-line construction are not uniquely dimensioned",
+        "diameter-6 weep-hole center datum and N-9 lower component recipe remain unresolved"
+      ]
+    }
+  }
+}

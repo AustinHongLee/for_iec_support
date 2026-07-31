@@ -1,7 +1,16 @@
 {
   "type_id": "73",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "複驗 D-88/D-88A/M-53：M-53 A 為可用平板總長，strap 改為 A*F*T 扣 D+3 孔；移除把 G 當 stud cut、washer placeholder、理想彈簧線重及 E*H/2 gusset 假設。",
   "source": "data/type73_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-73_D-88.pdf / TYPE-73_D-88A.pdf / STRAP_TYPE-PUBS2_M-53.pdf",
+      "revision": "1"
+    }
+  },
   "TYPE73_SPRING_TABLE": {
     "SPR02": {
       "mark": "SPR02",

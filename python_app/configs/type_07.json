@@ -1,7 +1,30 @@
 {
   "type_id": "07",
-  "source": "data/type07_table.py",
+  "version": "2.0",
+  "source": "單張-本案有關/中威/TYPE-07_D-7.pdf",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐圖重驗中威 D-7。表列 B/C pipe、E/F plate、L 均與原圖一致；H下限1500仍硬停止，上限H<3500自2026-07-31起採有限外插分級。D-7未列但同來源M-42已定義者列高風險暫算。補 Ø6 weep-hole、長半徑彎頭接合、現場調整與加工圖 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-07_D-7.pdf",
+      "revision": "1",
+      "m42_drawing": "單張-本案有關/中威/LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf",
+      "table": "TYPE07_TABLE"
+    }
+  },
+  "constraints": {
+    "H_min_exclusive_mm": 1500,
+    "H_max_exclusive_mm": 3500,
+    "allowed_m42": ["J"]
+  },
+  "fabrication_contract": {
+    "supported_line_to_sliding_surface_mm": 200,
+    "weld_mm": 6,
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null,
+    "field_suited_dimensions": ["H"]
+  },
   "TYPE07_TABLE": {
     "2": {
       "pipe_b": [

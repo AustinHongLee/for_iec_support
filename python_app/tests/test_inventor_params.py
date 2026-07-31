@@ -34,17 +34,15 @@ def test_h_beam_exports_raw_and_cut_height():
     assert "角鋼 40*40*5 L=150 x2" in values["IEC_BomText"]
 
 
-def test_fabricated_member_exports_modeled_dimensions():
+def test_unresolved_fabricated_member_exports_blockers_not_fake_dimensions():
     params = extract_params("66-20B(P)-A-200-600", "66")
 
     assert params is not None
     values = _values(params)
-    assert values["C_type"] == "FB12"
-    assert values["C_thk_mm"] == 12
-    assert values["C_bot_wid_mm"] == 250
-    assert values["C_bot_len_mm"] == 650
-    assert values["C_web_hgt_mm"] == 200
-    assert values["C_web_len_mm"] == 650
+    assert params["fabrication_ready"] is False
+    assert values["IEC_FabricationReady"] == "NO"
+    assert "C_type" not in values
+    assert "HOPS×A" in values["IEC_FabricationBlockers"]
 
 
 def test_export_to_csv_writes_excel_friendly_bom():

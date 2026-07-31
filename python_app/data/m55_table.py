@@ -8,8 +8,9 @@ Source status:
   visual inspection.
 
 The drawing provides dimensions for `PUBD1-{line_size}B` and material as carbon
-steel. It does not provide source unit-weight, so weight is calculated as a
-developed blank estimate (`B x E x T`) for continuity with Type 79.
+steel.  B/E/T are assembly dimensions and do not define a single developed
+blank.  The former `B x E x T` continuity estimate was retired after direct
+visual re-verification on 2026-07-30.
 """
 from __future__ import annotations
 
@@ -76,8 +77,11 @@ for _designation, _line_size, _a, _b, _c, _d, _f, _h, _j, _t, _e, _r in _RAW_M55
             "R": _r,
         },
         "material": M55_MATERIAL,
-        "weight_status": "estimated_from_B_E_T_blank_no_source_weight_column",
-        "source_note": "AI visual transcription from rendered vector PDF; reviewer spot-check recommended.",
+        "weight_status": "blocked_multi_piece_assembly_not_a_BxExT_blank",
+        "source_note": (
+            "2026-07-30 direct visual re-verification: dimensions are readable, "
+            "but the U-band/base piece decomposition and developments are not stated."
+        ),
     }
 
 
@@ -91,7 +95,7 @@ def get_m55_component() -> dict:
             "notes": [
                 "Dimension table transcribed by AI visual inspection after vector-PDF rasterization.",
                 "Designation pattern from drawing note: PUBD1-{line_size}B.",
-                "No source unit-weight column; weight is a B x E x T blank estimate.",
+                "No source unit-weight column; B x E x T is not a valid single-blank weight.",
             ],
         }
     )
@@ -103,7 +107,8 @@ def get_m55_by_line_size(line_size) -> dict | None:
     if not row:
         return None
     item = deepcopy(row)
-    item["unit_weight_kg"] = estimate_m55_weight_kg(item)
+    item["unit_weight_kg"] = 0.0
+    item["retired_B_E_T_estimate_kg"] = estimate_m55_weight_kg(item)
     return item
 
 
@@ -124,7 +129,7 @@ def build_m55_item(line_size) -> dict | None:
         "unit": "PC",
         "unit_weight_kg": item["unit_weight_kg"],
         "category": "鋼板類",
-        "remark": "SEE M-55; weight estimated from B x E x T blank (no source unit-weight column)",
+        "remark": "SEE M-55; source has no unit weight or complete piece development; weight blocked",
         "source": item,
     }
 

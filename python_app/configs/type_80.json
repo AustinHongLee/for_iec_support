@@ -1,7 +1,212 @@
 {
   "type_id": "80",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威、22A、20E 三套 D-95/D-96 重製來源 profile。D-95 <=14 吋復用來源別 D-80(Type 66) shoe recipe 再加 H-section member C；16~24 fabricated member 與 D-96 large saddle 在淨輪廓未完成前歸零封鎖，移除舊版矩形外包/一律加 pad/LOPS 當 angle 長度等假設。",
   "source": "data/type80_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "d95_drawing": "TYPE-80_D-95.pdf",
+      "d96_drawing": "TYPE-80_D-96.pdf",
+      "d80b_drawing": "TYPE-66_D-80B.pdf",
+      "revision": "1",
+      "material_symbols": {
+        "": "A36/SS400",
+        "(A)": "AS",
+        "(S)": "SUS304"
+      },
+      "d95_rules": [
+        {
+          "sizes": [0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8],
+          "A": 100,
+          "B": 100,
+          "member_kind": "H Beam",
+          "member_spec": "200*100*5.5",
+          "full_section_spec": "H200*100*5.5*8",
+          "D": null,
+          "E": null
+        },
+        {
+          "sizes": [10, 12, 14],
+          "A": 200,
+          "B": 200,
+          "member_kind": "H Beam",
+          "member_spec": "200*200*8",
+          "full_section_spec": "H200*200*8*12",
+          "D": 70,
+          "E": null
+        },
+        {
+          "sizes": [16, 18, 20],
+          "A": 300,
+          "B": 250,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        },
+        {
+          "sizes": [24],
+          "A": 350,
+          "B": 250,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        }
+      ],
+      "d96_c_by_size": {
+        "26": 230,
+        "28": 240,
+        "30": 250,
+        "32": 260,
+        "36": 300,
+        "40": 335,
+        "42": 350
+      },
+      "d96_interface_spec": "NO.6 STOP ANGLE L100x10 QTY2 / NO.7 PLATE 6t QTY6",
+      "d96_interface_blocker": "中威 D-96 No.6/No.7 雖有規格與數量，但各件 cut length/平面尺寸未在 D-96 唯一標示；不可用 LOPS 代替。",
+      "fireproofing_option": false
+    },
+    "ctci_22a_5123a": {
+      "d95_drawing": "TYPE-80_D-95.pdf",
+      "d96_drawing": "TYPE-80_D-96.pdf",
+      "d80b_drawing": "TYPE-66_D-80B.pdf",
+      "revision": "1",
+      "material_symbols": {
+        "": "A36/SS400",
+        "(A)": "AS",
+        "(S)": "SUS304"
+      },
+      "d95_rules": [
+        {
+          "sizes": [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5],
+          "A": 100,
+          "B": 100,
+          "member_kind": "H Beam",
+          "member_spec": "200*100*5.5",
+          "full_section_spec": "H200*100*5.5*8",
+          "D": null,
+          "E": null
+        },
+        {
+          "sizes": [6, 8],
+          "A": 200,
+          "B": 100,
+          "member_kind": "H Beam",
+          "member_spec": "200*100*5.5",
+          "full_section_spec": "H200*100*5.5*8",
+          "D": 70,
+          "E": null
+        },
+        {
+          "sizes": [10, 12, 14],
+          "A": 200,
+          "B": 200,
+          "member_kind": "H Beam",
+          "member_spec": "200*200*8",
+          "full_section_spec": "H200*200*8*12",
+          "D": 70,
+          "E": null
+        },
+        {
+          "sizes": [16, 18, 20],
+          "A": 320,
+          "B": 200,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        },
+        {
+          "sizes": [24],
+          "A": 370,
+          "B": 200,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        }
+      ],
+      "d96_c_by_size": {
+        "26": 230,
+        "28": 240,
+        "30": 250,
+        "32": 260,
+        "36": 300,
+        "40": 335,
+        "42": 350
+      },
+      "d96_interface_spec": "12t PLATE QTY2 / 12t PLATE QTY6 FOR FIREPROOFING BEAM",
+      "d96_interface_blocker": "22A D-96 的 fireproofing beam axial-stop plates 需 P/F/b 等 resting-beam 尺寸；designation 未提供時不可自動展開。",
+      "fireproofing_option": true
+    },
+    "ctci_20e4588": {
+      "d95_drawing": "TYPE-80_D-95.pdf",
+      "d96_drawing": "TYPE-80_D-96.pdf",
+      "d80b_drawing": "TYPE-66_D-80B.pdf",
+      "revision": "1A",
+      "material_symbols": {
+        "": "A36/SS400",
+        "(R)": "A36/SS400",
+        "(S)": "A36/SS400"
+      },
+      "d95_rules": [
+        {
+          "sizes": [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8],
+          "A": 100,
+          "B": 100,
+          "member_kind": "H Beam",
+          "member_spec": "200*100*5.5",
+          "full_section_spec": "H200*100*5.5*8",
+          "D": null,
+          "E": null
+        },
+        {
+          "sizes": [10, 12, 14],
+          "A": 200,
+          "B": 100,
+          "member_kind": "H Beam",
+          "member_spec": "200*200*8",
+          "full_section_spec": "H200*200*8*12",
+          "D": 70,
+          "E": null
+        },
+        {
+          "sizes": [16, 18, 20],
+          "A": 300,
+          "B": 100,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        },
+        {
+          "sizes": [24],
+          "A": 350,
+          "B": 100,
+          "member_kind": "Fabricated Plate",
+          "member_spec": "12",
+          "full_section_spec": "FAB. FROM 12t PLATE",
+          "D": 100,
+          "E": 12
+        }
+      ],
+      "d96_c_by_size": {
+        "26": 230,
+        "28": 240
+      },
+      "d96_interface_spec": "12t STOP ANGLE QTY2 / 12t PLATE QTY6 FOR FIREPROOFING BEAM",
+      "d96_interface_blocker": "20E D-96 只表列 26/28 吋；stop-angle/plate 的 cut length 與 fireproofing beam 尺寸未由 designation 唯一決定。",
+      "fireproofing_option": true
+    }
+  },
   "TYPE80_BIG_TABLE": {
     "26.0": {
       "foot_a": 148,

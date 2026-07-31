@@ -1,92 +1,104 @@
-"""
-Type 79 calculator — U-band support (D-94).
-
-Format:
-    79-{line_size}B[(anchor_type)]
-
-Example:
-    79-8B(A)
-"""
+"""Type 79 U-band assembly — D-94 / M-55."""
 from __future__ import annotations
 
 from ..bolt import add_custom_entry
-from ..models import AnalysisResult
+from ..config_loader import load_config
+from ..models import AnalysisResult, set_remark
 from ..parser import extract_parts, get_lookup_value, get_part
-from ..truth import apply_truth_contract, make_evidence, validate_named_invariants
-from data.m55_table import build_m55_item, get_m55_by_line_size
+from ..source_profiles import normalize_source_profile
+from ..truth import make_evidence
+from data.m55_table import get_m55_by_line_size
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(
+    fullstring: str,
+    overrides: dict | None = None,
+    source_profile: str | None = None,
+) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    config = load_config("79", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 79: 尚未建立來源 profile {profile_id}"
+        return result
 
-    part2 = get_part(fullstring, 2) or ""
-    line_token, anchor = extract_parts(part2)
+    token, anchor = extract_parts(get_part(fullstring, 2) or "")
     part3 = get_part(fullstring, 3)
     if part3 and part3.startswith("("):
         anchor = part3
-    if not line_token:
-        result.error = "格式錯誤，應為 79-{line_size}B[(A)]，例如 79-8B(A)"
+    if not token or anchor.upper() not in {"", "(A)"}:
+        result.error = "Type 79 格式應為 79-{line_size}B[(A)]"
         return result
-
-    line_size = get_lookup_value(line_token)
+    line_size = get_lookup_value(token)
     row = get_m55_by_line_size(line_size)
     if not row:
-        result.error = f'Type 79: 管徑 {line_token} ({line_size:g}") 不在範圍 5"~24"'
+        result.error = f'Type 79: D-94/M-55 未表列 {line_size:g}"；範圍 5"~24"'
         return result
-    dims = row["dimensions_mm"]
-    item = build_m55_item(line_size)
 
+    dims = row["dimensions_mm"]
+    blocker = (
+        "D-94/M-55 顯示的是 U-band、兩側立板/肋板與 base 的組立；"
+        "B、E、T 不是單一平板的展開長×寬×厚。舊版 B×E×T 重量已停用，"
+        "需先建立各 piece 的片數、淨輪廓與彎曲展開"
+    )
     add_custom_entry(
         result,
-        item["name"],
-        item["spec"],
-        item["material"],
-        item["quantity"],
-        item["unit_weight_kg"],
-        item["unit"],
-        remark=item["remark"],
-        category=item["category"],
+        "U-BAND ASSEMBLY",
+        (
+            f'{row["designation"]}; A={dims["A"]}; B={dims["B"]}; '
+            f'C={dims["C"]}; D={dims["D"]}; E={dims["E"]}; T={dims["T"]}'
+        ),
+        row["material"],
+        1,
+        0,
+        "SET",
+        remark=blocker,
+        category="鋼板類",
+        item_class="reference_only",
+        manufacturing_type="shaped_plate",
     )
-    result.warnings.append(
-        "M-55 table 已接線，但 PDF 無 source unit-weight；U-BAND 重量仍為 B x E x T blank 幾何估算"
+    entry = result.entries[-1]
+    entry.geometry.component_id = "D94-M55-U-BAND-ASSEMBLY"
+    entry.geometry.source_drawing = "TYPE-79_D-94.pdf / U-BAND_M-55.pdf"
+    entry.geometry.source_revision = profile["revision"]
+    entry.geometry.shape_kind = "multi_piece_u_band_support"
+    entry.geometry.shape_spec = (
+        f'{row["designation"]}; A{dims["A"]}; B{dims["B"]}; C{dims["C"]}; '
+        f'D{dims["D"]}; F{dims["F"]}; H{dims["H"]}; J{dims["J"]}; '
+        f'T{dims["T"]}; E{dims["E"]}; R{dims["R"]}'
     )
-    result.warnings.append(
-        "M-55 PDF 無文字層；尺寸表由 rendered bitmap AI visual transcription，需 reviewer spot-check"
+    entry.geometry.parameters = {
+        "line_size_in": line_size,
+        **dims,
+        "anchor_option": bool(anchor),
+        "anchor_weld_mm": 6 if anchor else None,
+        "typical_weld_mm": 6,
+    }
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
+    set_remark(
+        entry,
+        blocker + ("；(A) 表示 anchor type，增加 6 mm anchor weld" if anchor else ""),
     )
-    if anchor:
-        result.warnings.append(f"{anchor}: IF USED AS ANCHOR is a weld/detail note; no extra BOM item added")
 
-    invariant_errors = validate_named_invariants(
-        {"A": dims["A"], "B": dims["B"], "E": dims["E"], "T": dims["T"]},
-        {
-            "plate_thickness_positive": lambda x: x["T"] > 0,
-            "u_band_blank_width_positive": lambda x: x["E"] > 0,
-            "u_band_length_ge_pipe_span": lambda x: x["B"] >= x["A"],
-        },
+    result.warnings.append(blocker)
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": profile["drawing"],
+        "source_revision": profile["revision"],
+        "bom_ready": False,
+        "fabrication_ready": False,
+        "blockers": [blocker],
+        "assembly_dimensions": entry.geometry.parameters,
+    }
+    result.evidence.append(
+        make_evidence(
+            "type79_d94_m55_dimensions",
+            entry.geometry.parameters,
+            "visual_transcription",
+            source="TYPE-79_D-94.pdf / U-BAND_M-55.pdf",
+            confidence=0.99,
+        )
     )
-    return apply_truth_contract(
-        result,
-        type_id="79",
-        evidence=[
-            make_evidence(
-                "u_band_dimensions",
-                {"line_size": row["line_size"], "A": dims["A"], "B": dims["B"], "E": dims["E"], "T": dims["T"]},
-                "visual_transcription",
-                source="pdf_visual",
-                page=1,
-                note_ref="M-55 table",
-                confidence=0.7,
-            ),
-            make_evidence(
-                "u_band_weight",
-                row["unit_weight_kg"],
-                "geometry_estimate",
-                source="formula",
-                page=1,
-                note="Estimated from M-55 B*E*T blank; source has no unit-weight column",
-                confidence=0.5,
-            ),
-        ],
-        invariant_errors=invariant_errors,
-        review_reasons=["M-55 dimensions are table-backed but AI visual-transcribed; U-BAND weight remains estimated"],
-    )
+    return result

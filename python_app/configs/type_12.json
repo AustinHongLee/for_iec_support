@@ -1,7 +1,43 @@
 {
   "type_id": "12",
-  "source": "data/type12_table.py",
+  "_version": "1.1.0",
+  "source": "單張-本案有關/中威/TYPE-12_D-12.pdf",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對中威 E25-24 D-12；22A/20E4588 均無 Type 12。移除H-100猜式，依NOTE 3改為現場切長；Plate P為雙片，保存C、75SQ cover plate、6mm weld與Ø6 weep hole。2026-07-31 起 H上限採有限外插分級；缺來源圖仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-12_D-12.pdf",
+      "revision": "1",
+      "table_source": "TYPE12_TABLE",
+      "h_max_mm": 1500
+    }
+  },
+  "fabrication_contract": {
+    "supporting_pipe_cut_basis": "FIELD CUT TO SUIT (D-12 NOTE 3)",
+    "supporting_pipe_material": "A53Gr.B",
+    "plate_p_quantity": 2,
+    "cover_plate": {
+      "length_mm": 75,
+      "width_mm": 75,
+      "thickness_mm": 6,
+      "quantity": 1
+    },
+    "weld_mm": 6,
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null,
+    "paving_reference_lower_components": [
+      "A",
+      "B",
+      "E",
+      "G"
+    ],
+    "plate_material_symbols": {
+      "": "CARBON STEEL",
+      "(A)": "ALLOY STEEL",
+      "(S)": "STAINLESS STEEL"
+    }
+  },
   "TYPE12_TABLE": {
     "2": {
       "pipe_size_b": 1.5,

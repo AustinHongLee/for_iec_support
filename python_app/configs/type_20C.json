@@ -1,0 +1,68 @@
+{
+  "type_id": "20C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-29/C-30/C-31 與 N-8A 複驗 cold-insulated vessel to bare-pipe support：6/8/10in 精確解析 STR1 line-size row 的 R/A/B/T、100 width、2-Ø22 holes 與 3/4x50 bolts；A 為 formed dimension，無 flat development/bend allowance，仍不估 strap 重。C 為組立 reach。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/20C.pdf",
+      "drawing_no": "C-29/C-30/C-31",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-29", "C-30", "C-31"],
+      "title": "C-29~C-31 TYPE 20C VESSEL-TO-BARE-PIPE COLD SUPPORT",
+      "component_id": "C29-C31-TYPE20C-ASSEMBLY",
+      "source_spec": "COLD-INSULATED VESSEL AND BARE PIPE",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"name": "C_mm", "kind": "positive_mm"}]}
+      ],
+      "designation_error": "Type 20C 格式應為 20C-{LINE}B-{C mm}",
+      "branch_selections": [
+        {
+          "name": "pipe_group",
+          "field": "line_size_in",
+          "branches": {
+            "four_and_smaller": {
+              "values": [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4],
+              "sections": ["L75x75x9"],
+              "pipe_restraint": "STM-05.01 M-26 U-BOLT",
+              "clip": "N-12 CLIP TYPE 1",
+              "wood_block": "N-28 WOOD BLOCK-1"
+            },
+            "six_eight_ten": {
+              "values": [6, 8, 10],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "pipe_restraint": "N-8A STRAP",
+              "clip": "N-12 CLIP TYPE 2",
+              "wood_block": "N-28 WOOD BLOCK-1",
+              "B_formula": "pipe_OD/2 + 38"
+            },
+            "twelve_to_twenty_four": {
+              "values": [12, 14, 16, 18, 20, 22, 24],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "clip": "N-12 CLIP TYPE 2",
+              "wood_block": "N-28 WOOD BLOCK-1",
+              "B_formula": "pipe_OD/2 + 48"
+            }
+          }
+        }
+      ],
+      "static_parameters": {
+        "vessel_clip_stud": "3/4in x 120 A193 Gr.B8 with 2 A194 Gr.8A nuts",
+        "vessel_clip_holes": "2-diameter22",
+        "support_plate_width_mm": 180,
+        "weld_mm": 6
+      },
+      "component_bindings": [
+        {"component_id": "N-8A", "when": {"pipe_group": "six_eight_ten"}}
+      ],
+      "references": ["N-12/N-12A", "N-28", "N-8A", "STM-05.01 M-26", "C-29 NOTE 1"],
+      "blockers": [
+        "C is an assembly reach and does not uniquely define all angle cuts",
+        "dimension A and vessel clip geometry depend on N-12/N-12A",
+        "N-8A formed dimensions are resolved, but its flat development/bend allowance and bolt/nut grade/weights remain incomplete",
+        "wood block/U-bolt and other pipe-restraint supplier recipes remain incomplete"
+      ]
+    }
+  }
+}

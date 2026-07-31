@@ -35,9 +35,12 @@ _tmp_*
 *.tmp
 **/tmp_pytest/
 **/.tmp_pytest/
+/tmp/
+/_to_delete/
 
 # Generated outputs
 /outputs/
+/output/
 python_app/output/
 python_app/analysis_result.xlsx
 

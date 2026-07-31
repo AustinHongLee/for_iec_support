@@ -1,0 +1,46 @@
+{
+  "type_id": "12C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-16 與 N-1~N-5/N-20~N-23 複驗：CR/pipe 反查 insulation、F/H/R/T1/T2、層構造、材料密度與容許載重；多解時要求 insulation_thickness_mm。木塊/鋼 cradle 淨輪廓仍未完整，保持零重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/12C.pdf",
+      "drawing_no": "C-16",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-16"],
+      "title": "C-16 TYPE 12C WOOD RESTING COLD SUPPORT",
+      "component_id": "C16-TYPE12C-ASSEMBLY",
+      "source_spec": "RESTING (WOOD) FOR TRUNNION; PIPE 24in AND SMALLER",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        }
+      ],
+      "designation_error": "Type 12C 格式應為 12C-{CR#}-{LINE}B",
+      "branch_selections": [
+        {
+          "name": "pipe_group",
+          "field": "line_size_in",
+          "branches": {
+            "half_to_six": {"values": [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6], "cradle_length_mm": 150},
+            "eight_to_twenty_four": {"values": [8, 10, 12, 14, 16, 18, 20, 22, 24], "cradle_length_mm": 200}
+          }
+        }
+      ],
+      "static_parameters": {"wood_and_vapor_barrier_length_mm": 150},
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE", "include_shield": true, "allow_unlisted_pipe_size": true}
+      ],
+      "references": ["N-1", "N-2", "N-3", "N-4", "N-5", "N-20~N-23", "C-14/C-15"],
+      "blockers": [
+        "wood block/cradle and insulation-layer net recipes are incomplete",
+        "C-16 assembly dimensions do not define all finished blanks"
+      ]
+    }
+  }
+}

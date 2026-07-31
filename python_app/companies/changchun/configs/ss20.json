@@ -1,0 +1,15 @@
+{
+  "company": "Chang Chun owner standard",
+  "code": "SS20",
+  "name": "結構管架 SS20",
+  "drawing": "DES-M15172 / SS20",
+  "source_file": "單張-本案有關/長春/SS20.pdf",
+  "revision": "0 / 2016-01-05",
+  "line_size_max_in": 4,
+  "H_max_mm": 1600,
+  "L_min_mm": 250,
+  "L_max_mm": 650,
+  "version": "1.1",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依DES-M15172 SS20建立L75水平/垂直構件、B/W固定與215x170x9t底板。2026-07-31起H/L上限採有限外插分級；H現場切配但超界仍禁止無限擴張，L下限250mm與H非正值維持硬停止。固定螺栓依名義M×L列可追溯理論估重，供應商成品重仍待確認。"
+}

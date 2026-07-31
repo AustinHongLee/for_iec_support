@@ -1,5 +1,9 @@
 {
   "type_id": "45",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對中威D-54/D-55與M-34/35/36；兩份中鼎無圖。框架拆為兩縱向+兩橫向member及兩clip plate；M-34連接有兩片，brace僅H>1140存在並同時才需要一片M-35/36。K bolt按4/6孔計；完整 M.BOLT/K bolt 直徑×長度改列可追溯理論估重，供應商成品重量待確認。",
+  "source_profiles": {"cw_e25_24_hp6":{"drawings":["單張-本案有關/中威/TYPE-45_D-54.pdf","單張-本案有關/中威/TYPE-45_D-55.pdf"],"revision":"1"}},
   "source": "data/type45_table.py",
   "migrated": "2026-04-29",
   "TYPE45_BRACE": {

@@ -1,0 +1,24 @@
+{
+  "type_id": "113C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-56/N-12/N-12A/N-28 複驗：Member M 保持 C cut，接入 CLIP TYPE 1 與 WOOD-1 下料/孔位；insulation_thickness_mm 可解析 A/plate t。鋼材牌號、白橡木密度/chamfer 與實際載重 P 仍須核定，且 P*C<=40 kg-m。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/113C.pdf",
+      "drawing_no": "C-56",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "maximum_moment_kg_m": 40,
+      "members": {
+        "L50": {"kind": "Angle", "spec": "50*50*6", "source_spec": "L50x50x6"},
+        "L75": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9"},
+        "C100": {"kind": "Channel", "spec": "100*50*5", "source_spec": "C100x50x5x7.5"}
+      },
+      "references": ["N-12 CLIP TYPE 1", "N-28 WOOD BLOCK 1"],
+      "stud_bolt": "DIA3/4in x 120; A193 Gr.B8; 2-A194 Gr.8A nuts",
+      "stud_hole_diameter_mm": 22,
+      "weld_mm": 6
+    }
+  }
+}

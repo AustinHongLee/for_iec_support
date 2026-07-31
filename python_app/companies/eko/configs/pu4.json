@@ -69,12 +69,18 @@
    }
   }
  ],
+ "validation": {
+  "required": ["fix", "pipe", "L"],
+  "allowed": ["fix", "pipe", "L"],
+  "fixes": ["W", "B", "E"],
+  "pipe": {"min": 0.5, "max": 2}
+ },
  "extra_warnings": [
   "PU4 適用2\"(含)以下垂直配管托撐；支撐塊碳鋼管A36/不鏽鋼管304；管以U型螺栓(詳UB1)固定"
  ],
- "data_update_note": "依PU4.pdf件號表；角鋼L75×75×9(len=L)+支撐塊6t×20×30+U型螺栓+底板/螺栓(B/E)",
+ "data_update_note": "v1.1 強制固定方式、管徑及L，並依圖面限制≤2吋。原資料依PU4.pdf件號表；角鋼L75×75×9(len=L)+支撐塊6t×20×30+U型螺栓+底板/螺栓(B/E)",
  "code": "PU4",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

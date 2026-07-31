@@ -1,82 +1,110 @@
-"""
-Type 23 計算器 - 頂掛式懸臂支撐 (Top-mounted Cantilever Support)
-從上方既有結構（overhead structure）向下懸掛的支撐架
+"""Type 23 source-aware top-mounted cantilever support (D-25)."""
+from __future__ import annotations
 
-格式: 23-{M}-{HH}{Fig}        (Fig = A/B)
-      23-{M}-{HH}{Fig}-{LL}   (Fig = C, LL=L/100)
-- 第二段: 型鋼代碼 (L50/L65/L75/L100/C100/C150/H100/H150)
-- 第三段: H(數字, *100mm) + Fig字母(A/B/C)
-- 第四段: L(數字, *100mm) — 僅 Fig.C 才有
-
-Note: U-BOLT (D-68) NOT FURNISHED
-Note: REST ON PLATE, NO SLIDING
-
-構件 (2 項):
-  1. MEMBER "M" (H段): 垂直, 長度 H, A36/SS400
-  2. MEMBER "M" (L段): 水平, 長度 L, A36/SS400
-"""
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import register_source_envelope
 from ..models import AnalysisResult
-from ..parser import get_part
+from ..source_profiles import normalize_source_profile
 from ..steel import add_steel_section_entry
-from data.steel_sections import get_section_details
-from data.type23_table import MEMBER_H_MAX, FIG_L_MAP
+from ..truth import make_evidence
 
 
-def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
-    result = AnalysisResult(fullstring=fullstring)
+def _load(source_profile):
+    config = load_config("23", strict=True)
+    if not config:
+        raise FileNotFoundError("Type 23 設定檔遺失或損毀")
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        raise ValueError(f"Type 23 尚未建立來源 profile: {profile_id}")
+    return profile_id, profile, config[profile["member_table"]], config
 
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2, type_first="23")
-    if not details:
-        result.error = f"Type 23: 未知型鋼代碼 {part2}"
-        return result
 
-    section_type = details["type"]
-    full_size = details["size"]
-    section_dim = full_size[1:]  # strip leading letter
-
-    # ── 第三段: H + Fig ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 3:
-        result.error = f"Type 23: 第三段格式錯誤 ({fullstring})"
-        return result
-
-    fig_choice = part3[-1].upper()
-
-    if fig_choice.isdigit():
-        result.error = f"Type 23: Fig 代碼不應為數字 ({fullstring})"
-        return result
-
-    if fig_choice not in FIG_L_MAP:
-        result.error = f"Type 23: 不支援的 Fig 代碼 '{fig_choice}' (僅 A/B/C)"
-        return result
-
-    section_length_h = int(part3[:-1]) * 100
-
-    # ── L 值 ──
-    fixed_l = FIG_L_MAP[fig_choice]
-    if fixed_l is not None:
-        section_length_l = fixed_l
+def _parse(fullstring, fig_l_map):
+    parts = str(fullstring).split("-")
+    if len(parts) not in (3, 4):
+        raise ValueError("格式應為 23-{M}-{HH}{Fig}[-{LL}]")
+    member = parts[1].upper()
+    token = parts[2]
+    if len(token) < 2 or token[-1].upper() not in fig_l_map or not token[:-1].isdigit():
+        raise ValueError("第三段需為 H(100mm單位)+Fig A/B/C")
+    fig = token[-1].upper()
+    h_mm = int(token[:-1]) * 100
+    if fig == "C":
+        if len(parts) != 4 or not parts[3].isdigit():
+            raise ValueError("Fig.C 需且只能有第四段 L(100mm單位)")
+        l_mm = int(parts[3]) * 100
     else:
-        # Fig.C: 從第四段取得
-        part4 = get_part(fullstring, 4)
-        if not part4:
-            result.error = f"Type 23: Fig.C 需要第四段指定 L 值 ({fullstring})"
-            return result
-        section_length_l = int(part4) * 100
+        if len(parts) != 3:
+            raise ValueError("Fig.A/B 不得有第四段 L")
+        l_mm = fig_l_map[fig]
+    if h_mm <= 0 or l_mm <= 0:
+        raise ValueError("H與L必須大於0")
+    return member, fig, h_mm, l_mm
 
-    # ── H_MAX 驗證 ──
-    h_max = MEMBER_H_MAX.get(part2)
-    if h_max and section_length_h > h_max:
-        result.warnings.append(
-            f"H={section_length_h}mm 超過 {part2} 的上限 {h_max}mm"
-        )
 
-    # ── 1. Member M (H段 - 垂直) ──
-    add_steel_section_entry(result, section_type, section_dim, section_length_h)
+def calculate(fullstring, overrides=None, source_profile=None):
+    result = AnalysisResult(fullstring=fullstring)
+    overrides = overrides or {}
+    try:
+        profile_id, profile, members, config = _load(source_profile)
+        member, fig, h_mm, l_mm = _parse(fullstring, config["FIG_L_MAP"])
+    except (FileNotFoundError, TypeError, ValueError) as exc:
+        result.error = f"Type 23: {exc}"
+        return result
 
-    # ── 2. Member M (L段 - 水平) ──
-    add_steel_section_entry(result, section_type, section_dim, section_length_l)
+    row = members.get(member)
+    if not row:
+        result.error = f"Type 23 / {profile_id}: D-25 未表列 MEMBER {member}"
+        return result
+    checks = [("H", h_mm, row["H_MAX"], True)]
+    if row["L_MAX"] is not None:
+        checks.append(("L", l_mm, row["L_MAX"], True))
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 23 / {profile_id}",
+        source_ref=f"D-25 {member} L/H(MAX)",
+        checks=checks,
+    ):
+        return result
 
+    ctx = parse_hardware_material_context(overrides, legacy_material_keys=("material",), legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT, service=ctx.service, overrides=ctx.material_overrides)
+    fab = config["fabrication_contract"]
+    blockers = [
+        "D-25未給下角接頭的精確端部切削/貼合輪廓",
+        "D-25下角接頭焊道未標焊腳尺寸",
+        "管線僅示意坐落於水平member；止滑/固定方式未在D-25定義",
+    ]
+    for cid, segment, length in (
+        ("D25-MEMBER-M-VERTICAL", "H", h_mm),
+        ("D25-MEMBER-M-HORIZONTAL", "L", l_mm),
+    ):
+        add_steel_section_entry(result, row["section_type"], row["lookup_dim"], length, material=material)
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.shape_spec = f'{row["full_spec"]}; CUT {segment}={length}; TYPE-23 FIG-{fig}'
+        entry.geometry.parameters = {
+            "segment": segment, "cut_length_mm": length, "H_mm": h_mm, "L_mm": l_mm,
+            "figure": fig, "supported_line_center_from_free_end_mm": fab["supported_line_center_from_free_end_mm"],
+            "top_field_fillet_weld_mm": fab["top_field_fillet_weld_mm"],
+            "top_weld_all_around": fab["top_weld_all_around"], "u_bolt_shown": False,
+        }
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = blockers[:]
+
+    result.meta["fabrication"] = {
+        "source_profile": profile_id, "source_drawing": profile["drawing"], "source_revision": profile["revision"],
+        "branch": f"{member}/FIG-{fig}", "bom_ready": True, "fabrication_ready": False,
+        "blockers": blockers, "H_mm": h_mm, "L_mm": l_mm,
+    }
+    result.warnings.append("D-25型鋼BOM可算；下角接頭與管線固定方式仍是加工blocker")
+    result.evidence.extend([
+        make_evidence("type23_member_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99),
+        make_evidence("type23_H_L_mm", {"H": h_mm, "L": l_mm, "figure": fig}, "formula", source=profile["drawing"], confidence=0.99),
+    ])
     return result

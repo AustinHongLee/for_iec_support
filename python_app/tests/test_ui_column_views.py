@@ -18,9 +18,12 @@ _APP = QApplication.instance() or QApplication(sys.argv)
 
 def test_ui_view_presets_read_column_roles():
     assert role_of("計算說明") == "trace"
+    assert role_of("來源圖面") == "trace"
+    assert role_of("密度狀態") == "engineer"
     assert not is_header_visible_for_view("計算說明", "工程")
     assert is_header_visible_for_view("計算說明", "查核")
     assert is_header_visible_for_view("材質", "採購")
+    assert is_header_visible_for_view("密度狀態", "採購")
 
 
 def test_bom_detail_switches_between_role_views_without_removing_columns():

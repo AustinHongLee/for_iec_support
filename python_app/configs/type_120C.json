@@ -1,0 +1,20 @@
+{
+  "type_id": "120C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-68 與 N-1~N-5/N-20~N-26 複驗：CR/pipe 交叉驗證 insulation/F/H/R/T1/material/source load，多解時要求 insulation_thickness_mm。2026-07-30 獨立稽核確認 N-24 標 KG、N-25/N-26 標 LB 且數值相同，裁決前只保留 raw value/source sheet，不輸出 canonical kg/lb。H 是組立高度而非 rod finished cut，H>2000 才要求 M-21；N-17/N-18/C-24 與 M hardware 未完整前不以 H 算重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/120C.pdf",
+      "drawing_no": "C-68",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "figures": {
+        "A": {"hanger_chain": ["M-28 BEAM ATTACHMENT", "M-22 MACHINE THREADED ROD", "M-21 TURNBUCKLE when H>2000", "M-25 WELDLESS EYE NUT", "N-17/N-18 PIPE CLAMP TYPE-CA", "C-24 COLD SUPPORT"]},
+        "B": {"hanger_chain": ["M-28 BEAM ATTACHMENT", "M-23 WELDED EYE ROD", "M-21 TURNBUCKLE when H>2000", "N-17/N-18 PIPE CLAMP TYPE-CA", "C-24 COLD SUPPORT"]}
+      },
+      "turnbuckle_required_above_H_mm": 2000,
+      "weld_mm": 6
+    }
+  }
+}

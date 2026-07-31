@@ -1,5 +1,7 @@
 # Type 43 — Trunnion 曲面設備全約束支撐 (Trunnion Vessel Clamp Support)
 
+> **2026-07-29 原圖複核更正**：中威與 20E 已分流。20E 明註 `TRUNNION PIPE NOT FURNISHED`，因此排除 BOM 並使用 `M20X50`；中威保留 Trunnion 且使用 `3/4"x50`。兩片 Lug Plate 的 K Bolt 合計為 8 或 12 支。
+
 > **圖號**: 43 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-51 (1/2), D-52 (2/2)
 > **日期**: 12/12/19

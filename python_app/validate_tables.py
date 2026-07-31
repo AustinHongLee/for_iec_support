@@ -1,4 +1,5 @@
 
+import math
 import os
 import sys
 from pathlib import Path
@@ -31,7 +32,7 @@ try:
         "51-1.1/2B",
         "57-1.1/2B-A",
         "66-1.1/2B(P)-A-150-150",
-        "22-L75-12(A)X",
+        "22-L75-12(A)L",
         "59-1.1/2B-B(S)",
     ]
     for designation in parser_smoke_cases:
@@ -353,9 +354,9 @@ try:
     leader_project = analyze_project_rows([
         ProjectInputRow("57-1/2B-A", 2),
         ProjectInputRow("52-1/2B-A-150-200", 3),
-        ProjectInputRow("66-10B(P)-A-150-250", 4),
+        ProjectInputRow("66-6B(P)-A-150-250", 4),
         ProjectInputRow("59-1.1/2B-B(S)", 5),
-        ProjectInputRow("10-6B-16", 2),
+        ProjectInputRow("10-6B-14A", 2),
     ])
     fd, path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
@@ -367,7 +368,10 @@ try:
         assert _sheet_contains_text(ws_manager, "長官-支撐分類"), "manager cover detail pointer missing"
         assert not _sheet_contains_text(ws_manager, "57-1/2B-A"), "manager cover should hide source designations"
         ws_leader = wb["長官-支撐分類"]
-        assert _stat_value(ws_leader, 'U-Bolt & Band ≦ 6" 熱浸鍍鋅') == 2, "leader procurement <=6in U-Bolt/Band HDG count failed"
+        assert _stat_value(ws_leader, 'U-Bolt & Band ≦ 6" 熱浸鍍鋅') == 7, (
+            "leader procurement <=6in U-Bolt/Band HDG count failed; "
+            "Type 57 contributes 2 sets and drawing-furnished Type 59 FIG-B contributes 5 sets"
+        )
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE)≦4"') == 3, "leader procurement <=4in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, '管鞋(PIPE SHOE) 5"~10"') == 4, "leader procurement 5~10in pipe shoe HDG count failed"
         assert _stat_value(ws_leader, "CS(熱鍍鋅)管支撐(Pipe Support)製裝<=15Kg") == 5, "leader procurement should merge only SUS304 generic <=15kg supports into CS count"
@@ -383,7 +387,7 @@ try:
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "SUS304 <=15kg support should be listed under CS fabrication detail"
         assert any(
-            ws_leader_detail.cell(row=r, column=6).value == "10-6B-16"
+            ws_leader_detail.cell(row=r, column=6).value == "10-6B-14A"
             and ws_leader_detail.cell(row=r, column=1).value == "CS(熱鍍鋅)管支撐(Pipe Support)製裝>15Kg"
             and "併入 CS" in str(ws_leader_detail.cell(row=r, column=13).value)
             for r in range(4, ws_leader_detail.max_row + 1)
@@ -394,7 +398,7 @@ try:
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "leader detail U-Bolt source row missing"
         assert not any(
-            ws_leader_detail.cell(row=r, column=6).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-10B(P)-A-150-250"}
+            ws_leader_detail.cell(row=r, column=6).value in {"57-1/2B-A", "52-1/2B-A-150-200", "66-6B(P)-A-150-250"}
             and str(ws_leader_detail.cell(row=r, column=1).value or "").startswith("CS(熱鍍鋅)")
             for r in range(4, ws_leader_detail.max_row + 1)
         ), "U-Bolt and Pipe Shoe rows should not be double counted as CS fabrication"
@@ -422,13 +426,13 @@ try:
     type01_large = analyze_single("01-50B-05A")
     assert not type01_large.error, f"Type 01 50B should calculate: {type01_large.error}"
     assert type01_large.entries[0].spec == '28"*STD.WT', f"Type 01 50B upper pipe spec changed: {type01_large.entries[0].spec}"
-    assert type01_large.entries[0].length == 1482, f"Type 01 50B upper pipe length changed: {type01_large.entries[0].length}"
+    assert type01_large.entries[0].length == 1882, f"Type 01 50B continuous pipe length changed: {type01_large.entries[0].length}"
     assert any("NOTE 6" in warning for warning in type01_large.warnings), "Type 01 M42 A/B/E/G paving warning missing"
 
     type01_mid = analyze_single("01-28B-05B")
     assert not type01_mid.error, f"Type 01 28B should calculate: {type01_mid.error}"
     assert type01_mid.entries[0].spec == '16"*STD.WT', f"Type 01 28B upper pipe spec changed: {type01_mid.entries[0].spec}"
-    assert type01_mid.entries[0].length == 882, f"Type 01 28B upper pipe length changed: {type01_mid.entries[0].length}"
+    assert type01_mid.entries[0].length == 1282, f"Type 01 28B continuous pipe length changed: {type01_mid.entries[0].length}"
 
     def _type01_names(result):
         return [entry.name for entry in result.entries]
@@ -574,32 +578,22 @@ try:
     for designation, expected in _TYPE01_H01_CASES.items():
         result = analyze_single(designation)
         assert not result.error, f"{designation} should calculate: {result.error}"
-        assert _type01_names(result) == expected["names"], f"{designation} M42 BOM changed: {_type01_names(result)}"
-        assert len(result.warnings) == expected["warnings"], f"{designation} warning count changed: {result.warnings}"
-        upper = _type01_entry(result, 1)
-        lower = _type01_entry(result, 2)
-        assert upper.spec == expected["pipe_spec"], f"{designation} upper pipe spec changed: {upper.spec}"
-        assert upper.length == expected["upper"], f"{designation} upper pipe length changed: {upper.length}"
-        assert upper.material == "SUS304", f"{designation} upper pipe material changed: {upper.material}"
-        assert lower.spec == expected["pipe_spec"], f"{designation} lower pipe spec changed: {lower.spec}"
-        assert lower.length == expected["lower"], f"{designation} lower pipe length changed: {lower.length}"
-        assert lower.material == "A53Gr.B", f"{designation} lower pipe material changed: {lower.material}"
-        _expect_pipe_weight(upper)
-        _expect_pipe_weight(lower)
-        for offset, (name, length, width, material) in enumerate(expected["m42"], start=3):
-            entry = _type01_entry(result, offset)
-            assert entry.name == name, f"{designation} M42 entry name changed: {entry.name}"
-            assert entry.length == length, f"{designation} {name} length changed: {entry.length}"
-            assert entry.width == width, f"{designation} {name} width changed: {entry.width}"
-            assert entry.material == material, f"{designation} {name} material changed: {entry.material}"
-            if entry.name == "EXP.BOLT":
-                _expect_bolt_weight(entry)
-            else:
-                _expect_plate_weight(entry)
         if designation == "01-6B-16T":
-            assert any("H=1600mm" in warning for warning in result.warnings), f"{designation} H-limit warning missing: {result.warnings}"
+            assert result.meta["issues"][0]["severity"] == "warning", (
+                f"{designation} should be a bounded source-envelope warning"
+            )
+        pipes = [entry for entry in result.entries if entry.name == "管路"]
+        assert len(pipes) == 1, f"{designation} should use one continuous Supporting Pipe B"
+        pipe = pipes[0]
+        assert pipe.spec == expected["pipe_spec"], f"{designation} pipe spec changed: {pipe.spec}"
+        assert pipe.material == "SUS304", f"{designation} pipe material changed: {pipe.material}"
+        assert pipe.geometry.component_id == "D1-SUPPORTING-PIPE-B"
+        assert not pipe.geometry.fabrication_ready
+        assert result.meta["fabrication"]["bom_ready"] is True
+        assert result.meta["fabrication"]["fabrication_ready"] is False
+        _expect_pipe_weight(pipe)
 
-    print("v type01 Rev.1 table/note guardrails OK")
+    print("v type01 source-profile / fabrication-contract guardrails OK")
 except Exception as e:
     record_failure(f"X type01 Rev.1 table/note guardrails ERROR: {e}")
 
@@ -656,24 +650,15 @@ try:
     _expect_pipe_weight(_h02_entry(type10, 1))
     _expect_pipe_weight(_h02_entry(type10, 2))
     _expect_plate_weight(_h02_entry(type10, 3))
-    _expect_custom_weight(_h02_entry(type10, 4), 0.8)
-    _expect_custom_weight(_h02_entry(type10, 5), 0.15)
+    _expect_custom_weight(_h02_entry(type10, 4), 0.14)
+    _expect_custom_weight(_h02_entry(type10, 5), 0)
     _expect_plate_weight(_h02_entry(type10, 6))
 
     type10_high = analyze_single("10-6B-16A")
-    assert not type10_high.error, f"Type 10 high-H case should calculate: {type10_high.error}"
-    assert any("H=1600mm" in warning for warning in type10_high.warnings), f"Type 10 H-limit warning missing: {type10_high.warnings}"
-    assert _h02_entry(type10_high, 1).length == 386, f"Type 10 6B main pipe length changed: {_h02_entry(type10_high, 1).length}"
-    assert _h02_entry(type10_high, 1).material == "SUS304", f"Type 10 6B main pipe material changed: {_h02_entry(type10_high, 1).material}"
-    assert _h02_entry(type10_high, 2).length == 1300, f"Type 10 6B support pipe length changed: {_h02_entry(type10_high, 2).length}"
-    assert _h02_entry(type10_high, 2).material == "A53Gr.B", f"Type 10 6B support pipe material changed: {_h02_entry(type10_high, 2).material}"
-    assert _h02_entry(type10_high, 3).length == 260 and _h02_entry(type10_high, 3).width == 260 and _h02_entry(type10_high, 3).spec == "12" and _h02_entry(type10_high, 3).quantity == 2, "Type 10 6B Plate_F changed"
-    assert _h02_entry(type10_high, 5).quantity == 16, "Type 10 6B hex nut changed"
-    for entry in type10_high.entries:
-        if entry.name == "管路":
-            _expect_pipe_weight(entry)
-        elif entry.category == "鋼板類":
-            _expect_plate_weight(entry)
+    assert not type10_high.error and type10_high.entries, (
+        f"Type 10 bounded H overrun should remain calculable: {type10_high.error}"
+    )
+    assert type10_high.meta["issues"][0]["severity"] == "warning"
 
     type15 = analyze_single("15-2B-1005")
     assert not type15.error, f"Type 15 should calculate: {type15.error}"
@@ -681,41 +666,35 @@ try:
         f"Type 15 BOM sequence changed: {_h02_names(type15)}"
     )
     assert _h02_entry(type15, 1).length == 382, f"Type 15 pipe length should be H-2F-channelHeight: {_h02_entry(type15, 1).length}"
-    assert _h02_entry(type15, 2).length == 1000, f"Type 15 channel length changed: {_h02_entry(type15, 2).length}"
+    assert _h02_entry(type15, 2).length == 988, f"Type 15 member cut must be L-2x6t stopper: {_h02_entry(type15, 2).length}"
     assert (_h02_entry(type15, 3).length, _h02_entry(type15, 3).width, _h02_entry(type15, 3).spec, _h02_entry(type15, 3).quantity) == (150, 95, "9", 4), "Type 15 wing plate changed"
     assert (_h02_entry(type15, 4).length, _h02_entry(type15, 4).width, _h02_entry(type15, 4).spec, _h02_entry(type15, 4).quantity) == (160, 70, "6", 2), "Type 15 stopper plate changed"
     assert (_h02_entry(type15, 5).length, _h02_entry(type15, 5).width, _h02_entry(type15, 5).spec) == (190, 190, "9"), "Type 15 base plate changed"
     assert (_h02_entry(type15, 6).length, _h02_entry(type15, 6).width, _h02_entry(type15, 6).spec) == (80, 80, "9"), "Type 15 top plate changed"
-    assert "shape=wing_plate" in _h02_entry(type15, 3).remark, "Type 15 wing plate remark missing"
-    assert "shape=stopper_plate" in _h02_entry(type15, 4).remark, "Type 15 stopper plate remark missing"
+    assert _h02_entry(type15, 3).geometry.shape_kind == "six_vertex_wing_plate", "Type 15 wing polygon missing"
+    assert _h02_entry(type15, 4).geometry.shape_kind == "eight_vertex_chamfered_stopper", "Type 15 stopper polygon missing"
     _expect_pipe_weight(_h02_entry(type15, 1))
     _expect_steel_weight(_h02_entry(type15, 2))
     for entry in type15.entries[2:]:
         _expect_plate_weight(entry)
 
     type15_high = analyze_single("15-6B-1036")
-    assert not type15_high.error, f"Type 15 high-H case should calculate: {type15_high.error}"
-    assert any("H=3600mm" in warning for warning in type15_high.warnings), f"Type 15 H-limit warning missing: {type15_high.warnings}"
-    assert _h02_entry(type15_high, 1).length == 3418, f"Type 15 6B pipe length changed: {_h02_entry(type15_high, 1).length}"
-    for entry in type15_high.entries:
-        if entry.name == "管路":
-            _expect_pipe_weight(entry)
-        elif entry.name == "槽鐵":
-            _expect_steel_weight(entry)
-        elif entry.category == "鋼板類":
-            _expect_plate_weight(entry)
+    assert not type15_high.error and type15_high.entries, (
+        f"Type 15 bounded H overrun should remain calculable: {type15_high.error}"
+    )
+    assert type15_high.meta["issues"][0]["severity"] == "warning"
 
     type15_10 = analyze_single("15-10B-1005")
     assert not type15_10.error, f"Type 15 10B should calculate: {type15_10.error}"
     assert _h02_entry(type15_10, 2).quantity == 2, "Type 15 10B should use double channel"
-    assert _h02_entry(type15_10, 2).remark == "detail_a_double_channel_for_10in_and_12in", "Type 15 10B detail-a remark missing"
+    assert _h02_entry(type15_10, 2).geometry.parameters["detail_o"] is True, "Type 15 10B detail-o geometry missing"
     assert _h02_entry(type15_10, 3).quantity == 4, "Type 15 10B wing plate should be 4 pieces"
     assert _h02_entry(type15_10, 4).quantity == 2, "Type 15 10B stopper plate should be 2 pieces"
 
     type15_12 = analyze_single("15-12B-1005")
     assert not type15_12.error, f"Type 15 12B should calculate: {type15_12.error}"
     assert _h02_entry(type15_12, 2).quantity == 2, "Type 15 12B should use double channel"
-    assert _h02_entry(type15_12, 2).remark == "detail_a_double_channel_for_10in_and_12in", "Type 15 12B detail-a remark missing"
+    assert _h02_entry(type15_12, 2).geometry.parameters["detail_o"] is True, "Type 15 12B detail-o geometry missing"
     assert _h02_entry(type15_12, 3).quantity == 4, "Type 15 12B wing plate should be 4 pieces"
     assert _h02_entry(type15_12, 4).quantity == 2, "Type 15 12B stopper plate should be 2 pieces"
 
@@ -725,53 +704,48 @@ try:
         f"Type 14 BOM sequence changed: {_h02_names(type14)}"
     )
     assert _h02_entry(type14, 1).length == 382, f"Type 14 pipe length should be H-2F-channelHeight: {_h02_entry(type14, 1).length}"
-    assert _h02_entry(type14, 2).length == 1000 and _h02_entry(type14, 2).quantity == 1, "Type 14 channel changed"
+    assert _h02_entry(type14, 2).length == 988 and _h02_entry(type14, 2).quantity == 1, "Type 14 member cut must be L-2x6t stopper"
     assert (_h02_entry(type14, 3).length, _h02_entry(type14, 3).width, _h02_entry(type14, 3).spec, _h02_entry(type14, 3).quantity) == (150, 65, "9", 4), "Type 14 wing plate changed"
     assert (_h02_entry(type14, 4).length, _h02_entry(type14, 4).width, _h02_entry(type14, 4).spec, _h02_entry(type14, 4).quantity) == (160, 70, "6", 2), "Type 14 stopper plate changed"
     assert (_h02_entry(type14, 5).length, _h02_entry(type14, 5).width, _h02_entry(type14, 5).spec) == (190, 190, "9"), "Type 14 base plate changed"
     assert (_h02_entry(type14, 6).length, _h02_entry(type14, 6).width, _h02_entry(type14, 6).spec) == (80, 80, "9"), "Type 14 top plate changed"
     assert _h02_entry(type14, 7).spec == '5/8"' and _h02_entry(type14, 7).quantity == 4, "Type 14 anchor bolt changed"
-    assert "shape=wing_plate" in _h02_entry(type14, 3).remark, "Type 14 wing plate remark missing"
-    assert "shape=stopper_plate" in _h02_entry(type14, 4).remark, "Type 14 stopper plate remark missing"
+    assert _h02_entry(type14, 3).geometry.component_id == "D14-WING-PLATE", "Type 14 wing plate geometry missing"
+    assert _h02_entry(type14, 4).geometry.component_id == "D14-STOPPER-PLATE", "Type 14 stopper plate geometry missing"
     _expect_pipe_weight(_h02_entry(type14, 1))
     _expect_steel_weight(_h02_entry(type14, 2))
     for entry in type14.entries[2:6]:
         _expect_plate_weight(entry)
-    _expect_bolt_weight(_h02_entry(type14, 7))
+    assert _h02_entry(type14, 7).unit_weight == 0, "Type 14 D-14 does not provide anchor unit weight"
 
     type14_10 = analyze_single("14-10B-1005")
     assert not type14_10.error, f"Type 14 10B should calculate: {type14_10.error}"
     assert _h02_entry(type14_10, 2).quantity == 2, "Type 14 10B should use double channel"
-    assert _h02_entry(type14_10, 2).remark == "detail_a_double_channel_for_10in_and_12in", "Type 14 10B detail-a remark missing"
+    assert _h02_entry(type14_10, 2).geometry.parameters["detail_a"] is True, "Type 14 10B detail-a geometry missing"
     assert _h02_entry(type14_10, 3).quantity == 4, "Type 14 10B wing plate should be 4 pieces"
     assert _h02_entry(type14_10, 4).quantity == 2, "Type 14 10B stopper plate should be 2 pieces"
 
     type14_12 = analyze_single("14-12B-1005")
     assert not type14_12.error, f"Type 14 12B should calculate: {type14_12.error}"
     assert _h02_entry(type14_12, 2).quantity == 2, "Type 14 12B should use double channel"
-    assert _h02_entry(type14_12, 2).remark == "detail_a_double_channel_for_10in_and_12in", "Type 14 12B detail-a remark missing"
+    assert _h02_entry(type14_12, 2).geometry.parameters["detail_a"] is True, "Type 14 12B detail-a geometry missing"
     assert _h02_entry(type14_12, 3).quantity == 4, "Type 14 12B wing plate should be 4 pieces"
     assert _h02_entry(type14_12, 4).quantity == 2, "Type 14 12B stopper plate should be 2 pieces"
 
     type16 = analyze_single("16-2B-05")
     assert not type16.error, f"Type 16 should calculate: {type16.error}"
-    assert _h02_names(type16) == ["管路", "管路", "Plate"], f"Type 16 BOM sequence changed: {_h02_names(type16)}"
-    assert _h02_entry(type16, 1).length == 206, f"Type 16 main pipe length changed: {_h02_entry(type16, 1).length}"
-    assert _h02_entry(type16, 1).material == "SUS304", f"Type 16 main pipe material changed: {_h02_entry(type16, 1).material}"
-    assert _h02_entry(type16, 2).length == 670, f"Type 16 support pipe length changed: {_h02_entry(type16, 2).length}"
-    assert _h02_entry(type16, 2).material == "A53Gr.B", f"Type 16 support pipe material changed: {_h02_entry(type16, 2).material}"
-    assert (_h02_entry(type16, 3).length, _h02_entry(type16, 3).width, _h02_entry(type16, 3).spec) == (70, 70, "6"), "Type 16 plate changed"
+    assert _h02_names(type16) == ["管路", "COVER PLATE"], f"Type 16 BOM sequence changed: {_h02_names(type16)}"
+    assert _h02_entry(type16, 1).length == 800, "Type 16 nominal cut must be H500+C300=800"
+    assert (_h02_entry(type16, 2).length, _h02_entry(type16, 2).width, _h02_entry(type16, 2).spec) == (70, 70, "6"), "Type 16 cover plate changed"
+    assert type16.meta["fabrication"]["dimensions"]["cut_length_formula"] == "H + C"
     _expect_pipe_weight(_h02_entry(type16, 1))
-    _expect_pipe_weight(_h02_entry(type16, 2))
-    _expect_plate_weight(_h02_entry(type16, 3))
+    _expect_plate_weight(_h02_entry(type16, 2))
 
     type16_6b = analyze_single("16-6B-05")
     assert not type16_6b.error, f"Type 16 6B should calculate: {type16_6b.error}"
-    assert _h02_entry(type16_6b, 1).length == 413, f"Type 16 6B main pipe length changed: {_h02_entry(type16_6b, 1).length}"
-    assert _h02_entry(type16_6b, 1).material == "SUS304", f"Type 16 6B main pipe material changed: {_h02_entry(type16_6b, 1).material}"
-    assert _h02_entry(type16_6b, 2).length == 616, f"Type 16 6B support pipe length changed: {_h02_entry(type16_6b, 2).length}"
-    assert _h02_entry(type16_6b, 2).material == "A53Gr.B", f"Type 16 6B support pipe material changed: {_h02_entry(type16_6b, 2).material}"
-    assert (_h02_entry(type16_6b, 3).length, _h02_entry(type16_6b, 3).width, _h02_entry(type16_6b, 3).spec) == (140, 140, "6"), "Type 16 6B plate changed"
+    assert _h02_names(type16_6b) == ["管路", "COVER PLATE"], f"Type 16 6B BOM sequence changed: {_h02_names(type16_6b)}"
+    assert _h02_entry(type16_6b, 1).length == 800, "Type 16 6B nominal cut must be H500+C300=800"
+    assert (_h02_entry(type16_6b, 2).length, _h02_entry(type16_6b, 2).width, _h02_entry(type16_6b, 2).spec) == (140, 140, "6"), "Type 16 6B plate changed"
     for entry in type16_6b.entries:
         if entry.name == "管路":
             _expect_pipe_weight(entry)
@@ -791,7 +765,7 @@ try:
     assert not type03.error, f"Type 03 should calculate: {type03.error}"
     assert type03.entries[0].name == "角鋼", f"Type 03 first entry should be vertical angle: {type03.entries[0].name}"
     assert type03.entries[0].length == 574.8, f"Type 03 vertical angle formula changed: {type03.entries[0].length}"
-    assert "LR弓頭中心=38.1" in type03.entries[0].geometry.notes_zh or "LR elbow center=38.1" in type03.entries[0].remark, f"Type 03 vertical angle remark missing formula: {type03.entries[0].remark}"
+    assert "彎頭中心半徑=38.1" in type03.entries[0].geometry.notes_zh or "彎頭中心半徑=38.1" in type03.entries[0].remark, f"Type 03 vertical angle remark missing formula: {type03.entries[0].remark}"
     assert type03.entries[1].length == 130, f"Type 03 horizontal angle length changed: {type03.entries[1].length}"
     assert type03.entries[3].name == "Plate_c_有鑽孔", f"Type 03 M42 Type-L plate changed: {[entry.name for entry in type03.entries]}"
     assert type03.entries[4].name == "EXP.BOLT" and type03.entries[4].quantity == 4, f"Type 03 M42 Type-L bolt changed: {[entry.name for entry in type03.entries]}"
@@ -800,21 +774,30 @@ try:
     assert not type05.error, f"Type 05 should calculate: {type05.error}"
     assert type05.entries[0].name == "角鋼", f"Type 05 first entry should be vertical angle: {type05.entries[0].name}"
     assert type05.entries[0].length == 485, f"Type 05 vertical angle should subtract 15mm offset: {type05.entries[0].length}"
-    assert "頂端偏移=15" in type05.entries[0].geometry.notes_zh or "top offset=15" in type05.entries[0].remark, f"Type 05 vertical angle remark missing formula: {type05.entries[0].remark}"
+    assert "頂端偏移15" in type05.entries[0].geometry.notes_zh or "頂端偏移15" in type05.entries[0].remark, f"Type 05 vertical angle remark missing formula: {type05.entries[0].remark}"
     assert type05.entries[1].length == 130, f"Type 05 horizontal angle length changed: {type05.entries[1].length}"
     assert type05.entries[2].name == "Plate_c_有鑽孔", f"Type 05 M42 Type-L plate changed: {[entry.name for entry in type05.entries]}"
     assert type05.entries[3].name == "EXP.BOLT" and type05.entries[3].quantity == 4, f"Type 05 M42 Type-L bolt changed: {[entry.name for entry in type05.entries]}"
 
     type06 = analyze_single("06-L50-0510-0401")
     assert not type06.error, f"Type 06 should calculate: {type06.error}"
-    assert [entry.name for entry in type06.entries] == ["角鋼", "角鋼"], (
+    assert [entry.name for entry in type06.entries] == [
+        "角鋼",
+        "角鋼",
+        "LUG PLATE TYPE-F",
+        "K BOLT",
+    ], (
         f"Type 06 BOM sequence changed: {[entry.name for entry in type06.entries]}"
     )
-    assert [entry.length for entry in type06.entries] == [500, 1000], (
+    assert [entry.length for entry in type06.entries[:2]] == [500, 1000], (
         f"Type 06 member lengths changed: {[entry.length for entry in type06.entries]}"
     )
-    assert any("H值長是欲保留現場裁切預量" in warning for warning in type06.warnings), (
-        f"Type 06 H field-trim warning missing: {type06.warnings}"
+    assert type06.entries[2].geometry.component_id == "M37-LGP-F-1"
+    assert type06.entries[2].geometry.holes.count == 2
+    assert type06.entries[3].geometry.component_id == "D6-K-BOLT"
+    assert type06.entries[3].quantity == 2
+    assert any("A+B" in warning for warning in type06.warnings), (
+        f"Type 06 A+B assembly warning missing: {type06.warnings}"
     )
 
     type07 = analyze_single("07-2B-20J")
@@ -825,8 +808,8 @@ try:
     assert type07.entries[1].name == "管路" and type07.entries[1].length == 1782, (
         f"Type 07 Pipe C should be H-200-PlateF-M42: {type07.entries[1]}"
     )
-    assert any("H值長是欲保留現場裁切預量" in warning for warning in type07.warnings), (
-        f"Type 07 H field-trim warning missing: {type07.warnings}"
+    assert any("H需現場調整" in blocker for blocker in type07.meta["fabrication"]["blockers"]), (
+        f"Type 07 field-fit blocker missing: {type07.meta['fabrication']}"
     )
 
     type08 = analyze_single("08-2B-1005G")
@@ -868,15 +851,15 @@ try:
     )
     assert type26_c.entries[3].name == "LUG_PLATE_C", f"Type 26 Fig-C lug plate missing: {[entry.name for entry in type26_c.entries]}"
     assert type26_c.entries[3].quantity == 2, f"Type 26 Fig-C should use 2 lug plates: {type26_c.entries[3].quantity}"
-    assert type26_c.entries[4].name == "BOLT", f"Type 26 Fig-C K bolt missing: {[entry.name for entry in type26_c.entries]}"
-    assert type26_c.entries[4].quantity == 8, f"Type 26 Fig-C should use 8 K bolts: {type26_c.entries[4].quantity}"
+    assert type26_c.entries[4].name == "K BOLT", f"Type 26 Fig-C K bolt missing: {[entry.name for entry in type26_c.entries]}"
+    assert type26_c.entries[4].quantity == 8, f"Type 26 Fig-C should use 8 K bolts for two four-hole M-34 plates: {type26_c.entries[4].quantity}"
 
     type25_c = analyze_single("25-L50-0505C-0401")
     assert not type25_c.error, f"Type 25 Fig-C should calculate: {type25_c.error}"
     assert type25_c.entries[2].name == "LUG_PLATE_C", f"Type 25 Fig-C lug plate missing: {[entry.name for entry in type25_c.entries]}"
     assert type25_c.entries[2].quantity == 1, f"Type 25 Fig-C should use 1 lug plate: {type25_c.entries[2].quantity}"
-    assert type25_c.entries[3].name == "BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
-    assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts: {type25_c.entries[3].quantity}"
+    assert type25_c.entries[3].name == "K BOLT", f"Type 25 Fig-C K bolt missing: {[entry.name for entry in type25_c.entries]}"
+    assert type25_c.entries[3].quantity == 4, f"Type 25 Fig-C should use 4 K bolts for one four-hole M-34 plate: {type25_c.entries[3].quantity}"
 
     print("v type03/type05/type06/type07/type08/type20/type26 structural guardrails OK")
 except Exception as e:
@@ -925,31 +908,17 @@ try:
     assert any("OD*pi/3" in warning for warning in small.warnings), f"small Pad_52Type practical width warning missing: {small.warnings}"
 
     large = analyze_single("66-10B(P)-A-150-250")
-    assert not large.error, f"Type 66 large pad should calculate: {large.error}"
-    large_pad = _entry_by_name(large, "Pad_52Type")
-    large_od = get_pipe_details(10, "10S")["od_mm"]
-    large_t_sch10s = get_pipe_details(10, "10S")["thickness_mm"]
-    assert large_pad.length == 400, f"large Pad_52Type length should be E*2+50+250: {large_pad.length}"
-    assert large_pad.width == round(large_od * math.pi / 3), f"large Pad_52Type 120-degree width changed: {large_pad.width}"
-    assert large_pad.spec == str(large_t_sch10s), f"large Pad_52Type thickness should be Sch10S wall ({large_t_sch10s}mm): {large_pad.spec}"
-
-    h_beam = _entry_by_name(large, "H型鋼")
-    assert h_beam.length == 300, f"H Beam length should be LOPS+50: {h_beam.length}"
-
-    fb3 = _entry_by_name(large, "FB_52Type_3")
-    assert fb3.quantity == 4, f"FB_52Type_3 should be 4 pieces for 10 inch and larger: {fb3.quantity}"
-    assert fb3.length == 150, f"FB_52Type_3 length should use HOPS: {fb3.length}"
-    assert fb3.width == 130, f"FB_52Type_3 width should use table A: {fb3.width}"
-    assert "not fabrication height" in fb3.remark, f"FB_52Type_3 calculation-height marker missing: {fb3.remark}"
+    assert large.error and "尚未達可出加工圖程度" in large.error, (
+        f"Type 66 10in calculation-only gusset geometry must block: {large.error}"
+    )
+    assert not large.entries, "blocked Type 66 must not emit approximate fabrication BOM"
 
     compact = analyze_single("66-14B(P)-100-300")
-    assert not compact.error, f"Type 66 compact HOPS/LOPS format should calculate: {compact.error}"
-    compact_h_beam = _entry_by_name(compact, "H型鋼")
-    compact_fb3 = _entry_by_name(compact, "FB_52Type_3")
-    assert compact_h_beam.length == 350, f"compact Type 66 H Beam should use LOPS+50: {compact_h_beam.length}"
-    assert compact_fb3.length == 100, f"compact Type 66 FB_52Type_3 should use HOPS: {compact_fb3.length}"
+    assert compact.error and "尚未達可出加工圖程度" in compact.error, (
+        f"Type 66 compact 14in geometry must also block: {compact.error}"
+    )
 
-    print("v type52/type66 pad and FB guardrails OK")
+    print("v type52/type66 pad and fabrication-readiness guardrails OK")
 except Exception as e:
     record_failure(f"X type52/type66 pad and FB guardrails ERROR: {e}")
 
@@ -968,7 +937,7 @@ try:
         ("20", "20-L50-05A"),
         ("21", "21-L50-05A"),
         ("22", "22-L50-05(A)L"),
-        ("22", "22-L75-12(A)X"),
+        ("22", "22-L75-12(A)L"),
         ("23", "23-L50-05A"),
         ("24", "24-L50-05"),
         ("25", "25-L50-0505A"),
@@ -976,7 +945,7 @@ try:
         ("26", "26-L50-1005A"),
         ("26", "26-L50-1005C"),
         ("27", "27-L75-0505L-0401"),
-        ("27", "27-L50-0204X-0101"),
+        ("27", "27-L50-0204L-0101"),
         ("27", "27-H150-0505L-0401"),
         ("28", "28-L50-1005L"),
         ("30", "30-L75-0505A-0401"),
@@ -1001,13 +970,18 @@ try:
         ("59", "59-1.1/2B-B(S)"),
         ("80", "80-2B(P)-A(A)-130-500"),
         ("80", "80-30B-A(A)-130-500"),
-        ("66", "66-14B(P)-100-300"),
         ("66", "66-1.1/2B(P)-A-150-150"),
     ]
 
     def _assert_entry_sane(entry, designation):
         assert entry.quantity > 0, f"{designation} entry {entry.item_no} has non-positive quantity"
         assert entry.factor >= 0, f"{designation} entry {entry.item_no} has negative factor"
+        assert math.isclose(
+            entry.qty_subtotal,
+            entry.quantity * entry.factor,
+            rel_tol=0,
+            abs_tol=1e-9,
+        ), f"{designation} entry {entry.item_no} has inconsistent quantity subtotal"
         assert entry.unit_weight >= 0, f"{designation} entry {entry.item_no} has negative unit weight"
         assert entry.total_weight >= 0, f"{designation} entry {entry.item_no} has negative total weight"
         assert entry.weight_output >= 0, f"{designation} entry {entry.item_no} has negative weight output"
@@ -1016,10 +990,29 @@ try:
         if entry.width:
             assert 0 < entry.width < 10000, f"{designation} entry {entry.item_no} unreasonable width: {entry.width}"
         if entry.category in ("型鋼類", "管路類"):
-            assert entry.length > 0, f"{designation} {entry.name} should have positive takeoff length"
+            if entry.length <= 0:
+                blockers = getattr(entry.geometry, "fabrication_blockers", [])
+                assert any("cut" in item.lower() or "切" in item for item in blockers), (
+                    f"{designation} {entry.name} zero takeoff must have a field-cut blocker"
+                )
         if entry.category == "鋼板類":
-            assert entry.length > 0 and entry.width > 0, f"{designation} {entry.name} should have plate dimensions"
-            assert float(entry.spec) > 0, f"{designation} {entry.name} should have positive plate thickness"
+            if entry.item_class == "reference_only":
+                assert entry.geometry.fabrication_blockers, (
+                    f"{designation} unresolved plate reference must carry a fabrication blocker"
+                )
+            else:
+                assert entry.density_g_cm3 > 0, (
+                    f"{designation} {entry.name} plate weight must expose its density"
+                )
+                assert entry.density_source, (
+                    f"{designation} {entry.name} plate weight must expose density source"
+                )
+                if entry.density_requires_review:
+                    assert "unverified" in entry.density_source, (
+                        f"{designation} {entry.name} review density must be marked unverified"
+                    )
+                assert entry.length > 0 and entry.width > 0, f"{designation} {entry.name} should have plate dimensions"
+                assert float(entry.spec) > 0, f"{designation} {entry.name} should have positive plate thickness"
 
     priority_results = {}
     for type_id, designation in _PRIORITY_TYPE_CASES:
@@ -1027,109 +1020,131 @@ try:
         priority_results[designation] = result
         assert not result.error, f"{designation} should calculate for priority project: {result.error}"
         assert result.entries, f"{designation} should produce BOM entries"
-        assert result.total_weight > 0, f"{designation} should have positive total weight"
+        if type_id == "57":
+            assert result.total_weight > 0, (
+                f"{designation} must retain the source-derived M-26 rod-only weight"
+            )
+            assert result.entries[0].geometry.parameters["developed_length_formula"] == (
+                "pi * B / 2 + 2 * E"
+            )
+            assert result.entries[-1].quantity == 4 and result.entries[-1].unit_weight > 0, (
+                f"{designation} must include four theoretically weighted finished nuts"
+            )
+            assert "proportional finished-hex-nut" in result.entries[-1].geometry.parameters[
+                "weight_basis"
+            ]
+        elif designation in {"51-26B", "80-30B-A(A)-130-500"}:
+            assert result.total_weight == 0, (
+                f"{designation} has unresolved fabrication geometry and must not invent weight"
+            )
+            assert result.meta["fabrication"]["bom_ready"] is False
+        else:
+            assert result.total_weight > 0, f"{designation} should have positive total weight"
         for entry in result.entries:
             _assert_entry_sane(entry, designation)
 
     type27_h150 = priority_results["27-H150-0505L-0401"]
     type28_l50 = priority_results["28-L50-1005L"]
     type27_l75 = priority_results["27-L75-0505L-0401"]
-    type27_l50_x = priority_results["27-L50-0204X-0101"]
-    l75_remarks = Counter(entry.remark for entry in type27_l75.entries)
-    h150_remarks = Counter(entry.remark for entry in type27_h150.entries)
-    h150_names = Counter(entry.name for entry in type27_h150.entries)
-    assert l75_remarks["Column, H=500-15=485, L1=400, L2=100"] == 1, "Type 27 angle version should split column steel entry"
-    assert l75_remarks["Top support beam, L=500, L1=400, L2=100"] == 1, "Type 27 angle version should split top support beam steel entry"
-    assert type27_l75.entries[0].length == 485 and type27_l75.entries[1].length == 500, "Type 27 angle steel lengths changed"
-    assert any("M-42 型式 'X' 非標準" in warning for warning in type27_l50_x.warnings), "Type 27 nonstandard M42 warning missing"
-    assert type27_l50_x.entries[0].length == 385 and type27_l50_x.entries[1].length == 200, "Type 27 angle X-case lengths changed"
-    assert h150_remarks["Column"] == 1, "Type 27 H150 should include one Column steel entry"
-    assert h150_remarks["Top support beam"] == 1, "Type 27 H150 should include one Top support beam steel entry"
-    assert h150_names["Plate_6t_Side"] == 1, "Type 27 H150 side plate line missing"
-    assert h150_names["Plate_9t_Wing"] == 1, "Type 27 H150 wing plate line missing"
-    assert h150_names["Plate_6t_Top"] == 0, "Type 27 H150 should not include top plate"
+    type27_l50_x = priority_results["27-L50-0204L-0101"]
+    for designation, result in (
+        ("27-L75-0505L-0401", type27_l75),
+        ("27-L50-0204L-0101", type27_l50_x),
+    ):
+        excluded_ids = {
+            item.get("component_id")
+            for item in result.meta.get("excluded_bom_components", [])
+        }
+        assert {"D30-MEMBER-M", "D30-TOP-PLATE", "M42-FASTENER"} <= excluded_ids, (
+            f"{designation} unresolved member/top plate/anchor must stay traceable outside BOM: "
+            f"{excluded_ids}"
+        )
+        assert all(entry.length > 0 for entry in result.entries), (
+            f"{designation} must not emit zero-length material rows"
+        )
+        assert result.meta["fabrication"]["bom_ready"] is False
+    h150_ids = Counter(entry.geometry.component_id for entry in type27_h150.entries)
+    h150_excluded_ids = {
+        item.get("component_id")
+        for item in type27_h150.meta.get("excluded_bom_components", [])
+    }
+    assert {"D30-MEMBER-M", "D30-TOP-PLATE", "M42-FASTENER"} <= h150_excluded_ids, (
+        "Type 27 H150 unresolved material must remain traceable outside BOM"
+    )
+    assert h150_ids["D30-GUSSET-PLATE"] == 1, "Type 27 H150 should include one QTY2 gusset BOM line"
+    assert not any(entry.name == "Plate_6t_Side" for entry in type27_h150.entries), "3 SIDES TYP is a weld note, not fake plates"
     assert any("Plate_" in entry.name and "有鑽孔" in entry.name for entry in type27_h150.entries), "Type 27 H150 M42 base plate missing"
-    assert any(entry.name == "EXP.BOLT" for entry in type27_h150.entries), "Type 27 H150 anchor bolt missing"
+    assert not any(entry.name == "EXP.BOLT" for entry in type27_h150.entries), (
+        "Type 27 H150 diameter-only anchor must not become a zero-weight BOM row"
+    )
 
     type28_names = [entry.name for entry in type28_l50.entries]
-    type28_remarks = [entry.remark for entry in type28_l50.entries[:3]]
     type28_lengths = [entry.length for entry in type28_l50.entries[:3]]
     assert type28_names[:3] == ["角鋼", "角鋼", "角鋼"], f"Type 28 should split portal frame into three steel entries: {type28_names}"
     assert type28_lengths == [500, 1000, 500], f"Type 28 left/top/right lengths changed: {type28_lengths}"
-    assert type28_remarks == [
-        "Left leg, H=500 (Angle:可U-bolt側掛)",
-        "Top beam, L=1000 (Angle:可U-bolt側掛)",
-        "Right leg, H=500 (Angle:可U-bolt側掛)",
-    ], f"Type 28 steel remarks changed: {type28_remarks}"
-    assert any("Plate_" in entry.name and "有鑽孔" in entry.name for entry in type28_l50.entries), "Type 28 M42 base plate missing"
-    assert any(entry.name == "EXP.BOLT" for entry in type28_l50.entries), "Type 28 anchor bolt missing"
+    assert [entry.geometry.component_id for entry in type28_l50.entries[:3]] == [
+        "D31-LEFT-LEG", "D31-TOP-BEAM", "D31-RIGHT-LEG"
+    ]
+    assert sum(
+        entry.quantity
+        for entry in type28_l50.entries
+        if "Plate_" in entry.name and "有鑽孔" in entry.name
+    ) == 2, "Type 28 requires two M42 base plates represented as one QTY2 BOM line"
+    assert not any(entry.name == "EXP.BOLT" for entry in type28_l50.entries), (
+        "Type 28 diameter-only anchors must not become zero-weight BOM rows"
+    )
+    assert any(
+        item.get("component_id") == "D31-M42-BOTH-2"
+        for item in type28_l50.meta.get("excluded_bom_components", [])
+    ), "Type 28 unresolved anchor set must remain traceable outside BOM"
 
     type30_a = priority_results["30-L75-0505A-0401"]
     type30_names = [entry.name for entry in type30_a.entries]
     type30_lengths = [entry.length for entry in type30_a.entries]
-    type30_remarks = [entry.remark for entry in type30_a.entries]
     assert type30_names == ["角鋼", "角鋼"], f"Type 30 Fig-A should split into column + top beam: {type30_names}"
-    assert type30_lengths == [500, 500], f"Type 30 Fig-A lengths changed: {type30_lengths}"
-    assert type30_remarks == [
-        "FIG-A, Column, H=500, L1=400, L2=100",
-        "FIG-A, Top beam, L=500, L1=400, L2=100",
-    ], f"Type 30 Fig-A remarks changed: {type30_remarks}"
+    assert type30_lengths == [485, 500], f"Type 30 Fig-A H member must use H-15: {type30_lengths}"
+    assert [entry.geometry.component_id for entry in type30_a.entries] == ["D35-MEMBER-H", "D35-MEMBER-L"]
 
     type30_b = analyze_single("30-L75-0505B-0401")
     assert not type30_b.error, f"Type 30 Fig-B should calculate: {type30_b.error}"
     assert [entry.name for entry in type30_b.entries] == ["角鋼", "角鋼"], f"Type 30 Fig-B should split into column + top beam: {[entry.name for entry in type30_b.entries]}"
     assert [entry.length for entry in type30_b.entries] == [485, 500], f"Type 30 Fig-B lengths changed: {[entry.length for entry in type30_b.entries]}"
-    assert [entry.remark for entry in type30_b.entries] == [
-        "FIG-B, Column, H=500-15=485, L1=400, L2=100",
-        "FIG-B, Top beam, L=500, L1=400, L2=100",
-    ], f"Type 30 Fig-B remarks changed: {[entry.remark for entry in type30_b.entries]}"
+    assert [entry.geometry.component_id for entry in type30_b.entries] == ["D35-MEMBER-H", "D35-MEMBER-L"]
 
     type31 = priority_results["31-L50-1005"]
     assert [entry.name for entry in type31.entries] == ["角鋼", "角鋼", "角鋼"], f"Type 31 should split into left leg + top beam + right leg: {[entry.name for entry in type31.entries]}"
     assert [entry.length for entry in type31.entries] == [500, 1000, 500], f"Type 31 lengths changed: {[entry.length for entry in type31.entries]}"
-    assert [entry.remark for entry in type31.entries] == [
-        "Left leg, H=500",
-        "Top beam, L=1000",
-        "Right leg, H=500",
-    ], f"Type 31 remarks changed: {[entry.remark for entry in type31.entries]}"
+    assert [entry.geometry.component_id for entry in type31.entries] == ["D36-LEG-1", "D36-TOP-BEAM", "D36-LEG-2"]
 
     type32 = priority_results["32-L50-1005"]
     assert [entry.name for entry in type32.entries] == ["角鋼", "角鋼", "角鋼"], f"Type 32 should split into left leg + bottom beam + right leg: {[entry.name for entry in type32.entries]}"
     assert [entry.length for entry in type32.entries] == [500, 1000, 500], f"Type 32 lengths changed: {[entry.length for entry in type32.entries]}"
-    assert [entry.remark for entry in type32.entries] == [
-        "Left leg, H=500",
-        "Bottom beam, L=1000",
-        "Right leg, H=500",
-    ], f"Type 32 remarks changed: {[entry.remark for entry in type32.entries]}"
+    assert [entry.geometry.component_id for entry in type32.entries] == ["D37-HANGER-LEG-1", "D37-BOTTOM-BEAM", "D37-HANGER-LEG-2"]
 
     type33 = priority_results["33-L50-1005"]
     assert [entry.name for entry in type33.entries] == ["角鋼", "角鋼"], f"Type 33 should stay as column + bottom beam half-frame: {[entry.name for entry in type33.entries]}"
     assert [entry.length for entry in type33.entries] == [500, 1000], f"Type 33 lengths changed: {[entry.length for entry in type33.entries]}"
-    assert [entry.remark for entry in type33.entries] == [
-        "懸臂框H向(立柱), H=500",
-        "懸臂框L向(下梁), L=1000",
-    ], f"Type 33 remarks changed: {[entry.remark for entry in type33.entries]}"
+    assert [entry.geometry.component_id for entry in type33.entries] == ["D38-END-POST", "D38-BOTTOM-BEAM"]
 
     type34 = priority_results["34-L50-1005"]
     assert [entry.name for entry in type34.entries] == ["角鋼", "角鋼"], f"Type 34 should stay as column + top beam cantilever: {[entry.name for entry in type34.entries]}"
     assert [entry.length for entry in type34.entries] == [500, 1000], f"Type 34 lengths changed: {[entry.length for entry in type34.entries]}"
-    assert [entry.remark for entry in type34.entries] == [
-        "懸臂梁H向(立柱), H=500",
-        "懸臂梁L向(上梁), L=1000",
-    ], f"Type 34 remarks changed: {[entry.remark for entry in type34.entries]}"
+    assert [entry.geometry.component_id for entry in type34.entries] == [
+        "D39-END-POST", "D39-TOP-BEAM"
+    ], f"Type 34 component mapping changed: {[entry.geometry.component_id for entry in type34.entries]}"
 
     type35_a = priority_results["35-C125-05A"]
     assert [entry.name for entry in type35_a.entries] == ["槽鐵"], f"Type 35 FIG-A should stay a single support rail entry: {[entry.name for entry in type35_a.entries]}"
-    assert [(entry.length, entry.quantity, entry.remark) for entry in type35_a.entries] == [
-        (500, 1, "托條 FIG-A, H=500"),
-    ], f"Type 35 FIG-A changed: {[(entry.length, entry.quantity, entry.remark) for entry in type35_a.entries]}"
+    assert [(entry.length, entry.quantity, entry.geometry.component_id) for entry in type35_a.entries] == [
+        (500, 1, "D40-MEMBER-FIG-A"),
+    ], f"Type 35 FIG-A changed: {[(entry.length, entry.quantity, entry.geometry.component_id) for entry in type35_a.entries]}"
 
     type35_b = analyze_single("35-C125-05B")
     assert not type35_b.error, f"Type 35 FIG-B should calculate: {type35_b.error}"
-    assert [entry.name for entry in type35_b.entries] == ["槽鐵"], f"Type 35 FIG-B should stay a single line with qty=2: {[entry.name for entry in type35_b.entries]}"
-    assert [(entry.length, entry.quantity, entry.remark) for entry in type35_b.entries] == [
-        (500, 2, "托條 FIG-B(雙條), H=500 ×2"),
-    ], f"Type 35 FIG-B changed: {[(entry.length, entry.quantity, entry.remark) for entry in type35_b.entries]}"
+    assert [entry.name for entry in type35_b.entries] == ["槽鐵"], f"Type 35 FIG-B should stay one member: {[entry.name for entry in type35_b.entries]}"
+    assert [(entry.length, entry.quantity, entry.geometry.component_id) for entry in type35_b.entries] == [
+        (500, 1, "D40-MEMBER-FIG-B"),
+    ], f"Type 35 FIG-B changed: {[(entry.length, entry.quantity, entry.geometry.component_id) for entry in type35_b.entries]}"
 
     type51_small = priority_results["51-2B"]
     assert [(entry.name, entry.length, entry.width, entry.quantity, entry.remark) for entry in type51_small.entries] == [
@@ -1140,15 +1155,24 @@ try:
     assert [(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_mid.entries] == [
         ("角鋼", "50*50*6", 125, 2),
     ], f"Type 51 4-24in member path should use table H length: {[(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_mid.entries]}"
-    assert type51_mid.entries[0].remark == "Member M, ×2, H=125mm, 兩側3mm gap, 長度≤梁寬(NOTE 2)", f"Type 51 mid-pipe remark changed: {type51_mid.entries[0].remark}"
+    assert type51_mid.entries[0].geometry.parameters == {
+        "cut_length_mm": 125, "quantity": 2,
+        "pipe_side_gap_mm": 3, "fillet_weld_mm": 6,
+    }, f"Type 51 mid-pipe fabrication parameters changed: {type51_mid.entries[0].geometry.parameters}"
 
     type51_large = priority_results["51-26B"]
     assert [(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_large.entries[:1]] == [
-        ("槽鐵", "125*65*6", 300, 2),
-    ], f"Type 51 large-pipe channel path changed: {[(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_large.entries]}"
-    assert len(type51_large.entries) == 2 and type51_large.entries[1].name == "PIPE PAD", f"Type 51 large-pipe D-91 pad missing: {[(entry.name, entry.spec) for entry in type51_large.entries]}"
-    assert type51_large.entries[1].spec == "12" and type51_large.entries[1].length == 400 and type51_large.entries[1].width > 0, f"Type 51 large-pipe pad dimensions changed: {(type51_large.entries[1].spec, type51_large.entries[1].length, type51_large.entries[1].width)}"
-    assert "D-91 reinforcing pad" in type51_large.entries[1].remark, f"Type 51 large-pipe pad remark changed: {type51_large.entries[1].remark}"
+        ("MEMBER M", "C125*65*6", 0, 2),
+    ], f"Type 51 large-pipe must not restore the retired 300mm channel guess: {[(entry.name, entry.spec, entry.length, entry.quantity) for entry in type51_large.entries]}"
+    assert type51_large.meta["fabrication"]["bom_ready"] is False
+    assert len(type51_large.entries) == 2 and type51_large.entries[1].name == "REINFORCING PAD", f"Type 51 large-pipe D-91 reference missing: {[(entry.name, entry.spec) for entry in type51_large.entries]}"
+    assert type51_large.entries[1].spec == "SEE D-91" and type51_large.entries[1].unit_weight == 0, (
+        f"Type 51 large-pipe pad must remain an unresolved zero-weight reference: "
+        f"{(type51_large.entries[1].spec, type51_large.entries[1].unit_weight)}"
+    )
+    assert type51_large.entries[1].geometry.parameters["d62a_contact_angle_deg"] == 80
+    assert type51_large.entries[1].geometry.parameters["d91_pad_angle_deg"] == 120
+    assert type51_large.entries[1].geometry.component_id == "D91-REINFORCING-PAD-REFERENCE"
 
     type52 = priority_results["52-2B(P)-A(A)-130-500"]
     type53 = priority_results["53-2B(P)-A(A)-130-500"]
@@ -1169,39 +1193,50 @@ try:
 
     type57_slide = priority_results["57-2B-A"]
     type57_fixed = analyze_single("57-2B-B")
-    assert [(entry.name, entry.spec, entry.material, entry.quantity) for entry in type57_slide.entries] == [
-        ("U-BOLT", "UB-2B", "Carbon Steel", 1),
-        ("FINISHED HEX NUT", '3/8"', "Carbon Steel", 4),
-    ], f"Type 57 should use M-26 U-bolt + four hex nuts: {[(entry.name, entry.spec, entry.material, entry.quantity) for entry in type57_slide.entries]}"
-    assert "M-26, SLIDE" in type57_slide.entries[0].remark and "B/C/D/E=62/71/58/74" in type57_slide.entries[0].remark, f"Type 57 slide M-26 metadata missing: {type57_slide.entries[0].remark}"
-    assert not type57_fixed.error and "M-26, FIXED" in type57_fixed.entries[0].remark, f"Type 57 fixed mode failed: {type57_fixed.error or type57_fixed.entries[0].remark}"
+    assert [entry.name for entry in type57_slide.entries] == [
+        "M-26 U-BOLT ROD",
+        "M-26 FINISHED HEX NUTS",
+    ], f"Type 57 should emit the M-26 rod and four nuts separately: {[entry.name for entry in type57_slide.entries]}"
+    assert type57_slide.entries[1].quantity == 4
+    assert type57_slide.entries[1].unit_weight > 0
+    assert type57_slide.entries[0].geometry.parameters["mode"] == "A"
+    assert [type57_slide.entries[0].geometry.parameters[key] for key in ("B", "C", "D", "E")] == [62, 71, 58, 74]
+    assert math.isclose(type57_slide.entries[0].length, math.pi * 62 / 2 + 2 * 74)
+    assert not type57_fixed.error and type57_fixed.entries[0].geometry.parameters["mode"] == "B"
 
     type59_b = priority_results["59-1.1/2B-B(S)"]
-    assert [(entry.name, entry.display_spec, entry.material, entry.quantity) for entry in type59_b.entries] == [
-        ("TYPE 59 翼形角板", "A80 x B55 x P25 x C15 x t6", "A240-304", 1),
-    ], f"Type 59 should only output D-70 wing lug plate: {[(entry.name, entry.display_spec, entry.material, entry.quantity) for entry in type59_b.entries]}"
+    assert [entry.name for entry in type59_b.entries] == [
+        "TYPE 59 翼形角板",
+        "M-26 U-BOLT ROD",
+        "M-26 FINISHED HEX NUTS",
+    ], f"Type 59 FIG-B must include the drawing-furnished M-26 rod and nuts: {[entry.name for entry in type59_b.entries]}"
+    assert type59_b.entries[0].display_spec == "A80 x B55 x P25 x C15 x t6"
+    assert math.isclose(type59_b.entries[1].length, math.pi * 51 / 2 + 2 * 68)
+    assert type59_b.entries[2].quantity == 4 and type59_b.entries[2].unit_weight > 0
     type59_lug = type59_b.entries[0]
     assert type59_lug.spec == "6" and type59_lug.part_key == "59_lug_plate_wing_a80_b55_p25_c15_t6", f"Type 59 lug identity changed: {(type59_lug.spec, type59_lug.part_key)}"
     assert type59_lug.stock_id.startswith("PL-") and len(type59_lug.stock_id) == 11, f"Type 59 lug stock id invalid: {type59_lug.stock_id}"
-    assert type59_b.warnings == [], f"Type 59 should not emit shoe/U-bolt warnings: {type59_b.warnings}"
+    assert any("proportional hex-nut theoretical weight" in warning for warning in type59_b.warnings), (
+        f"Type 59 must retain its supplier finished-nut confirmation: {type59_b.warnings}"
+    )
 
     type80_small = priority_results["80-2B(P)-A(A)-130-500"]
-    assert [(entry.name, entry.spec, entry.length, entry.quantity, entry.material) for entry in type80_small.entries] == [
-        ("REINFORCING_PAD", "9", 200, 1, "AS"),
-        ("H型鋼", "200*100*5.5", 500, 1, "AS"),
-    ], f"Type 80 D-95 small-pipe model changed: {[(entry.name, entry.spec, entry.length, entry.quantity, entry.material) for entry in type80_small.entries]}"
-    assert "HOPS=130, LOPS=500" in type80_small.entries[1].remark, f"Type 80 D-95 override metadata missing: {type80_small.entries[1].remark}"
+    assert [entry.geometry.component_id for entry in type80_small.entries] == [
+        "D80-REINFORCING-PAD",
+        "D80-MEMBER-C",
+        "D95-BEAM-INTERFACE-MEMBER-C",
+    ], f"Type 80 D-95 must combine the D-80 shoe with its beam-interface member: {[entry.geometry.component_id for entry in type80_small.entries]}"
+    assert type80_small.entries[-1].length == 500
+    assert type80_small.meta["fabrication"]["bom_ready"] is True
 
     type80_big = priority_results["80-30B-A(A)-130-500"]
-    assert [(entry.name, entry.spec, entry.quantity, entry.material) for entry in type80_big.entries] == [
-        ("SADDLE_SIDE_PLATE", "16", 2, "AS"),
-        ("SADDLE_FOOT_PLATE", "16", 1, "AS"),
-        ("SADDLE_ARC_PLATE", "16", 1, "AS"),
-        ("STIFFENER_PLATE", "12", 4, "AS"),
-        ("REINFORCING_PAD", "12", 1, "AS"),
-        ("角鋼", "100*100*10", 2, "AS"),
-    ], f"Type 80 D-96 large-pipe model changed: {[(entry.name, entry.spec, entry.quantity, entry.material) for entry in type80_big.entries]}"
-    assert any("NO.7 has PLATE 6 THK x6" in warning for warning in type80_big.warnings), f"Type 80 D-96 NO.7 warning missing: {type80_big.warnings}"
+    assert [entry.geometry.component_id for entry in type80_big.entries] == [
+        "D96-D80B-LARGE-SHOE-ASSEMBLY",
+        "D96-BEAM-INTERFACE-PARTS",
+    ], f"Type 80 D-96 unresolved assemblies changed: {[entry.geometry.component_id for entry in type80_big.entries]}"
+    assert type80_big.total_weight == 0
+    assert type80_big.meta["fabrication"]["bom_ready"] is False
+    assert all(entry.geometry.fabrication_blockers for entry in type80_big.entries)
 
     print(f"v urgent priority Type guardrails OK ({len(_PRIORITY_TYPE_CASES)} cases + Type 80)")
 except Exception as e:
@@ -1241,9 +1276,9 @@ try:
     coverage = get_component_table_coverage()
     assert coverage["implemented"] == 71, f"expected 71 component modules: {coverage}"
     assert coverage["missing"] == 0, f"expected no missing component modules: {coverage}"
-    assert coverage["lookup_ready"] == 19, f"lookup-ready count changed unexpectedly: {coverage}"
+    assert coverage["lookup_ready"] == 60, f"lookup-ready count changed unexpectedly: {coverage}"
     assert coverage["partial_lookup"] == 3, f"partial-lookup count changed unexpectedly: {coverage}"
-    assert coverage["metadata_only"] == 49, f"metadata-only count failed: {coverage}"
+    assert coverage["metadata_only"] == 8, f"metadata-only count failed: {coverage}"
     assert not MISSING_COMPONENT_TABLES, f"missing list should be empty: {MISSING_COMPONENT_TABLES}"
 
     for component_id, module_file in EXISTING_COMPONENT_TABLES.items():
@@ -1265,6 +1300,186 @@ try:
     print("v full M/N component metadata baseline OK")
 except Exception as e:
     record_failure(f"X full M/N component metadata baseline ERROR: {e}")
+
+# Test Type 49 M-11/M-12/M-41 source tables and integration
+try:
+    from data.m11_table import get_m11_by_line_size
+    from data.m12_table import get_m12_by_line_size
+    from data.m41_table import get_m41_by_line_size
+
+    m11_10 = get_m11_by_line_size(10)
+    m12_10 = get_m12_by_line_size(10)
+    assert (
+        m11_10["installed_overall_mm"],
+        m11_10["stock_thickness_mm"],
+        m11_10["fastener"]["source_bolt_spec"],
+    ) == (514, 9, '5/8"x70'), f"M-11 10in row failed: {m11_10}"
+    assert (
+        m12_10["installed_overall_mm"],
+        m12_10["stock_thickness_mm"],
+        m12_10["fastener"]["source_bolt_spec"],
+    ) == (527, 10, '5/8"x60'), f"M-12 10in row failed: {m12_10}"
+    assert (
+        m12_10["left_straight_projection_mm"],
+        m12_10["right_straight_projection_mm"],
+        m12_10["source_sketch_left_straight_projection_mm"],
+        m12_10["source_sketch_right_straight_projection_mm"],
+        m12_10["straight_split_released"],
+    ) == (None, None, 150, 50, False), f"M-12 L/sketch conflict handling failed: {m12_10}"
+    assert abs(
+        m12_10["developed_length_each_mm"] - 678.5353604829558
+    ) < 1e-9, f"M-12 table-L development failed: {m12_10}"
+
+    m41 = get_m41_by_line_size(14, "Stainless Steel")
+    assert (
+        m41["designation"],
+        m41["quantity"],
+        m41["net_area_mm2"],
+    ) == ("LGP-P-3S", 6, 5250), f"M-41 14in row failed: {m41}"
+
+    type49 = analyze_single(
+        "49-4B-A(B)",
+        source_profile="cw_e25_24_hp6",
+    )
+    assert not type49.error, f"Type 49 released designation failed: {type49.error}"
+    assert [
+        entry.geometry.component_id
+        for entry in type49.entries
+    ] == ["M-11", "M-11-FASTENERS", "M-41"], f"Type 49 component chain failed: {type49.entries}"
+    assert type49.total_weight > 0, "Type 49 known steel weight should be positive"
+    assert type49.meta["fabrication"]["bom_ready"] is False
+    assert type49.meta["fabrication"]["fabrication_ready"] is False
+    assert analyze_single(
+        "49-7B-A",
+        source_profile="cw_e25_24_hp6",
+    ).error, "Type 49 unlisted 7in row must not interpolate"
+    print("v Type 49 M-11/M-12/M-41 source tables OK")
+except Exception as e:
+    record_failure(f"X Type 49 component-table wave ERROR: {e}")
+
+# Test first cold-component dimensional / weight lookup wave
+try:
+    import math
+
+    from data.n9_table import get_n9_lower_component
+    from data.n10_table import get_n10_by_supporting_pipe
+    from data.n12_table import get_n12_clip
+    from data.n12a_table import get_n12a_clip_type3
+    from data.n27_pu_block_table import get_n27_pu_block
+    from data.n28_table import get_n28_by_number
+
+    n10_8 = get_n10_by_supporting_pipe("8in SCH.40")
+    assert n10_8 and n10_8["B_mm"] == 330 and n10_8["plate_K_mm"] == 16, f"N-10 8in row failed: {n10_8}"
+    n9_b = get_n9_lower_component("B", "2in SCH.40", host_type="09C")
+    assert n9_b and n9_b["plate_a_deleted_by_n9_note_1"] and [plate["plate"] for plate in n9_b["plates"]] == ["d"], f"N-9 Type B deletion failed: {n9_b}"
+    n12_2 = get_n12_clip(2, 200)
+    assert n12_2 and n12_2["A_mm"] == 180 and n12_2["plate_thickness_mm"] == 9, f"N-12 Type 2 failed: {n12_2}"
+    n12a_3 = get_n12a_clip_type3(220)
+    assert n12a_3 and n12a_3["A_mm"] == 260 and n12a_3["plate_thickness_mm"] == 12, f"N-12A Type 3 failed: {n12a_3}"
+    n27_1 = get_n27_pu_block(1)
+    expected_n27_volume = 125 * 70 * 50 - 2 * math.pi * 8 ** 2 * 50
+    assert n27_1 and n27_1["net_volume_mm3"] == expected_n27_volume and n27_1["weight_ready"], f"N-27 PUBK-1 failed: {n27_1}"
+    n28_3 = get_n28_by_number(3)
+    assert n28_3 and n28_3["fabrication_ready"] and not n28_3["weight_ready"], f"N-28 WOOD-3 failed: {n28_3}"
+    print("v N-9/N-10/N-12/N-12A/N-27/N-28 cold-component lookups OK")
+except Exception as e:
+    record_failure(f"X first cold-component lookup wave ERROR: {e}")
+
+# Test second cold-component core lookup wave
+try:
+    from data.cold_support_core_tables import (
+        get_cradle_selection,
+        get_n1_dimensions,
+        get_n2_layer_system,
+        get_n3_construction,
+        get_n4_shield,
+        get_n5_material_properties,
+        resolve_cradle_designation,
+    )
+
+    n1_small = get_n1_dimensions("CR41", 24)
+    n1_large = get_n1_dimensions("CR41", 30)
+    n2_150 = get_n2_layer_system(150)
+    n3_150 = get_n3_construction(150, 300)
+    n4_40 = get_n4_shield("CR40", 300)
+    n5_320 = get_n5_material_properties(320)
+    n20_small = get_cradle_selection(0.5, 25)
+    n24_large = get_cradle_selection(30, 25)
+    n26_large = get_cradle_selection(60, 200)
+    ambiguous = resolve_cradle_designation("CR12", 1.5)
+
+    assert n1_small and n1_small["T1_mm"] == 12, f"N-1 small overlap failed: {n1_small}"
+    assert n1_large and n1_large["T1_mm"] == 10 and n1_large["A_mm"] == 706, f"N-1 large overlap failed: {n1_large}"
+    assert n2_150 and (n2_150["inner_layer_mm"], n2_150["middle_layer_mm"], n2_150["outer_layer_mm"]) == (50, 50, 50), f"N-2 150 failed: {n2_150}"
+    assert n3_150["jacket_length_mm"] == 400 and n3_150["inner_layer_foam_length_mm"] == 500, f"N-3 length rules failed: {n3_150}"
+    assert n4_40 and n4_40["T2_mm"] == 5.0, f"N-4 CR40 failed: {n4_40}"
+    assert n5_320 and n5_320["engineering_strength_sf5_kg_cm2"] == 18.59, f"N-5 320 failed: {n5_320}"
+    assert n20_small and n20_small["cradle_no"] == "CR2.5" and n20_small["max_allowable_load_kg"] == 125, f"N-20 row failed: {n20_small}"
+    assert n24_large and (n24_large["F_mm"], n24_large["H_mm"]) == (417, 509), f"N-24 row failed: {n24_large}"
+    assert n26_large and n26_large["cradle_no"] == "CR76", f"N-26 row failed: {n26_large}"
+    assert n26_large["max_allowable_load_source_value"] == 98100, f"N-26 source load failed: {n26_large}"
+    assert n26_large["max_allowable_load_unit"] == "source_conflict", f"N-26 unit status failed: {n26_large}"
+    assert n26_large["max_allowable_load_lb"] is None, f"N-26 canonical load failed: {n26_large}"
+    assert ambiguous and not ambiguous["selection_resolved"] and ambiguous["candidate_insulation_thicknesses_mm"] == [125, 140], f"cold-core ambiguity failed: {ambiguous}"
+    print("v N-1~N-5/N-20~N-26 cold-support core lookups OK")
+except Exception as e:
+    record_failure(f"X second cold-component lookup wave ERROR: {e}")
+
+# Test third cold-component base/restraint lookup wave
+try:
+    from data.cold_restraint_tables import (
+        get_n6_component,
+        get_n7_by_cradle,
+        get_n7a_by_cradle,
+        get_n8_by_cradle,
+        get_n8a_by_line_size,
+    )
+
+    n6 = get_n6_component()
+    n7 = get_n7_by_cradle("CR3")
+    n7a = get_n7a_by_cradle("CR3")
+    n8 = get_n8_by_cradle("CR22")
+    n8a = get_n8a_by_line_size(8)
+
+    assert n6["overall_height_mm"] == 200 and n6["base_plate"]["outside_diameter_mm"] == 150 and not n6["weight_ready"], f"N-6 geometry failed: {n6}"
+    assert n7 and n7["C_overall_mm"] == 105 and n7["D_thread_length_mm"] == 84 and n7["rod_weight_ready"], f"N-7 CR3 failed: {n7}"
+    assert n7a and n7a["C_overall_mm"] == 106 and n7a["D_thread_length_mm"] == 52, f"N-7A CR3 failed: {n7a}"
+    assert n7["rod_developed_length_mm"] != n7a["rod_developed_length_mm"], f"N-7/N-7A variants collapsed: {n7}, {n7a}"
+    assert n8 and n8["thickness_mm"] == 16 and n8["A_mm"] == n8["B_hole_pitch_mm"] + 64 and not n8["weight_ready"], f"N-8 CR22 failed: {n8}"
+    assert n8a and (n8a["R_mm"], n8a["A_mm"], n8a["B_hole_pitch_mm"]) == (113, 380, 316), f"N-8A 8in failed: {n8a}"
+    print("v N-6/N-7/N-7A/N-8/N-8A cold base/restraint lookups OK")
+except Exception as e:
+    record_failure(f"X third cold-component lookup wave ERROR: {e}")
+
+# Test fourth cold-component interface / band lookup wave
+try:
+    import math
+
+    from data.cold_interface_tables import (
+        get_n11_by_size,
+        get_n13_component,
+        get_n14_component,
+        get_n15_by_cradle,
+        get_n16_by_cradle,
+        resolve_n19_designation,
+    )
+
+    n11 = get_n11_by_size("5/8")
+    n13 = get_n13_component()
+    n14 = get_n14_component()
+    n15 = get_n15_by_cradle("CR8")
+    n16 = get_n16_by_cradle("CR40")
+    n19 = resolve_n19_designation("SLP-A-5347-4715")
+
+    assert n11 and (n11["overall_length_mm"], n11["r_c_hole_depth_mm"]) == (127, 70) and n11["design_shear_at_sf5_kg"] == 900.6, f"N-11 5/8 failed: {n11}"
+    assert n13["plate_thickness_mm"] == 10 and n13["elevation"]["hole_count_per_plate"] == 2 and not n13["fabrication_ready"], f"N-13 clip failed: {n13}"
+    assert n14["plate_thickness_mm"] == 12 and n14["elevation"]["hole_pitch_vertical_mm"] == 55 and not n14["weight_ready"], f"N-14 clip failed: {n14}"
+    assert n15 and n15["developed_length_mm"] == math.pi * 122 + 308 and n15["weight_ready"], f"N-15 CR8 failed: {n15}"
+    assert n16 and n16["member_M"]["spec"] == "C180x75x7x10.5" and n16["known_steel_weight_kg"] > 80 and not n16["fabrication_ready"], f"N-16 CR40 failed: {n16}"
+    assert n19 and n19["upper_plate"]["A_length_mm"] == 530 and n19["lower_backing_plate"]["outside_width_mm"] == 174 and n19["ptfe_slide_element"]["thickness_mm"] is None, f"N-19 designation failed: {n19}"
+    print("v N-11/N-13/N-14/N-15/N-16/N-19 cold interface/band lookups OK")
+except Exception as e:
+    record_failure(f"X fourth cold-component lookup wave ERROR: {e}")
 
 # Test m45_table
 try:
@@ -1320,6 +1535,42 @@ try:
 except Exception as e:
     record_failure(f"X m5/m7 PDF designation coverage ERROR: {e}")
 
+# Test M-8/M-9/M-10 high-temperature clamp source tables
+try:
+    from data.m8_table import get_m8_by_line_size
+    from data.m9_table import get_m9_by_line_size
+    from data.m10_table import get_m10_by_line_size
+
+    r_m8_4 = get_m8_by_line_size('4"')
+    r_m9_10 = get_m9_by_line_size('10"')
+    r_m10_24 = get_m10_by_line_size('24"')
+    assert (
+        r_m8_4 is not None
+        and r_m8_4["designation"] == "PCL-E-4B"
+        and r_m8_4["G_formed_steel_size_mm"] == "8 x 51"
+        and r_m8_4["maximum_recommended_load_kg_by_temperature_f"][1050] == 540
+        and not r_m8_4["weight_ready"]
+    ), f"m8 4 failed: {r_m8_4}"
+    assert (
+        r_m9_10 is not None
+        and r_m9_10["designation"] == "PCL-F-10B"
+        and r_m9_10["F_upper_cross_pin_diameter_in"] == '1 1/8"'
+        and r_m9_10["maximum_recommended_load_kg_by_temperature_f"][950] == 3585
+    ), f"m9 10 failed: {r_m9_10}"
+    assert (
+        r_m10_24 is not None
+        and r_m10_24["designation"] == "PCL-G-24B"
+        and r_m10_24["used_on_od_pipe_size_in"] == {"min": 20, "max": 24}
+        and r_m10_24["K_overall_width_mm"] == 781
+        and r_m10_24["maximum_recommended_load_kg_by_temperature_f"][1075] == 5250
+    ), f"m10 24 failed: {r_m10_24}"
+    assert get_m8_by_line_size(7) is None
+    assert get_m9_by_line_size(5) is None
+    assert get_m10_by_line_size(22) is None
+    print("v m8/m9/m10 high-temperature clamp tables OK")
+except Exception as e:
+    record_failure(f"X m8/m9/m10 high-temperature clamp tables ERROR: {e}")
+
 # Test m21_table
 try:
     from data.m21_table import get_m21_by_dia
@@ -1345,12 +1596,12 @@ try:
     rod11 = get_type11_hardware_item("threaded_rod")
     washer11 = get_type11_hardware_item("washer")
     spring11 = build_type11_spring_item("SPR14")
-    type11_result = analyze_single("11-6B-08J")
+    type11_result = analyze_single("11-6B-06J")
     type11_spring_entry = next((entry for entry in type11_result.entries if entry.name == "SPRING"), None)
     type11_washer_entry = next((entry for entry in type11_result.entries if entry.name == "WASHER"), None)
     assert rod11 is not None and rod11["spec"] == '1-5/8"*300L' and rod11["length_mm"] == 300, f"type11 rod failed: {rod11}"
-    assert washer11 is not None and washer11["category"] == "鋼板類" and washer11["unit_weight_kg"] == 1.0, f"type11 washer failed: {washer11}"
-    assert spring11 is not None and spring11["spec"] == "SPR14 (14W×46ID)" and spring11["spring_k_kg_per_mm"] == 42, f"type11 spring failed: {spring11}"
+    assert washer11 is not None and washer11["category"] == "鋼板類" and washer11["unit_weight_kg"] == 0.33 and washer11["quantity"] == 2, f"type11 washer failed: {washer11}"
+    assert spring11 is not None and spring11["spec"] == "SPR14 (14W×46ID)" and spring11["spring_k_kg_per_mm"] == 42 and spring11["quantity"] == 1, f"type11 spring failed: {spring11}"
     assert not type11_result.error and type11_spring_entry and type11_spring_entry.category == "彈簧類", f"type11 calculator spring failed: {type11_result}"
     assert type11_washer_entry and type11_washer_entry.category == "鋼板類", f"type11 calculator washer failed: {type11_result}"
     print("v type11 hardware table OK")
@@ -1393,17 +1644,17 @@ try:
     assert r_m52_spring is not None and r_m52_spring["wire_dia_mm"] == 10 and r_m52_spring["spring_constant_kg_per_mm"] == 45, f"m52 spring failed: {r_m52_spring}"
     assert r_m53["table_kind"] == "dimensional_lookup" and r_m53["lookup_ready"] and not r_m53["weight_ready"], f"m53 lookup summary failed: {r_m53}"
     assert r_m53_24 is not None and r_m53_24["designation"] == "PUBS2-24B" and r_m53_24["dimensions_mm"]["A"] == 838 and r_m53_24["bar_size"] == "150x12", f"m53 24 failed: {r_m53_24}"
-    assert r_m54["table_kind"] == "dimensional_lookup" and r_m54["lookup_ready"] and r_m54["weight_ready"], f"m54 lookup summary failed: {r_m54}"
-    assert r_m54_2 is not None and r_m54_2["designation"] == "PUBS3-2B-2" and r_m54_2["dimensions_mm"]["A"] == 63.6 and r_m54_2["dimensions_mm"]["B"] == 150 and r_m54_2["unit_weight_kg"] == 0.34, f"m54 2 failed: {r_m54_2}"
+    assert r_m54["table_kind"] == "dimensional_lookup" and r_m54["lookup_ready"] and not r_m54["weight_ready"], f"m54 lookup summary failed: {r_m54}"
+    assert r_m54_2 is not None and r_m54_2["designation"] == "PUBS3-2B-2" and r_m54_2["dimensions_mm"]["A"] == 63.6 and r_m54_2["dimensions_mm"]["B"] == 150 and r_m54_2["unit_weight_kg"] == 0, f"m54 2 failed: {r_m54_2}"
     assert r_m54_item is not None and r_m54_item["spec"].startswith("PUBS3-2B-2") and r_m54_item["category"] == "鋼板類", f"m54 item failed: {r_m54_item}"
     assert r_m54_fig3 is None, f"m54 unsupported fig should be None: {r_m54_fig3}"
     assert r_m55["table_kind"] == "dimensional_lookup" and r_m55["lookup_ready"] and not r_m55["weight_ready"], f"m55 lookup summary failed: {r_m55}"
-    assert r_m55_8 is not None and r_m55_8["designation"] == "PUBD1-8B" and r_m55_8["dimensions_mm"]["B"] == 410 and r_m55_8["unit_weight_kg"] == 3.62, f"m55 8 failed: {r_m55_8}"
+    assert r_m55_8 is not None and r_m55_8["designation"] == "PUBD1-8B" and r_m55_8["dimensions_mm"]["B"] == 410 and r_m55_8["unit_weight_kg"] == 0, f"m55 8 failed: {r_m55_8}"
     assert r_m55_item is not None and r_m55_item["spec"].startswith("PUBD1-8B") and r_m55_item["category"] == "鋼板類", f"m55 item failed: {r_m55_item}"
-    assert r_n1["component_id"] == "N-1" and r_n1["table_kind"] == "metadata_only", f"n1 metadata failed: {r_n1}"
-    print("v m52/m53/m54/m55 visual lookup + metadata-only component tables OK")
+    assert r_n1["component_id"] == "N-1" and r_n1["table_kind"] == "dimensional_lookup" and r_n1["lookup_ready"], f"n1 lookup failed: {r_n1}"
+    print("v m52/m53/m54/m55 visual lookup + N-1 lookup-ready component OK")
 except Exception as e:
-    record_failure(f"X m52/m53/m54/m55 visual lookup + metadata-only component tables ERROR: {e}")
+    record_failure(f"X m52/m53/m54/m55 visual lookup + N-1 component ERROR: {e}")
 
 # Test m22_table
 try:
@@ -1441,6 +1692,8 @@ try:
     from data.m26_table import get_m26_by_line_size
     r15 = get_m26_by_line_size('2"')
     assert r15 is not None and r15["type"] == "UB-2B" and r15["C"] == 71, f"m26 failed: {r15}"
+    assert math.isclose(r15["rod_developed_length_mm"], math.pi * 62 / 2 + 2 * 74)
+    assert r15["rod_calculated_weight_kg"] > 0 and r15["finished_hex_nuts_per_set"] == 4
     print("v m26_table OK")
 except Exception as e:
     record_failure(f"X m26_table ERROR: {e}")
@@ -1846,16 +2099,51 @@ try:
     r62 = analyze_single("62-4B-5/8-05~30D-J(T)")
     r62_simple = analyze_single("62-2B-3/8-05C-G")
     r62_fig_e = analyze_single("62-4B-5/8-05C-E")
+    r62_fig_l = analyze_single("62-4B-5/8-05A-L")
+    r62_fig_m = analyze_single("62-4B-5/8-05A-M")
+    r62_fig_n = analyze_single("62-10B-7/8-05A-N")
+    r62_fig_l_gap = analyze_single("62-7B-5/8-05A-L")
     r62_bad = analyze_single("62-4B-5/8-05C-N")
     r62_names = [entry.name for entry in r62.entries]
     r62_fig_e_names = [entry.name for entry in r62_fig_e.entries]
     assert fig_j is not None and fig_j["component_id"] == "M-6" and fig_j["max_insulation_thk_in"] == 4, f"type62 fig J failed: {fig_j}"
     assert fig_n_ok and not fig_n_bad, "type62 lower range validation failed"
     assert not r62.error and "TURNBUCKLE" in r62_names and "LOWER PIPE CLAMP" in r62_names, f"type62 calculator failed: {r62}"
-    assert r62.entries[0].spec == "MTRL-5/8-3000", f"type62 rod length failed: {r62.entries[0]}"
+    assert r62.entries[0].unit_weight == 0 and "CUT LENGTH TO BE CONFIRMED" in r62.entries[0].spec, f"type62 H must not become rod cut: {r62.entries[0]}"
+    assert not r62.meta["fabrication"]["bom_ready"], f"type62 unresolved rod/clamp weights must block BOM readiness: {r62.meta['fabrication']}"
     assert not r62_simple.error and not any(entry.name == "TURNBUCKLE" for entry in r62_simple.entries), f"type62 simple failed: {r62_simple}"
     assert not r62_fig_e.error and "ADJUSTABLE CLEVIS" in r62_fig_e_names, f"type62 fig E failed: {r62_fig_e}"
     assert "WELDLESS EYE NUT" not in r62_fig_e_names and "HEAVY HEX. NUT" not in r62_fig_e_names, f"type62 fig E should not add nut callouts: {r62_fig_e.entries}"
+    assert (
+        not r62_fig_l.error
+        and any(
+            entry.geometry.component_id == "M-8"
+            and entry.spec.startswith("PCL-E-4B")
+            and entry.unit_weight == 0
+            for entry in r62_fig_l.entries
+        )
+    ), f"type62 fig L failed: {r62_fig_l}"
+    assert (
+        not r62_fig_m.error
+        and any(
+            entry.geometry.component_id == "M-9"
+            and entry.geometry.parameters["F_upper_cross_pin_diameter_in"] == '7/8"'
+            for entry in r62_fig_m.entries
+        )
+    ), f"type62 fig M failed: {r62_fig_m}"
+    assert (
+        not r62_fig_n.error
+        and any(
+            entry.geometry.component_id == "M-10"
+            and entry.geometry.parameters["M_upper_side_width_mm"] == 83
+            for entry in r62_fig_n.entries
+        )
+    ), f"type62 fig N failed: {r62_fig_n}"
+    assert (
+        r62_fig_l_gap.error
+        and "M-8未表列" in r62_fig_l_gap.error
+        and not r62_fig_l_gap.entries
+    ), f"type62 fig L exact-row guard failed: {r62_fig_l_gap}"
     assert r62_bad.error and "FIG-N" in r62_bad.error, f"type62 invalid range failed: {r62_bad}"
     r62_material = analyze_single("62-2B-3/8-05C-G", {"material": "SUS304"})
     assert not r62_material.error and r62_material.entries[0].material == "SUS304", f"type62 material override failed: {r62_material.entries}"
@@ -1871,10 +2159,12 @@ try:
     r07_override = analyze_single("07-2B-20J", {"upper_material": "SUS316"})
     r14_override = analyze_single("14-2B-1005", {"upper_material": "SUS316"})
     r16_override = analyze_single("16-2B-05", {"upper_material": "SUS316"})
-    assert any("Type 10 允許範圍" in warning for warning in r10_invalid_letter.warnings), f"type10 M42 warning failed: {r10_invalid_letter.warnings}"
+    assert not r10_invalid_letter.error and r10_invalid_letter.meta["issues"][0]["code"] == "HOST_M42_NOT_LISTED", (
+        f"type10 host M42 variance classification failed: {r10_invalid_letter.error}"
+    )
     assert not r07_override.error and r07_override.entries[0].material == "SUS316", f"type07 material override failed: {r07_override.entries}"
     assert not r14_override.error and r14_override.entries[0].material == "SUS316", f"type14 material override failed: {r14_override.entries}"
-    assert not r16_override.error and r16_override.entries[0].material == "SUS304" and r16_override.entries[1].material == "A53Gr.B", f"type16 should keep fixed pipe materials: {r16_override.entries}"
+    assert not r16_override.error and r16_override.entries[0].material == "SUS316", f"type16 upper pipe material override failed: {r16_override.entries}"
     print("v system consistency refactor smokes OK")
 except Exception as e:
     record_failure(f"X system consistency refactor smokes ERROR: {e}")
@@ -1886,48 +2176,48 @@ try:
     _SNAPSHOT_CASES = {
         "07-2B-20J": {
             "count": 6,
-            "total": 33.54,
-            "warnings": 1,
+            "total": 29.54,
+            "warnings": 2,
             "materials": (
                 "A36 / SS400",
                 "A36 / SS400",
-                "SUS304",
                 "A36 / SS400",
                 "A36 / SS400",
-                "A36/SS400",
+                "A36 / SS400",
+                "A36 / SS400",
             ),
-            "weights": (1.47, 20.12, 4.0, 2.83, 2.83, 2.29),
+            "weights": (1.47, 20.12, 0, 2.83, 2.83, 2.29),
             "quantities": (1, 1, 4, 1, 1, 1),
-            "upper_total": 33.9,
+            "upper_total": 29.9,
             "upper_override": (
                 "SUS316",
                 "SUS316",
-                "SUS304",
                 "A36 / SS400",
                 "A36 / SS400",
-                "A36/SS400",
+                "A36 / SS400",
+                "A36 / SS400",
             ),
             "all_hardware": (
                 "INCONEL",
                 "INCONEL",
-                "SUS304",
                 "INCONEL",
                 "INCONEL",
-                "A36/SS400",
+                "INCONEL",
+                "INCONEL",
             ),
             "cryo": (
                 "A36 / SS400",
                 "A36 / SS400",
-                "SUS304",
                 "A36 / SS400",
                 "A36 / SS400",
-                "A36/SS400",
+                "A36 / SS400",
+                "A36 / SS400",
             ),
         },
         "10-2B-05A": {
             "count": 6,
-            "total": 13.83,
-            "warnings": 0,
+            "total": 8.79,
+            "warnings": 3,
             "materials": (
                 "A53Gr.B",
                 "SUS304",
@@ -1936,12 +2226,12 @@ try:
                 "A36 / SS400",
                 "A36/SS400",
             ),
-            "weights": (1.08, 1.48, 3.2, 2.4, 4.08, 1.59),
+            "weights": (1.08, 1.48, 0.56, 0, 4.08, 1.59),
             "quantities": (1, 1, 4, 16, 2, 1),
-            "upper_total": 13.83,
+            "upper_total": 8.8,
             "upper_override": (
                 "A53Gr.B",
-                "SUS304",
+                "SUS316",
                 "A36 / SS400",
                 "A194 2H",
                 "A36 / SS400",
@@ -1966,8 +2256,8 @@ try:
         },
         "14-2B-1005": {
             "count": 7,
-            "total": 22.26,
-            "warnings": 0,
+            "total": 17.32,
+            "warnings": 2,
             "materials": (
                 "A36 / SS400",
                 "A36 / SS400",
@@ -1977,9 +2267,9 @@ try:
                 "A36 / SS400",
                 "A36 / SS400",
             ),
-            "weights": (9.36, 2.08, 4.0, 2.55, 1.06, 0.45, 2.76),
+            "weights": (9.25, 2.08, 0, 2.55, 1.04, 0.45, 1.95),
             "quantities": (1, 1, 4, 1, 2, 1, 4),
-            "upper_total": 22.29,
+            "upper_total": 17.35,
             "upper_override": (
                 "A36 / SS400",
                 "SUS316",
@@ -2010,8 +2300,8 @@ try:
         },
         "15-2B-1005": {
             "count": 6,
-            "total": 19.53,
-            "warnings": 0,
+            "total": 18.06,
+            "warnings": 2,
             "materials": (
                 "A36 / SS400",
                 "A36 / SS400",
@@ -2020,9 +2310,9 @@ try:
                 "A36 / SS400",
                 "A36 / SS400",
             ),
-            "weights": (9.36, 2.08, 2.55, 1.06, 0.45, 4.03),
+            "weights": (9.25, 2.08, 2.55, 1.04, 0.45, 2.69),
             "quantities": (1, 1, 1, 2, 1, 4),
-            "upper_total": 19.56,
+            "upper_total": 18.09,
             "upper_override": (
                 "A36 / SS400",
                 "SUS316",
@@ -2049,20 +2339,20 @@ try:
             ),
         },
         "16-2B-05": {
-            "count": 3,
-            "total": 4.98,
-            "warnings": 0,
-            "materials": ("A53Gr.B", "SUS304", "A36 / SS400"),
-            "weights": (3.62, 1.13, 0.23),
-            "quantities": (1, 1, 1),
-            "upper_total": 4.98,
-            "upper_override": ("A53Gr.B", "SUS304", "A36 / SS400"),
-            "all_hardware": ("A53Gr.B", "SUS304", "INCONEL"),
-            "cryo": ("A53Gr.B", "SUS304", "A36 / SS400"),
+            "count": 2,
+            "total": 4.56,
+            "warnings": 2,
+            "materials": ("A36 / SS400", "A36 / SS400"),
+            "weights": (4.33, 0.23),
+            "quantities": (1, 1),
+            "upper_total": 4.63,
+            "upper_override": ("SUS316", "A36 / SS400"),
+            "all_hardware": ("INCONEL", "INCONEL"),
+            "cryo": ("A36 / SS400", "A36 / SS400"),
         },
         "62-4B-5/8-05~30D-J(T)": {
             "count": 6,
-            "total": 8.6,
+            "total": 1.49,
             "warnings": 3,
             "materials": (
                 "A194 2H",
@@ -2072,7 +2362,7 @@ try:
                 "A36 / SS400",
                 "A36 / SS400",
             ),
-            "weights": (0.16, 2.3, 4.65, 0.95, 0.32, 0.22),
+            "weights": (0, 0, 0, 0.95, 0.32, 0.22),
             "quantities": (2, 1, 1, 1, 1, 1),
             "upper_override": (
                 "SUS316",
@@ -2100,31 +2390,32 @@ try:
             ),
         },
         "64-2-8-05A": {
-            "count": 4,
-            "total": 8.13,
-            "warnings": 2,
+            "count": 5,
+            "total": 0.16,
+            "warnings": 4,
             "materials": (
+                "A194 2H",
                 "A36 / SS400",
                 "A193 B7",
                 "A36 / SS400",
                 "A36 / SS400",
             ),
-            "weights": (1.12, 1.56, 5.01, 0.44),
-            "quantities": (1, 2, 1, 2),
-            "upper_override": ("SUS316", "SUS316", "SUS316", "SUS316"),
-            "all_hardware": ("INCONEL", "INCONEL", "INCONEL", "INCONEL"),
-            "cryo": ("A36 / SS400", "A320 L7", "A36 / SS400", "A36 / SS400"),
+            "weights": (0, 0, 0, 0, 0.16),
+            "quantities": (2, 1, 2, 1, 2),
+            "upper_override": ("SUS316", "SUS316", "SUS316", "SUS316", "SUS316"),
+            "all_hardware": ("INCONEL", "INCONEL", "INCONEL", "INCONEL", "INCONEL"),
+            "cryo": ("A194 4 / S3", "A36 / SS400", "A320 L7", "A36 / SS400", "A36 / SS400"),
         },
         "65-6B-1505": {
-            "count": 3,
-            "total": 20.8,
-            "warnings": 0,
-            "materials": ("A36 / SS400", "A36 / SS400", "A193 B7"),
-            "weights": (18.3, 0.64, 1.86),
-            "quantities": (1, 2, 2),
-            "upper_override": ("SUS316", "SUS316", "SUS316"),
-            "all_hardware": ("INCONEL", "INCONEL", "INCONEL"),
-            "cryo": ("A36 / SS400", "A36 / SS400", "A320 L7"),
+            "count": 5,
+            "total": 14.04,
+            "warnings": 5,
+            "materials": ("A36 / SS400", "A36 / SS400", "A194 2H", "A194 2H", "A193 B7"),
+            "weights": (14.04, 0, 0, 0, 0),
+            "quantities": (1, 2, 6, 4, 2),
+            "upper_override": ("SUS316", "SUS316", "SUS316", "SUS316", "SUS316"),
+            "all_hardware": ("INCONEL", "INCONEL", "INCONEL", "INCONEL", "INCONEL"),
+            "cryo": ("A36 / SS400", "A36 / SS400", "A194 4 / S3", "A194 4 / S3", "A320 L7"),
         },
     }
 
@@ -2192,12 +2483,8 @@ try:
     _MIGRATED_TYPE_KIND_COUNTS = {
         "07-2B-20J": {
             HardwareKind.SUPPORT_PIPE: 2,
-            HardwareKind.SUPPORT_PLATE: 2,
-        },
-        "10-2B-05A": {
-            HardwareKind.ANCHOR_BOLT: 1,
-            HardwareKind.HEAVY_HEX_NUT: 1,
-            HardwareKind.SUPPORT_PLATE: 1,
+            HardwareKind.SUPPORT_PLATE: 3,
+            HardwareKind.EXPANSION_BOLT: 1,
         },
         "14-2B-1005": {
             HardwareKind.STRUCTURAL_STRUT: 1,
@@ -2211,6 +2498,7 @@ try:
             HardwareKind.SUPPORT_PLATE: 4,
         },
         "16-2B-05": {
+            HardwareKind.SUPPORT_PIPE: 1,
             HardwareKind.SUPPORT_PLATE: 1,
         },
         "62-4B-5/8-05~30D-J(T)": {
@@ -2225,29 +2513,29 @@ try:
             HardwareKind.CLAMP_BODY: 2,
             HardwareKind.THREADED_ROD: 1,
             HardwareKind.WELDLESS_EYE_NUT: 1,
+            HardwareKind.HEAVY_HEX_NUT: 1,
         },
         "65-6B-1505": {
             HardwareKind.STRUCTURAL_STRUT: 1,
             HardwareKind.BEAM_ATTACHMENT: 1,
             HardwareKind.THREADED_ROD: 1,
+            HardwareKind.HEAVY_HEX_NUT: 2,
         },
     }
     _UNMANAGED_MATERIAL_COUNTS = {
-        "07-2B-20J": Counter({"SUS304": 1, "A36/SS400": 1}),
-        "10-2B-05A": Counter({"SUS304": 1, "A53Gr.B": 1, "A36/SS400": 1}),
+        "07-2B-20J": Counter(),
         "14-2B-1005": Counter(),
         "15-2B-1005": Counter(),
-        "16-2B-05": Counter({"SUS304": 1, "A53Gr.B": 1}),
+        "16-2B-05": Counter(),
         "62-4B-5/8-05~30D-J(T)": Counter(),
         "64-2-8-05A": Counter(),
         "65-6B-1505": Counter(),
     }
     _LEGACY_SCOPES = {
         "07-2B-20J": {HardwareKind.SUPPORT_PIPE},
-        "10-2B-05A": set(),
         "14-2B-1005": {HardwareKind.SUPPORT_PIPE, HardwareKind.ANCHOR_BOLT},
         "15-2B-1005": {HardwareKind.SUPPORT_PIPE},
-        "16-2B-05": set(),
+        "16-2B-05": {HardwareKind.SUPPORT_PIPE},
     }
     _LEGACY_GLOBAL_CASES = {
         "62-4B-5/8-05~30D-J(T)",
@@ -2261,6 +2549,7 @@ try:
         "support_pipe": "SUPPORT_PIPE_KIND",
         "support_plate": "SUPPORT_PLATE_KIND",
         "anchor_bolt": "ANCHOR_KIND",
+        "expansion_bolt": "EXPANSION_KIND",
         "gusset_plate": "PLATE_KIND",
         "structural_strut": "STRUT_KIND",
         "beam_attachment": "BEAM_KIND",
@@ -2277,6 +2566,7 @@ try:
         HardwareKind.SUPPORT_PIPE: "SUPPORT_PIPE_KIND",
         HardwareKind.SUPPORT_PLATE: "SUPPORT_PLATE_KIND",
         HardwareKind.ANCHOR_BOLT: "ANCHOR_KIND",
+        HardwareKind.EXPANSION_BOLT: "EXPANSION_KIND",
         HardwareKind.GUSSET_PLATE: "PLATE_KIND",
         HardwareKind.STRUCTURAL_STRUT: "STRUT_KIND",
         HardwareKind.BEAM_ATTACHMENT: "BEAM_KIND",
@@ -2484,9 +2774,9 @@ try:
     r72_names = [entry.name for entry in r72.entries]
     assert r72_table is not None and r72_table["A"] == 63.6 and r72_table["B"] == 150 and r72_table["T"] == 6, f"type72 table failed: {r72_table}"
     assert not r72.error and r72_names == ["STRAP", "EXP. BOLT"], f"type72 calculator failed: {r72}"
-    assert r72.entries[0].spec.startswith("PUBS3-2B-2") and r72.entries[0].unit_weight == 0.34 and r72.entries[1].spec == "EB-3/8", f"type72 entries failed: {r72.entries}"
-    assert "weight estimated at 1.0 kg/SET" in r72.entries[1].remark, f"type72 EB remark failed: {r72.entries[1].remark}"
-    assert not any("M-54" in warning for warning in r72.warnings), f"type72 should not warn for M-54 lookup: {r72.warnings}"
+    assert r72.entries[0].spec.startswith("PUBS3-2B-2") and r72.entries[0].unit_weight == 0 and r72.entries[1].spec == "EB-3/8", f"type72 entries failed: {r72.entries}"
+    assert r72.total_weight == 0 and not r72.meta["fabrication"]["bom_ready"]
+    assert all(entry.geometry.fabrication_blockers for entry in r72.entries)
     assert r72_bad.error and "3/4" in r72_bad.error, f"type72 invalid range failed: {r72_bad}"
     print("v type72 strap support OK")
 except Exception as e:
@@ -2514,16 +2804,19 @@ try:
     r79_bad = analyze_single("79-4B")
 
     assert r73_table is not None and r73_table["A"] == 396 and r73_table["spring_mark"] == "SPR04" and get_type73_bolt_count('6"') == 4, f"type73 table failed: {r73_table}"
-    assert r73_spring is not None and r73_spring["spring_constant_kg_per_mm"] == 2.9 and r73_spring["unit_weight_kg"] > 0, f"type73 spring failed: {r73_spring}"
+    assert r73_spring is not None and r73_spring["spring_constant_kg_per_mm"] == 2.9 and r73_spring["unit_weight_kg"] == 0, f"type73 spring failed: {r73_spring}"
     assert not r73.error and [entry.name for entry in r73.entries][:4] == ["STRAP", "SPRING COIL", "STUD BOLT", "WASHER"], f"type73 calculator failed: {r73}"
+    assert r73.entries[0].unit_weight == 3.44 and r73.entries[0].geometry.fabrication_ready
+    assert all(entry.unit_weight == 0 for entry in r73.entries[1:])
     assert r73_bad.error and '1"' in r73_bad.error, f"type73 invalid range failed: {r73_bad}"
     assert r76_table is not None and r76_table["pad_angle_deg"] == 120 and r76_table["pad_length_mm"] == 400, f"type76 table failed: {r76_table}"
-    assert not r76.error and r76.entries[0].name == "PIPE PAD" and r76.entries[0].unit_weight == 30.07, f"type76 calculator failed: {r76.entries}"
-    assert r77_table is not None and r77_table["A"] == 300 and r77_table["T"] == 16 and r77_table["unit_weight_kg"] > 0, f"type77 table failed: {r77_table}"
-    assert not r77.error and r77.entries[0].name == "SADDLE" and any("D-80A" in warning for warning in r77.warnings), f"type77 calculator failed: {r77}"
-    assert not r78.error and r78.entries[0].spec.startswith("PUBS3-2B-1") and r78.entries[0].unit_weight == 0.35, f"type78 calculator failed: {r78.entries}"
-    assert r79_table is not None and r79_table["B"] == 410 and r79_table["unit_weight_kg"] == 3.62, f"type79 table failed: {r79_table}"
-    assert not r79.error and r79.entries[0].name == "U-BAND" and r79.entries[0].spec.startswith("PUBD1-8B") and any("M-55 table 已接線" in warning for warning in r79.warnings), f"type79 calculator failed: {r79}"
+    assert not r76.error and r76.entries[0].name == "PIPE PAD" and r76.entries[0].unit_weight == 0, f"type76 calculator failed: {r76.entries}"
+    assert not r76.meta["fabrication"]["bom_ready"] and r76.entries[0].geometry.fabrication_blockers
+    assert r77_table is not None and r77_table["A"] == 300 and r77_table["T"] == 16 and r77_table["unit_weight_kg"] == 0, f"type77 table failed: {r77_table}"
+    assert not r77.error and r77.entries[0].name == "SADDLE ASSEMBLY" and r77.entries[0].unit_weight == 0, f"type77 calculator failed: {r77}"
+    assert not r78.error and r78.entries[0].spec.startswith("PUBS3-2B-1") and r78.entries[0].unit_weight == 0, f"type78 calculator failed: {r78.entries}"
+    assert r79_table is not None and r79_table["B"] == 410 and r79_table["unit_weight_kg"] == 0, f"type79 table failed: {r79_table}"
+    assert not r79.error and r79.entries[0].name == "U-BAND ASSEMBLY" and r79.entries[0].spec.startswith("PUBD1-8B") and r79.entries[0].unit_weight == 0, f"type79 calculator failed: {r79}"
     assert r79_bad.error and '5"' in r79_bad.error, f"type79 invalid range failed: {r79_bad}"
     print("v type73/type76/type77/type78/type79 support calculators OK")
 except Exception as e:
@@ -2541,8 +2834,8 @@ try:
     r_unknown_truth = analyze_single("99-1B")
 
     assert r72_truth.meta["truth_level"] == TRUTH_ESTIMATED and r72_truth.meta["requires_review"], f"type72 truth failed: {r72_truth.meta}"
-    assert r76_truth.meta["truth_level"] == TRUTH_ESTIMATED and "PDF 視覺判讀" in r76_truth.meta["source_labels"], f"type76 truth failed: {r76_truth.meta}"
-    assert r78_truth.meta["truth_level"] == TRUTH_ESTIMATED and r78_truth.evidence[0]["field"] == "strap_fig", f"type78 evidence failed: {r78_truth.meta}/{r78_truth.evidence}"
+    assert r76_truth.meta["truth_level"] == TRUTH_ESTIMATED and "TYPE-76_D-91.pdf" in r76_truth.meta["source_labels"], f"type76 truth failed: {r76_truth.meta}"
+    assert r78_truth.meta["truth_level"] == TRUTH_ESTIMATED and r78_truth.evidence[0]["field"] == "type78_d93_m54_dimensions", f"type78 evidence failed: {r78_truth.meta}/{r78_truth.evidence}"
     assert r79_truth.meta["truth_level"] == TRUTH_ESTIMATED and r79_truth.meta["requires_review"], f"type79 truth failed: {r79_truth.meta}"
     assert not any(e["basis"] == "missing_table" for e in r79_truth.evidence), f"type79 should no longer include missing-table evidence: {r79_truth.evidence}"
     assert need_escalation(r79_truth.meta, r79_truth.meta["invariant_errors"]), f"type79 escalation failed: {r79_truth.meta}"
@@ -2556,9 +2849,10 @@ try:
     from data.type64_table import get_type64_rod
     from data.type65_table import get_type65_data
     r64 = get_type64_rod("1-1/4")
+    r64_half = get_type64_rod("1/2")
     r65 = get_type65_data("2-1/2")
-    assert r64 is not None and r64["g"] == '1/2"', f"type64 normalize failed: {r64}"
-    assert r65 is not None and r65["rod_size"] == '3/8"', f"type65 normalize failed: {r65}"
+    assert r64 is None and r64_half is not None and r64_half["g"] == '3/8"', f"type64 source rows failed: {r64}/{r64_half}"
+    assert r65 is None and get_type65_data("6")["rod_size"] == '1/2"', f"type65 source rows failed: {r65}"
     print("v type64/type65 normalization OK")
 except Exception as e:
     record_failure(f"X type64/type65 normalization ERROR: {e}")
@@ -2614,7 +2908,7 @@ try:
         ("46", "46-8B-C125-500 A"),
         ("47", "47-8B-C125-500 A"),
         ("48", "48-2"),
-        ("49", "49-8A"),
+        ("49", "49-8B-A"),
         ("51", "51-2B"),
         ("52", "52-2B(P)-A(A)-130-500"),
         ("56", "56-2B"),
@@ -2737,29 +3031,36 @@ try:
         ("TRUNNION",         "4\"",       -1,   1),
         ("LUG PLATE TYPE-C", "10",       170,  1),
         ("LUG PLATE TYPE-E", "10",       145,  1),
-        ("K BOLT",           '3/4"x50',  -1,   2),
+        ("K BOLT",           '3/4"x50',  -1,  12),
         ("C/S SHIM",         "6",        125,  1),
     ])
 
-    # ── type_27 H150: L=500 H=500 M42=L ────────────────────────────────────
-    # column = H - 150 = 350; top = L = 500
+    # ── type_27 H150: unresolved D-30 rows stay traceable outside material BOM
     _golden("27-H150-0505L", [
-        ("H型鋼",          "150*150*10", 350,  1),
-        ("H型鋼",          "150*150*10", 500,  1),
-        ("Plate_6t_Side",   "6",          150,  3),
-        ("Plate_9t_Wing",   "9",          200,  2),
+        ("D30-GUSSET-PLATE", "9",         100,  2),
         ("Plate_c_有鑽孔",  "16",         500,  1),
-        ("EXP.BOLT",        "7/8\"",       -1,   4),
     ])
 
-    # ── type_27 L75: L=500 H=500 M42=L ─────────────────────────────────────
-    # column = H - deduction(15) = 485; top = L = 500
+    # ── type_27 L75: same D-30 fabrication blockers ────────────────────────
     _golden("27-L75-0505L", [
-        ("角鋼",          "75*75*9",   485,  1),
-        ("角鋼",          "75*75*9",   500,  1),
+        ("D30-GUSSET-PLATE", "9",       100,  2),
         ("Plate_c_有鑽孔", "9",         260,  1),
-        ("EXP.BOLT",       "5/8\"",      -1,   4),
     ])
+    for designation in (
+        "27-H150-0505L",
+        "27-L75-0505L",
+        "27-L50-0303L",
+        "27-H150-0406P",
+        "27-L100-0410L",
+    ):
+        result = analyze_single(designation)
+        excluded_ids = {
+            item.get("component_id")
+            for item in result.meta.get("excluded_bom_components", [])
+        }
+        assert {"D30-MEMBER-M", "D30-TOP-PLATE", "M42-FASTENER"} <= excluded_ids, (
+            f"{designation}: unresolved D-30 items lost from exclusion trace: {excluded_ids}"
+        )
 
     # ── type_42 擴充: 4B L75 H=300 FIG-A (小管徑角鐵版) ────────────────────
     # Trunnion=2", G=438
@@ -2799,7 +3100,7 @@ try:
         ("TRUNNION",         "2\"",       -1,   1),
         ("LUG PLATE TYPE-C", "9",        160,  1),
         ("LUG PLATE TYPE-E", "9",        135,  1),
-        ("K BOLT",           '3/4"x50',  -1,   2),
+        ("K BOLT",           '3/4"x50',  -1,   8),
         ("C/S SHIM",         "6",         75,  1),
     ])
 
@@ -2811,37 +3112,26 @@ try:
         ("TRUNNION",         "10\"",         -1,   1),
         ("LUG PLATE TYPE-C", "12",          220,  1),
         ("LUG PLATE TYPE-D", "12",          160,  1),
-        ("K BOLT",           '3/4"x50',      -1,   2),
+        ("K BOLT",           '3/4"x50',      -1,  12),
         ("C/S SHIM",         "6",           200,  1),
     ])
 
-    # ── type_27 擴充: L50 最小規格 ──────────────────────────────────────────
-    # column = 300-15=285; top=300; Plate_c T=9 L=180 (L50 C=30mm)
+    # ── type_27 擴充: L50，保留D-30未標尺寸blockers ─────────────────────────
     _golden("27-L50-0303L", [
-        ("角鋼",          "50*50*6",   285,  1),
-        ("角鋼",          "50*50*6",   300,  1),
+        ("D30-GUSSET-PLATE", "9",       100, 2),
         ("Plate_c_有鑽孔", "9",         180,  1),
-        ("EXP.BOLT",       "5/8\"",      -1,   4),
     ])
 
     # ── type_27 擴充: H150 M42=P (NOTE4 valid variant) ──────────────────────
-    # column = 600-150=450; top=400
     _golden("27-H150-0406P", [
-        ("H型鋼",         "150*150*10", 450,  1),
-        ("H型鋼",         "150*150*10", 400,  1),
-        ("Plate_6t_Side",  "6",          150,  3),
-        ("Plate_9t_Wing",  "9",          200,  2),
+        ("D30-GUSSET-PLATE", "9",       100, 2),
         ("Plate_c_有鑽孔", "16",         500,  1),
-        ("EXP.BOLT",       "7/8\"",       -1,   4),
     ])
 
     # ── type_27 擴充: L100 大尺寸 ───────────────────────────────────────────
-    # column = 1000-15=985; top=400
     _golden("27-L100-0410L", [
-        ("角鋼",          "100*100*10", 985,  1),
-        ("角鋼",          "100*100*10", 400,  1),
+        ("D30-GUSSET-PLATE", "9",       100, 2),
         ("Plate_c_有鑽孔", "9",          260,  1),
-        ("EXP.BOLT",       "5/8\"",       -1,   4),
     ])
 
     # ── type_39: C125 H=500 FIG-A (標準, L=200 default) ────────────────────
@@ -2851,7 +3141,7 @@ try:
         ("槽鐵",          "125*65*6", 692,  1),
         ("LUG PLATE TYPE-C", "10",       170,  1),
         ("LUG PLATE TYPE-E", "10",       145,  1),
-        ("K BOLT",           '3/4"x50',  -1,   2),
+        ("K BOLT",           '3/4"x50',  -1,  12),
     ])
 
     # ── type_39: C200 H=800 FIG-B (大型, θ=45°) ─────────────────────────────
@@ -2861,7 +3151,7 @@ try:
         ("槽鐵",          "200*80*7.5", 1187,  1),
         ("LUG PLATE TYPE-C", "12",         220,  1),
         ("LUG PLATE TYPE-D", "12",         160,  1),
-        ("K BOLT",           '3/4"x50',     -1,   2),
+        ("K BOLT",           '3/4"x50',     -1,  12),
     ])
 
     # ── type_39: L75 H=300 FIG-A (小角鐵版) ─────────────────────────────────
@@ -2871,33 +3161,30 @@ try:
         ("角鋼",            "75*75*9",  438,  1),
         ("LUG PLATE TYPE-C", "9",        160,  1),
         ("LUG PLATE TYPE-E", "9",        135,  1),
-        ("K BOLT",           '3/4"x50',  -1,   2),
+        ("K BOLT",           '3/4"x50',  -1,   8),
     ])
 
     # ── type_56: 管線檔止 5 個尺寸分支 ──────────────────────────────────────
     # ≤2-1/2": PL 100×100×6 ×2
     _golden("56-2B", [
-        ("PLATE",     "6",  100,  2),
+        ("PIPE STOP PLATE", "6", 100, 2),
     ])
-    # 3"~4": A×B×6t ×2 + D×B×E ×2
+    # 3"~4": D-67只指定FAB FROM 6t，拆片未尺寸化
     _golden("56-4B", [
-        ("MEMBER C",   "6",   75,  2),
-        ("SIDE PLATE", "6",   75,  2),
+        ("MEMBER C ASSEMBLY", "MEMBER C / FAB. FROM 6t PLATE", 0, 2),
     ])
-    # 5"~14": CUT FROM H型鋼, MEMBER C ×2
+    # 5"~14": 只保留CUT FROM母H型鋼reference，不計完整母材重量
     _golden("56-10B", [
-        ("MEMBER C",  "200*200*8", 200,  2),
+        ("MEMBER C ASSEMBLY", "MEMBER C / CUT FROM H200*200*8*12", 0, 2),
     ])
-    # 16"~24": A×B×12t ×4 + (D-2E)×B×12t ×2
+    # 16"~24": D-67只指定FAB FROM 12t，拆片未尺寸化
     _golden("56-20B", [
-        ("MEMBER C",   "12", 300,  4),
-        ("SIDE PLATE", "12", 276,  2),
+        ("MEMBER C ASSEMBLY", "MEMBER C / FAB. FROM 12t PLATE", 0, 2),
     ])
-    # 26"~42": 大型 + 鞍座
+    # 26"~42": D-67A assembly + D-91 reference，兩者都不虛構重量
     _golden("56-36B", [
-        ("MEMBER C",      "12", 450,  1),
-        ("SIDE PLATE",    "12", 400,  2),
-        ("SADDLE (120°)", "12", 350,  1),
+        ("MEMBER C ASSEMBLY", "D-67A SUPPORT MEMBER / FAB. FROM 12t PLATE", 0, 2),
+        ("REINFORCING PAD", "D-91 / 120 DEG / L400 / t>=12", 0, 1),
     ])
 
     print("v phase 5b golden cases type_27/42/43/39/56 OK")

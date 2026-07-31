@@ -1,7 +1,16 @@
 {
   "type_id": "72",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "複驗 D-87 與 M-54：B 為成形後跨距而非平板展開長，停用 B*C*T 重量；EB-3/8 移除 1 kg placeholder，兩者保留來源尺寸與加工 blocker。",
   "source": "data/type72_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-72_D-87.pdf",
+      "revision": "1"
+    }
+  },
   "TYPE72_TABLE": {
     "3/4\"": {
       "line_size": "3/4\"",

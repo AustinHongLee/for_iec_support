@@ -1,71 +1,35 @@
-# Type 57 — U型螺栓鋼構直接固定支撐
+# Type 57 — D-68 U-Bolt Support
 
-| 項目 | 內容 |
-|------|------|
-| 中文名稱 | U型螺栓鋼構直接固定支撐 |
-| 英文名稱 | U-Bolt on Existing Steel |
-| 圖號 | D-68 |
-| 適用範圍 | 1/4"~30" |
-| PDF | `57.pdf` |
-| 狀態 | ✅ 已分析 |
+> 2026-07-31 依中威、22A 與 20E4588 三來源分別重製並補入扣件理論估重。
 
----
+## 輸入
 
-## 系統本質
+`57-{LINE SIZE}B-{A|B}{MATERIAL SYMBOL}`
 
-以 U-Bolt 直接固定於既有鋼構，最低成本基本支撐。FIG-A: SLIDE, FIG-B: FIXED。
+- A：SLIDE
+- B：FIXED
 
-TYPE-57 不是工程化支撐系統，而是使用 U-bolt 直接夾持於既有鋼構的最低成本安裝方案。僅適用碳鋼管、非保溫管、非高溫管、非關鍵管線。構件為 U-BOLT (ref M-26) + FINISHED HEX NUT x4，無底板、無 Shoe、無 Clamp。
+## BOM
 
----
+M-26 明確定義一組為：
 
-## 編碼格式
+- 1 支 U-bolt
+- 4 顆 finished hex nuts
 
-```text
-57-{line_size}B-{mode(A/B)}
-```
+中威／22A 的 M-26 分成兩筆實體 BOM：
 
----
+- `M-26 U-BOLT ROD` 1 支：B 為中心距、C 為外寬、D 為螺紋段、E 為端部至彎曲中心線；名義展開為 `π×B/2 + 2×E`，可計 rod-only 重量。
+- `M-26 FINISHED HEX NUTS` 4 只：依棒徑及比例六角幾何列理論估重；供應商成品重仍待確認。
 
-## 核心運算邏輯
+M-26 只指定 Carbon Steel，沒有 grade，也沒有 thread pitch／class／runout 或製程切斷餘量。因此圓鋼名義幾何及 U-bolt／螺帽理論重量可用，但尚不能宣告完整加工圖 ready。
 
-目前實作已採用 TypeSpec path：
+## 來源差異
 
-```text
-configs/type_57.json
-  TYPE_SPEC.engine = table_parts_v1
-  TYPE_SPEC.row_provider = m26_by_line_size
-core/type_spec_engine.py
-core/types/type_57.py
-```
+| 來源 | 規則 |
+|---|---|
+| 中威／22A | M-26 英制表，至 30"；Carbon Steel |
+| 20E4588 | 公制表，頁首寫 1/2"～6"；`(S)` 為 Stainless Steel；來源未給腿長／螺紋長／展開 |
 
-`type_57.py` 只保留 thin wrapper。M-26 lookup 由 `row_provider` 提供，`TYPE_SPEC.components` 定義 `U-BOLT` 與 `FINISHED HEX NUT`。
+20E 的 `(S)` 另加 A240-304 shim plate；厚度依原圖 `BWG #21 = 0.8128 mm`，不是 1.0 mm。
 
-```text
-1. LINE SIZE → 查 M-26 取得 U-BOLT 規格、rod size、B/C/D/E 與 load
-2. BOM: U-BOLT (ref M-26, 1 SET) + FINISHED HEX NUT (4 PCS)
-3. 幾何尺寸 B/C/D/E 與 load 由 M-26 table 提供
-```
-
----
-
-## 設計重點
-
-- 此型式不依賴 `M-42` 下部構件，直接以 M-26 U-bolt 固定於既有鋼構。
-- M-26 NOTE 1 指定材質為 Carbon Steel U-bolt and four finished hex nuts。
-- 目前 U-bolt 幾何與 load 已接 M-26；重量仍為 placeholder，待 M-26 weight policy 補齊。
-
----
-
-## 與相近 Type 的關係
-
-| 類別 | 型式 | 說明 |
-|------|------|------|
-| Pipe Shoe / Clamp 家族 | 52 / 53 / 54 / 55 / 56 / 57 / 61 / 66 / 67 | 建議對照同族型式的約束行為與附件需求。 |
-
----
-
-## 備註
-
-- 本文件先依現有 `calculator`、`type_catalog.json` 與圖面可辨識資訊整理。
-- 若後續需要進一步資料化，可再補 `幾何參數表`、`BOM 結構表`、`PDF note 摘要` 與 `限制條件矩陣`。
+20E 表內有 1/4" 列，但頁首範圍從 1/2" 起。系統保留該列供辨識，但因來源自相矛盾，1/4" 結果保持 blocked。

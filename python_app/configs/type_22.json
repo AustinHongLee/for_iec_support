@@ -1,41 +1,50 @@
 {
   "type_id": "22",
-  "source": "data/type22_table.py",
+  "_version": "1.1.0",
+  "source": "三來源 TYPE-22_D-24.pdf",
   "migrated": "2026-04-29",
-  "data_updated_at": "2026-05-07",
-  "data_update_note": "修正 designation parser: 嚴格使用 22-{M}-{HH}({Fig}){M42}，Fig.C 才允許 -{LL}",
-  "FIG_L_MAP": {
-    "A": 300,
-    "B": 500,
-    "C": null
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對D-24。中威編碼為HH(Fig)M42，member為L50/L65/L75/C100且主體圖列M42 L/P；22A與20E編碼為HHFig-M42，member為L50/L75並有L(MAX)500/800，22A主體圖列L/T、20E列L/P/T。C100在既有M-43表缺精確row，保留估算與BOM blocker。2026-07-31 起 H/L 採有限外插分級；主體圖未列但同來源 M-42 已定義者可高風險暫算，來源 M-42 亦未定義則仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-22_D-24.pdf",
+      "revision": "1",
+      "designation_style": "parenthesized",
+      "member_table": "CW_MEMBER_TABLE",
+      "allowed_m42": ["L", "P"],
+      "m42_drawing": "中威 M-42/M-42A/M-43 Rev.1"
+    },
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-22_D-24.pdf",
+      "revision": "1",
+      "designation_style": "segmented",
+      "member_table": "CTCI_MEMBER_TABLE",
+      "allowed_m42": ["L", "T"],
+      "m42_drawing": "22A M-42/M-42A/M-43 Rev.1"
+    },
+    "ctci_20e4588": {
+      "drawing": "單張-本案有關/中鼎/長春_Type/TYPE-22_D-24.pdf",
+      "revision": "1",
+      "designation_style": "segmented",
+      "member_table": "CTCI_MEMBER_TABLE",
+      "allowed_m42": ["L", "P", "T"],
+      "m42_drawing": "20E4588 M42.pdf Rev.1A/1"
+    }
   },
-  "MEMBER_H_MAX": {
-    "L50": 1000,
-    "L65": 1000,
-    "L75": 1500
+  "FIG_L_MAP": {"A": 300, "B": 500, "C": null},
+  "CW_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 1000, "L_MAX": null, "m42_exact": true},
+    "L65": {"section_type": "Angle", "lookup_dim": "65*65*6", "full_spec": "L65X65X6", "H_MAX": 1000, "L_MAX": null, "m42_exact": true},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 1500, "L_MAX": null, "m42_exact": true},
+    "C100": {"section_type": "Channel", "lookup_dim": "100*50*5", "full_spec": "C100X50X5", "H_MAX": 2000, "L_MAX": null, "m42_exact": false}
   },
-  "ALLOWED_M42_LETTERS": [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "P",
-    "R",
-    "S",
-    "T",
-    "U",
-    "V",
-    "W",
-    "X",
-    "Y"
-  ]
+  "CTCI_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 1000, "L_MAX": 500, "m42_exact": true},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 1500, "L_MAX": 800, "m42_exact": true}
+  },
+  "fabrication_contract": {
+    "supported_line_center_from_free_end_mm": 100,
+    "u_bolt_reference": "D-68",
+    "u_bolt_furnished": false
+  }
 }

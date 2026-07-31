@@ -1,20 +1,34 @@
 {
   "type_id": "23",
-  "source": "data/type23_table.py",
+  "_version": "1.1.0",
+  "source": "三來源 TYPE-23_D-25.pdf",
   "migrated": "2026-04-29",
-  "FIG_L_MAP": {
-    "A": 300,
-    "B": 500,
-    "C": null
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對D-25。中威有L50/L65/L75/L100/C100/C150/H100/H150八種member；22A與20E只有L50/H1000/Lmax500及L75/H2000/Lmax800。D-25並未標D-68 U-bolt，移除舊文件的錯誤介面；保存上端6mm全周field weld、管中心離自由端100與下角接頭加工blocker。2026-07-31 起 H/L 超限改採有限外插分級，過度外插仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {"drawing": "單張-本案有關/中威/TYPE-23_D-25.pdf", "revision": "1", "member_table": "CW_MEMBER_TABLE"},
+    "ctci_22a_5123a": {"drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-23_D-25.pdf", "revision": "1", "member_table": "CTCI_MEMBER_TABLE"},
+    "ctci_20e4588": {"drawing": "單張-本案有關/中鼎/長春_Type/TYPE-23_D-25.pdf", "revision": "1", "member_table": "CTCI_MEMBER_TABLE"}
   },
-  "MEMBER_H_MAX": {
-    "L50": 500,
-    "L65": 1500,
-    "L75": 2000,
-    "L100": 2000,
-    "C100": 2000,
-    "C150": 2000,
-    "H100": 2000,
-    "H150": 2000
+  "FIG_L_MAP": {"A": 300, "B": 500, "C": null},
+  "CW_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 500, "L_MAX": null},
+    "L65": {"section_type": "Angle", "lookup_dim": "65*65*6", "full_spec": "L65X65X6", "H_MAX": 1500, "L_MAX": null},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 2000, "L_MAX": null},
+    "L100": {"section_type": "Angle", "lookup_dim": "100*100*10", "full_spec": "L100X100X10", "H_MAX": 2000, "L_MAX": null},
+    "C100": {"section_type": "Channel", "lookup_dim": "100*50*5", "full_spec": "C100X50X5", "H_MAX": 2000, "L_MAX": null},
+    "C150": {"section_type": "Channel", "lookup_dim": "150*75*9", "full_spec": "C150X75X9", "H_MAX": 2000, "L_MAX": null},
+    "H100": {"section_type": "H Beam", "lookup_dim": "100*100*6", "full_spec": "H100X100X6X8", "H_MAX": 2000, "L_MAX": null},
+    "H150": {"section_type": "H Beam", "lookup_dim": "150*150*7", "full_spec": "H150X150X7X10", "H_MAX": 2000, "L_MAX": null}
+  },
+  "CTCI_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 1000, "L_MAX": 500},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 2000, "L_MAX": 800}
+  },
+  "fabrication_contract": {
+    "supported_line_center_from_free_end_mm": 100,
+    "top_field_fillet_weld_mm": 6,
+    "top_weld_all_around": true,
+    "u_bolt_shown": false
   }
 }

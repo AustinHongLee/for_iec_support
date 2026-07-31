@@ -35,11 +35,8 @@ FIG_L_MAP = {
 }
 
 # MEMBER_H_MAX
-MEMBER_H_MAX = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
-    for k, v in _DATA["MEMBER_H_MAX"].items()
-}
+MEMBER_H_MAX = {key: value["H_MAX"] for key, value in _DATA["CW_MEMBER_TABLE"].items()}
 
 
 # ALLOWED_M42_LETTERS (set)
-ALLOWED_M42_LETTERS = set(_DATA["ALLOWED_M42_LETTERS"])
+ALLOWED_M42_LETTERS = set(_DATA["source_profiles"]["cw_e25_24_hp6"]["allowed_m42"])

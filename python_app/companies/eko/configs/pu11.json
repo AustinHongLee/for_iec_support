@@ -79,12 +79,22 @@
    }
   }
  ],
+ "validation": {
+  "required": ["fix", "pipe", "L", "H"],
+  "allowed": ["fix", "pipe", "L", "H"],
+  "fixes": ["W", "B", "E"],
+  "pipe": {"min": 0.5, "max": 2},
+  "dimensions": {
+   "H": {"max": 1000},
+   "L": {"max": 500}
+  }
+ },
  "extra_warnings": [
   "PU11 適用2\"(含)以下並排垂直配管托撐；逐桿分列；H(臂)≤1000、L(立)≤500"
  ],
- "data_update_note": "依PU11.pdf件號表；雙角鋼L75×75×9(H臂+L立)+支撐塊6t×25×20+U型螺栓+底板6t",
+ "data_update_note": "v1.1 強制固定方式、管徑、L、H並依圖面限制≤2吋、H≤1000、L≤500。原資料依PU11.pdf件號表。",
  "code": "PU11",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

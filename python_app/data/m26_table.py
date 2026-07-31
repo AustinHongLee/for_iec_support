@@ -6,7 +6,13 @@ M-26 U-Bolt 資料表
 - Type 58 等 U-bolt 類支撐
 - bare pipe clamp / saddle 類型
 """
-from .component_size_utils import normalize_fractional_size
+from copy import deepcopy
+import math
+
+from .component_size_utils import normalize_fractional_size, size_to_float
+
+
+STEEL_DENSITY_KG_PER_MM3 = 7.85e-6
 
 M26_TABLE = {
     '1/4"': {"type": "UB-1/4B", "line_size": '1/4"', "rod_size_a": '1/4"', "B": 18, "C": 24, "D": 36, "E": 39, "load_650f_kg": 220, "load_750f_kg": 220},
@@ -34,16 +40,60 @@ M26_TABLE = {
 }
 
 
+def _with_fabrication_values(row: dict) -> dict:
+    """Add only geometry/weight values that are directly derivable from M-26."""
+    item = deepcopy(row)
+    rod_diameter_in = size_to_float(item["rod_size_a"])
+    if rod_diameter_in is None:
+        return item
+    rod_diameter_mm = rod_diameter_in * 25.4
+    developed_length_mm = math.pi * item["B"] / 2 + 2 * item["E"]
+    rod_weight_kg = (
+        math.pi
+        * rod_diameter_mm**2
+        / 4
+        * developed_length_mm
+        * STEEL_DENSITY_KG_PER_MM3
+    )
+    item.update(
+        {
+            "rod_diameter_in": rod_diameter_in,
+            "rod_diameter_mm": rod_diameter_mm,
+            "B_centerline_mm": item["B"],
+            "C_overall_mm": item["C"],
+            "D_thread_length_mm": item["D"],
+            "E_leg_to_bend_center_mm": item["E"],
+            "bend_arc_deg": 180,
+            "developed_length_formula": "pi * B / 2 + 2 * E",
+            "rod_developed_length_mm": developed_length_mm,
+            "rod_calculated_weight_kg": rod_weight_kg,
+            "finished_hex_nuts_per_set": 4,
+            "material": "CARBON STEEL (GRADE NOT SPECIFIED IN M-26)",
+            "lookup_ready": True,
+            "rod_weight_ready": True,
+            "weight_ready": False,
+            "fabrication_ready": False,
+            "fabrication_blockers": [
+                "M-26 specifies carbon steel for the U-bolt and nuts but no material grade",
+                "M-26 gives thread length D but not thread pitch/class, runout, or manufacturing cut allowance",
+                "four finished nuts use a proportional hex-nut theoretical weight; supplier finished mass remains unconfirmed",
+            ],
+        }
+    )
+    return item
+
+
 def get_m26_by_line_size(line_size) -> dict | None:
     """依 line size 查 U-bolt 規格。"""
     key = normalize_fractional_size(line_size)
     key = key.replace("-", " ")
-    return M26_TABLE.get(key)
+    row = M26_TABLE.get(key)
+    return _with_fabrication_values(row) if row else None
 
 
 def get_m26_by_type(ub_type: str) -> dict | None:
     """依 type 名稱查詢，例如 UB-2B。"""
     for row in M26_TABLE.values():
         if row["type"] == ub_type:
-            return row
+            return _with_fabrication_values(row)
     return None

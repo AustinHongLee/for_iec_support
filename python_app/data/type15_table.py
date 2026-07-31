@@ -28,16 +28,16 @@ _JSON_PATH = _os.path.join(_HERE, "configs", "type_15.json")
 with open(_JSON_PATH, encoding="utf-8") as _f:
     _DATA = _json.load(_f)
 
-# TYPE15_LH_LIMITS
+# Backward-compatible Chung Wei aliases.  Source-aware calculation now reads
+# configs/type_15.json directly from core/types/type_15.py.
 TYPE15_LH_LIMITS = {
     (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
-    for k, v in _DATA["TYPE15_LH_LIMITS"].items()
+    for k, v in _DATA["TYPE15_CW_LH_LIMITS"].items()
 }
 
-# TYPE15_TABLE
 TYPE15_TABLE = {
     (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
-    for k, v in _DATA["TYPE15_TABLE"].items()
+    for k, v in _DATA["TYPE15_CW_TABLE"].items()
 }
 
 
@@ -55,4 +55,3 @@ def get_type15_h_max(line_size: int, l_val: int) -> int | None:
         if l_val <= l_max:
             return h_max
     return None
-

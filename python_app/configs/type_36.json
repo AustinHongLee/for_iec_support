@@ -1,0 +1,13 @@
+{
+  "type_id":"36","_version":"1.1.0","source":"中威 TYPE-36_D-41.pdf + M-34",
+  "data_updated_at":"2026-07-31",
+  "data_update_note":"核對D-41與M-34。只有中威有圖。單支member H、Lug Plate Type-C一片；K bolt數等於M-34孔數（4或6）。2026-07-31 起 H上限採有限外插分級；缺來源/未表列member仍硬停止；完整 K bolt 直徑×長度改列可追溯理論估重，供應商成品重量待確認。",
+  "source_profiles":{"cw_e25_24_hp6":{"drawing":"單張-本案有關/中威/TYPE-36_D-41.pdf","revision":"1","table":"CW_TABLE","bolt_style":"inch"}},
+  "CW_TABLE":{
+    "L50":{"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","H_MAX":600},
+    "L75":{"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","H_MAX":800},
+    "C100":{"section_type":"Channel","lookup_dim":"100*50*5","full_spec":"C100X50X5","H_MAX":1400},
+    "C125":{"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","H_MAX":1400},
+    "C150":{"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","H_MAX":1400}
+  }
+}

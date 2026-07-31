@@ -33,10 +33,11 @@ def test_blank_import_template_documents_required_and_optional_columns(tmp_path)
         assert headers == PROJECT_IMPORT_TEMPLATE_HEADERS
         assert ws.max_row == 1
         assert ws.freeze_panes == "A2"
-        assert ws.auto_filter.ref == "A1:G1"
-        assert len(ws.data_validations.dataValidation) == 2
+        assert ws.auto_filter.ref == "A1:H1"
+        assert len(ws.data_validations.dataValidation) == 3
         assert ws["C1"].comment is not None
         assert ws["E1"].comment is not None
+        assert ws["H1"].comment is not None
         assert "必要欄" in wb["填寫說明"]["A2"].value
     finally:
         wb.close()

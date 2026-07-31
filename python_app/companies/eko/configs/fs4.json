@@ -62,15 +62,23 @@
  "limits": {
   "Hmax": 4000
  },
+ "validation": {
+  "required": ["fix", "serial", "L", "H"],
+  "allowed": ["fix", "serial", "L", "H", "H1"],
+  "fixes": ["A", "B", "E", "W"],
+  "dimensions": {
+   "H": {"max": 4000}
+  }
+ },
  "designation_format": {
   "pattern": "FS4{A/B/E/W}-序號-□L-□H-□H1",
   "example": "FS4E-2-400L-3000H-300H1"
  },
- "data_update_note": "立柱引用DFS4就地展開;上頂管同撐管徑,長=L;封板6t×2",
+ "data_update_note": "立柱引用DFS4就地展開;上頂管同撐管徑,長=L;封板6t×2。2026-07-27依圖面將固定方式、序號、L、H設為必填，禁止缺序號時預設1。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

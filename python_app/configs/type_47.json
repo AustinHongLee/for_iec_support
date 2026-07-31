@@ -1,0 +1,44 @@
+{
+  "type_id": "47",
+  "_version": "1.0.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30複驗重製：D-57縱材依H+Q+50、橫材依2Q，移除無圖據的H-A+Q+3/2Q+6。斜撐及Detail Y按左右框架各2件；20E H>=1140、CW H>1140分開。20E明示D-80 NOT FURNISHED；CW未明示，改列未展開reference。材料未標牌號者不再強指定A36/SUS304。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawings": ["單張-本案有關/中威/TYPE-47_D-57.pdf", "單張-本案有關/中威/TYPE-47_D-58.pdf"],
+      "revision": "1",
+      "pipe_q": {"2":133,"3":148,"4":160,"6":187,"8":213,"10":240,"12":265,"14":281},
+      "members": {
+        "C100":{"member_full":"C100*50*5","A":170},
+        "C125":{"member_full":"C125*65*6","A":170},
+        "C150":{"member_full":"C150*75*9","A":190}
+      },
+      "brace_h_min": 1140,
+      "brace_h_inclusive": false,
+      "brace": {"A":{"length":1008},"B":{"length":1150}},
+      "d80_ownership": "referenced_furnished",
+      "clip_bolt": "1/2\"x30",
+      "detail_z_bolt": "3/4\"x50",
+      "detail_y_bolt": "5/8\"x40"
+    },
+    "ctci_20e4588": {
+      "drawings": ["單張-本案有關/中鼎/長春_Type/TYPE-47_D-57.pdf", "單張-本案有關/中鼎/長春_Type/TYPE-47_D-58.pdf"],
+      "revision": "1",
+      "pipe_q": {"8":213,"10":240,"12":265,"14":281,"16":306,"18":332,"20":357,"24":408},
+      "members": {
+        "C100":{"member_full":"C100*50*5","A":170},
+        "C125":{"member_full":"C125*65*6","A":170},
+        "C150":{"member_full":"C150*75*9","A":190},
+        "C180":{"member_full":"C180*75*7","A":210},
+        "C200":{"member_full":"C200*90*8","A":220}
+      },
+      "brace_h_min": 1140,
+      "brace_h_inclusive": true,
+      "brace": {"A":{"length":1008},"B":{"length":1150}},
+      "d80_ownership": "not_furnished",
+      "clip_bolt": "M12x30",
+      "detail_z_bolt": "M20x50",
+      "detail_y_bolt": "M16x40"
+    }
+  }
+}

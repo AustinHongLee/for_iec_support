@@ -1,7 +1,141 @@
 {
   "type_id": "08",
-  "source": "data/type08_table.py",
-  "migrated": "2026-04-29",
+  "name": "Sliding Support / Multi-line Support TYPE-08",
+  "drawing_no": "D-8",
+  "applicable_range": "依來源：中威 2\"~4\"；中鼎 22A/20E4588 表列 3\"~4\" supporting pipe",
+  "designation_format": {
+    "pattern": "08-{supporting_pipe_size}B-{LL}{HH}{M42_letter}[-{L1}{L2}]",
+    "base_pattern": "08-{supporting_pipe_size}B-{LL}{HH}{M42_letter}",
+    "legacy_20e4588_pattern": "08-{supporting_pipe_size}B-{LL}{HH}{M42_letter}-{L1}{L2}",
+    "examples": [
+      "08-2B-1005G",
+      "08-3B-0515G",
+      "08-2B-1005T-0208"
+    ]
+  },
+  "material_rules": {
+    "supporting_pipe_a": "A53 Gr.B / black steel",
+    "member_n": "A36/SS400",
+    "top_plate_b": "A36/SS400",
+    "stopper": "A36/SS400"
+  },
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing_standard": "HP6-DSD-A4-500-001",
+      "drawing": "TYPE-08_D-8.pdf",
+      "revision": "1",
+      "table_source": "cw_e25_24_hp6",
+      "allowed_lower_components": ["G", "J"],
+      "has_end_stoppers": true,
+      "channel_cut_formula": "L - 2 * stopper_thickness",
+      "supports_l1_l2_modifier": false,
+      "g_height_from_lowest_paving": true,
+      "m42_drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf",
+      "m42_revision": "1"
+    },
+    "ctci_22a_5123a": {
+      "drawing_standard": "D7TS-701-E",
+      "drawing": "TYPE-08_D-8.pdf",
+      "revision": "1",
+      "table_source": "ctci_22a_5123a",
+      "allowed_lower_components": ["G", "R", "T"],
+      "has_end_stoppers": true,
+      "channel_cut_formula": "L - 2 * stopper_thickness",
+      "supports_l1_l2_modifier": false,
+      "g_height_from_lowest_paving": false,
+      "m42_drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf",
+      "m42_revision": "1"
+    },
+    "ctci_20e4588": {
+      "drawing_standard": "STM-05.01",
+      "drawing": "TYPE-08_D-8.pdf",
+      "revision": "1B",
+      "table_source": "ctci_20e4588",
+      "allowed_lower_components": ["G", "R", "T"],
+      "has_end_stoppers": false,
+      "channel_cut_formula": "L",
+      "supports_l1_l2_modifier": true,
+      "g_height_from_lowest_paving": true,
+      "m42_drawing": "M42.pdf pages 1-3",
+      "m42_revision": "1A/1",
+      "drawing_ambiguity": "Rev.1B 主視圖未再畫兩端 STOPPER，雖尺寸表仍保留 K/M 欄；依可見構造不列 STOPPER，BOM 與加工圖需工程師確認。"
+    }
+  },
+  "source_tables": {
+    "cw_e25_24_hp6": {
+      "2": {
+        "pipe_sch": "SCH.40",
+        "L_max": 1000,
+        "H_max": 1500,
+        "K": 70,
+        "M": 160,
+        "B": 80,
+        "member_n": "C100*50*5"
+      },
+      "3": {
+        "pipe_sch": "SCH.40",
+        "L_max": 1000,
+        "H_max": 1500,
+        "K": 70,
+        "M": 160,
+        "B": 110,
+        "member_n": "C100*50*5"
+      },
+      "4": {
+        "pipe_sch": "SCH.40",
+        "L_max": 1000,
+        "H_max": 1500,
+        "K": 85,
+        "M": 185,
+        "B": 135,
+        "member_n": "C125*65*6"
+      }
+    },
+    "ctci_22a_5123a": {
+      "3": {
+        "pipe_sch": "SCH.40",
+        "L_max": 500,
+        "H_max": 2500,
+        "H_unconditional_max": 1500,
+        "H_high_requires_supported_line_lte": 2,
+        "K": 70,
+        "M": 160,
+        "B": 110,
+        "member_n": "C100*50*5"
+      },
+      "4": {
+        "pipe_sch": "SCH.40",
+        "L_max": 800,
+        "H_max": 2500,
+        "K": 85,
+        "M": 185,
+        "B": 135,
+        "member_n": "C125*65*6"
+      }
+    },
+    "ctci_20e4588": {
+      "3": {
+        "pipe_sch": "SCH.40",
+        "L_max": 500,
+        "H_max": 2500,
+        "H_unconditional_max": 1500,
+        "H_high_requires_supported_line_lte": 2,
+        "K": 70,
+        "M": 160,
+        "B": 110,
+        "member_n": "C100*50*5"
+      },
+      "4": {
+        "pipe_sch": "SCH.40",
+        "L_max": 800,
+        "H_max": 2500,
+        "K": 85,
+        "M": 185,
+        "B": 135,
+        "member_n": "C125*65*6"
+      }
+    }
+  },
   "TYPE08_TABLE": {
     "2": {
       "pipe_sch": "SCH.40",
@@ -24,5 +158,27 @@
       "B": 135,
       "member_n": "C125*65*6"
     }
-  }
+  },
+  "fabrication_contract": {
+    "top_plate_thickness_mm": 6,
+    "stopper_thickness_mm": 6,
+    "stopper_corner_chamfer_mm": 10,
+    "weep_hole_diameter_mm": 6,
+    "field_weld_mm": 6,
+    "known_blocker": "圖面標出 weep hole 位於立管低點，但沒有孔中心離底板的可製造尺寸。"
+  },
+  "version": "1.1",
+  "last_modified": "2026-07-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對中威 E25-24、中鼎 22A_5123A、中鼎 20E4588 D-8：拆分管徑/L/H/M-42；中威與22A槽鐵切長為L-12並列兩片STOPPER；20E依Rev.1B採槽鐵L並解析L1/L2。2026-07-31 起 L/H 上限採有限外插分級；主體圖未列但同來源M-42已定義者列高風險暫算。加工圖缺口維持blocker。",
+  "change_log": [
+    {
+      "date": "2026-04-29",
+      "desc": "舊 VBA 表格移轉為 JSON"
+    },
+    {
+      "date": "2026-07-29",
+      "desc": "建立三來源 D-8 recipe 與加工圖安全契約"
+    }
+  ]
 }

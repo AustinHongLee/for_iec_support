@@ -1,12 +1,13 @@
 from tools.audit_table_json_coverage import audit_coverage
 
 
-def test_supported_type_anchor_audit_flags_calculator_only_types():
+def test_supported_type_anchor_audit_tracks_rebuilt_json_types_and_remaining_risks():
     audit = audit_coverage()
     summary = audit["supported_types"]["summary"]
 
-    assert "03" in summary["calculator_only"]
-    assert "05" in summary["calculator_only"]
+    assert "03" not in summary["calculator_only"]
+    assert "05" not in summary["calculator_only"]
+    assert "61" not in summary["calculator_only"]
     assert "01T" not in summary["calculator_only"]
     assert "66" not in summary["calculator_only"]
     assert "66" in summary["shared_spec"]

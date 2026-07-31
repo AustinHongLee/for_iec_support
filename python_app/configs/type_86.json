@@ -1,0 +1,26 @@
+{
+  "type_id": "86",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-107/D-108 與 22A D-107 建立 Type 86。復用同來源 D-81/D-81A clamp core；M-4/M-47 供應商重量、16~24 fabricated member 與大管多片 saddle 未完成前維持安全 reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-86_D-107.pdf",
+      "large_drawing": "TYPE-86_D-108.pdf",
+      "revision": "1",
+      "small_detail_no": "107",
+      "large_detail_no": "108",
+      "small_sizes": [0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28, 30, 32, 36, 40, 42]
+    },
+    "ctci_22a_5123a": {
+      "small_drawing": "TYPE-86_D-107.pdf",
+      "large_drawing": "TYPE-86_D-108.pdf",
+      "revision": "1",
+      "small_detail_no": "107",
+      "large_detail_no": "108",
+      "small_sizes": [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": []
+    }
+  }
+}

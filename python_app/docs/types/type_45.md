@@ -1,5 +1,7 @@
 # Type 45 — 曲面設備直接夾持支撐 (Vessel Direct Clamp Support)
 
+> **2026-07-29 原圖複核更正**：框架為縱向 Channel 2 支（各 `H-A+Q+3`）與橫向 Channel 2 支（各 `2Q+6`）。Detail Z 的 M-34 Plate 固定為 2 片；只有 `H>1140` 時才加入斜撐與 Detail Y 的 M-35/36 Plate。各端 Bolt 數依 4/6 孔計。
+
 > **圖號**: 45 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-54 (1/2), D-55 (2/2)
 > **日期**: 12/12/19

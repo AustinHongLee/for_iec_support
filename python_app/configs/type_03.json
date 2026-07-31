@@ -1,0 +1,30 @@
+{
+  "type_id": "03",
+  "version": "2.0",
+  "source": "單張-本案有關/中威/TYPE-03_D-3.pdf",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐圖重驗中威 D-3。移除無來源的 U-bolt SUS304/1kg 假值；垂直角鋼保留 D-3 幾何推導，但明確標示長半徑彎頭假設與現場調整 blocker，並支援實際切長/彎頭半徑覆寫。2026-07-31 起 H 上限採有限外插分級；D-3未列但同來源M-42已定義者列高風險暫算。管徑與來源仍硬限制。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-03_D-3.pdf",
+      "revision": "1",
+      "m42_drawing": "單張-本案有關/中威/LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf"
+    }
+  },
+  "constraints": {
+    "line_size_max_in": 2,
+    "H_max_mm": 1500,
+    "allowed_m42": ["D", "L", "M", "N", "P", "R"]
+  },
+  "fabrication_contract": {
+    "member": "L75X75X9",
+    "horizontal_cut_length_mm": 130,
+    "elbow_center_radius_factor_assumption": 1.5,
+    "elbow_top_clearance_mm": 20,
+    "vertical_formula": "H + elbow_center_radius + supported_pipe_OD/2 + 20",
+    "weld_mm": 6,
+    "u_bolt_reference": null,
+    "u_bolt_material": null,
+    "u_bolt_unit_weight_kg": null
+  }
+}

@@ -66,12 +66,10 @@ def test_fs23_gusset_and_fix():
     assert not _has(rw, "擴展螺栓") and not _has(rw, "水泥墩")   # W 焊接
 
 
-def test_fs33_cold_best_effort():
+def test_fs33_blocks_without_fs32():
     r = _a("FS33E-1\"-500H-300H1")
-    assert not r.error, r.error
-    assert any(p.length == 500 for p in _n(r, "管路"))     # 1.1/2"SCH80 立柱=H
-    assert _has(r, "不鏽鋼夾板") and _has(r, "柱頭螺栓")
-    assert any("FS32" in w for w in r.warnings)            # 明確標 FS32 缺
+    assert r.error and "FS32" in r.error
+    assert not r.entries
 
 
 def test_fs5_square_base_plate_and_holes():

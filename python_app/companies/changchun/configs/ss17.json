@@ -1,0 +1,14 @@
+{
+  "company": "Chang Chun owner standard",
+  "code": "SS17",
+  "name": "結構管架 SS17",
+  "drawing": "DES-M15172 / SS17",
+  "source_file": "單張-本案有關/長春/SS17.pdf",
+  "revision": "0 / 2016-04-25",
+  "max_load_kg": 1500,
+  "H_max_mm": 1600,
+  "L_max_mm": 3000,
+  "version": "1.1",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依DES-M15172 SS17建立兩立柱一橫樑、B/W固定、290x195x12t四孔底板。2026-07-31起H/L上限採有限外插分級；圖示1500kg最大支撐重量不因超界而外推，非正值仍硬停止。固定螺栓依名義M×L列可追溯理論估重，供應商成品重仍待確認。"
+}

@@ -1,0 +1,66 @@
+{
+  "type_id": "16C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-22 完整轉錄 CR2.5~CR28 non-insulated resting support 的 pipe OD/T1/R/T/A 與 tie-bend B/D/J 分組。A 是 tie-bend 幾何長度但 drawing 未給完整 strip/material/assembly release，先保存加工參數不計重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/16C.pdf",
+      "drawing_no": "C-22",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-22"],
+      "title": "C-22 TYPE 16C NON-INSULATED RESTING SUPPORT",
+      "component_id": "C22-TYPE16C-ASSEMBLY",
+      "source_spec": "RESTING FOR NON-INSULATED PIPE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["A", "B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        }
+      ],
+      "designation_error": "Type 16C 格式應為 16C-{A|B}-{CR#}-{LINE}B",
+      "lookups": [
+        {
+          "name": "cradle",
+          "field": "cradle_no",
+          "match_fields": {"line_size_in": "pipe_size_in"},
+          "rows": {
+            "CR2.5": [
+              {"pipe_size_in": 0.5, "pipe_OD_mm": 21.3, "T1_mm": 3, "R_mm": 36, "tie_T_mm": 1.0, "tie_A_mm": 39, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+              {"pipe_size_in": 0.75, "pipe_OD_mm": 26.7, "T1_mm": 3, "R_mm": 36, "tie_T_mm": 1.0, "tie_A_mm": 40, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"}
+            ],
+            "CR3": {"pipe_size_in": 1, "pipe_OD_mm": 33.4, "T1_mm": 3, "R_mm": 44, "tie_T_mm": 1.0, "tie_A_mm": 48, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR3.5": {"pipe_size_in": 1.5, "pipe_OD_mm": 48.3, "T1_mm": 3, "R_mm": 51, "tie_T_mm": 1.0, "tie_A_mm": 57, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR4": {"pipe_size_in": 2, "pipe_OD_mm": 60.3, "T1_mm": 3, "R_mm": 57, "tie_T_mm": 1.0, "tie_A_mm": 65, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR6": {"pipe_size_in": 3, "pipe_OD_mm": 88.9, "T1_mm": 5, "R_mm": 84, "tie_T_mm": 1.0, "tie_A_mm": 97, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR7": {"pipe_size_in": 4, "pipe_OD_mm": 114.3, "T1_mm": 5, "R_mm": 97, "tie_T_mm": 1.0, "tie_A_mm": 115, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR9": {"pipe_size_in": 6, "pipe_OD_mm": 168.3, "T1_mm": 5, "R_mm": 122, "tie_T_mm": 1.0, "tie_A_mm": 151, "tie_B_mm": 25, "tie_D_mm": 8, "bolt_J": "1/4in x 65"},
+            "CR11": {"pipe_size_in": 8, "pipe_OD_mm": 219.1, "T1_mm": 6, "R_mm": 149, "tie_T_mm": 1.0, "tie_A_mm": 191, "tie_B_mm": 40, "tie_D_mm": 12, "bolt_J": "3/8in x 65"},
+            "CR15": {"pipe_size_in": 10, "pipe_OD_mm": 273.1, "T1_mm": 6, "R_mm": 191, "tie_T_mm": 1.0, "tie_A_mm": 242, "tie_B_mm": 40, "tie_D_mm": 12, "bolt_J": "3/8in x 65"},
+            "CR17": {"pipe_size_in": 12, "pipe_OD_mm": 323.9, "T1_mm": 6, "R_mm": 216, "tie_T_mm": 1.0, "tie_A_mm": 279, "tie_B_mm": 40, "tie_D_mm": 12, "bolt_J": "3/8in x 65"},
+            "CR18": {"pipe_size_in": 14, "pipe_OD_mm": 355.6, "T1_mm": 6, "R_mm": 229, "tie_T_mm": 1.0, "tie_A_mm": 301, "tie_B_mm": 40, "tie_D_mm": 12, "bolt_J": "3/8in x 65"},
+            "CR20": {"pipe_size_in": 16, "pipe_OD_mm": 406.4, "T1_mm": 10, "R_mm": 254, "tie_T_mm": 1.6, "tie_A_mm": 342, "tie_B_mm": 50, "tie_D_mm": 15, "bolt_J": "1/2in x 75"},
+            "CR22": {"pipe_size_in": 18, "pipe_OD_mm": 457.2, "T1_mm": 10, "R_mm": 279, "tie_T_mm": 1.6, "tie_A_mm": 380, "tie_B_mm": 50, "tie_D_mm": 15, "bolt_J": "1/2in x 75"},
+            "CR24": {"pipe_size_in": 20, "pipe_OD_mm": 508.0, "T1_mm": 10, "R_mm": 304, "tie_T_mm": 1.6, "tie_A_mm": 418, "tie_B_mm": 50, "tie_D_mm": 15, "bolt_J": "1/2in x 75"},
+            "CR28": {"pipe_size_in": 24, "pipe_OD_mm": 609.6, "T1_mm": 10, "R_mm": 355, "tie_T_mm": 1.6, "tie_A_mm": 496, "tie_B_mm": 50, "tie_D_mm": 15, "bolt_J": "1/2in x 75"}
+          }
+        }
+      ],
+      "static_parameters": {
+        "cradle_length_mm": 400,
+        "jacket_foam_vapor_length_mm": 500,
+        "coating": "exposed surface coated with mastic vapor barrier"
+      },
+      "references": ["C-14/C-15"],
+      "blockers": [
+        "tie-bend A geometry is tabulated but strip width/material and released piece recipe are incomplete",
+        "C-14/C-15 cradle and side-detail pieces remain unresolved",
+        "assembly coating and attachment scope prevent fabrication-ready release"
+      ]
+    }
+  }
+}

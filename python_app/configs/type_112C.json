@@ -1,0 +1,20 @@
+{
+  "type_id": "112C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-55/N-12A/N-28 複驗：接入 CLIP TYPE 3 與 WOOD-2/3/4 下料/孔位；insulation_thickness_mm 可解析 A/plate t。未提供 insulation、白橡木密度/chamfer、brace cuts 與 weld fit-up 時維持 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/112C.pdf",
+      "drawing_no": "C-55",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "orientation_default_deg": 45,
+      "sections": ["C180x75x7x10.5", "L130x130x12"],
+      "references": ["N-12A CLIP TYPE 3", "N-28 WOOD BLOCK 2/3/4"],
+      "stud_bolt": "DIA3/4in x 120; A193 Gr.B8; 2-A194 Gr.8A nuts",
+      "stud_hole_diameter_mm": 22,
+      "weld_mm": 6
+    }
+  }
+}

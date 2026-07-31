@@ -1,118 +1,153 @@
-"""
-Type 22 計算器 - 落地式懸臂 U-bolt 支撐 (Ground Cantilever Support)
-Type 21 的落地版: 有 base plate + M42 下部構件
+"""Type 22 source-aware ground cantilever U-bolt support (D-24)."""
+from __future__ import annotations
 
-格式: 22-{M}-{HH}({Fig}){M42}
-      22-{M}-{HH}(C){M42}-{LL}      (Fig = C only, LL=L/100)
-- 第二段: 型鋼代碼 (L50/L65/L75)
-- 第三段: H(數字) + (Fig字母 A/B/C) + M42字母
-- 第四段(Fig.C only): L dimension (*100mm)
-
-Note 2: DIMENSION "H" SHALL BE CUT TO SUIT IN FIELD.
-現場 designation 的 M42 字母保留在括號後，例如 12(A)X => Fig=A, M42=X。
-
-構件 (2 + M42):
-  1. MEMBER "M" (H段): 垂直, 長度 H, A36/SS400
-  2. MEMBER "M" (L段): 水平, 長度 L, A36/SS400
-  3. M42 下部構件 (PerformActionByLetter)
-"""
 import re
 
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import (
+    register_host_m42_variance,
+    register_source_envelope,
+)
+from ..m42 import perform_action_by_letter, source_allows_m42_type
 from ..models import AnalysisResult
-from ..parser import get_part
+from ..source_profiles import normalize_source_profile
 from ..steel import add_steel_section_entry
-from ..m42 import perform_action_by_letter
-from data.steel_sections import get_section_details
-from data.type22_table import MEMBER_H_MAX, FIG_L_MAP, ALLOWED_M42_LETTERS
+from ..truth import make_evidence
 
 
-_FORMAT_HELP = "22-{M}-{HH}({Fig}){M42} 或 22-{M}-{HH}(C){M42}-{LL}"
+def _load(source_profile):
+    config = load_config("22", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        raise ValueError(f"Type 22 尚未建立來源 profile: {profile_id}")
+    return profile_id, profile, config[profile["member_table"]], config
 
 
-def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
-    result = AnalysisResult(fullstring=fullstring)
-
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2)
-    if not details:
-        result.error = f"Type 22: 未知型鋼代碼 {part2}"
-        return result
-
-    section_type = details["type"]
-    full_size = details["size"]
-    section_dim = full_size[1:]  # strip leading letter
-
-    parts = fullstring.split("-")
-    if len(parts) not in (3, 4):
-        result.error = f"Type 22: Designation 格式錯誤，應為 {_FORMAT_HELP}"
-        return result
-
-    # ── 第三段: H + (Fig) + M42 letter ──
-    part3 = get_part(fullstring, 3)
-    if not part3:
-        result.error = f"Type 22: 第三段格式錯誤，應為 HH(Fig)M42，例如 12(A)X"
-        return result
-
-    match = re.fullmatch(r"(\d+)\(([ABCabc])\)([A-Za-z])", part3)
-    if not match:
-        result.error = f"Type 22: 第三段格式錯誤，應為 HH(Fig)M42，例如 12(A)X"
-        return result
-
-    h_digits = match.group(1)
-    fig_choice = match.group(2).upper()
-    m42_letter = match.group(3).upper()
-
-    if not h_digits.isdigit():
-        result.error = f"Type 22: H 值無法解析 ({fullstring})"
-        return result
-
-    if fig_choice not in FIG_L_MAP:
-        result.error = f"Type 22: 不支援的 Fig 代碼 '{fig_choice}' (僅 A/B/C)"
-        return result
-
-    if m42_letter not in ALLOWED_M42_LETTERS:
-        allowed = "/".join(sorted(ALLOWED_M42_LETTERS))
-        result.error = (
-            f"Type 22: 不支援的 M42 字母 '{m42_letter}' "
-            f"(允許: {allowed})"
-        )
-        return result
-
-    section_length_h = int(h_digits) * 100
-
-    # ── L 值 ──
-    fixed_l = FIG_L_MAP[fig_choice]
-    if fixed_l is not None:
-        if len(parts) == 4:
-            result.error = f"Type 22: 只有 Fig.C 可指定第四段 L 值，應為 {_FORMAT_HELP}"
-            return result
-        section_length_l = fixed_l
+def _parse(fullstring, profile, fig_l_map):
+    parts = str(fullstring).split("-")
+    member = parts[1].upper() if len(parts) > 1 else ""
+    if profile["designation_style"] == "parenthesized":
+        if len(parts) not in (3, 4):
+            raise ValueError("中威格式應為 22-{M}-{HH}({Fig}){M42}[-{LL}]")
+        match = re.fullmatch(r"(\d+)\(([ABCabc])\)([A-Za-z])", parts[2])
+        if not match:
+            raise ValueError("中威第三段應為 HH(Fig)M42，例如 05(A)L")
+        h_digits, fig, letter = match.groups()
+        extra = parts[3:]
     else:
-        # Fig.C: 從第四段取得
-        part4 = get_part(fullstring, 4)
-        if not part4:
-            result.error = f"Type 22: Fig.C 需要第四段指定 L 值 ({fullstring})"
-            return result
-        if not part4.isdigit():
-            result.error = f"Type 22: Fig.C 的 L 值須為數字 ({fullstring})"
-            return result
-        section_length_l = int(part4) * 100
+        if len(parts) not in (4, 5):
+            raise ValueError("中鼎格式應為 22-{M}-{HH}{Fig}-{M42}[-{LL}]")
+        match = re.fullmatch(r"(\d+)([ABCabc])", parts[2])
+        if not match or not re.fullmatch(r"[A-Za-z]", parts[3]):
+            raise ValueError("中鼎第三/四段應為 HHFig-M42，例如 05A-L")
+        h_digits, fig = match.groups()
+        letter = parts[3]
+        extra = parts[4:]
+    fig, letter = fig.upper(), letter.upper()
+    h_mm = int(h_digits) * 100
+    if fig == "C":
+        if len(extra) != 1 or not extra[0].isdigit():
+            raise ValueError("Fig.C 需且只能有 L(100mm單位)")
+        l_mm = int(extra[0]) * 100
+    else:
+        if extra:
+            raise ValueError("Fig.A/B 不得另給 L")
+        l_mm = fig_l_map[fig]
+    if h_mm <= 0 or l_mm <= 0:
+        raise ValueError("H與L必須大於0")
+    return member, fig, letter, h_mm, l_mm
 
-    # ── H_MAX 驗證 ──
-    h_max = MEMBER_H_MAX.get(part2)
-    if h_max and section_length_h > h_max:
-        result.warnings.append(
-            f"H={section_length_h}mm 超過 {part2} 的上限 {h_max}mm"
+
+def _decorate_m42(entries, profile, fabrication_ready):
+    for entry in entries:
+        entry.geometry.source_drawing = profile["m42_drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.fabrication_ready = fabrication_ready
+        if entry.category == "鋼板類":
+            code = entry.name.split("_")[1].upper()
+            entry.geometry.component_id = f"M42-PLATE-{code}"
+            entry.geometry.shape_kind = "rectangular_base_plate"
+            entry.geometry.shape_spec = entry.geometry.shape_spec or f"{entry.length:g}x{entry.width:g}x{entry.spec}t"
+            entry.geometry.parameters.update({"length_mm": entry.length, "width_mm": entry.width, "thickness_mm": float(entry.spec)})
+        elif entry.category == "螺栓類":
+            entry.geometry.component_id = "M42-FASTENER"
+            entry.geometry.shape_kind = "purchased_fastener"
+            entry.geometry.parameters.update({"spec": entry.spec, "quantity": entry.quantity})
+
+
+def calculate(fullstring, overrides=None, source_profile=None):
+    result = AnalysisResult(fullstring=fullstring)
+    overrides = overrides or {}
+    try:
+        profile_id, profile, members, config = _load(source_profile)
+        member, fig, letter, h_mm, l_mm = _parse(fullstring, profile, config["FIG_L_MAP"])
+    except (IndexError, TypeError, ValueError) as exc:
+        result.error = f"Type 22: {exc}"
+        return result
+    row = members.get(member)
+    if not row:
+        result.error = f"Type 22 / {profile_id}: D-24 未表列 MEMBER {member}"
+        return result
+    if letter not in profile["allowed_m42"]:
+        if not source_allows_m42_type(profile_id, letter):
+            result.error = (
+                f"Type 22 / {profile_id}: M-42 {letter} 不存在於此來源 M-42 圖"
+            )
+            return result
+        register_host_m42_variance(
+            result,
+            type_label=f"Type 22 / {profile_id}",
+            source_ref="D-24",
+            letter=letter,
+            host_allowed=profile["allowed_m42"],
         )
+    checks = [("H", h_mm, row["H_MAX"], True)]
+    if row["L_MAX"] is not None:
+        checks.append(("L", l_mm, row["L_MAX"], True))
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 22 / {profile_id}",
+        source_ref=f"D-24 {member} L/H(MAX)",
+        checks=checks,
+    ):
+        return result
 
-    # ── 1. Member M (H段 - 垂直) ──
-    add_steel_section_entry(result, section_type, section_dim, section_length_h)
+    ctx = parse_hardware_material_context(overrides, legacy_material_keys=("material",), legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT, service=ctx.service, overrides=ctx.material_overrides)
+    blockers = [
+        "D-24未給上角接頭的精確端部切削/貼合輪廓與焊腳尺寸",
+        "designation不含supported line size；D-68 U-bolt孔徑與孔距無法展開",
+    ]
+    for cid, segment, length in (("D24-MEMBER-M-VERTICAL", "H", h_mm), ("D24-MEMBER-M-HORIZONTAL", "L", l_mm)):
+        add_steel_section_entry(result, row["section_type"], row["lookup_dim"], length, material=material)
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.shape_spec = f'{row["full_spec"]}; CUT {segment}={length}; TYPE-22 FIG-{fig}'
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = blockers[:]
+        entry.geometry.parameters = {"segment": segment, "cut_length_mm": length, "H_mm": h_mm, "L_mm": l_mm, "figure": fig, "supported_line_center_from_free_end_mm": 100, "u_bolt_reference": "D-68", "u_bolt_furnished": False}
 
-    # ── 2. Member M (L段 - 水平) ──
-    add_steel_section_entry(result, section_type, section_dim, section_length_l)
-
-    # ── 3. M42 下部構件 ──
-    perform_action_by_letter(result, m42_letter, full_size)
-
+    before_m42 = len(result.entries)
+    perform_action_by_letter(result, letter, row["full_spec"].replace("X", "*"), source_profile=profile_id)
+    if result.error:
+        result.entries.clear()
+        return result
+    if not row["m42_exact"]:
+        blockers.append("C100未在既有M-43下部構件表列；目前C125 row僅為估算")
+    _decorate_m42(result.entries[before_m42:], profile, row["m42_exact"])
+    result.meta["fabrication"] = {
+        "source_profile": profile_id, "source_drawing": profile["drawing"], "source_revision": profile["revision"],
+        "branch": f"{member}/FIG-{fig}/M42-{letter}", "bom_ready": row["m42_exact"], "fabrication_ready": False,
+        "blockers": blockers, "H_mm": h_mm, "L_mm": l_mm, "m42_type": letter,
+    }
+    result.warnings.append("D-24上角接頭與D-68孔位未完整；加工圖仍有blocker")
+    result.evidence.extend([
+        make_evidence("type22_member_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99),
+        make_evidence("type22_designation", {"H": h_mm, "L": l_mm, "figure": fig, "m42": letter}, "formula", source=profile["drawing"], confidence=0.99),
+    ])
     return result

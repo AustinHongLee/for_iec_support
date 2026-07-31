@@ -1,0 +1,16 @@
+{
+  "company": "Chung Wei Engineering Consultant Co., Ltd.",
+  "code": "SPS-001",
+  "name": "SPECIAL SUPPORT LIST SPS-001",
+  "drawing": "E2524-SPS-001",
+  "source_file": "單張-本案有關/長春/SPS-001.PDF",
+  "revision": "0 / 2026-07-17 FOR CONSTRUCTION",
+  "members": {
+    "H100": {"section_type": "H Beam", "lookup_spec": "100*100*10", "source_spec": "H100x100x10", "H_max_mm": 1600, "L_max_mm": 1200, "weight_kg_m": null},
+    "C125": {"section_type": "Channel", "lookup_spec": "125*65*6", "source_spec": "C125x65x6", "H_max_mm": 1600, "L_max_mm": 1200, "weight_kg_m": 13.4},
+    "H125": {"section_type": "H Beam", "lookup_spec": "125*125*6", "source_spec": "H125x125x6", "H_max_mm": 1600, "L_max_mm": 2000, "weight_kg_m": null}
+  },
+  "version": "1.1",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依新寄E2524-SPS-001 Rev.0重建；與舊E19-06同名SPS-001分流，H100/H125未核定每米重時不猜重量。2026-07-31 M16x50L螺栓連帽依名義幾何列理論估重，供應商成品重仍待確認。"
+}

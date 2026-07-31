@@ -56,10 +56,20 @@
   "Lmax": 3000,
   "Hmax": 1600
  },
+ "validation": {
+  "required": ["fix", "H", "L"],
+  "allowed": ["fix", "H", "L"],
+  "fixes": ["B", "W"],
+  "dimensions": {
+   "H": {"max": 1600},
+   "L": {"max": 3000}
+  }
+ },
  "designation_format": {
   "pattern": "SS25{B/W}-□H-□L",
   "example": "SS25B-1000H-800L"
  },
- "version": "1.1",
- "data_updated_at": "2026-07-21"
+ "version": "1.2",
+ "data_updated_at": "2026-07-27",
+ "data_update_note": "v1.2 依圖面強制固定方式、H、L並將H≤1600、L≤3000改為阻擋條件。"
 }

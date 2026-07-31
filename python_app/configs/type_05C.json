@@ -1,0 +1,49 @@
+{
+  "type_id": "05C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-5 建立 elbow trunnion 2~24in 的 Pipe B/C table。designation 的 H/100 保存，但 H/Hx 為 field cut，cover plate 與端部接合未形成完整下料，故不以 C 或 Hx 估重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/05C.pdf",
+      "drawing_no": "C-5",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-5"],
+      "title": "C-5 TYPE 05C ELBOW TRUNNION ASSEMBLY",
+      "component_id": "C5-TYPE05C-ASSEMBLY",
+      "source_spec": "PIPE TRUNNION AT ELBOW; 5C TO -9C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"name": "H_mm", "kind": "height_100mm"}]}
+      ],
+      "designation_error": "Type 05C 格式應為 05C-{LINE}B-{H/100}",
+      "lookups": [
+        {
+          "name": "line_size",
+          "field": "line_size_in",
+          "rows": {
+            "2": {"pipe_B": "1-1/2in SCH.80", "C_mm": 70},
+            "3": {"pipe_B": "2in SCH.40", "C_mm": 80},
+            "4": {"pipe_B": "3in SCH.40", "C_mm": 110},
+            "6": {"pipe_B": "4in SCH.40", "C_mm": 140},
+            "8": {"pipe_B": "6in SCH.40", "C_mm": 190},
+            "10": {"pipe_B": "8in SCH.40", "C_mm": 240},
+            "12": {"pipe_B": "10in STD.WT", "C_mm": 290},
+            "14": {"pipe_B": "12in STD.WT", "C_mm": 340},
+            "16": {"pipe_B": "12in STD.WT", "C_mm": 340},
+            "18": {"pipe_B": "14in STD.WT", "C_mm": 380},
+            "20": {"pipe_B": "14in STD.WT", "C_mm": 380},
+            "24": {"pipe_B": "16in STD.WT", "C_mm": 430}
+          }
+        }
+      ],
+      "static_parameters": {"cover_plate_thickness_mm": 6, "weep_hole_diameter_mm": 6},
+      "references": ["C-5 DETAIL / PROJECT TRUNNION INTERFACE"],
+      "blockers": [
+        "H/Hx shall be cut to suit in field and do not define finished stock",
+        "elbow/trunnion cope, cover-plate plan dimensions and ending interface are incomplete",
+        "diameter-6 weep-hole center datum is not supplied"
+      ]
+    }
+  }
+}

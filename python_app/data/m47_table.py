@@ -1,13 +1,12 @@
 """
 M-47 Compressed Gasket 資料表。
 
-目前來源:
-- 舊有 `m42_table.py` 內的 M47 width/length 尺寸映射
-- Type 13 既有厚度假設: <= 24" 採 3t
-- Type 67 / D-81A 文件註記: 26"~42" gasket 採 1.5t
+來源:
+- `單張-本案有關/中威/COMPRESSED-GASKET_M-47.pdf`
+- 表列 ASB designation / L / W，NOTE 1 明定 1.5 mm compressed gasket
+- Material: Garlock Blue-Gard Style 3000 or equivalent
 
-這代表 M-47 已有可用的尺寸 lookup，但厚度仍屬 repo 內推論整合，
-不是逐字逐表從原始 M-47 PDF 全轉錄。
+原先 <=24" 採 3t 是 Type 13 歷史假設，與 M-47 原圖衝突，已移除。
 """
 from __future__ import annotations
 
@@ -46,15 +45,11 @@ _RAW_M47_DIMENSIONS = {
 
 
 def _default_thickness_mm(line_size_float: float) -> float:
-    if line_size_float >= 26:
-        return 1.5
-    return 3.0
+    return 1.5
 
 
 def _thickness_source(line_size_float: float) -> str:
-    if line_size_float >= 26:
-        return 'Type 67 / D-81A note (1.5t for 26"~42")'
-    return 'legacy Type 13 calculator assumption (3t for <=24")'
+    return "M-47 NOTE 1: compressed gasket thickness 1.5 mm"
 
 
 def _calc_weight_kg(width_mm: float, length_mm: float, thickness_mm: float) -> float:
@@ -68,14 +63,17 @@ for _line_size_float, (_width_mm, _length_mm) in _RAW_M47_DIMENSIONS.items():
     _line_size = normalize_fractional_size(_line_size_float)
     _thickness_mm = _default_thickness_mm(_line_size_float)
     M47_TABLE[_line_size] = {
-        "designation": f"M-47 {_line_size.replace(chr(34), 'B')}",
-        "designation_inferred": True,
+        "designation": f"ASB-{_line_size.replace(chr(34), 'B')}",
+        "designation_inferred": False,
         "line_size": _line_size,
         "width_mm": _width_mm,
         "length_mm": _length_mm,
         "thickness_mm": _thickness_mm,
-        "thickness_inferred": True,
+        "thickness_inferred": False,
         "thickness_source": _thickness_source(_line_size_float),
+        "material": "GARLOCK BLUE-GARD STYLE 3000 OR EQ.",
+        "source_drawing": "COMPRESSED-GASKET_M-47.pdf",
+        "source_revision": "1",
         "density_kg_m3": M47_DENSITY_KG_M3,
         "unit_weight_kg": _calc_weight_kg(_width_mm, _length_mm, _thickness_mm),
         "spec": f"{_width_mm}×{_length_mm}×{_thickness_mm:g}t",

@@ -1,0 +1,22 @@
+{
+  "type_id": "115C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-60/C-61、N-1~N-5/N-7A/N-8/N-20~N-23 複驗：≤2in 解析 SUB1 rod/B/C/D/E 與 rod-only 重量，3/4in 解析 STR R/A/B/T/holes；B 依 branch 使用 F+3/F+13。U-bolt thread/nuts、strap flat development 與 angle/support 淨切仍未釋出。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/115C.pdf",
+      "drawing_no": "C-60/C-61",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "C_max_mm": 1000,
+      "branches": {
+        "small_2_and_under": {"sizes": [0.5, 0.75, 1, 1.25, 1.5, 2], "sections": ["L75x75x9"], "support_reference": "C-21 / N-7A SPECIAL U-BOLT SUB1", "dimension_B_formula": null},
+        "three_four": {"sizes": [3, 4], "sections": ["L75x75x9", "L100x100x10"], "support_reference": "C-21 / N-8 STRAP", "dimension_B_formula": "F + 3"},
+        "six_twenty_four": {"sizes": [6, 8, 10, 12, 14, 16, 18, 20, 22, 24], "sections": ["L75x75x9", "L100x100x10"], "support_reference": "C-21 / N-20~N-23", "dimension_B_formula": "F + 13"}
+      },
+      "cradle_length_reference": "C-24",
+      "weld_mm": 6
+    }
+  }
+}

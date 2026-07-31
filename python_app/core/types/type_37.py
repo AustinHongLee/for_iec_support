@@ -50,10 +50,13 @@ DIMENSIONS TABLE:
 NOTE 2: A=θ30°, B=θ45°
 """
 import math
-from ..models import AnalysisResult
-from ..parser import get_part
+from ..config_loader import load_config
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import register_source_envelope
+from ..models import AnalysisResult, set_remark
+from ..source_profiles import normalize_source_profile
 from ..steel import add_steel_section_entry
-from data.steel_sections import get_section_details
+from ..truth import make_evidence
 
 # ── 限制表 ────────────────────────────────────────────────
 _LIMITS = {
@@ -114,82 +117,94 @@ def _calc_brace_length(member_depth: float, h_mm: float, fig_type: str) -> float
     return round(third_step + forth_step)
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring: str, overrides=None, source_profile=None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
-
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    # H150 在 Type 37 用 7mm
-    details = get_section_details(part2, type_first="37" if part2 == "H150" else "")
-    if not details:
-        result.error = f"Type 37: 未知型鋼代碼 {part2}"
+    overrides = overrides or {}
+    config = load_config("37", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 37: 尚未建立來源 profile {profile_id}"
         return result
-
-    section_type = details["type"]
-    full_size = details["size"]
-
-    # ── 第三段: H(mm) + A/B ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 2:
-        result.error = f"Type 37: 第三段格式錯誤 '{part3}' (需如 1200A 或 800B)"
+    parts = str(fullstring).split("-")
+    if len(parts) not in (3, 4) or len(parts[2]) < 2:
+        result.error = "Type 37: 格式應為 37-{M}-{H}{A/B}[-{C×100}]"
         return result
-
-    fig_type = part3[-1].upper()
+    member = parts[1].upper()
+    fig_type = parts[2][-1].upper()
     if fig_type not in ("A", "B"):
-        result.error = f"Type 37: FIG 類型必須為 A 或 B, 得到 '{fig_type}'"
+        result.error = "Type 37: FIG類型必須為A或B"
         return result
-
     try:
-        h_mm = int(part3[:-1])  # H 直接 mm (非 ×100)
+        h_mm = int(parts[2][:-1])
+        c_mm = int(parts[3]) * 100 if len(parts) == 4 else config["fabrication_contract"]["default_C_mm"]
     except ValueError:
-        result.error = f"Type 37: 無法解析 H 值 '{part3[:-1]}'"
+        result.error = "Type 37: H/C必須為正整數"
+        return result
+    row = config[profile["table"]].get(member)
+    if not row:
+        result.error = f"Type 37 / {profile_id}: D-42未表列 MEMBER {member}"
+        return result
+    if h_mm <= 0 or c_mm <= 0:
+        result.error = f"Type 37 / {profile_id}: H={h_mm}超出{member} 0<H≤{row['H_MAX']}mm，且C需大於0"
+        return result
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 37 / {profile_id}",
+        source_ref=f"D-42 {member} H(MAX)",
+        checks=(("H", h_mm, row["H_MAX"], True),),
+    ):
         return result
 
-    # ── 第四段: C 尺寸 (選填, ×100mm, 預設 200mm) ──
-    part4 = get_part(fullstring, 4)
-    if part4:
-        try:
-            c_mm = int(part4) * 100
-        except ValueError:
-            c_mm = 200
-    else:
-        c_mm = 200
-
-    # ── 超限檢查 ──
-    h_max = _LIMITS.get(part2)
-    if not h_max:
-        result.error = f"Type 37: {part2} 不在支援清單"
-        return result
-    if h_mm > h_max:
-        result.warnings.append(
-            f"H={h_mm}mm 超出 {part2} 標準範圍 (≤ {h_max}mm)"
-        )
-
-    # ── 計算斜撐長度 ──
-    member_depth = _get_member_depth(part2)
+    member_depth = row["depth"]
     brace_length = _calc_brace_length(member_depth, h_mm, fig_type)
-
-    section_dim = full_size[1:]  # 去掉前綴字母
-
-    # ═══════════════════════════════════════════════════════
-    # ① 上主梁 — 水平懸臂 + C 延伸
-    #    VBA: Section_Length_H = H + C
-    # ═══════════════════════════════════════════════════════
     beam_length = h_mm + c_mm
-    add_steel_section_entry(result, section_type, section_dim, beam_length)
-    result.entries[-1].remark = (
-        f"上主梁(懸臂), H={h_mm}+C={c_mm}={beam_length}"
+    ctx = parse_hardware_material_context(
+        overrides, legacy_material_keys=("material",),
+        legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,),
     )
-
-    # ═══════════════════════════════════════════════════════
-    # ② 斜撐 — 三角函數計算
-    #    VBA: Section_Length_L = f(d, H, θ)
-    #    VBA 合併成一筆 Total=H_part+L, 此處拆開
-    # ═══════════════════════════════════════════════════════
+    material = resolve_hardware_material(
+        HardwareKind.STRUCTURAL_STRUT, service=ctx.service,
+        overrides=ctx.material_overrides,
+    )
+    blocker = "斜撐兩端切角/貼合輪廓未在D-42完整尺寸化"
     theta = 30 if fig_type == "A" else 45
-    add_steel_section_entry(result, section_type, section_dim, brace_length)
-    result.entries[-1].remark = (
-        f"斜撐 FIG-{fig_type}(θ={theta}°), L={brace_length}"
+    for cid, role, length, formula in (
+        ("D42-MAIN-BEAM", "上主梁", beam_length, "H + C"),
+        ("D42-BRACE", "斜撐", brace_length, f"f(depth,H,{theta}deg)"),
+    ):
+        add_steel_section_entry(
+            result, row["section_type"], row["lookup_dim"], length, material=material
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.shape_spec = f'{row["full_spec"]}; CUT={length}'
+        entry.geometry.formula = formula
+        entry.geometry.parameters = {
+            "H_mm": h_mm, "C_mm": c_mm, "member_depth_mm": member_depth,
+            "figure": fig_type, "theta_deg": theta, "fillet_weld_mm": 6,
+        }
+        entry.geometry.fabrication_ready = cid == "D42-MAIN-BEAM"
+        if cid == "D42-BRACE":
+            entry.geometry.fabrication_blockers = [blocker]
+        set_remark(entry, f"{role}，下料長度{length}mm")
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": profile["drawing"],
+        "source_revision": profile["revision"],
+        "branch": f"{member}/FIG-{fig_type}",
+        "bom_ready": True,
+        "fabrication_ready": False,
+        "blockers": [blocker],
+        "H_mm": h_mm,
+        "C_mm": c_mm,
+        "brace_length_mm": brace_length,
+    }
+    result.warnings.append("斜撐BOM長度可算；端切/貼合輪廓仍需加工圖確認")
+    result.evidence.append(
+        make_evidence("type37_member_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99)
     )
-
     return result

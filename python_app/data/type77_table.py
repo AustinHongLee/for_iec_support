@@ -41,10 +41,10 @@ def get_type77_data(line_size) -> dict | None:
     if not row:
         return None
     item = deepcopy(row)
-    item["unit_weight_kg"] = estimate_type77_saddle_weight_kg(item)
-    item["weight_status"] = "estimated_from_saddle_bounding_geometry"
+    item["unit_weight_kg"] = 0.0
+    item["retired_bounding_weight_kg"] = estimate_type77_saddle_weight_kg(item)
+    item["weight_status"] = "blocked_complex_saddle_contour_not_decomposed"
     return item
 
 def list_type77_sizes() -> list[str]:
     return list(TYPE77_TABLE.keys())
-

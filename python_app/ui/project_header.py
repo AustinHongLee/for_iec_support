@@ -23,6 +23,8 @@ class ProjectHeader(QFrame):
         self,
         materials: Iterable[str],
         current_material: str = "SUS304",
+        source_profiles: Iterable[tuple[str, str]] = (),
+        current_source_profile: str = "",
         parent=None,
     ):
         super().__init__(parent)
@@ -49,6 +51,22 @@ class ProjectHeader(QFrame):
         layout.addSpacing(TOKENS["space"]["summary_gap"])
 
         # ── 設定群組（使用者操作）──
+        layout.addWidget(self._caption("圖面來源"))
+        self.source_profile_combo = QComboBox()
+        for profile_id, label in source_profiles:
+            self.source_profile_combo.addItem(label, profile_id)
+        if current_source_profile:
+            index = self.source_profile_combo.findData(current_source_profile)
+            if index >= 0:
+                self.source_profile_combo.setCurrentIndex(index)
+        self.source_profile_combo.setToolTip(
+            "同一個 Type 編號在不同公司／專案圖面可能有不同運算規則；"
+            "此選擇套用整個專案。組合來源會依已核定的代號家族分流，"
+            "不靠同名代號猜測；單筆例外仍可另行覆寫。"
+        )
+        layout.addWidget(self.source_profile_combo)
+
+        layout.addSpacing(TOKENS["space"]["summary_gap"])
         layout.addWidget(self._caption("全域上段管材質"))
         self.material_combo = QComboBox()
         self.material_combo.addItems(list(materials))

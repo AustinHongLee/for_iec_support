@@ -11,7 +11,7 @@ from core.models import AnalysisResult, set_remark
 from core.steel import add_steel_section_entry
 from core.plate import add_plate_entry
 from core.pipe import add_pipe_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 from core.material_specs import SUPPORT_PIPE_A53GRB
 from .. import ubolt as _ubolt
 from .. import plating as _plating
@@ -134,8 +134,15 @@ def calculate(parsed, config, overrides=None):
         elif kind == "bolt_by_fix":
             if fixm in _FIXBOLT:
                 name, bmat, fld = _FIXBOLT[fixm]
-                add_custom_entry(result, name, row.get(fld, ""), bmat, c.get("qty", 4), 0.0,
-                                 unit="SET", remark=f"適用 {code}{fixm} (重量另計)", category="螺栓類")
+                add_estimated_fastener_entry(
+                    result,
+                    name=name,
+                    spec=row.get(fld, ""),
+                    material=bmat,
+                    quantity=c.get("qty", 4),
+                    unit="SET",
+                    remark=f"適用 {code}{fixm}",
+                )
             elif fixm == "W":
                 result.warnings.append(f"{code}W 焊接固定：底板免鑽孔、不含固定螺栓")
             elif fixm == "N":
@@ -143,8 +150,14 @@ def calculate(parsed, config, overrides=None):
 
         elif kind == "bolt_fixed":
             spec = _val(c, "spec", row)
-            add_custom_entry(result, c.get("name", "螺栓連帽"), spec or "", c.get("material", "A307-B 鍍鋅"),
-                             c.get("qty", 1), 0.0, unit="SET", remark="(重量另計)", category="螺栓類")
+            add_estimated_fastener_entry(
+                result,
+                name=c.get("name", "螺栓連帽"),
+                spec=spec or "",
+                material=c.get("material", "A307-B 鍍鋅"),
+                quantity=c.get("qty", 1),
+                unit="SET",
+            )
 
         elif kind == "ubolt":
             if c.get("qty") == "site":

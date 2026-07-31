@@ -1,5 +1,19 @@
 {
   "type_id": "48",
+  "_version": "1.0.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30複驗重製：D-59表列150x100x6/9僅作單片備料blank；圖示為100/20偏移或折彎配置，未給折彎線/半徑，取消rectangular fabrication-ready宣告。材料表只給CS/AS/SS類別，不再虛構A36/SUS304牌號。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-48_D-59.pdf",
+      "revision": "1"
+    }
+  },
+  "TYPE48_MATERIAL_MAP": {
+    "": "Carbon Steel",
+    "(A)": "Alloy Steel",
+    "(B)": "Stainless Steel"
+  },
   "source": "data/type48_table.py",
   "migrated": "2026-04-29",
   "TYPE_SPEC": {
@@ -16,9 +30,9 @@
       "size_key": "lookup_value",
       "support_no_template": "{size_key}",
       "material_map": {
-        "": "A36/SS400",
-        "(A)": "AS",
-        "(B)": "SUS304"
+        "": "Carbon Steel",
+        "(A)": "Alloy Steel",
+        "(B)": "Stainless Steel"
       }
     },
     "missing_pipe_error": "Type 48: 缺少管徑",

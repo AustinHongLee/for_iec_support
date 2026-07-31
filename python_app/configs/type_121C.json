@@ -1,0 +1,36 @@
+{
+  "type_id": "121C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-69/C-70 與 N-1~N-3/N-5/N-24~N-26 複驗：保留 CR32~46 的 W/H/h1/h2 與 Member Q，新增大型管徑 CR/pipe/insulation/F/H/R/T1/A/B/320 kg/m3/來源載重交叉驗證；多解時要求 insulation_thickness_mm。2026-07-30 獨立稽核確認 N-24 標 KG、N-25/N-26 標 LB 且數值相同，裁決前只保留 raw value/source sheet，不輸出 canonical kg/lb。X/Y/stiffener 淨輪廓仍未釋出。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/121C.pdf",
+      "drawing_no": "C-69/C-70",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "minimum_pipe_size_in": 30,
+      "member_q": {"kind": "H Beam", "spec": "125*125*6.5", "source_spec": "H125x125x6.5x9", "quantity": 2},
+      "rows": {
+        "CR32": {"W_mm": 549, "H_mm": 509, "h1_mm": 110, "h2_mm": 220, "member_q_length_mm": 560},
+        "CR33": {"W_mm": 561, "H_mm": 521, "h1_mm": 110, "h2_mm": 220, "member_q_length_mm": 570},
+        "CR34": {"W_mm": 575, "H_mm": 535, "h1_mm": 110, "h2_mm": 220, "member_q_length_mm": 590},
+        "CR35": {"W_mm": 587, "H_mm": 547, "h1_mm": 120, "h2_mm": 230, "member_q_length_mm": 600},
+        "CR36": {"W_mm": 600, "H_mm": 560, "h1_mm": 120, "h2_mm": 230, "member_q_length_mm": 610},
+        "CR37": {"W_mm": 613, "H_mm": 573, "h1_mm": 130, "h2_mm": 240, "member_q_length_mm": 620},
+        "CR38": {"W_mm": 625, "H_mm": 585, "h1_mm": 130, "h2_mm": 240, "member_q_length_mm": 640},
+        "CR39": {"W_mm": 638, "H_mm": 598, "h1_mm": 140, "h2_mm": 240, "member_q_length_mm": 650},
+        "CR40": {"W_mm": 651, "H_mm": 611, "h1_mm": 140, "h2_mm": 240, "member_q_length_mm": 660},
+        "CR41": {"W_mm": 662, "H_mm": 622, "h1_mm": 150, "h2_mm": 250, "member_q_length_mm": 670},
+        "CR42": {"W_mm": 675, "H_mm": 635, "h1_mm": 150, "h2_mm": 250, "member_q_length_mm": 690},
+        "CR43": {"W_mm": 688, "H_mm": 648, "h1_mm": 150, "h2_mm": 250, "member_q_length_mm": 700},
+        "CR44": {"W_mm": 700, "H_mm": 660, "h1_mm": 160, "h2_mm": 260, "member_q_length_mm": 710},
+        "CR45": {"W_mm": 713, "H_mm": 673, "h1_mm": 160, "h2_mm": 260, "member_q_length_mm": 720},
+        "CR46": {"W_mm": 726, "H_mm": 686, "h1_mm": 170, "h2_mm": 260, "member_q_length_mm": 740}
+      },
+      "references": ["C-14/C-14A/C-17/C-70", "N-1/N-2/N-3/N-5", "N-24/N-25/N-26"],
+      "stiffener_plate_thickness_mm": 6,
+      "weld_mm": 6
+    }
+  }
+}

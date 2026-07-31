@@ -1,0 +1,81 @@
+{
+  "type_id": "18C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-26/C-27、N-1~N-5/N-7/N-20~N-23 複驗：保留 host U-bolt/RD/W/H/L 表，並以 N-7 CR row 解析 rod/B/C/D/E、中心線展開與 rod-only 重量；四顆 finished nuts、thread class 與材料 grade 未釋出。CR/pipe 另反查 insulation/F/H/load，多解要求 insulation_thickness_mm。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/18C.pdf",
+      "drawing_no": "C-26/C-27",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-26", "C-27"],
+      "title": "C-26/C-27 TYPE 18C HORIZONTAL COLD ANCHOR",
+      "component_id": "C26-C27-TYPE18C-ASSEMBLY",
+      "source_spec": "ANCHOR FOR HORIZONTAL COLD INSULATION PIPE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["A", "B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        }
+      ],
+      "designation_error": "Type 18C 格式應為 18C-{A|B}-{CR2.5~CR29}-{LINE}B",
+      "lookups": [
+        {
+          "name": "cradle",
+          "field": "cradle_no",
+          "rows": {
+            "CR2.5": {"u_bolt_rod": "1/4in", "RD_mm": 42, "W_mm": 90, "H_mm": 79, "L_size": "65x65x6", "L_cut_mm": 250, "L_quantity": 4},
+            "CR3": {"u_bolt_rod": "1/4in", "RD_mm": 50, "W_mm": 106, "H_mm": 87, "L_size": "65x65x6", "L_cut_mm": 250, "L_quantity": 4},
+            "CR3.5": {"u_bolt_rod": "1/4in", "RD_mm": 57, "W_mm": 120, "H_mm": 94, "L_size": "65x65x6", "L_cut_mm": 250, "L_quantity": 4},
+            "CR4": {"u_bolt_rod": "1/4in", "RD_mm": 63, "W_mm": 132, "H_mm": 100, "L_size": "65x65x6", "L_cut_mm": 250, "L_quantity": 4},
+            "CR4.5": {"u_bolt_rod": "1/4in", "RD_mm": 70, "W_mm": 146, "H_mm": 107, "L_size": "65x65x6", "L_cut_mm": 250, "L_quantity": 4},
+            "CR5": {"u_bolt_rod": "3/8in", "RD_mm": 76, "W_mm": 162, "H_mm": 113, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR6": {"u_bolt_rod": "3/8in", "RD_mm": 92, "W_mm": 194, "H_mm": 129, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR7": {"u_bolt_rod": "3/8in", "RD_mm": 105, "W_mm": 220, "H_mm": 142, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR8": {"u_bolt_rod": "3/8in", "RD_mm": 117, "W_mm": 244, "H_mm": 154, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR9": {"u_bolt_rod": "3/8in", "RD_mm": 130, "W_mm": 270, "H_mm": 167, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR10": {"u_bolt_rod": "3/8in", "RD_mm": 146, "W_mm": 302, "H_mm": 183, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR11": {"u_bolt_rod": "3/8in", "RD_mm": 158, "W_mm": 326, "H_mm": 195, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR12": {"u_bolt_rod": "3/8in", "RD_mm": 171, "W_mm": 352, "H_mm": 208, "L_size": "75x75x9", "L_cut_mm": 250, "L_quantity": 4},
+            "CR14": {"u_bolt_rod": "3/8in", "RD_mm": 187, "W_mm": 384, "H_mm": 224, "L_size": "75x75x9", "L_cut_mm": 500, "L_quantity": 2},
+            "CR15": {"u_bolt_rod": "3/8in", "RD_mm": 200, "W_mm": 410, "H_mm": 237, "L_size": "75x75x9", "L_cut_mm": 500, "L_quantity": 2},
+            "CR16": {"u_bolt_rod": "3/8in", "RD_mm": 212, "W_mm": 434, "H_mm": 250, "L_size": "75x75x9", "L_cut_mm": 500, "L_quantity": 2},
+            "CR17": {"u_bolt_rod": "3/8in", "RD_mm": 225, "W_mm": 460, "H_mm": 252, "L_size": "75x75x9", "L_cut_mm": 500, "L_quantity": 2},
+            "CR18": {"u_bolt_rod": "3/8in", "RD_mm": 238, "W_mm": 486, "H_mm": 275, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR19": {"u_bolt_rod": "3/8in", "RD_mm": 250, "W_mm": 510, "H_mm": 288, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR20": {"u_bolt_rod": "3/8in", "RD_mm": 267, "W_mm": 544, "H_mm": 304, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR21": {"u_bolt_rod": "3/8in", "RD_mm": 279, "W_mm": 568, "H_mm": 316, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR22": {"u_bolt_rod": "3/8in", "RD_mm": 292, "W_mm": 597, "H_mm": 329, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR23": {"u_bolt_rod": "1/2in", "RD_mm": 305, "W_mm": 623, "H_mm": 342, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR24": {"u_bolt_rod": "1/2in", "RD_mm": 317, "W_mm": 647, "H_mm": 354, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR25": {"u_bolt_rod": "1/2in", "RD_mm": 330, "W_mm": 673, "H_mm": 357, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR26": {"u_bolt_rod": "1/2in", "RD_mm": 343, "W_mm": 699, "H_mm": 380, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR27": {"u_bolt_rod": "1/2in", "RD_mm": 355, "W_mm": 723, "H_mm": 392, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR28": {"u_bolt_rod": "1/2in", "RD_mm": 368, "W_mm": 749, "H_mm": 405, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2},
+            "CR29": {"u_bolt_rod": "1/2in", "RD_mm": 381, "W_mm": 775, "H_mm": 418, "L_size": "100x100x10", "L_cut_mm": 500, "L_quantity": 2}
+          }
+        }
+      ],
+      "static_parameters": {
+        "u_bolt_quantity": 2,
+        "hex_nut_quantity": 8,
+        "W_formula": "2 * RD + rod_diameter",
+        "polyurethane_density_kg_m3": 320
+      },
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE", "allow_unlisted_pipe_size": true},
+        {"component_id": "N-7"}
+      ],
+      "references": ["N-7 SPECIAL U-BOLT TYPE-SUB", "C-14", "C-21", "N-20~N-23"],
+      "blockers": [
+        "N-7 rod geometry/weight is resolved, but thread class, material grade and four finished-nut weights remain unresolved",
+        "L-member source material and released assembly piece scope are not specified",
+        "C-14/C-21 cold shoe/cradle construction remains reference-only"
+      ]
+    }
+  }
+}

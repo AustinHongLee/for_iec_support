@@ -83,13 +83,18 @@
    "qty": 2
   }
  ],
+ "validation": {
+  "required": ["pipe", "H"],
+  "allowed": ["pipe", "H"],
+  "pipe": {"min": 0.5, "max": 24}
+ },
  "extra_warnings": [
   "G2 H(管蹄柱高)未註明時＝保溫厚+25mm；不銹鋼管線需於管底加焊補強板 A240-304(t/寬詳表)",
   "加強板僅10\"~24\"適用；容許負荷 ≤8\"=1000kg、10~24\"=1500kg"
  ],
- "data_update_note": "依G2.pdf件號表；管蹄柱/底板/加強板/導架角鋼；補強板另計",
+ "data_update_note": "v1.1 依圖號格式強制管徑與H，避免缺H時只算部分鋼構。原資料依G2.pdf件號表；管蹄柱/底板/加強板/導架角鋼；補強板另計",
  "code": "G2",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

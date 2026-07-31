@@ -1,0 +1,17 @@
+{
+  "type_id": "129",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-139 建立 twin H150 support。L/W envelope、C*=W-150、兩片 PL12x170x(W+330) 與動態孔距可加工；H150 直料可列備料重但 L 需現場切配。圖面 BOM description 寫 CHANNEL、size/view 為 H150，衝突保留警告。2026-07-31 EB2依名義M×L及比例套管幾何列理論估重，供應商成品重仍待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-129_D-139.pdf",
+      "revision": "1",
+      "L_max_mm": 2000,
+      "W_min_mm": 300,
+      "member": {"kind": "H Beam", "spec": "150*150*7", "source_spec": "H150x150x7x10", "material": "A36", "quantity": 2},
+      "base_plate": {"length_mm": 170, "thickness_mm": 12, "material": "A283 Gr.C", "quantity": 2, "holes_per_plate": 4, "hole_diameter_mm": 19},
+      "anchor": {"spec": "EB2-M16x125L", "material": "A307 Gr.8", "quantity": 8, "not_furnished": false}
+    }
+  }
+}

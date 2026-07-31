@@ -1,5 +1,7 @@
 # Type 41 — 牆面錨定支撐 (Wall-Mounted Anchor Support)
 
+> **2026-07-29 原圖複核更正**：主梁切長是 `L+200`。D-49 沒有完整標出 FIG-B 斜撐切長／端切，也沒有 Base Plate 完整平面外形；系統不再以 `L×1.414` 或猜測正方板。FIG-B 需輸入 `brace_cut_length_mm` 才能完成 BOM。
+
 > **圖號**: 41 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-49 &nbsp;|&nbsp; **日期**: 12/12/19
 

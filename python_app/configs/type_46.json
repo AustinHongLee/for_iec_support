@@ -1,5 +1,21 @@
 {
   "type_id": "46",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30複驗重製：D-56縱材依H+Q+50、橫材依2Q；3mm是D-80間隙，不再錯加於型鋼長度。H>1200斜撐改為左右各一共2支；D-80原圖未標NOT FURNISHED，改列未展開reference並使完整BOM保持blocked。材料牌號未見於D-56者降為project specification。2026-07-31：1/2x30 M.BOLT 列可追溯理論估重，供應商成品重量待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-46_D-56.pdf",
+      "revision": "1",
+      "members": ["C100", "C125", "C150"],
+      "pipe_q": {"2": 133, "3": 148, "4": 160, "6": 187, "8": 213, "10": 240, "12": 265, "14": 281},
+      "brace_h_min": 1200,
+      "brace": {
+        "A": {"vertical": 450, "horizontal": 780, "length": 1016},
+        "B": {"vertical": 780, "horizontal": 780, "length": 1203}
+      }
+    }
+  },
   "source": "data/type46_table.py",
   "migrated": "2026-04-29",
   "TYPE46_47_PIPE_Q": {

@@ -82,11 +82,10 @@ def test_ds3_dummy_pipe_len_l():
     assert "材質須與母材相容" in pipe.remark
 
 
-def test_st3_trunnion_size_from_table():
-    r = _a('ST3-4"')                                # 4"→套管3"
-    assert not r.error, r.error
-    assert _n(r, "支撐套管")[0].spec.startswith("3")  # 品名=支撐套管, 尺寸查表
-    assert _has(r, "托架")
+def test_st3_blocks_without_cr_bracket_drawing():
+    r = _a('ST3-4"')
+    assert r.error and "Cr" in r.error
+    assert not r.entries
 
 
 # ── 落地管架 FS1（序號+L+H, 無管徑）──
@@ -97,8 +96,11 @@ def test_fs1_serial_channel_and_fix():
     assert _has(r, "擴展螺栓") and not _has(r, "水泥墩")   # E 無墩
     ra = _a("FS1A-3-800L-300H")
     assert _has(ra, "水泥墩")                             # A→CM1C 墩
-    rn = _a("FS1E-200H-400L")                             # 缺序號→預設1
-    assert not rn.error and _n(rn, "槽鐵")[0].spec == "100*50*5"
+    rn = _a("FS1E-200H-400L")                             # 缺序號→不得猜型鋼
+    assert "缺少序號" in rn.error and not rn.entries
+    assert "無法決定型鋼規格" in rn.error
+    ri = _a("FS1E-9-200H-400L")                           # 未知序號→同樣阻擋
+    assert "未知序號 9" in ri.error and not ri.entries
 
 
 # ── OPEN 委派核心開孔補強 ──
@@ -114,8 +116,9 @@ def test_no_drawing_graceful():
     assert "無對應圖面" in _a("PU22W-500L-350L1").error
 
 
-# ── VG5 第2頁缺：best-effort 且明確標註 ──
-def test_vg5_best_effort_warns():
+# ── VG5 舊推估錯誤：子件未匯入前必須阻擋 ──
+def test_vg5_blocks_incomplete_bom():
     r = _a('VG5W-1"-200H-200L')
-    assert not r.error, r.error
-    assert any("第2頁" in w for w in r.warnings)
+    assert r.error
+    assert "CS2" in r.error and "SUB1" in r.error and "SUB2" in r.error
+    assert not r.entries

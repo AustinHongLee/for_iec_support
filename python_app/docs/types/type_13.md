@@ -1,55 +1,41 @@
-# Type 13 — Clamp式雙板夾持支撐
+# Type 13 — Clamp 式雙板夾持支撐
 
-| 項目 | 內容 |
-|------|------|
-| 中文名稱 | Clamp式雙板夾持支撐 |
-| 英文名稱 | Clamped Dummy Pipe Support with Plate Reinforcement |
-| 圖號 | TYPE-13 |
-| 適用範圍 | 2~16 |
-| PDF | `13.pdf` |
-| 狀態 | ✅ 已分析 |
+H 圖示上限採有限外插分級；缺中威以外的來源圖、格式錯誤或過度外插仍停止。
 
----
+目前只開放中威 E25-24 D-13；22A_5123A 與 20E4588 都沒有 Type 13。
 
-## 系統本質
-
-TYPE-12 的非焊接版本，用 Pipe Clamp TYPE-A(M-4) + Non-Asbestos Sheet(M-47) 代替焊接
-
-通常用於合金鋼/不鏽鋼管線（不允許焊接主管）。Pipe Clamp 夾持主管，中間墊非石棉墨片隔熱防磨，支撐管透過 Plate P + Cover Plate 組焊固定。MAX TEMP 750°F。
-
----
-
-## 編碼格式
+## 編碼與限制
 
 ```text
-13-{A}-{H}{M42}  例: 13-6B-05B
+13-{A}B-{HH}{M42}
 ```
 
----
+- 表列管徑：2"~16"。
+- H 必須 `≤1500 mm`。
+- 最高管線溫度：750°F。
+- 通常用於 alloy steel / stainless steel line，以 clamp/gasket 避免直接焊主管。
+- M-42 A/B/E/G 的 H 從最低鋪面高程起算。
 
-## 核心運算邏輯
+## 已核對的 BOM 與幾何
 
-```text
-查表取 pipe_size_b/pipe_sch/plate 尺寸 → Pipe Clamp(M-4) + Non-Asbestos Sheet(M-47) + Support Pipe(H-100) + Plate P + Cover Plate + M42
-```
+- M-4 PIPE CLAMP TYPE-A：1 SET。designation、允許荷重、B~H 與 rod size
+  均由 M-4 原圖表取得；原圖沒有成品單重，現有重量仍是工程估算。
+- M-47 COMPRESSED GASKET：1 PC。原圖 designation 為 `ASB-*`，所有尺寸
+  均為 1.5t，材料為 Garlock Blue-Gard Style 3000 or equivalent。
+- Supporting Pipe B：依 D-13 表取管徑／schedule；NOTE 4 明定現場切割，
+  未提供 `support_pipe_cut_length_mm` 時不計長度與重量。
+- Plate P：依表取 P 尺寸，2 EA；保存 C 管中心距及 10" 以上 Detail A。
+- Cover Plate：75×75×6t，1 EA。
+- 焊道：6 mm；底部依來源別 M-42。
 
----
+## 加工圖狀態
 
-## 設計重點
+M-4、M-47、Plate P、Cover Plate 與 M-42 已有 component ID、來源／版次及
+具名加工／採購參數。整體仍是 fabrication-partial：
 
-- 與 `M-42` 下部構件有關，最終組成會受到末段字母或允許型別限制。
+- Supporting Pipe B 需要現場實測切長。
+- Ø6 weep hole 沒有孔中心離底板尺寸。
+- 結構板只確定為 carbon steel 類別，尚缺實際牌號。
+- M-4 與 M-47 的來源都沒有成品單重／材料密度，現有重量是估算值。
 
----
-
-## 與相近 Type 的關係
-
-| 類別 | 型式 | 說明 |
-|------|------|------|
-| Dummy Pipe 家族 | 01 / 07 / 09 / 10 / 11 / 12 / 13 / 16 | 共通點是從主管引出支撐腿，再決定底部承載或限制方式。 |
-
----
-
-## 備註
-
-- 本文件先依現有 `calculator`、`type_catalog.json` 與圖面可辨識資訊整理。
-- 若後續需要進一步資料化，可再補 `幾何參數表`、`BOM 結構表`、`PDF note 摘要` 與 `限制條件矩陣`。
+舊計算的 `H-100` pipe 公式與 M-47 3t 假設皆與原圖衝突，已移除。

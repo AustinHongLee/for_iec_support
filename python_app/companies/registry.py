@@ -26,6 +26,9 @@ COMPANY_NAMES = {
 COMPANY_DISPLAY = {
     "EKO": "益高",
     "IEC": "長春",
+    "CHANGCHUN": "長春",
+    "CHUNGWEI": "中威",
+    "CTCI": "中鼎",
 }
 
 
@@ -34,8 +37,58 @@ def get_analyzer(company):
 
 
 @lru_cache(maxsize=8192)
-def design_company_id(designation: str) -> str | None:
+def design_company_id(
+    designation: str,
+    source_profile: str | None = None,
+) -> str | None:
     """Return a company only when the designation has a defensible match."""
+    if source_profile:
+        from core.source_profiles import (
+            CTCI_20E4588,
+            CTCI_22A_5123A,
+            CW_E25_24_HP6,
+            numeric_calculation_profile,
+            normalize_source_profile,
+            source_profile_allows,
+        )
+
+        normalized = normalize_source_profile(source_profile)
+        try:
+            from .changchun import dispatch as changchun_dispatch
+            if (
+                source_profile_allows(normalized, "changchun")
+                and changchun_dispatch.can_handle(designation or "")
+            ):
+                return "CHANGCHUN"
+        except Exception:
+            pass
+        try:
+            from .chungwei import dispatch as chungwei_dispatch
+            if (
+                source_profile_allows(normalized, "chungwei_special")
+                and chungwei_dispatch.can_handle(designation or "")
+            ):
+                return "CHUNGWEI"
+        except Exception:
+            pass
+        try:
+            if (
+                source_profile_allows(normalized, "eko")
+                and _eko_dispatch.can_handle(designation or "")
+            ):
+                return "EKO"
+        except Exception:
+            pass
+
+        type_code = str(designation or "").strip().split("-", 1)[0].upper()
+        if re.fullmatch(r"\d+(?:T)?", type_code) or type_code == "PENETRATION HOLE":
+            numeric = numeric_calculation_profile(normalized)
+            if numeric == CW_E25_24_HP6:
+                return "CHUNGWEI"
+            if numeric in {CTCI_20E4588, CTCI_22A_5123A}:
+                return "CTCI"
+        return None
+
     try:
         if _eko_dispatch.can_handle(designation or ""):
             return "EKO"
@@ -49,7 +102,10 @@ def design_company_id(designation: str) -> str | None:
 
 
 @lru_cache(maxsize=8192)
-def design_company_label(designation: str) -> str:
+def design_company_label(
+    designation: str,
+    source_profile: str | None = None,
+) -> str:
     """Return a display label without guessing an unmatched company."""
-    company_id = design_company_id(designation)
+    company_id = design_company_id(designation, source_profile)
     return COMPANY_DISPLAY.get(company_id, "待判定")

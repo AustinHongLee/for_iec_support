@@ -1,5 +1,7 @@
 # Type 42 — Trunnion 曲面設備斜撐支撐 (Trunnion Vessel Braced Support)
 
+> **2026-07-29 原圖複核**：只有中威 D-50。H/G 表與公式可計算，但 Trunnion 只給公稱管徑；schedule、材質與切長仍須 D-72/73/74 核定，系統不再填任意單重，BOM 暫不標為完成。
+
 > **圖號**: 42 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-50 &nbsp;|&nbsp; **日期**: 12/12/19
 

@@ -1,7 +1,16 @@
 {
   "type_id": "79",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "複驗 D-94/M-55：A~R 尺寸表正確，但為多片 U-band support 組立，停用 B*E*T 單一板件假重量；保留 (A) anchor weld 語意與加工 blocker。",
   "source": "data/type79_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-79_D-94.pdf",
+      "revision": "1"
+    }
+  },
   "TYPE79_TABLE": {
     "5\"": {
       "line_size": "5\"",

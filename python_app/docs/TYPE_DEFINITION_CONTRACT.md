@@ -147,6 +147,30 @@ A Type calculator should avoid:
 
 For material specs, prefer `python_app/core/material_specs.py` for fixed common materials. Use service-aware helpers only when the Type must respond to material overrides or operating context.
 
+## Fabrication-Ready Contract
+
+New or reworked Type logic must be designed so the result can eventually drive a
+shop/fabrication drawing. A BOM weight alone is not a complete implementation.
+
+For each fabricated component, retain as structured data when the source drawing
+provides it:
+
+- stable component/piece ID and quantity;
+- source profile, drawing number/file, revision, and branch/detail;
+- stock section or plate material and thickness;
+- cut length, planar contour or net area, bend/roll radius and included angle;
+- holes, slots, notches, arcs, edge distances, weld size/sides/extent, and assembly
+  locating dimensions;
+- explicit fabrication blockers for every dimension or contour that is still
+  missing.
+
+If the supplied drawing is sufficient for an engineering estimate but not for
+unambiguous cutting and assembly, mark the branch partial and stop fabrication
+export. Do not promote a bounding rectangle, gross area, inferred height, or
+weight-only approximation into a CAD parameter. Preserve captured assembly-table
+dimensions for future completion, but keep `fabrication_ready=false` until every
+required piece can be identified and produced.
+
 ---
 
 ## JSON Bridge Contract

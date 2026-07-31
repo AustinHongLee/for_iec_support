@@ -1,0 +1,20 @@
+{
+  "type_id": "118",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-131 與 M-57 建立 under support。designation 明載 manufacturer actual pipe OD。2026-07-30 第二輪獨立複驗確認每組為兩片 180° saddle、四片 drilled lug、兩組 machine bolt/nut joint 與兩片 180° rubber/neoprene lining；修正舊輸出的一片 360° 等效 blank/lining 與四組 bolt 語意。已知鋼材總重不變，bolt/nut supplier weight 與 3 mm elastomer density保留 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-118_D-131.pdf / NON-FERROUS-PIPE-SADDLE_M-57.pdf",
+      "revision": "1",
+      "groups": {
+        "0.5": {"G": 6}, "0.75": {"G": 6}, "1": {"G": 6}, "1.5": {"G": 6},
+        "2": {"G": 6}, "2.5": {"G": 6}, "3": {"G": 6}, "4": {"G": 6},
+        "6": {"G": 6}, "8": {"G": 6},
+        "10": {"G": 9}, "12": {"G": 9}, "14": {"G": 9}, "16": {"G": 9},
+        "18": {"G": 12}, "20": {"G": 12}, "24": {"G": 12},
+        "26": {"G": 15}, "28": {"G": 15}, "30": {"G": 15}, "32": {"G": 15}
+      }
+    }
+  }
+}

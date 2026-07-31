@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
+import inspect
 from typing import Callable
 
 from .calculator import analyze_single
@@ -29,6 +30,8 @@ class ProjectInputRow:
     # Source designation remains the calculator routing key.  Some project-only
     # rows (for example penetration openings) need a separate MTO display code.
     display_designation: str = ""
+    # Empty means inherit the project-level source profile.
+    source_profile: str = ""
 
 
 @dataclass
@@ -52,6 +55,7 @@ class ProjectAnalysisResult:
     total_support_count: int = 0
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    source_profile: str = ""
 
 
 def _validate_quantity(quantity: int) -> None:
@@ -169,6 +173,7 @@ def analyze_project_rows(
     rows: list[ProjectInputRow],
     *,
     calculate_type: Callable[[str, dict | None], AnalysisResult] = analyze_single,
+    source_profile: str | None = None,
 ) -> ProjectAnalysisResult:
     """
     Analyze quantity-aware project rows without modifying Type calculators.
@@ -176,8 +181,9 @@ def analyze_project_rows(
     Disabled rows are skipped. Enabled rows are counted toward total support
     count even if the underlying single calculation returns an error.
     """
-    project = ProjectAnalysisResult()
+    project = ProjectAnalysisResult(source_profile=str(source_profile or ""))
     scaled_results: list[AnalysisResult] = []
+    calculate_parameters = inspect.signature(calculate_type).parameters
 
     for row in rows:
         if not row.enabled:
@@ -186,7 +192,15 @@ def analyze_project_rows(
         _validate_quantity(row.quantity)
         project.total_support_count += row.quantity
 
-        single_result = calculate_type(row.designation, row.overrides or None)
+        effective_source_profile = row.source_profile or source_profile
+        if "source_profile" in calculate_parameters:
+            single_result = calculate_type(
+                row.designation,
+                row.overrides or None,
+                source_profile=effective_source_profile,
+            )
+        else:
+            single_result = calculate_type(row.designation, row.overrides or None)
         scaled_result = scale_analysis_result(single_result, row.quantity)
 
         row_errors = []

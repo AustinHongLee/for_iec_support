@@ -1,0 +1,46 @@
+{
+  "type_id": "04C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-4/N-6 複驗 6~16in adjustable cold stanchion：逐列保存 Pipe B/F，N-6 保存 Ø150x12 base、3in SCH40/A53 Gr.B pipe、3000# coupling、孔與 6mm weld。H 現場切配，thread engagement/pipe cut、base/coupling grade 未釋出，N-6 仍為零重量加工部分。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/04C.pdf",
+      "drawing_no": "C-4",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-4"],
+      "title": "C-4 TYPE 04C ADJUSTABLE COLD STANCHION",
+      "component_id": "C4-TYPE04C-ASSEMBLY",
+      "source_spec": "6in TO 16in; 5C TO -9C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 04C 格式應為 04C-{LINE}B-{H/100}{LOWER}",
+      "lookups": [
+        {
+          "name": "line_size",
+          "field": "line_size_in",
+          "rows": {
+            "6": {"supporting_pipe": "4in SCH.40", "F_mm": 130},
+            "8": {"supporting_pipe": "4in SCH.40", "F_mm": 130},
+            "10": {"supporting_pipe": "4in SCH.40", "F_mm": 130},
+            "12": {"supporting_pipe": "6in SCH.40", "F_mm": 180},
+            "14": {"supporting_pipe": "6in SCH.40", "F_mm": 180},
+            "16": {"supporting_pipe": "6in SCH.40", "F_mm": 180}
+          }
+        }
+      ],
+      "static_parameters": {"base_washer_thickness_mm": 12, "weld_mm": 6},
+      "component_bindings": [
+        {"component_id": "N-6"}
+      ],
+      "references": ["N-6 SPECIAL BASE PLATE", "N-9 LOWER COMPONENT"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "N-6 thread engagement/pipe cut and base-plate/coupling material grades remain unresolved",
+        "supported-line attachment and lower-component fabrication remain unresolved"
+      ]
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type_id": "117C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-64/N-12/N-12A/N-28 複驗：Member M 維持 cut=C-9，接入 CLIP TYPE 1 與 WOOD-1 下料/孔位；insulation_thickness_mm 可解析 A/plate t。端板第二方向/材料、白橡木密度/chamfer 仍需補完。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/117C.pdf",
+      "drawing_no": "C-64",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "end_plate_thickness_mm": 9,
+      "members": {
+        "L50": {"kind": "Angle", "spec": "50*50*6", "source_spec": "L50x50x6"},
+        "L75": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9"}
+      },
+      "references": ["N-12 CLIP TYPE 1", "N-28 WOOD BLOCK 1"],
+      "stud_bolt": "DIA3/4in x 120; A193 Gr.B8; 2-A194 Gr.8A nuts",
+      "stud_hole_diameter_mm": 22,
+      "weld_mm": 6
+    }
+  }
+}

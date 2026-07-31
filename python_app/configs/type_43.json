@@ -1,5 +1,12 @@
 {
   "type_id": "43",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對CW/20E D-51/D-52及M-34/35/36；22A無圖。公式相同；20E K bolt=M20x50且trunnion NOT FURNISHED，CW為3/4x50。K bolt數按兩片lug plate各自4/6孔計；完整公英制 K bolt 直徑×長度列理論估重，供應商成品重量待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6":{"drawings":["單張-本案有關/中威/TYPE-43_D-51.pdf","單張-本案有關/中威/TYPE-43_D-52.pdf"],"revision":"1","bolt_spec":"3/4\"x50","trunnion_furnished":true},
+    "ctci_20e4588":{"drawings":["單張-本案有關/中鼎/長春_Type/TYPE-43_D-51.pdf","單張-本案有關/中鼎/長春_Type/TYPE-43_D-52.pdf"],"revision":"1","bolt_spec":"M20X50","trunnion_furnished":false}
+  },
   "source": "data/type43_table.py",
   "migrated": "2026-04-29",
   "TYPE43_FORMULAS": {

@@ -1,56 +1,55 @@
-# Type 21 — 側掛式懸臂 U-bolt 支撐
+# Type 21 — D-23 側掛懸臂 U-bolt 支撐
 
 | 項目 | 內容 |
 |------|------|
-| 中文名稱 | 側掛式懸臂 U-bolt 支撐 |
-| 英文名稱 | Cantilever Clamp Support (Side-Mounted) |
-| 圖號 | E1906-DSP-500-006 D-23 |
-| 適用範圍 | — |
-| PDF | `21.pdf` |
-| 狀態 | ✅ 已分析 |
+| 中文名稱 | 側掛懸臂 U-bolt 支撐 |
+| 英文名稱 | Cantilever U-bolt Support |
+| 圖號 | D-23 |
+| 來源 | 中威 E25-24、CTCI 22A_5123A、CTCI 20E4588 |
+| 編碼 | `21-{M}-{HH}{Fig}`；Fig C 再加 `-{LL}` |
+| 狀態 | 三來源 BOM 已分流；加工圖仍有接頭與孔位 blocker |
 
----
+## 來源差異
 
-## 系統本質
+| 來源 | MEMBER M | H(MAX) | L(MAX) |
+|------|----------|--------|--------|
+| 中威 E25-24 | L50 / L65 / L75 | 1000 / 1500 / 2000 | 圖面未列 |
+| CTCI 22A_5123A | L50 / L75 | 1000 / 1500 | 500 / 800 |
+| CTCI 20E4588 | L50 / L75 | 1000 / 1500 | 500 / 800 |
 
-固定在 existing steel 上的側掛式支架，無滑動功能。U-bolt NOT FURNISHED。
+兩份中鼎並註明 Fig C 的 L 大於 500 mm 時只能使用 L75。系統依所選來源
+驗證 member、H(MAX) 與 L(MAX)：未表列 member 仍停止，L/H 上限則採有限
+外插分級。一般警示可保留 BOM；高風險只供查核暫算，禁止正式放行。
 
-Member M (Angle) H段+L段組成懸臂支架。Fig.A=L300, Fig.B=L500, Fig.C=自定L。焊接於既有鋼構。
-
----
-
-## 編碼格式
-
-```text
-21-{M}-{HH}{Fig} or 21-{M}-{HH}C-{LL}  M=型鋼, HH=H/100, Fig=A/B/C, LL=L/100(Fig.C only)
-```
-
----
-
-## 核心運算邏輯
+## 編碼與 BOM
 
 ```text
-2 components: Member M (H vertical) + Member M (L horizontal). Members: L50(H≤1000), L65(H≤1500), L75(H≤2000).
+21-{M}-{HH}A       L 固定 300 mm
+21-{M}-{HH}B       L 固定 500 mm
+21-{M}-{HH}C-{LL}  L = LL × 100 mm
 ```
 
----
+H 與 L 各對應一段相同規格角鋼。NOTE 2 雖要求 H 現場切合，但 H 已明確編入
+designation，因此系統將它視為該支撐的實際切長；這和只有圖面參考長度、
+designation 未帶現場值的型式不同。
 
-## 設計重點
+Standard U-bolt D-68 標示 NOT FURNISHED，不列入 Type 21 BOM。
 
-- 此型式不依賴 `M-42` 下部構件，主要由本體鋼材或既有結構承載。
-- 圖面若標示 `U-bolt NOT FURNISHED`，現行 calculator 不會把該夾具列入 BOM。
+## 加工資料
 
----
+目前已保存：
 
-## 與相近 Type 的關係
+- 垂直角鋼 H 切長與水平角鋼 L 切長。
+- supported line center 距水平構件自由端 100 mm。
+- 底部與 existing steel 為 6 mm、all-around、field fillet weld。
+- Fig A/B/C、來源圖號、版次、member 上限與 D-68 不供應狀態。
 
-| 類別 | 型式 | 說明 |
-|------|------|------|
-| 懸臂 / 側掛家族 | 21 / 22 / 23 / 25 / 26 / 30 / 33 / 34 | 差異主要在安裝基準面、是否落地，以及是單梁還是框架。 |
+仍需補齊：
 
----
+- 上角兩段角鋼的精確端切／貼合輪廓。
+- 上角接頭焊道未標示的焊腳尺寸。
+- designation 不含 supported line size；D-23 也未直接給 D-68 U-bolt
+  所需的孔徑與孔距。
 
-## 備註
-
-- 本文件先依現有 `calculator`、`type_catalog.json` 與圖面可辨識資訊整理。
-- 若後續需要進一步資料化，可再補 `幾何參數表`、`BOM 結構表`、`PDF note 摘要` 與 `限制條件矩陣`。
+因此型鋼 BOM 已是 `bom_ready=true`，但上述資料確認前
+`fabrication_ready=false`。

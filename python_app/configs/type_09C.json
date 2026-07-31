@@ -1,0 +1,49 @@
+{
+  "type_id": "09C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-11/N-9/N-10/N-11/N-27 複驗：lower type 僅接受 B/H，N-9 Note 1 正確刪除 Plate a；B 依 N-11/N-10 接入 4 支 EB 尺寸/鑽孔/荷重，成品單重仍為零。PUBK-2 依 320 kg/m3 精算；H、adjuster 與 spacer interface 仍保留 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/09C.pdf",
+      "drawing_no": "C-11",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-11"],
+      "title": "C-11 TYPE 09C ADJUSTABLE DEEP-COLD STANCHION",
+      "component_id": "C11-TYPE09C-ASSEMBLY",
+      "source_spec": "2in TO 4in; -9C TO -254C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 09C 格式應為 09C-{LINE}B-{H/100}{LOWER}",
+      "allowed_values": {
+        "line_size_in": [2, 3, 4],
+        "lower_component": ["B", "H"]
+      },
+      "static_parameters": {
+        "supporting_pipe": "2in SCH.40",
+        "full_thread_adjuster": "1-5/8in x 150 mm",
+        "spacer_plate_thickness_mm": 6,
+        "weld_mm": 6
+      },
+      "component_bindings": [
+        {
+          "component_id": "N-9",
+          "supporting_pipe_field": "supporting_pipe"
+        },
+        {
+          "component_id": "N27-PU BLOCK",
+          "block_no": 2
+        }
+      ],
+      "references": ["N-9 LOWER COMPONENT", "N-27 PU BLOCK"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "N-9/N-10 do not identify lower-component plate material or release the host interface",
+        "spacer-plate clipped net geometry remains unresolved",
+        "adjuster/rest-plate supplier hardware and attachment contour are incomplete"
+      ]
+    }
+  }
+}

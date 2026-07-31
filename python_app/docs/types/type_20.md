@@ -1,62 +1,58 @@
-# Type 20 — 長孔滑動底座支撐
+# Type 20 — D-22 長孔式 U-bolt 支撐
+
+各來源的 H(MAX) 採有限外插分級；未表列 member、slot 選型資料缺失或過度外插仍停止／保留 blocker。
 
 | 項目 | 內容 |
 |------|------|
-| 中文名稱 | 長孔滑動底座支撐 |
-| 英文名稱 | Slotted Clamp Base Support |
-| 圖號 | — |
-| 適用範圍 | 2"~12" (Z table) |
-| PDF | `20.pdf` |
-| 狀態 | ✅ 已分析 |
+| 中文名稱 | 長孔式 U-bolt 支撐 |
+| 英文名稱 | Slotted U-bolt Support |
+| 圖號 | D-22 |
+| 來源 | 中威 E25-24、CTCI 22A_5123A、CTCI 20E4588 |
+| 編碼 | `20-{M}-{HH}{Fig}` |
+| 狀態 | 三來源 BOM 已分流；加工圖仍有定位 blocker |
 
----
+## 來源差異
 
-## 系統本質
+三張 D-22 的外形與編碼相近，但 MEMBER M 與 H(MAX) 不能共用。
 
-U-bolt 固定點透過長孔(slot hole)產生滑移自由度的夾持式支撐底座
+| 來源 | MEMBER M / H(MAX) |
+|------|-------------------|
+| 中威 E25-24 | L50/1500、L65/1500、L75/2000、C100/3000 |
+| CTCI 22A_5123A | L50/1000、L75/1500、C125/2000 |
+| CTCI 20E4588 | L50/1000、L75/1500、C125/2000 |
 
-MEMBER M (Angle/Channel) + slot hole + washer，U-bolt NOT FURNISHED。FIG.A/B 兩種布置。H 現場裁切。
+超出所選來源表列 MEMBER 或 H(MAX) 時會停止計算，不再只顯示警告。
 
----
-
-## 編碼格式
-
-```text
-20-{M}-{HH}{Fig}  M=型鋼代碼, HH=H/100mm, Fig=A/B
-```
-
----
-
-## 核心運算邏輯
+## 編碼與計算
 
 ```text
-1 component: Member M (Angle or Channel) with length H. Member options: L50(H≤1500), L65(H≤1500), L75(H≤2000), C100(H≤3000).
+20-{M}-{HH}{Fig}
+
+M    = L50 / L65 / L75 / C100 / C125（依來源）
+HH   = H / 100 mm
+Fig  = A 或 B
 ```
 
-補充:
-- `Z_TABLE` 已保留在 `data/type20_table.py`，供未來 line size 接線時使用。
-- 目前 designation 不含 line size，因此現行 BOM 不會輸出特定案例的 `Z` 值。
+MEMBER M 依 H 下料並計算型鋼重量。D-22 的 D-80 接口、standard U-bolt
+及 washer/U-bolt assembly 都標示不供應，因此不列入本 Type BOM。
 
----
+## 加工資料
 
-## 設計重點
+圖面已能確定：
 
-- 此型式不依賴 `M-42` 下部構件，主要由本體鋼材或既有結構承載。
-- 圖面若標示 `U-bolt NOT FURNISHED`，現行 calculator 不會把該夾具列入 BOM。
-- `H`、`L` 或 `Hx` 等尺寸多為現場裁切值，文件中的公式代表估算與下料邏輯。
-- 此型式重點在滑動或限位功能，應優先比對圖面上的止擋、滑板與間隙設定。
+- 長孔 2 個。
+- 長孔半長 30 mm，完整長度為 60 mm。
+- 長孔寬度為 `U-bolt rod diameter + 3 mm`。
+- Z 依 supported line size：2/3/4/6/8/10/12 吋分別為
+  76/104/130/184/235/286/340 mm。
+- 角鋼或槽鋼規格、H 切長、Fig A/B 與 6 mm fillet weld。
 
----
+designation 本身沒有 supported line size 與 U-bolt rod diameter，因此需要
+row override：
 
-## 與相近 Type 的關係
+- `supported_line_size_in`
+- `u_bolt_rod_diameter_mm`
 
-| 類別 | 型式 | 說明 |
-|------|------|------|
-| 相近型式 | 依 `type_catalog.json` 與圖面家族比對 | 後續可再補上更精細的 family / ontology 關聯。 |
-
----
-
-## 備註
-
-- 本文件先依現有 `calculator`、`type_catalog.json` 與圖面可辨識資訊整理。
-- 若後續需要進一步資料化，可再補 `幾何參數表`、`BOM 結構表`、`PDF note 摘要` 與 `限制條件矩陣`。
+缺少這兩項時 MEMBER 的 BOM 仍可成立，但不能輸出完整長孔尺寸。即使兩項都有，
+圖中 Slot Detail 的 80/30/30 尺寸基準仍不足以無歧義決定兩個孔中心座標；
+在基準線經工程確認前，`fabrication_ready` 維持 false，系統不會自行猜測。

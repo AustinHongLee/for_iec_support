@@ -1,0 +1,53 @@
+{
+  "type_id": "16",
+  "_version": "1.3.0",
+  "source": "中威 D-18 + 中鼎 22A_5123A D-18 + 中鼎 20E4588 D-18",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三份 D-18。移除圖面未提供的 1.5A+OD/2+100 切長公式及固定 SUS304/A53Gr.B 材質。2026-07-31 再次放大核對尺寸鏈：Pipe B 名義下料為 H+C；中威 C 固定300，兩份中鼎第四段可修改 C（預設200）。NOTE 3 的 Hx cut to suit in field 是最終現場修切要求，不代表材料長度未知或為0；dummy_pipe_cut_length_mm 改為實測覆寫。special main line 模式另要求同主管材質及 shop-fabricated 分段切長。D-80 not furnished 不列 BOM。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-16_D-18.pdf",
+      "revision": "1",
+      "cover_dimension_name": "C",
+      "default_overhang_C_mm": 300,
+      "allows_c_suffix": false
+    },
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-16_D-18.pdf",
+      "revision": "1",
+      "cover_dimension_name": "D",
+      "default_overhang_C_mm": 200,
+      "allows_c_suffix": true
+    },
+    "ctci_20e4588": {
+      "drawing": "單張-本案有關/中鼎/長春_Type/TYPE-16_D-18.pdf",
+      "revision": "1",
+      "cover_dimension_name": "D",
+      "default_overhang_C_mm": 200,
+      "allows_c_suffix": true
+    }
+  },
+  "fabrication_contract": {
+    "cover_plate_thickness_mm": 6,
+    "cover_plate_quantity": 1,
+    "fillet_weld_mm": 6,
+    "pipe_weld_limit": "weld thickness shall not exceed pipe thickness",
+    "d80_interface": "IF REQUIRED / NOT FURNISHED",
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null
+  },
+  "TYPE16_TABLE": {
+    "2": {"pipe_size_B": "1.5", "pipe_schedule_B": "SCH.80", "cover_side_mm": 70},
+    "3": {"pipe_size_B": "2", "pipe_schedule_B": "SCH.40", "cover_side_mm": 80},
+    "4": {"pipe_size_B": "3", "pipe_schedule_B": "SCH.40", "cover_side_mm": 110},
+    "6": {"pipe_size_B": "4", "pipe_schedule_B": "SCH.40", "cover_side_mm": 140},
+    "8": {"pipe_size_B": "6", "pipe_schedule_B": "SCH.40", "cover_side_mm": 190},
+    "10": {"pipe_size_B": "8", "pipe_schedule_B": "SCH.40", "cover_side_mm": 240},
+    "12": {"pipe_size_B": "10", "pipe_schedule_B": "SCH.40", "cover_side_mm": 290},
+    "14": {"pipe_size_B": "12", "pipe_schedule_B": "STD.WT", "cover_side_mm": 340},
+    "16": {"pipe_size_B": "12", "pipe_schedule_B": "STD.WT", "cover_side_mm": 340},
+    "18": {"pipe_size_B": "14", "pipe_schedule_B": "STD.WT", "cover_side_mm": 380},
+    "20": {"pipe_size_B": "14", "pipe_schedule_B": "STD.WT", "cover_side_mm": 380},
+    "24": {"pipe_size_B": "16", "pipe_schedule_B": "STD.WT", "cover_side_mm": 430}
+  }
+}

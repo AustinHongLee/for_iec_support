@@ -1,0 +1,79 @@
+{
+  "type_id": "22C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-35~C-38、N-1~N-5/N-7A/N-8/N-20~N-23 複驗：small branch 由 CR 解析 SUB1 rod/B/C/D/E 與 rod-only 重量，3/4in branch 解析 STR R/A/B/T/holes；strap flat development、U-bolt thread/nuts 與 host 型鋼仍未完整。CR/pipe 多解要求 insulation_thickness_mm。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/22C.pdf",
+      "drawing_no": "C-35/C-36/C-37/C-38",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-35", "C-36", "C-37", "C-38"],
+      "title": "C-35~C-38 TYPE 22C COLD VESSEL / COLD PIPE SUPPORT",
+      "component_id": "C35-C38-TYPE22C-ASSEMBLY",
+      "source_spec": "COLD-INSULATED VESSEL AND COLD-INSULATED PIPE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["A", "B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"},
+            {"name": "C_mm", "kind": "positive_mm"}
+          ]
+        }
+      ],
+      "designation_error": "Type 22C 格式應為 22C-{A|B}-{CR#}-{LINE}B-{C mm}",
+      "branch_selections": [
+        {
+          "name": "pipe_group",
+          "field": "line_size_in",
+          "branches": {
+            "two_and_smaller": {
+              "values": [0.5, 0.75, 1, 1.25, 1.5, 2],
+              "sections": ["L75x75x9"],
+              "restraint": "N-7A SPECIAL U-BOLT TYPE-SUB1",
+              "cold_support": "C-21"
+            },
+            "three_four": {
+              "values": [3, 4],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "restraint": "N-8 STRAP",
+              "cold_support": "C-21",
+              "B_formula": "F + 38"
+            },
+            "six_eight_ten": {
+              "values": [6, 8, 10],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "cold_support": "C-21",
+              "B_formula": "F + 48"
+            },
+            "twelve_to_twenty_four": {
+              "values": [12, 14, 16, 18, 20, 22, 24],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "cold_support": "C-21",
+              "B_formula": "F + 48"
+            }
+          }
+        }
+      ],
+      "static_parameters": {
+        "vessel_clip_stud": "3/4in x 120 A193 Gr.B8 with 2 A194 Gr.8A nuts",
+        "vessel_clip_holes": "2-diameter22",
+        "support_plate_width_mm": 180,
+        "weld_mm": 6
+      },
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE"},
+        {"component_id": "N-7A", "when": {"pipe_group": "two_and_smaller"}},
+        {"component_id": "N-8", "when": {"pipe_group": "three_four"}}
+      ],
+      "references": ["N-7A", "N-8", "N-12/N-12A", "N-20~N-23", "N-28", "C-21"],
+      "blockers": [
+        "C is an assembly reach and does not uniquely define angle cuts",
+        "C-21 cold support and N-28 wood block recipes remain incomplete",
+        "N-7A thread/nut procurement and N-8 flat strap development remain incomplete where selected"
+      ]
+    }
+  }
+}

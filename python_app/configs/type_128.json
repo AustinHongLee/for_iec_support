@@ -1,0 +1,17 @@
+{
+  "type_id": "128",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-138 建立 field-cut C200 support。Poppler 僅渲染頁面碎片，改以 PyMuPDF 恢復完整向量頁並逐圖複核；C200x80x7.5 備料重及兩片 PL12x170x380 四孔淨板可算。2026-07-31 EB2依名義M×L及比例套管幾何列理論估重；finished field cut與供應商成品重仍保留確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-128_D-138.pdf",
+      "detail_no": "138",
+      "revision": "1",
+      "L_max_mm": 1500,
+      "member": {"kind": "Channel", "spec": "200*80*7.5", "source_spec": "C200x80x7.5", "material": "A36", "quantity": 1, "weight_ready": true},
+      "base_plate": {"length_mm": 170, "width_mm": 380, "thickness_mm": 12, "material": "A283 Gr.C", "quantity": 2, "holes_per_plate": 4, "hole_diameter_mm": 19, "pitch_x_mm": 90, "pitch_y_mm": 300},
+      "anchor": {"spec": "EB2-M16x125L", "material": "A307 Gr.8", "quantity": 8, "not_furnished": false}
+    }
+  }
+}

@@ -1,61 +1,37 @@
 {
   "type_id": "19",
-  "source": "data/type19_table.py",
+  "_version": "1.1.0",
+  "source": "單張-本案有關/中威/TYPE-19_D-21.pdf",
   "migrated": "2026-04-29",
-  "TYPE19_TABLE": {
-    "1": {
-      "member": "L40X40X5",
-      "L": 600,
-      "section_type": "Angle",
-      "dim": "40*40*5"
-    },
-    "1.5": {
-      "member": "L40X40X5",
-      "L": 600,
-      "section_type": "Angle",
-      "dim": "40*40*5"
-    },
-    "2": {
-      "member": "L50X50X6",
-      "L": 600,
-      "section_type": "Angle",
-      "dim": "50*50*6"
-    },
-    "3": {
-      "member": "L50X50X6",
-      "L": 600,
-      "section_type": "Angle",
-      "dim": "50*50*6"
-    },
-    "4": {
-      "member": "L75X75X9",
-      "L": 600,
-      "section_type": "Angle",
-      "dim": "75*75*9"
-    },
-    "6": {
-      "member": "L75X75X9",
-      "L": 1200,
-      "section_type": "Angle",
-      "dim": "75*75*9"
-    },
-    "8": {
-      "member": "H194X150X6X9",
-      "L": 1200,
-      "section_type": "H Beam",
-      "dim": "194*150*6"
-    },
-    "10": {
-      "member": "H194X150X6X9",
-      "L": 1200,
-      "section_type": "H Beam",
-      "dim": "194*150*6"
-    },
-    "12": {
-      "member": "H194X150X6X9",
-      "L": 1200,
-      "section_type": "H Beam",
-      "dim": "194*150*6"
+  "data_updated_at": "2026-07-29",
+  "data_update_note": "逐圖核對中威 D-21；22A/20E4588 無 Type 19。Note 1 的 L 為現場切割，舊程式不再把表列600/1200當成實際下料長度。8~12吋 A-A 視圖為 CUT FROM H194x150x6x9 的半剖 T-section，不再按整支 H Beam 計重。保存1:1斜率、6mm兩側焊與L-angle下端20C pocket-drain cut；端部貼管輪廓仍為加工 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-19_D-21.pdf",
+      "revision": "1",
+      "table_source": "TYPE19_TABLE"
     }
+  },
+  "fabrication_contract": {
+    "slope_horizontal": 1,
+    "slope_vertical": 1,
+    "slope_degrees": 45,
+    "fillet_weld_mm": 6,
+    "weld_sides": 2,
+    "angle_pocket_drain_cut_mm": 20,
+    "field_cut_basis": "D-21 NOTE 1: DIMENSION L SHALL BE CUT TO SUIT IN FIELD",
+    "parent_h_section_weight_per_m_kg": 30.6,
+    "t_section_split_count": 2
+  },
+  "TYPE19_TABLE": {
+    "1": {"member": "L40X40X5", "drawing_L_mm": 600, "section_family": "angle", "lookup_dim": "40*40*5"},
+    "1.5": {"member": "L40X40X5", "drawing_L_mm": 600, "section_family": "angle", "lookup_dim": "40*40*5"},
+    "2": {"member": "L50X50X6", "drawing_L_mm": 600, "section_family": "angle", "lookup_dim": "50*50*6"},
+    "3": {"member": "L50X50X6", "drawing_L_mm": 600, "section_family": "angle", "lookup_dim": "50*50*6"},
+    "4": {"member": "L75X75X9", "drawing_L_mm": 600, "section_family": "angle", "lookup_dim": "75*75*9"},
+    "6": {"member": "L75X75X9", "drawing_L_mm": 1200, "section_family": "angle", "lookup_dim": "75*75*9"},
+    "8": {"member": "T CUT FROM H194X150X6X9", "drawing_L_mm": 1200, "section_family": "split_h_t", "lookup_dim": "194*150*6", "parent_section": "H194X150X6X9"},
+    "10": {"member": "T CUT FROM H194X150X6X9", "drawing_L_mm": 1200, "section_family": "split_h_t", "lookup_dim": "194*150*6", "parent_section": "H194X150X6X9"},
+    "12": {"member": "T CUT FROM H194X150X6X9", "drawing_L_mm": 1200, "section_family": "split_h_t", "lookup_dim": "194*150*6", "parent_section": "H194X150X6X9"}
   }
 }

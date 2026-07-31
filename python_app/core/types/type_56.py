@@ -1,155 +1,232 @@
-"""
-Type 56 計算器 — 結構式管線檔止 (D-67, D-67A)
-格式: 56-{line_size}B
-  例: 56-2B, 56-10B, 56-36B
+"""Type 56 drawing-truth model for pipe stops D-67/D-67A.
 
-自成一體的結構鋼檔止, 不引用 D-80/D-81
-四種結構:
-  ≤2-1/2": PL 100×100×6
-  3"~4": FAB FROM 6t PLATE
-  5"~14": H型鋼切割
-  16"~24": FAB FROM 12t PLATE
-  26"~42": 大型結構 + 120° 鞍座 + D-91
-
-BOM:
-  小管 (≤2-1/2"): PLATE 100×100×6 ×2
-  3"~4": MEMBER C (A×B×6t) ×2 + SIDE PLATE (D×B×E) ×2
-  5"~14": MEMBER C ×2 (H型鋼切割)
-  16"~24": MEMBER C (A×B×12t) ×4 + SIDE PLATE ((D-2E)×B×12t) ×2
-  超大管 (26"~42"): ① MEMBER C + 鞍座 + D-91
+D-67 gives a trustworthy complete cut only for the <=2-1/2 inch
+PL100x100x6 branch.  For larger branches the table selects a parent section
+or a fabricated member, but the retained cut path / built-up plate breakdown
+is not fully dimensioned.  Those members are therefore emitted as zero-weight
+drawing references instead of invented rectangles or full parent-H weights.
 """
-from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value
-from ..steel import add_steel_section_entry
+from __future__ import annotations
+
+import math
+
+from ..bolt import add_custom_entry
+from ..config_loader import load_config
+from ..models import AnalysisResult, set_remark
+from ..parser import get_lookup_value, get_part
 from ..plate import add_plate_entry
-from ..trunnion_engine import SUPPORT_PLATE_MATERIAL as _SUPPORT_PLATE_MATERIAL
+from ..source_profiles import normalize_source_profile
+from ..truth import make_evidence
 from data.type56_table import get_type56_data
+from data.type76_table import get_type76_data
 
 
-def _h_spec_from_table_desc(desc: str) -> str:
-    """將 'CUT FROM H200*100*5.5*8' 轉成型鋼重量表使用的 '200*100*5.5'。"""
-    token = str(desc).replace("CUT FROM H", "").strip()
-    parts = token.split("*")
-    return "*".join(parts[:3])
+_STOP_MATERIAL = "Carbon Steel (grade per project specification)"
 
 
-def _add_gross_plate_warning(result: AnalysisResult) -> None:
-    warning = (
-        "Type 56: B值依圖表只到管底；與管線相切/放樣弧形目前採外接矩形重量估算，"
-        "不扣圓弧、倒角，也不另加未標尺寸的接觸延伸"
+def _pipe_od_mm(size: float) -> float | None:
+    row = get_type76_data(size)
+    return float(row["od_mm"]) if row else None
+
+
+def _add_unresolved_member(
+    result: AnalysisResult,
+    *,
+    name: str,
+    spec: str,
+    quantity: int,
+    drawing: str,
+    revision: str,
+    size: float,
+    data: dict,
+    blocker: str,
+):
+    add_custom_entry(
+        result,
+        name,
+        spec,
+        _STOP_MATERIAL,
+        quantity,
+        0,
+        "PC",
+        remark=blocker,
+        category="型鋼類",
+        item_class="primary_structure",
+        manufacturing_type="raw_cut",
     )
-    if warning not in result.warnings:
-        result.warnings.append(warning)
+    entry = result.entries[-1]
+    entry.geometry.component_id = f"D67-{size:g}-MEMBER-C-ASSEMBLY"
+    entry.geometry.source_drawing = drawing
+    entry.geometry.source_revision = revision
+    entry.geometry.shape_kind = "drawing_defined_fabricated_member"
+    entry.geometry.parameters = {
+        "line_size_in": size,
+        "quantity": quantity,
+        "A_mm": data["A"],
+        "B_mm": data["B"],
+        "parent_or_fabrication": data["C"],
+        "D_mm": data["D"],
+        "thickness_mm": data["E"],
+        "pipe_radius_mm": data["R"],
+        "fillet_weld_mm": 6,
+    }
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def _add_d91_reference(result, *, drawing, revision, size):
+    od = _pipe_od_mm(size)
+    developed = round(math.pi * od / 3, 1) if od else None
+    blocker = (
+        "D-67A引用D-91；120°與400mm已知，但pad須由main pipe切取或採同材質且12t MIN，"
+        "未確認母管材質/實厚前不計重量亦不得下料"
+    )
+    add_custom_entry(
+        result,
+        "REINFORCING PAD",
+        "D-91 / 120 DEG / L400 / t>=12",
+        "Same as main pipe",
+        1,
+        0,
+        "PC",
+        remark=blocker,
+        category="鋼板類",
+        item_class="reference_only",
+        manufacturing_type="raw_cut",
+    )
+    entry = result.entries[-1]
+    entry.geometry.component_id = "D67A-D91-REINFORCING-PAD"
+    entry.geometry.source_drawing = drawing
+    entry.geometry.source_revision = revision
+    entry.geometry.shape_kind = "rolled_pipe_pad"
+    entry.geometry.parameters = {
+        "line_size_in": size,
+        "pipe_od_mm": od,
+        "angle_deg": 120,
+        "developed_width_mm": developed,
+        "axial_length_mm": 400,
+        "minimum_thickness_mm": 12,
+        "material_rule": "cut from main pipe or same material plate",
+    }
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
+    return blocker
+
+
+def calculate(fullstring: str, overrides=None, source_profile=None) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    config = load_config("56", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 56: 尚未建立來源 profile {profile_id}"
+        return result
 
-    # 第二段: 管徑
-    part2 = get_part(fullstring, 2)
-    if not part2:
+    token = get_part(fullstring, 2)
+    if not token:
         result.error = "Type 56: 缺少管徑"
         return result
-    line_size = get_lookup_value(part2)
-
-    data = get_type56_data(line_size)
+    size = get_lookup_value(token)
+    data = get_type56_data(size)
     if not data:
-        result.error = f"Type 56: 管徑 {part2} ({line_size}\") 不在範圍 (3/4\"~42\")"
+        result.error = f"Type 56: 管徑 {token} ({size}\") 不在D-67/D-67A範圍"
         return result
 
-    R = data["R"]
+    drawing = profile["drawings"][0 if size <= 24 else 1]
+    revision = profile["revision"]
+    blockers: list[str] = []
 
-    if line_size <= 2.5:
-        # 小管: PL 100×100×6 ×2
-        add_plate_entry(result, plate_a=100, plate_b=100,
-                        plate_thickness=6, plate_name="PLATE",
-                            plate_role="generic_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
-        result.entries[-1].remark = "管線檔止, PL 100×100×6, ×2"
-
-    elif line_size <= 4:
-        # 3"~4": A×B×6t ×2 + D×B×E ×2
-        A = data["A"]
-        B = data["B"]
-        D = data["D"]
-        E = data["E"]
-        _add_gross_plate_warning(result)
-        add_plate_entry(result, plate_a=A, plate_b=B,
-                        plate_thickness=6, plate_name="MEMBER C",
-                            plate_role="generic_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
-        result.entries[-1].remark = f"FAB FROM 6t PLATE, {A}x{B}x6t, ×2, R={R}mm; gross rectangle"
-
-        add_plate_entry(result, plate_a=D, plate_b=B,
-                        plate_thickness=E, plate_name="SIDE PLATE",
-                            plate_role="side_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
-        result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2; gross rectangle"
-
-    elif line_size <= 14:
-        # 5"~14": MEMBER C ×2, CUT FROM H型鋼
-        C_desc = data["C"]  # "CUT FROM H200*100*5.5*8" etc.
-        D = data["D"]
-        h_spec = _h_spec_from_table_desc(C_desc)
-        _add_gross_plate_warning(result)
-        add_steel_section_entry(result, "H Beam", h_spec, D, 2)
-        result.entries[-1].name = "MEMBER C"
-        if line_size == 5:
-            split_note = "D=100；依圖面概念為 H200x100x5.5x8 剖半後左右各一"
-        elif line_size <= 8:
-            split_note = "D=100；H194x150x6x9 切出左右件，餘料/可用性需人工評估"
-        else:
-            split_note = "左右各一，不做剖半折減"
-        result.entries[-1].remark = f"{C_desc}, L={D}, ×2, R={R}mm; {split_note}"
-
-    elif line_size <= 24:
-        # 16"~24": A×B×12t ×4 + (D-2E)×B×12t ×2
-        A = data["A"]
-        B = data["B"]
-        E = data["E"]
-        D = data["D"]
-        side_len = D - 2 * E
-        _add_gross_plate_warning(result)
-        add_plate_entry(result, plate_a=A, plate_b=B,
-                        plate_thickness=E, plate_name="MEMBER C",
-                            plate_role="generic_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=4)
-        result.entries[-1].remark = f"FAB FROM {E}t PLATE, {A}x{B}x{E}t, ×4, R={R}mm; gross rectangle"
-
-        add_plate_entry(result, plate_a=side_len, plate_b=B,
-                        plate_thickness=E, plate_name="SIDE PLATE",
-                            plate_role="side_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
-        result.entries[-1].remark = f"側板, (D-2E)={side_len}x{B}x{E}t, ×2; gross rectangle"
-
-    else:
-        # 26"~42": 大型結構 + 120° 鞍座
-        A = data["A"]
-        B = data["B"]
-        C = data["C"]
-        D = data["D"]
-        E = data["E"]
-        add_plate_entry(result, plate_a=A, plate_b=B,
-                        plate_thickness=E, plate_name="MEMBER C",
-                            plate_role="channel",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
-        result.entries[-1].remark = f"主承載框, A={A}, B={B}, C={C}, R={R}mm"
-
-        add_plate_entry(result, plate_a=D, plate_b=B,
-                        plate_thickness=E, plate_name="SIDE PLATE",
-                            plate_role="side_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=2)
-        result.entries[-1].remark = f"側板, {D}x{B}x{E}t, ×2"
-
-        # 120° 鞍座
-        add_plate_entry(result, plate_a=C, plate_b=C,
-                        plate_thickness=E, plate_name="SADDLE (120°)",
-                            plate_role="saddle_plate",
-                        material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
-        result.entries[-1].remark = f"120° 鞍座, 含 D-91 REIN. PAD"
-
-        result.warnings.append(
-            f"大管 ({line_size}\") 需 D-91 Reinforcing Pad, 尺寸另查"
+    if size <= 2.5:
+        branch = "PL100"
+        add_plate_entry(
+            result,
+            100,
+            100,
+            6,
+            "PIPE STOP PLATE",
+            material=_STOP_MATERIAL,
+            plate_qty=2,
+            plate_role="generic_plate",
         )
+        entry = result.entries[-1]
+        entry.geometry.component_id = "D67-PL100-PIPE-STOPS"
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = revision
+        entry.geometry.shape_kind = "rectangular_plate"
+        entry.geometry.parameters.update(
+            {
+                "length_mm": 100,
+                "width_mm": 100,
+                "thickness_mm": 6,
+                "quantity": 2,
+                "pipe_gap_mm": 3,
+                "fillet_weld_mm": 6,
+            }
+        )
+        entry.geometry.fabrication_ready = True
+        set_remark(entry, "D-67 PL100x100x6，左右各一，共2片")
+    else:
+        if size <= 4:
+            branch = "PL6-FAB-REFERENCE"
+            spec = "MEMBER C / FAB. FROM 6t PLATE"
+            blocker = (
+                "D-67只給A/B/D/E與FAB FROM 6t；Member C的組焊截面、各片展開尺寸及貼管輪廓未完整標註"
+            )
+        elif size <= 14:
+            branch = "PARENT-H-CUT-REFERENCE"
+            spec = f'MEMBER C / {data["C"]}'
+            blocker = (
+                "D-67只指定CUT FROM母H型鋼；保留部位、切割路徑及可用截面未完整標註，"
+                "不得以兩支完整H型鋼重量代替"
+            )
+        elif size <= 24:
+            branch = "PL12-FAB-REFERENCE"
+            spec = "MEMBER C / FAB. FROM 12t PLATE"
+            blocker = (
+                "D-67只給A/B/D/E與FAB FROM 12t；左右Member C的built-up截面及各片展開尺寸未完整標註"
+            )
+        else:
+            branch = "D67A-FAB-REFERENCE"
+            spec = "D-67A SUPPORT MEMBER / FAB. FROM 12t PLATE"
+            blocker = (
+                "D-67A只給A/B/C/D/E/R外形控制尺寸；左右支撐組件的拆片、貼管/鞍座輪廓及組焊定位未完整標註"
+            )
+        _add_unresolved_member(
+            result,
+            name="MEMBER C ASSEMBLY",
+            spec=spec,
+            quantity=2,
+            drawing=drawing,
+            revision=revision,
+            size=size,
+            data=data,
+            blocker=blocker,
+        )
+        blockers.append(blocker)
+        if size >= 26:
+            blockers.append(
+                _add_d91_reference(
+                    result, drawing=drawing, revision=revision, size=size
+                )
+            )
 
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": drawing,
+        "source_revision": revision,
+        "branch": branch,
+        "bom_ready": size <= 2.5,
+        "fabrication_ready": size <= 2.5,
+        "blockers": blockers,
+    }
+    result.warnings.extend(blockers)
+    result.evidence.append(
+        make_evidence(
+            "type56_table_row",
+            {"line_size": size, **data},
+            "visual_transcription",
+            source=drawing,
+            confidence=0.99,
+        )
+    )
     return result

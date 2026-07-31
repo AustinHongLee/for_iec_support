@@ -1,0 +1,19 @@
+{
+  "type_id":"37","_version":"1.0.0","source":"三來源 TYPE-37_D-42.pdf",
+  "data_updated_at":"2026-07-31",
+  "data_update_note":"逐張核對三份D-42，表與designation相同。主梁H+C及斜撐推導保留；斜撐端切/貼合未完整標註，計算長度只作BOM，非完成加工圖。2026-07-31 起 H上限採有限外插分級。",
+  "source_profiles":{
+    "cw_e25_24_hp6":{"drawing":"單張-本案有關/中威/TYPE-37_D-42.pdf","revision":"1","table":"COMMON_TABLE"},
+    "ctci_22a_5123a":{"drawing":"單張-本案有關/中鼎/22A_5123A/TYPE-37_D-42.pdf","revision":"1","table":"COMMON_TABLE"},
+    "ctci_20e4588":{"drawing":"單張-本案有關/中鼎/長春_Type/TYPE-37_D-42.pdf","revision":"1","table":"COMMON_TABLE"}
+  },
+  "COMMON_TABLE":{
+    "L75":{"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","H_MAX":1450,"depth":75},
+    "C100":{"section_type":"Channel","lookup_dim":"100*50*5","full_spec":"C100X50X5","H_MAX":1450,"depth":100},
+    "C125":{"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","H_MAX":1450,"depth":125},
+    "H100":{"section_type":"H Beam","lookup_dim":"100*100*6","full_spec":"H100X100X6X8","H_MAX":2050,"depth":100},
+    "H125":{"section_type":"H Beam","lookup_dim":"125*125*6.5","full_spec":"H125X125X6.5X9","H_MAX":2050,"depth":125},
+    "H150":{"section_type":"H Beam","lookup_dim":"150*150*7","full_spec":"H150X150X7X10","H_MAX":2050,"depth":150}
+  },
+  "fabrication_contract":{"default_C_mm":200,"fig_angles":{"A":30,"B":45},"fillet_weld_mm":6}
+}

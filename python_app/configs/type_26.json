@@ -1,0 +1,35 @@
+{
+  "type_id": "26",
+  "_version": "1.1.0",
+  "source": "三來源 TYPE-26_D-28.pdf + TYPE-26_D-29.pdf",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三來源D-28/D-29與M-34。來源member/envelope分流；20E另有Fig-B down-stop equivalent-pipe/H選材矩陣。Fig C使用2片正式M-34 plate與8/12支K bolt。2026-07-31 起 L/H上限採有限外插分級；20E L下限、選材矩陣空格、未表列member仍硬停止。完整 K bolt 直徑×長度同步列理論估重，供應商成品重量待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {"drawings":["單張-本案有關/中威/TYPE-26_D-28.pdf","單張-本案有關/中威/TYPE-26_D-29.pdf"],"revision":"1","table":"CW_TABLE","fire_protection_detail":false,"global_envelope":null},
+    "ctci_22a_5123a": {"drawings":["單張-本案有關/中鼎/22A_5123A/TYPE-26_D-28.pdf","單張-本案有關/中鼎/22A_5123A/TYPE-26_D-29.pdf"],"revision":"1","table":"CTCI_22A_TABLE","fire_protection_detail":true,"global_envelope":null},
+    "ctci_20e4588": {"drawings":["單張-本案有關/中鼎/長春_Type/TYPE-26_D-28.pdf","單張-本案有關/中鼎/長春_Type/TYPE-26_D-29.pdf"],"revision":"1","table":"CTCI_20E_TABLE","fire_protection_detail":true,"global_envelope":{"L_MIN_EXCLUSIVE":500,"L_MAX":1000,"H_MAX":1500}}
+  },
+  "CW_TABLE": {
+    "L50":{"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","K":"5/8X40","L_MAX":1000,"H_MAX":1000},
+    "L65":{"section_type":"Angle","lookup_dim":"65*65*6","full_spec":"L65X65X6","K":"3/4X50","L_MAX":1000,"H_MAX":1000},
+    "L75":{"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","K":"3/4X50","L_MAX":1000,"H_MAX":2500},
+    "C125":{"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","K":"3/4X50","L_MAX":1500,"H_MAX":1500}
+  },
+  "CTCI_22A_TABLE": {
+    "L50":{"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","K":"5/8X40","L_MAX":600,"H_MAX":800},
+    "L75":{"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","K":"3/4X50","L_MAX":1000,"H_MAX":1200},
+    "C125":{"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","K":"3/4X50","L_MAX":1500,"H_MAX":1500},
+    "C150":{"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","K":"3/4X50","L_MAX":1500,"H_MAX":1500}
+  },
+  "CTCI_20E_TABLE": {
+    "L50":{"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","K":"M16X40"},
+    "L75":{"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","K":"M20X50"},
+    "C125":{"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","K":"M20X50"},
+    "C150":{"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","K":"M20X50"}
+  },
+  "DOWN_STOP_SELECTION_20E": {
+    "le4": {"H_LE_1000": null, "H_GT_1000": "L75"},
+    "6_8": {"H_LE_1000": "L75", "H_GT_1000": "C125"}
+  },
+  "fabrication_contract": {"field_fillet_weld_mm":6,"joint_overlap_callout_mm":15,"fig_b_not_furnished":["DOWN STOPPER D-70","STANDARD U-BOLT D-68"],"fig_c_lug_quantity":2,"fig_c_bolt_quantity":4}
+}

@@ -49,14 +49,11 @@ def test_ss28_no_L_segment_fixed_base():
 
 
 def test_ss_missing_dims_and_fix():
-    # 容錯策略（實務清單需「跑得起來」）：缺尺寸→略過該桿並警告，非硬錯
+    # 缺尺寸或未知固定方式會改變鋼構/底板，必須阻擋而非部分計算。
     r = _a("SS24B-1000H")                          # 缺 L
-    assert not r.error, r.error
-    assert any("缺尺寸" in w or "略過" in w for w in r.warnings)
-    # 未知固定方式→視為焊接並警告，仍可產出
+    assert r.error and "L" in r.error
     r2 = _a("SS24X-1000H-800L")
-    assert not r2.error, r2.error
-    assert any("非標準" in w or "固定方式" in w for w in r2.warnings)
+    assert r2.error and "固定方式" in r2.error
 
 
 def test_ss37_side_mount():

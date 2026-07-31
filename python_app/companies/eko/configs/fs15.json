@@ -82,15 +82,25 @@
   "1": 1000,
   "2": 1500
  },
+ "validation": {
+  "required": ["fix", "flags", "serial", "H"],
+  "allowed": ["fix", "flags", "serial", "H", "H1"],
+  "fixes": ["A", "B", "E", "W"],
+  "allowed_flags": ["H", "V"],
+  "serial_dimension_max": {
+   "field": "H",
+   "config_key": "serial_hmax"
+  }
+ },
  "designation_format": {
   "pattern": "FS15{A/B/E/W}-{H/V}[-□\"]-序號-□H[-□H1]",
   "example": "FS15E-H-1-600H-300H1 / FS15W-V-1\\\"-2-1500H"
  },
- "data_update_note": "依FS15.pdf件號表+尺寸表；序1=L50×50×6/序2=L75×75×9；Γ型=立柱H+頂臂300(逐桿分列,長度近似)；FS15不帶管徑、本體不自帶U型螺栓(型式V之UB1另計,使用者2026-07-21確認);底板260×190近似",
+ "data_update_note": "v1.1 強制固定方式、H/V型式、序號、H及序號H上限，並拒絕把管徑塞進FS15；V型U型螺栓仍應另列UB1。原資料依FS15.pdf。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_portal",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

@@ -1,0 +1,49 @@
+{
+  "type_id": "06C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-6/N-9/N-10/N-11/N-27 複驗：lower component 嚴格套 N-9/N-10 尺寸；B/E/G 依 N-11 Note 與 N-10 J 欄接入 4 支 EB 尺寸/鑽孔/荷重（成品重仍為零），J 因 N-11 未列而保留衝突警告。PUBK-1 依 320 kg/m3 精算；H、上部接合與 plate interface 仍保留加工 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/06C.pdf",
+      "drawing_no": "C-6",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-6"],
+      "title": "C-6 TYPE 06C DEEP-COLD STANCHION",
+      "component_id": "C6-TYPE06C-ASSEMBLY",
+      "source_spec": "1-1/2in AND SMALLER; -9C TO -254C",
+      "designation_variants": [
+        {"fields": [{"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 06C 格式應為 06C-{H/100}{LOWER}",
+      "allowed_values": {
+        "lower_component": ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "R", "S"]
+      },
+      "static_parameters": {
+        "supporting_pipe": "1-1/2in SCH.80",
+        "plates": ["9t SUS A240 Gr.304", "6t carbon-steel plate"],
+        "stud_bolt": "1/2in x 85; A193 Gr.B8 with 2 A194 Gr.8A nuts",
+        "stud_holes": "2-diameter16",
+        "weep_hole_diameter_mm": 6
+      },
+      "component_bindings": [
+        {
+          "component_id": "N-9",
+          "supporting_pipe_field": "supporting_pipe"
+        },
+        {
+          "component_id": "N27-PU BLOCK",
+          "block_no": 1
+        }
+      ],
+      "references": ["N-9 LOWER COMPONENT", "N-27 PU BLOCK-1"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "N-9/N-10 do not identify lower-component plate material or release the host interface",
+        "C-6 upper/stainless/carbon plate net interfaces are not a complete released assembly recipe",
+        "supported-line attachment and diameter-6 weep-hole datum remain unresolved"
+      ]
+    }
+  }
+}

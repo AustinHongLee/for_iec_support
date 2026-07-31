@@ -149,6 +149,16 @@ def _pdf_candidates(t: dict) -> list[tuple[str, str]]:
         for pdf in ordered:
             candidates.append((os.path.join(source_dir, pdf), f"CP-129: {pdf}"))
 
+    source_pdf = t.get("source_pdf", "")
+    if source_pdf:
+        repo_dir = os.path.dirname(_APP_DIR)
+        candidates.append(
+            (
+                os.path.join(repo_dir, source_pdf.replace("/", os.sep)),
+                f"來源圖: {source_pdf}",
+            )
+        )
+
     pdf_file = t.get("pdf_file", "")
     if pdf_file:
         candidates.append((os.path.join(_PDF_DIR, pdf_file), f"Legacy: {pdf_file}"))

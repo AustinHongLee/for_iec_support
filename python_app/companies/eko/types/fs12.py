@@ -15,7 +15,7 @@
 from core.models import AnalysisResult, set_remark
 from core.steel import add_steel_section_entry
 from core.plate import add_plate_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 from core.material_specs import (
     STRUCTURAL_A36_SS400,
     SUPPORT_PLATE_A36_SS400,
@@ -91,18 +91,41 @@ def calculate(parsed, config, overrides=None):
     pier_needed = False
     if fix == "A":
         spec, mat = _bolt_spec_material(bolts, "anchor_bolt", "A307-B")
-        add_custom_entry(result, "L型基礎螺栓", spec, mat, 8, 0.0, unit="SET",
-                         remark="適用 FS12A, ×8 (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="L型基礎螺栓",
+            spec=spec,
+            material=mat,
+            quantity=8,
+            kind="foundation_bolt",
+            unit="SET",
+            remark="適用 FS12A, ×8",
+        )
         pier_needed = True
     elif fix == "E":
         spec, mat = _bolt_spec_material(bolts, "exp_bolt", "碳鋼(鍍鋅)")
-        add_custom_entry(result, "擴展螺栓", spec, mat, 8, 0.0, unit="SET",
-                         remark="適用 FS12E, ×8 (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="擴展螺栓",
+            spec=spec,
+            material=mat,
+            quantity=8,
+            kind="expansion_bolt",
+            unit="SET",
+            remark="適用 FS12E, ×8",
+        )
         pier_needed = True
     elif fix == "B":
         spec, mat = _bolt_spec_material(bolts, "nut_bolt", "A307-B 鍍鋅")
-        add_custom_entry(result, "螺栓錨帽", spec, mat, 8, 0.0, unit="SET",
-                         remark="適用 FS12B, ×8 (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="螺栓錨帽",
+            spec=spec,
+            material=mat,
+            quantity=8,
+            unit="SET",
+            remark="適用 FS12B, ×8",
+        )
     elif fix == "W":
         result.warnings.append("FS12W 焊接固定：底板免鑽孔、不含固定螺栓與水泥墩")
 

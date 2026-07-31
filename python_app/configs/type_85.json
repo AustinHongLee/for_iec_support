@@ -1,0 +1,35 @@
+{
+  "type_id": "85",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "重新開啟三套 D-105/D-106，確認本型沒有額外 insulation saddle A/B/C，而是直接引用同來源 D-80/D-80B。移除舊 Type 52 錯誤 fallback；可證實的小管分支輸出 D-80 BOM，其餘以零重量 reference 封鎖。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-85_D-105.pdf",
+      "large_drawing": "TYPE-85_D-106.pdf",
+      "revision": "1",
+      "small_detail_no": "105",
+      "large_detail_no": "106",
+      "small_sizes": [0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28, 30, 32, 36, 40, 42]
+    },
+    "ctci_22a_5123a": {
+      "small_drawing": "TYPE-85_D-105.pdf",
+      "large_drawing": "TYPE-85_D-106.pdf",
+      "revision": "1",
+      "small_detail_no": "105",
+      "large_detail_no": "106",
+      "small_sizes": [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28, 30, 32, 36, 40, 42]
+    },
+    "ctci_20e4588": {
+      "small_drawing": "TYPE-85_D-105.pdf",
+      "large_drawing": "TYPE-85_D-106.pdf",
+      "revision": "1A",
+      "small_detail_no": "105",
+      "large_detail_no": "106",
+      "small_sizes": [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28]
+    }
+  }
+}

@@ -1,7 +1,16 @@
 {
   "type_id": "77",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "複驗 D-92：保留 A/B/C/T/H、120/20/30 度與 weep-hole 資訊；停用把多片 saddle 當 C*H+A*B 外包矩形的重量，(A)/(S) 正確解讀為 D-80A Table B 材質符號。",
   "source": "data/type77_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-77_D-92.pdf",
+      "revision": "1"
+    }
+  },
   "TYPE77_TABLE": {
     "26\"": {
       "line_size": "26\"",

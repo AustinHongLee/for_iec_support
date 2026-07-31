@@ -1,29 +1,27 @@
 # Type 62 — Pipe Hanger Combination
 
 | 項目 | 內容 |
-|------|------|
-| 圖號 | D-75 / D-76 |
-| 圖名 | DETAIL OF PIPE SUPPORT |
+|---|---|
+| 中威圖號 | D-75 / D-76 Rev.1 |
+| 中威構件圖 | M-3 / M-8 / M-9 / M-10 / M-31 / M-33 Rev.1 |
 | 分類 | Rod hanger / pipe hanger combination |
-| 狀態 | 已實作 calculator，部分 component 仍為估算 |
+| 狀態 | 中威選型已接表；整組 BOM / 加工圖仍 partial |
 
----
+## 來源邊界
 
-## 系統本質
+目前 calculator 只開放中威 `cw_e25_24_hp6`。
 
-Type 62 不是單一零件，而是管線吊架的「組合選型圖」。
+中鼎 `ctci_20e4588` 雖也有 D-75/D-76，但不是同一套規則：
 
-它由三段組成：
+- 中威 lower figures 為 `E/G/H/J/K/L/M/N/Q`
+- 中鼎 20E4588 lower figures 只見 `P/Q`
+- 中威使用英制 fractional rod，例如 `5/8`
+- 中鼎範例使用公制 rod，例如 `M16`
+- 中鼎另有 Detail Z、LGP-A、reinforcing pad、bolt 與 insulation 規則
 
-- Upper part：`FIG-A / FIG-C / FIG-D`
-- Common rod hardware：`M-22` machine threaded rod，必要時加 `M-21` turnbuckle
-- Lower part：`FIG-E / G / H / J / K / L / M / N / Q`
+因此中鼎 Type 62 仍由 source-profile safety gate 阻擋，不能套用中威的 M-3/M-31/M-33。
 
-圖面 page 2 的表格將每個 FIG 對應到 M-series component，例如 `FIG-J -> M-6`、`FIG-Q -> M-24`。
-
----
-
-## 編碼格式
+## 中威編碼
 
 ```text
 62-{line_size}B-{rod_size}-{HH}[~{HH2}]{upper_fig}-{lower_fig}[(T)]
@@ -35,97 +33,93 @@ Type 62 不是單一零件，而是管線吊架的「組合選型圖」。
 62-4B-5/8-05~30D-J(T)
 ```
 
-拆解如下：
-
-| 段位 | 例 | 意義 |
-|------|----|------|
-| `62` | `62` | Type number |
-| line size | `4B` | 管徑 |
-| rod size | `5/8` | rod diameter |
-| H | `05~30` | Dimension H，以 100mm 為單位；本例為 500~3000mm |
-| upper fig | `D` | Upper part figure |
-| lower fig | `J` | Lower part figure |
-| `(T)` | `(T)` | With turnbuckle |
-
-Calculator 也接受單一 H，例如：
-
-```text
-62-4B-5/8-05C-J
-```
-
----
+`HH` 以 100 mm 為單位；`(T)` 表示使用 turnbuckle。
 
 ## FIG 對應表
 
-| FIG | Role | M-No. | Grinnell Fig | Pipe size range | Max temp | Max insulation |
-|-----|------|-------|---------------|-----------------|----------|----------------|
-| A | Upper | M-31 | 60 | — | — | — |
-| C | Upper | M-28 | 66 | — | 750°F | — |
-| D | Upper | M-28 | 66 | — | 750°F | — |
-| E | Lower | M-3 | 260 | 1/2"~30" | 650°F | — |
-| G | Lower | M-4 | 212 | 1/2"~24" | 750°F | — |
-| H | Lower | M-5 | 216 | 3"~42" | 750°F | — |
-| J | Lower | M-6 | 295 | 3/4"~24" | 750°F | 4" |
-| K | Lower | M-7 | 295H | 6"~36" | 750°F | 4" |
-| L | Lower | M-8 | 295A | 1-1/2"~10" | 1050°F | 4" |
-| M | Lower | M-9 | 224 | 4"~16" | 1050°F | 4" |
-| N | Lower | M-10 | 246 | 10"~24" | 1075°F | 6" |
-| Q | Lower | M-24 | 299 | 2"~24" | 750°F | — |
+| FIG | Role | M-No. | Pipe size range | 目前成熟度 |
+|---|---|---|---|---|
+| A | Upper | M-31 | — | 尺寸與方板扣中心圓孔淨重可算 |
+| C/D | Upper | M-28 | — | 既有 lookup |
+| E | Lower | M-3 | 1/2"~30" | 21 列尺寸/負載可查；成品重量未給 |
+| G | Lower | M-4 | 1/2"~24" | 尺寸可查；來源成品重量未給 |
+| H | Lower | M-5 | 3"~42" | partial lookup |
+| J | Lower | M-6 | 3/4"~24" | partial lookup |
+| K | Lower | M-7 | 6"~36" | partial lookup |
+| L | Lower | M-8 | 1-1/2"~10" | 9 列尺寸/分溫負載可查；成品重量未給 |
+| M | Lower | M-9 | 4"~16" | 7 列尺寸/分溫負載可查；成品重量未給 |
+| N | Lower | M-10 | 10"~24" | 7 列尺寸/OD range/分溫負載可查；成品重量未給 |
+| Q | Lower | M-24 + M-33 | 2"~24" | M-33 12 列尺寸/負載可查；淨輪廓/重量未完成 |
 
-圖面 remarks：
+M-3 與 M-33 都採原表 exact-row 選型，不做區間內插，且 designation rod 必須等於 component row 指定的 rod。
 
-- `FIG-H` load capacity greater than `FIG-G`
-- `FIG-K` load capacity greater than `FIG-J`
-- `FIG-M` load capacity greater than `FIG-L`
-- `FIG-N` load capacity greater than `FIG-M`
-- `FIG-Q` uses Lug Plate Type-B (`M-33`)
+M-8/M-9/M-10 也只接受原表存在的 line-size row，不會因為落在 D-76
+最小/最大範圍內就內插。這三張 clamp 圖的 F/H 是 cross-pin、cross-bolt
+或 U-bolt 尺寸，不是 Type 62 designation 的 hanger rod，因此不做
+`F/H == rod` 的錯誤限制。
 
----
+## 重量與加工圖邊界
 
-## Calculator Handoff
+### M-31 Steel Washer Plate
 
-目前 calculator 採保守 BOM 組裝：
+M-31 是方板、中心圓孔：
 
-| 構件 | 來源 | 精度 |
-|------|------|------|
-| Machine threaded rod | `M-22` | table lookup，長度用 H 或 H range 的最大值 |
-| Turnbuckle | `M-21` | `(T)` 時加入 |
-| Upper `FIG-C/D` | `M-28` | table lookup |
-| Lower `FIG-G/H/J/K` | `M-4/M-5/M-6/M-7` | table lookup |
-| Lower `FIG-Q` clevis | `M-24` | table lookup |
-| Weldless eye nut | `M-25` | lower clamp connector；table lookup |
-| Heavy hex nut | drawing callout | 估算，待 nut table |
-| `M-3/M-8/M-9/M-10/M-31/M-33` | missing component table | 明確 warning 為估算 |
+```text
+net area = C² - πD²/4
+weight = net area × T × 7.85e-6 kg/mm³
+```
 
-FIG-E 補充判讀：
+方板與孔位可直接結構化。原圖只寫 carbon steel，未給正式 grade/coating；Type 62 FIG-A 的現場焊接位置也須由 project layout 確認，因此整體仍不是 fabrication-ready。
 
-- D-75 page 1 的 FIG-E 只顯示 M-3 Adjustable Clevis 本體接 rod
-- 圖面沒有像 FIG-G/H/J/K/L/M/N 那樣標出 `WELDLESS EYE NUT` 或 `HEAVY HEX. NUT`
-- 因此 calculator 對 FIG-E 不另加 M-25 或 heavy hex nut，只輸出 M-3 估算 placeholder 與 warning
+Rev.1 的 `SWP-3 1/2` 明確列 `D=75 mm`。此值雖不符合相鄰列的單調規律，程式忠實保留，不自行改成 95。
 
----
+### M-3 Adjustable Clevis
+
+M-3 已保存 21 列 `ADC-*` 的 load、upper/lower steel、A~G 尺寸。它是 formed purchased assembly；原圖沒有：
+
+- finished unit weight
+- bend radius / developed strip length
+- cross-bolt length/grade 與 nut/washer 完整 scope
+- carbon-steel grade/coating
+
+所以 M-3 輸出真實 designation 與尺寸，但重量為 0，不再用 missing-table estimate。
+
+### M-33 Lug Plate Type-B
+
+M-33 已保存 12 列 `LGP-B-*` 的 rod、C/D/E/K/R/T/S 與 maximum load。原圖仍不足以唯一產生 pipe-contact flat contour / bevel，也沒有 finished weight，因此只輸出可查尺寸與加工 blockers，不用外接矩形猜重量。
+
+### M-8 / M-9 / M-10 High-temperature Pipe Clamps
+
+三張 Rev.1 原圖共保存 23 列：
+
+- M-8 Type-E：B/C/D/E/F/G/H，650/750/1000/1050°F load，材料 ASTM A387 Gr.22
+- M-9 Type-F：C/D/E/F/H/K，750/950/1000/1050°F load
+- M-10 Type-G：used-on O.D. range、C/D/E/F/H/K/M，950/1000/1050/1075°F load
+
+M-9/M-10 原圖指定 chrome-moly clamp body、stainless U-bolt，但未給兩者
+grade。三張圖都沒有 finished unit weight，也沒有足以唯一產生 flat
+development 的 bend radius/allowance、完整 pin/bolt 長度與 fastener
+scope。因此 runtime 輸出真實 designation、材料、尺寸及負載，但 clamp
+重量為 0，不能標成 BOM-ready 或 fabrication-ready。
+
+## H 與 M-22
+
+D-75 的 `H` 是整組 hanger assembly dimension，不是 M-22 成品 cut length。舊邏輯曾直接以 H 算 rod 重量，現在已取消。
+
+- 未提供 `rod_cut_length_mm`：M-22 為零重量 reference
+- 明確提供 `rod_cut_length_mm`：才用 M-22 rod table 計算該切長重量
+- H range 只保存在 assembly metadata，不會自動取最大值當切長
 
 ## Turnbuckle Notes
 
-圖面 note 3：
-
-- `H > 2000mm` 時需使用 turnbuckle
-- Upper `FIG-D` 在 hanger combination 中需使用 turnbuckle
-
-圖面 note 4：
-
-- 若 Upper `FIG-D` 選用但沒有 turnbuckle，需使用 left-hand threaded weldless eye nut
-
-Calculator 會：
-
-- `(T)` 出現時加入 `M-21`
-- `H > 2000mm` 但未標 `(T)` 時發 warning
-- Upper `FIG-D` 未標 `(T)` 時加入 left-hand `M-25`，並發 warning
-
----
+- `(T)` 時加入 M-21
+- `H > 2000 mm` 但沒有 `(T)` 時發出 NOTE 3 warning
+- Upper FIG-D 沒有 turnbuckle 時依 NOTE 4 加 left-hand M-25，並保留 warning
 
 ## 殘留風險
 
-- `M-3/M-8/M-9/M-10/M-31/M-33` 尚未 component table 化，相關重量不是精算值
-- 若 designation 使用 `05~30` 這種 H range，calculator 以最大 H 作 rod takeoff，屬保守估算
-- Type 62 PDF 為 vector drawing，資料由 rendered bitmap AI visual transcription 建表，建議 Claude spot-check page 2 表格
+- M-8/M-9/M-10 已可選型，但缺成品重量、完整展開與緊固件釋出資料
+- M-4~M-7、M-3、M-33 與 heavy-hex nut 缺可證實成品重量
+- M-33 pipe-contact contour / groove 未達可出加工圖程度
+- M-22 finished cut 必須由 project takeoff 明示
+- 中鼎 20E4588 Type 62 必須另做 P/Q、metric rod 與 Detail Z 邏輯

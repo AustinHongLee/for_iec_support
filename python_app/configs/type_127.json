@@ -1,0 +1,17 @@
+{
+  "type_id": "127",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-137 建立 field-cut C150 support。兩片 PL12x170x330 的四孔淨板與孔距可加工；C150x75x6.5 不在核定 kg/m 表，不套用 C150x75x9。2026-07-31 EB2依名義M×L及比例套管幾何列理論估重，供應商finished unit-weight仍保留採購確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-127_D-137.pdf",
+      "detail_no": "137",
+      "revision": "1",
+      "L_max_mm": 1500,
+      "member": {"kind": "Channel", "spec": "150*75*6.5", "source_spec": "C150x75x6.5", "material": "A36", "quantity": 1, "weight_ready": false},
+      "base_plate": {"length_mm": 170, "width_mm": 330, "thickness_mm": 12, "material": "A283 Gr.C", "quantity": 2, "holes_per_plate": 4, "hole_diameter_mm": 19, "pitch_x_mm": 90, "pitch_y_mm": 250},
+      "anchor": {"spec": "EB2-M16x125L", "material": "A307 Gr.8", "quantity": 8, "not_furnished": false}
+    }
+  }
+}

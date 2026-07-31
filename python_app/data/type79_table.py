@@ -41,10 +41,10 @@ def get_type79_data(line_size) -> dict | None:
     if not row:
         return None
     item = deepcopy(row)
-    item["unit_weight_kg"] = estimate_type79_uband_weight_kg(item)
-    item["weight_status"] = "estimated_from_B_E_T_blank_until_M55_exists"
+    item["unit_weight_kg"] = 0.0
+    item["retired_B_E_T_estimate_kg"] = estimate_type79_uband_weight_kg(item)
+    item["weight_status"] = "blocked_multi_piece_assembly_not_a_BxExT_blank"
     return item
 
 def list_type79_sizes() -> list[str]:
     return list(TYPE79_TABLE.keys())
-

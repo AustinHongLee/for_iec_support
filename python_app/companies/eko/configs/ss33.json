@@ -37,12 +37,17 @@
  "ubolt_ref": true,
  "fix_methods": {},
  "limits": {},
+ "validation": {
+  "required": ["pipe", "L"],
+  "allowed": ["pipe", "L"],
+  "pipe": {"min": 0.375, "max": 24}
+ },
  "length_formula": "L=D+2ti+75",
  "designation_format": {
   "pattern": "SS33-□\"-□L",
   "example": "SS33-1\"-200L"
  },
- "version": "1.1",
- "data_updated_at": "2026-07-21",
- "data_update_note": "焊接;U型螺栓詳UB1;耳板梯形淨面積11250"
+ "version": "1.2",
+ "data_updated_at": "2026-07-27",
+ "data_update_note": "v1.2 強制管徑與L，拒絕序號/固定方式等格式外欄位。焊接；U型螺栓詳UB1；耳板梯形淨面積11250。"
 }

@@ -8,6 +8,7 @@ Config Loader - 讀取 configs/ 資料夾中的 JSON 設定檔
 import getpass
 import json
 import os
+import re
 from copy import deepcopy
 from datetime import date
 from functools import lru_cache
@@ -48,9 +49,15 @@ def _anchor_entry(type_id: str) -> dict | None:
 
 
 def _direct_config_path(type_id: str, *, must_exist: bool) -> str | None:
-    if not type_id.isdigit():
+    if not re.fullmatch(r"\d+(?:[A-Z])?", type_id):
         return None
-    path = os.path.join(_CONFIG_DIR, f"type_{int(type_id):02d}.json")
+    if type_id[-1:].isalpha():
+        path = os.path.join(
+            _CONFIG_DIR,
+            f"type_{int(type_id[:-1]):02d}{type_id[-1]}.json",
+        )
+    else:
+        path = os.path.join(_CONFIG_DIR, f"type_{int(type_id):02d}.json")
     if must_exist and not os.path.exists(path):
         return None
     return path

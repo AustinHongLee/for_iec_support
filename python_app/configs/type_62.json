@@ -1,7 +1,28 @@
 {
   "type_id": "62",
+  "version": "2.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "逐頁複核中威 D-75/D-76 與 M-3/M-8/M-9/M-10/M-31/M-33：M-8/M-9/M-10 共23列高溫 clamp 尺寸、分溫荷重、材料與介面尺寸改為 exact-row 選型；F/H 是 cross-pin/U-bolt 尺寸，不誤當 Type 62 hanger rod 約束。三張 clamp 原圖均無成品單重與完整展開/緊固件資料，維持零重量與加工圖 blocker。中鼎 20E4588 P/Q、M16 與 Detail Z 仍由來源安全閘阻擋。",
   "source": "data/type62_table.py",
   "migrated": "2026-04-29",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawings": [
+        "單張-本案有關/中威/TYPE-62_D-75.pdf",
+        "單張-本案有關/中威/TYPE-62_D-76.pdf"
+      ],
+      "revision": "1",
+      "designation": "62-{line_size}B-{rod_size}-{HH}[~{HH2}]{upper_fig}-{lower_fig}[(T)]",
+      "component_drawings": {
+        "M-3": "單張-本案有關/中威/ADJUSTABLE-CLEVIS_M-3.pdf",
+        "M-8": "單張-本案有關/中威/PIPE-CLAMP_TYPE-E_M-8.pdf",
+        "M-9": "單張-本案有關/中威/PIPE-CLAMP_TYPE-F_M-9.pdf",
+        "M-10": "單張-本案有關/中威/PIPE-CLAMP_TYPE-G_M-10.pdf",
+        "M-31": "單張-本案有關/中威/STEEL-WASHER-PLATE_M-31.pdf",
+        "M-33": "單張-本案有關/中威/LUG-PLATE_TYPE-B_M-33.pdf"
+      }
+    }
+  },
   "TYPE62_PART_TABLE": {
     "A": {
       "role": "upper",
@@ -13,7 +34,7 @@
       "max_temp_f": null,
       "max_insulation_thk_in": null,
       "remarks": "",
-      "component_table_ready": false
+      "component_table_ready": true
     },
     "C": {
       "role": "upper",
@@ -49,7 +70,7 @@
       "max_temp_f": 650,
       "max_insulation_thk_in": null,
       "remarks": "",
-      "component_table_ready": false
+      "component_table_ready": true
     },
     "G": {
       "role": "lower",
@@ -109,7 +130,7 @@
       "max_temp_f": 1050,
       "max_insulation_thk_in": 4,
       "remarks": "",
-      "component_table_ready": false
+      "component_table_ready": true
     },
     "M": {
       "role": "lower",
@@ -121,7 +142,7 @@
       "max_temp_f": 1050,
       "max_insulation_thk_in": 4,
       "remarks": "LOAD CAPACITY GREATER THAN FIG-L",
-      "component_table_ready": false
+      "component_table_ready": true
     },
     "N": {
       "role": "lower",
@@ -133,7 +154,7 @@
       "max_temp_f": 1075,
       "max_insulation_thk_in": 6,
       "remarks": "LOAD CAPACITY GREATER THAN FIG-M",
-      "component_table_ready": false
+      "component_table_ready": true
     },
     "Q": {
       "role": "lower",
@@ -145,7 +166,9 @@
       "max_temp_f": 750,
       "max_insulation_thk_in": null,
       "remarks": "USES LUG PLATE TYPE-B (M-33)",
-      "component_table_ready": true
+      "component_table_ready": true,
+      "secondary_component_id": "M-33",
+      "secondary_component_table_ready": true
     }
   },
   "TYPE62_UPPER_FIGS": [

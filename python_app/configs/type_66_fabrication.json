@@ -1,0 +1,207 @@
+{
+  "_version": "1.0.0",
+  "data_updated_at": "2026-07-29",
+  "data_update_note": "建立 Type 66 來源別加工圖參數契約。D-80 小管徑可加工範圍明確開放；10~24 吋補強件及 D-80B/D-80C 先保存圖面尺寸，但在零件輪廓與件號對應完成前不宣告可出加工圖。",
+  "profiles": {
+    "cw_e25_24_hp6": {
+      "drawing_standard": "HP6-DSD-A4-500-001",
+      "revision": "1",
+      "drawings": {
+        "d80": "TYPE-66_D-80.pdf",
+        "d80a": "TYPE-66_D-80A.pdf",
+        "d80b": "TYPE-66_D-80B.pdf"
+      },
+      "d80_fabrication_ready_lte": 8,
+      "d80_blockers": {
+        "10_14": [
+          "D-80 顯示 4 片補強件與 B/E 尺寸，但 supplied sheet 未完整標出各片平面輪廓與裁切長度"
+        ],
+        "16_24": [
+          "FAB. FROM 12t PLATE 的底板、腹板與 4 片補強件尚未完成件號對應及淨輪廓",
+          "舊計算用 HOPS×A 矩形僅為估重近似，不可作加工圖"
+        ]
+      },
+      "table_a": {
+        "normal": [
+          {"insulation_lte": 75, "hops": 100, "symbol": ""},
+          {"insulation_lte": 125, "hops": 150, "symbol": "A"},
+          {"insulation_lte": 175, "hops": 200, "symbol": "B"},
+          {"insulation_lte": 200, "hops": 220, "symbol": "C"}
+        ]
+      },
+      "table_b_symbols": {
+        "": {"shoe_material": "A36/SS400", "fabricated_from": "SHAPE STEEL OR C/S PLATE"},
+        "A": {"shoe_material": "AS", "fabricated_from": "A/S PLATE"},
+        "S": {"shoe_material": "SUS304", "fabricated_from": "S/S PLATE"}
+      },
+      "weld_rules": [
+        {"lte": 2, "rule": "FIELD WELD; W=4 for SCH.80 and below, W=6 for SCH.160 and above; intermittent 50-100"},
+        {"lte": 8, "rule": "6 mm fillet; intermittent 50-100"},
+        {"lte": 24, "rule": "6 mm fillet; 3 SIDES TYP.; intermittent 50-100"}
+      ],
+      "d80b": {
+        "range": "26-50",
+        "insulation_types": ["A", "B"],
+        "component_contract_status": "dimensions_captured_component_contours_pending",
+        "blockers": [
+          "NO.1~5 的表格尺寸已保存，但各件完整展開輪廓、圓弧板展開與焊接定位尚未形成 BOM/CAD recipe"
+        ],
+        "dimensions": {
+          "26": {"foot_a": {"A": 148, "B": 198}, "b": 430, "c": 230, "e": {"A": 222, "B": 272}, "h": {"A": 150, "B": 200}, "H": {"A": 480, "B": 530}, "L": 540, "m": 35, "n": 75},
+          "28": {"foot_a": {"A": 148, "B": 198}, "b": 440, "c": 240, "e": {"A": 230, "B": 280}, "h": {"A": 150, "B": 200}, "H": {"A": 506, "B": 556}, "L": 540, "m": 35, "n": 75},
+          "30": {"foot_a": {"A": 148, "B": 198}, "b": 450, "c": 250, "e": {"A": 237, "B": 287}, "h": {"A": 150, "B": 200}, "H": {"A": 531, "B": 581}, "L": 540, "m": 35, "n": 75},
+          "32": {"foot_a": {"A": 148, "B": 198}, "b": 460, "c": 260, "e": {"A": 244, "B": 294}, "h": {"A": 150, "B": 200}, "H": {"A": 556, "B": 606}, "L": 740, "m": 40, "n": 75},
+          "36": {"foot_a": {"A": 152, "B": 202}, "b": 500, "c": 300, "e": {"A": 259, "B": 309}, "h": {"A": 150, "B": 200}, "H": {"A": 607, "B": 657}, "L": 740, "m": 40, "n": 75},
+          "40": {"foot_a": {"A": 156, "B": 206}, "b": 535, "c": 335, "e": {"A": 274, "B": 324}, "h": {"A": 150, "B": 200}, "H": {"A": 658, "B": 708}, "L": 740, "m": 40, "n": 75},
+          "42": {"foot_a": {"A": 156, "B": 206}, "b": 550, "c": 350, "e": {"A": 281, "B": 331}, "h": {"A": 150, "B": 200}, "H": {"A": 683, "B": 733}, "L": 740, "m": 40, "n": 75},
+          "44": {"foot_a": {"A": 163, "B": 213}, "b": 594, "c": 394, "e": {"A": 290, "B": 340}, "h": {"A": 150, "B": 200}, "H": {"A": 710, "B": 860}, "L": 940, "m": 45, "n": 75},
+          "46": {"foot_a": {"A": 167, "B": 217}, "b": 620, "c": 420, "e": {"A": 297, "B": 347}, "h": {"A": 150, "B": 200}, "H": {"A": 734, "B": 884}, "L": 940, "m": 45, "n": 75},
+          "48": {"foot_a": {"A": 171, "B": 221}, "b": 650, "c": 450, "e": {"A": 305, "B": 355}, "h": {"A": 150, "B": 200}, "H": {"A": 760, "B": 910}, "L": 940, "m": 45, "n": 75},
+          "50": {"foot_a": {"A": 174, "B": 224}, "b": 690, "c": 478, "e": {"A": 312, "B": 362}, "h": {"A": 150, "B": 200}, "H": {"A": 785, "B": 935}, "L": 1140, "m": 50, "n": 75}
+        }
+      }
+    },
+    "ctci_22a_5123a": {
+      "drawing_standard": "D7TS-701-E",
+      "revision": "1",
+      "drawings": {
+        "d80": "TYPE-66_D-80.pdf",
+        "d80a": "TYPE-66_D-80A.pdf",
+        "d80b": "TYPE-66_D-80B.pdf",
+        "d80c": "TYPE-66_D-80C.pdf"
+      },
+      "d80_fabrication_ready_lte": 5,
+      "d80_blockers": {
+        "6_14": [
+          "22A 自 6 吋起即進入含 4 片補強件分支；supplied sheet 未完整標出各片平面輪廓與裁切長度"
+        ],
+        "16_24": [
+          "FAB. FROM 12t PLATE 的件號、平面輪廓與焊接定位尚未完成"
+        ]
+      },
+      "table_a": {
+        "normal": [
+          {"insulation_lte": 75, "hops": 100, "symbol": ""},
+          {"insulation_lte": 125, "hops": 150, "symbol": "A"},
+          {"insulation_lte": 175, "hops": 200, "symbol": "B"},
+          {"insulation_lte": 225, "hops": 250, "symbol": "C"}
+        ],
+        "tracing": [
+          {"insulation_lte": 50, "hops": 100, "symbol": ""},
+          {"insulation_lte": 100, "hops": 150, "symbol": "A"},
+          {"insulation_lte": 150, "hops": 200, "symbol": "B"},
+          {"insulation_lte": 200, "hops": 250, "symbol": "C"}
+        ]
+      },
+      "table_b_symbols": {
+        "": {"shoe_material": "A36/SS400", "fabricated_from": "SHAPE STEEL OR CS PLATE"},
+        "A": {"shoe_material": "AS", "fabricated_from": "AS PLATE"},
+        "S": {"shoe_material": "SUS304", "fabricated_from": "SS PLATE"},
+        "R": {"shoe_material": "A516-60", "fabricated_from": "A516-60 PLATE"},
+        "N": {"shoe_material": "ALLOY-825", "fabricated_from": "B424-N08825-S"}
+      },
+      "weld_rules": [
+        {"lte": 2, "rule": "FIELD WELD; W=4 for SCH.80 and below, W=6 for SCH.160 and above"},
+        {"lte": 4, "rule": "6 mm fillet"},
+        {"lte": 24, "rule": "6 mm fillet; 3 SIDES TYP."}
+      ],
+      "d80b": {
+        "range": "26-42",
+        "insulation_types": ["A", "B", "C"],
+        "component_contract_status": "dimensions_captured_component_contours_pending",
+        "blockers": [
+          "NO.1~5 尺寸已保存，但各件展開輪廓與焊接定位尚未形成 BOM/CAD recipe"
+        ],
+        "dimensions": {
+          "26": {"foot_a": {"A": 148, "B": 198, "C": 298}, "b": 430, "d": 230, "e": {"A": 222, "B": 272, "C": 372}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "28": {"foot_a": {"A": 148, "B": 198, "C": 298}, "b": 440, "d": 240, "e": {"A": 230, "B": 280, "C": 380}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "30": {"foot_a": {"A": 148, "B": 198, "C": 298}, "b": 450, "d": 250, "e": {"A": 237, "B": 287, "C": 387}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "32": {"foot_a": {"A": 148, "B": 198, "C": 298}, "b": 460, "d": 260, "e": {"A": 244, "B": 294, "C": 394}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "34": {"foot_a": {"A": 150, "B": 200, "C": 300}, "b": 480, "d": 280, "e": {"A": 252, "B": 302, "C": 402}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "36": {"foot_a": {"A": 152, "B": 202, "C": 302}, "b": 500, "d": 300, "e": {"A": 259, "B": 309, "C": 409}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "40": {"foot_a": {"A": 156, "B": 206, "C": 306}, "b": 535, "d": 335, "e": {"A": 274, "B": 324, "C": 424}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50},
+          "42": {"foot_a": {"A": 156, "B": 206, "C": 306}, "b": 550, "d": 350, "e": {"A": 281, "B": 331, "C": 431}, "h": {"A": 150, "B": 200, "C": 300}, "L": 540, "m": 35, "n": 50}
+        }
+      },
+      "d80c": {
+        "range": "44-78",
+        "insulation_types": ["A", "B", "C"],
+        "component_contract_status": "assembly_dimensions_captured_piece_contours_pending",
+        "blockers": [
+          "D-80C 組立尺寸已保存，但弧板、立板與補強板的展開輪廓/件號 BOM 尚未完成"
+        ],
+        "constants": {"h": {"A": 150, "B": 200, "C": 300}, "f": 16, "L": 600, "m": 292},
+        "dimensions": {
+          "44": {"a": {"A": 376, "B": 426, "C": 576}, "b": 950, "t": 16, "d": 260},
+          "46": {"a": {"A": 358, "B": 408, "C": 508}, "b": 950, "t": 16, "d": 260},
+          "48": {"a": {"A": 374, "B": 424, "C": 524}, "b": 1000, "t": 16, "d": 280},
+          "54": {"a": {"A": 390, "B": 440, "C": 540}, "b": 1100, "t": 16, "d": 310},
+          "56": {"a": {"A": 407, "B": 457, "C": 557}, "b": 1150, "t": 16, "d": 320},
+          "60": {"a": {"A": 404, "B": 454, "C": 554}, "b": 1200, "t": 19, "d": 330},
+          "64": {"a": {"A": 436, "B": 486, "C": 586}, "b": 1300, "t": 19, "d": 360},
+          "66": {"a": {"A": 462, "B": 512, "C": 612}, "b": 1300, "t": 19, "d": 360},
+          "72": {"a": {"A": 469, "B": 519, "C": 619}, "b": 1450, "t": 19, "d": 410},
+          "76": {"a": {"A": 501, "B": 551, "C": 651}, "b": 1550, "t": 19, "d": 440},
+          "78": {"a": {"A": 536, "B": 586, "C": 686}, "b": 1600, "t": 19, "d": 450}
+        }
+      }
+    },
+    "ctci_20e4588": {
+      "drawing_standard": "STM-05.01",
+      "revision": "1A",
+      "drawings": {
+        "d80": "TYPE-66_D-80.pdf",
+        "d80a": "TYPE-66_D-80A.pdf",
+        "d80b": "TYPE-66_D-80B.pdf"
+      },
+      "d80_fabrication_ready_lte": 8,
+      "d80_blockers": {
+        "10_14": [
+          "D-80 顯示補強件，但 supplied sheet 未完整標出各片平面輪廓與裁切長度"
+        ],
+        "16_24": [
+          "FAB. FROM 12t PLATE 的件號、平面輪廓與焊接定位尚未完成"
+        ]
+      },
+      "table_a": {
+        "normal": [
+          {"insulation_lte": 75, "hops": 100, "symbol": ""},
+          {"insulation_lte": 125, "hops": 150, "symbol": "A"},
+          {"insulation_lte": 175, "hops": 200, "symbol": "B"},
+          {"insulation_lte": 225, "hops": 250, "symbol": "C"}
+        ],
+        "tracing": [
+          {"insulation_lte": 50, "hops": 100, "symbol": ""},
+          {"insulation_lte": 100, "hops": 150, "symbol": "A"},
+          {"insulation_lte": 150, "hops": 200, "symbol": "B"},
+          {"insulation_lte": 200, "hops": 250, "symbol": "C"}
+        ]
+      },
+      "table_b_symbols": {
+        "": {"shoe_material": "A36/SS400", "pad_material": "SAME AS PIPE"},
+        "R": {"shoe_material": "A36/SS400", "pad_material": "SAME AS LTCS PIPE"},
+        "S": {"shoe_material": "A36/SS400", "pad_material": "SAME AS SS PIPE"}
+      },
+      "weld_rules": [
+        {"lte": 2, "rule": "W = lesser of pipe thickness or 6 mm"},
+        {"lte": 8, "rule": "W = lesser of pipe thickness or 6 mm"},
+        {"lte": 24, "rule": "6 mm fillet; 3 SIDES TYP."}
+      ],
+      "special_fabrication": [
+        "若跨越管身焊道，shoe 需開 45 degree V-NOTCH；寬度 = 8 × pipe schedule thickness"
+      ],
+      "d80b": {
+        "range": "26-28",
+        "insulation_types": ["A", "B"],
+        "component_contract_status": "dimensions_captured_component_contours_pending",
+        "blockers": [
+          "NO.1~5 尺寸已保存，但各件展開輪廓與焊接定位尚未形成 BOM/CAD recipe"
+        ],
+        "dimensions": {
+          "26": {"foot_a": {"A": 148, "B": 198}, "b": 430, "c": 230, "e": {"A": 222, "B": 272}, "h": {"A": 150, "B": 200}, "H": {"A": 480, "B": 530}, "L": 540, "m": 35, "n": 75},
+          "28": {"foot_a": {"A": 148, "B": 198}, "b": 440, "c": 240, "e": {"A": 230, "B": 280}, "h": {"A": 150, "B": 200}, "H": {"A": 506, "B": 556}, "L": 540, "m": 35, "n": 75}
+        }
+      }
+    }
+  }
+}

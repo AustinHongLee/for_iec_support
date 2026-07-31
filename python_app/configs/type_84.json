@@ -1,0 +1,17 @@
+{
+  "type_id": "84",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-103/D-104 建立 Type 84。D-81/D-81A clamp core 與 Type 81 共用，另記錄 L40x40x5 guide-angle set；沿管 cut length 與 piece layout 未完整前 guide set 不計重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-84_D-103.pdf",
+      "large_drawing": "TYPE-84_D-104.pdf",
+      "revision": "1",
+      "small_detail_no": "103",
+      "large_detail_no": "104",
+      "small_sizes": [0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28, 30, 32, 36, 40, 42]
+    }
+  }
+}

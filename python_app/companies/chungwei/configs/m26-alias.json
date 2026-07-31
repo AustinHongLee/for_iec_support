@@ -1,0 +1,13 @@
+{
+  "company": "Chung Wei Engineering Consulting",
+  "code": "M-26",
+  "name": "U-BOLT project-list alias",
+  "drawing": "HP6-DSD-A4-500-001 / M-26",
+  "source_file": "單張-本案有關/中威/U-BOLT_M-26.pdf",
+  "revision": "1",
+  "accepted_alias": "UB1-{line_size}\"",
+  "resolved_designation": "UB-{line_size}B",
+  "version": "1.1",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依使用者確認，本專案清單UB1-□吋屬於中威M-26，不得路由為益高UB1。尺寸、名義展開與rod重量沿用已逐列核對的data/m26_table.py；四只finished hex nuts另列比例幾何理論估重。材料grade、螺紋與供應商螺帽成品重缺口維持阻擋。"
+}

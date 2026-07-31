@@ -1,9 +1,56 @@
 {
   "type_id": "59",
+  "_version": "1.3.0",
   "source": "data/type59_table.py",
   "migrated": "2026-04-29",
-  "data_updated_at": "2026-05-29",
-  "data_update_note": "D-70 Detail Z Lug Plate 更新為完整放樣規格 A x B x P25 x C x t，並以淨面積 A*B - (B-C)*(A-25)/2 計算真實重量；Type 59 BOM 永遠只有 TYPE 59 翼形角板，不追加 U-bolt 或 finished hex nut。",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "2026-07-30 M-26再次逐尺寸複驗：Detail Z淨形/材料保留。中威/22A FIG-B的D-68改列可算rod重量的M-26 U-bolt；2026-07-31四只finished nuts改列比例六角幾何理論估重，不再固定為0，供應商成品重仍待確認。thread/material/cut allowance不足使完整加工圖blocked。20E FIG-B仍依原圖限<=6吋並要求確認PAD IF REQ'D；FIG-A來源差異維持。2026-07-31依本專案決議，中威10~14吋(S)在原圖不鏽鋼厚度空白時可高風險借用碳鋼T=12mm暫算，材料仍維持A240-304，正式放行須覆核。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-59_D-70.pdf",
+      "revision": "1",
+      "min_size": 0.25,
+      "fig_b_max": 14,
+      "d68_kind": "m26",
+      "d68_drawing": "單張-本案有關/中威/U-BOLT_M-26.pdf",
+      "pipe_shoe": "D-63",
+      "fig_a_interface": "not_furnished",
+      "high_risk_stainless_thickness_fallback_mm": 12,
+      "material_map": {
+        "":{"material":"A283 Gr.C"},"(A)":{"material":"A387-22"},
+        "(S)":{"material":"A240-304"},"(R)":{"material":"A516-60"}
+      }
+    },
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-59_D-70.pdf",
+      "revision": "1",
+      "min_size": 0.25,
+      "fig_b_max": 14,
+      "d68_kind": "m26",
+      "d68_drawing": "單張-本案有關/中鼎/22A_5123A/U-BOLT_M-26.pdf",
+      "pipe_shoe": "D-80",
+      "fig_a_interface": "not_furnished",
+      "material_map": {
+        "":{"material":"A283 Gr.C"},"(A)":{"material":"A387-22"},
+        "(S)":{"material":"A240-304"},"(R)":{"material":"A516-60"},
+        "(N)":{"material":"B424-N08825-S"}
+      }
+    },
+    "ctci_20e4588": {
+      "drawing": "單張-本案有關/中鼎/長春_Type/TYPE-59_D-70.pdf",
+      "revision": "1",
+      "min_size": 0.5,
+      "fig_b_max": 6,
+      "d68_kind": "metric",
+      "d68_drawing": "單張-本案有關/中鼎/長春_Type/TYPE-57_D-68.pdf",
+      "pipe_shoe": "D-80",
+      "fig_a_interface": "field_furnished",
+      "conditional_d91_pad": true,
+      "material_map": {
+        "":{"material":"A283 Gr.C"},"(S)":{"material":"A240-304"}
+      }
+    }
+  },
   "TYPE59_DIMS": {
     "small": {
       "A": 80,

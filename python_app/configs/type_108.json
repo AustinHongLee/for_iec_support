@@ -1,0 +1,25 @@
+{
+  "type_id": "108",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-119/D-120 建立 small-line dummy support。保留同一 line/H 可能有兩種 Supporting Pipe B 的真實歧義，需明選 supporting_pipe_size；H 是組立高度而非 finished cut，FIG-C 的 FB65x9x210 可精算，其餘 lug/spacer 與 fishmouth 保留 blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "geometry_drawing": "TYPE-108_D-119.pdf",
+      "notes_drawing": "TYPE-108_D-120.pdf",
+      "revision": "1",
+      "material_symbols": {
+        "": "A36/SS400",
+        "(A)": "ALLOY STEEL MATCHING MAIN LINE",
+        "(S)": "STAINLESS STEEL MATCHING MAIN LINE"
+      },
+      "pipe_rows": [
+        {"line_sizes": [0.75, 1], "pipe_size": 1, "schedule": "SCH.80", "H_max": 1000},
+        {"line_sizes": [0.75, 1], "pipe_size": 1.5, "schedule": "SCH.80", "H_max": 1500},
+        {"line_sizes": [1.5], "pipe_size": 1.5, "schedule": "SCH.80", "H_max": 1000},
+        {"line_sizes": [1.5], "pipe_size": 2, "schedule": "SCH.40", "H_max": 1500},
+        {"line_sizes": [2], "pipe_size": 2, "schedule": "SCH.40", "H_max": 1500}
+      ]
+    }
+  }
+}

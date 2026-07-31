@@ -1,58 +1,48 @@
 {
   "type_id": "57",
+  "_version": "1.2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30 M-26再次逐尺寸複驗：中威/22A的B為中心距、C為外寬、D為螺紋段、E為端部至彎曲中心線；U-bolt rod名義展開改用pi*B/2+2*E。2026-07-31 rod依來源幾何算重，4只finished nuts改列比例六角幾何理論估重，不再固定為0；供應商成品重仍待確認。因M-26未給材料grade、thread pitch/class/runout與加工餘量，完整加工圖仍blocked。20E公制D-68維持供應商待補；BWG #21 shim為0.8128mm。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-57_D-68.pdf",
+      "m26_drawing": "單張-本案有關/中威/U-BOLT_M-26.pdf",
+      "revision": "1",
+      "kind": "m26",
+      "max_size": 30
+    },
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-57_D-68.pdf",
+      "m26_drawing": "單張-本案有關/中鼎/22A_5123A/U-BOLT_M-26.pdf",
+      "revision": "1",
+      "kind": "m26",
+      "max_size": 30
+    },
+    "ctci_20e4588": {
+      "drawing": "單張-本案有關/中鼎/長春_Type/TYPE-57_D-68.pdf",
+      "revision": "1",
+      "kind": "metric",
+      "shim_gauge": "BWG #21",
+      "shim_thickness_mm": 0.8128,
+      "table": {
+        "0.25":{"rod":"M6","u_bolt":"UB-1/4B","shim_w":30,"shim_l":54,"C":24,"H":10},
+        "0.5":{"rod":"M6","u_bolt":"UB-1/2B","shim_w":30,"shim_l":60,"C":30,"H":10},
+        "0.75":{"rod":"M6","u_bolt":"UB-3/4B","shim_w":30,"shim_l":65,"C":35,"H":10},
+        "1":{"rod":"M6","u_bolt":"UB-1B","shim_w":30,"shim_l":71,"C":41,"H":10},
+        "1.25":{"rod":"M10","u_bolt":"UB-1-1/4B","shim_w":30,"shim_l":82,"C":52,"H":12},
+        "1.5":{"rod":"M10","u_bolt":"UB-1-1/2B","shim_w":30,"shim_l":90,"C":60,"H":12},
+        "2":{"rod":"M10","u_bolt":"UB-2B","shim_w":30,"shim_l":101,"C":71,"H":12},
+        "2.5":{"rod":"M12","u_bolt":"UB-2-1/2B","shim_w":50,"shim_l":137,"C":87,"H":16},
+        "3":{"rod":"M12","u_bolt":"UB-3B","shim_w":50,"shim_l":153,"C":103,"H":16},
+        "3.5":{"rod":"M12","u_bolt":"UB-3-1/2B","shim_w":50,"shim_l":166,"C":116,"H":16},
+        "4":{"rod":"M12","u_bolt":"UB-4B","shim_w":50,"shim_l":179,"C":129,"H":16},
+        "5":{"rod":"M12","u_bolt":"UB-5B","shim_w":50,"shim_l":206,"C":156,"H":16},
+        "6":{"rod":"M16","u_bolt":"UB-6B","shim_w":50,"shim_l":237,"C":187,"H":20}
+      }
+    }
+  },
   "source": "data/type57_table.py",
   "migrated": "2026-04-29",
-  "TYPE_SPEC": {
-    "engine": "table_parts_v1",
-    "designation": {
-      "pipe_size_part": 2,
-      "figure_part": 3,
-      "default_figure": "A",
-      "allowed_figures": [
-        "A",
-        "B"
-      ],
-      "use_invalid_figure_as_value": true,
-      "invalid_figure_warning": "模式 '{figure}' 無效，Type 57 僅支援 A(SLIDE) / B(FIXED)",
-      "pipe_size_range": [
-        0.25,
-        30
-      ],
-      "support_no_template": "{size_key}",
-      "mode_labels": {
-        "A": "SLIDE",
-        "B": "FIXED"
-      }
-    },
-    "missing_pipe_error": "Type 57: 缺少管徑",
-    "range_error": "Type 57 / M-26 查表失敗: 管徑 {size} 超出查表範圍",
-    "missing_row_error": "Type 57 / M-26 查表失敗: 管徑 {support_no} 不在查表範圍",
-    "row_provider": "m26_by_line_size",
-    "components": [
-      {
-        "id": "u_bolt",
-        "kind": "custom",
-        "name": "U-BOLT",
-        "spec": "{type}",
-        "quantity": 1,
-        "material": "Carbon Steel",
-        "unit": "SET",
-        "unit_weight": 1,
-        "remark": "M-26, {mode_label}, rod={rod_size_a}, B/C/D/E={B}/{C}/{D}/{E}, load650/750={load_650f_kg}/{load_750f_kg}kg, unit weight placeholder"
-      },
-      {
-        "id": "finished_hex_nut",
-        "kind": "custom",
-        "name": "FINISHED HEX NUT",
-        "spec": "{rod_size_a}",
-        "quantity": 4,
-        "material": "Carbon Steel",
-        "unit": "PC",
-        "unit_weight": 0,
-        "remark": "M-26 note 1: four finished hex nuts, nut weight included in U-bolt set placeholder"
-      }
-    ]
-  },
   "TYPE57_TABLE": {
     "0.25": {
       "rod": "1/4\"",

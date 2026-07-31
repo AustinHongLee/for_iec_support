@@ -1,102 +1,155 @@
-"""
-Type 41 計算器 — 牆面錨定支撐 (D-49)
-格式: 41-{n}  (n = 1~9)
+"""Type 41 source-aware wall-mounted support (D-49)."""
+from __future__ import annotations
 
-BOM:
-  FIG-A (41-1~4): ① Member 1 ② Base Plate ③ EXP. BOLT (M-45)
-  FIG-B (41-5~9): ① Member 1 ② Member 2 (斜撐) ③ Base Plate ④ EXP. BOLT (M-45)
-"""
-from ..models import AnalysisResult
-from ..parser import get_part
-from ..steel import add_steel_section_entry
-from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
-from ..material_specs import (
-    EXPANSION_BOLT_SUS304,
-    STRUCTURAL_A36_SS400,
-    SUPPORT_PLATE_A36_SS400,
-)
-from data.type41_table import get_type41_data
+from ..config_loader import load_config
+from ..material_specs import EXPANSION_BOLT_SUS304, STRUCTURAL_A36_SS400, SUPPORT_PLATE_A36_SS400
+from ..models import AnalysisResult, set_remark
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
 from data.m45_table import get_m45_by_dia
 
 
-_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
-_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
-_EXPANSION_BOLT_MATERIAL = EXPANSION_BOLT_SUS304
+def _parse_member(spec):
+    prefix = spec[0]
+    section_type = {"L": "Angle", "C": "Channel", "H": "H Beam"}[prefix]
+    return section_type, spec[1:]
 
 
-def _parse_member(spec_str: str):
-    """解析 'L75*75*9' → (type='Angle', dim='75*75*9')"""
-    if spec_str.startswith("H"):
-        return "H Beam", spec_str[1:]
-    elif spec_str.startswith("L"):
-        return "Angle", spec_str[1:]
-    elif spec_str.startswith("C"):
-        return "Channel", spec_str[1:]
-    return "Angle", spec_str
-
-
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring, overrides=None, source_profile=None):
     result = AnalysisResult(fullstring=fullstring)
-
-    # 第二段: 支撐型號 (1~9)
-    part2 = get_part(fullstring, 2)
-    if not part2:
-        result.error = "Type 41: 缺少支撐型號 (1~9)"
+    overrides = overrides or {}
+    config = load_config("41", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 41: 尚未建立來源 profile {profile_id}"
+        return result
+    parts = str(fullstring).split("-")
+    if len(parts) != 2 or not parts[1].isdigit():
+        result.error = "Type 41: 格式應為 41-{1..9}"
+        return result
+    row = config["TYPE41_TABLE"].get(fullstring)
+    if not row:
+        result.error = f"Type 41: D-49未表列 {fullstring}"
         return result
 
-    data = get_type41_data(part2)
-    if not data:
-        result.error = f"Type 41: 未知支撐型號 41-{part2}"
-        return result
-
-    fig = data["fig"]
-    L = data["L"]
-
-    # ① Member 1 (懸臂)
-    m1_type, m1_dim = _parse_member(data["member1"])
+    drawing = profile["drawing"]
+    main_len = row["L"] + 200
+    m1_type, m1_dim = _parse_member(row["member1"])
     add_steel_section_entry(
-        result, m1_type, m1_dim, L, material=_STRUCTURAL_MATERIAL
+        result, m1_type, m1_dim, main_len, material=STRUCTURAL_A36_SS400
     )
-    result.entries[-1].remark = f"FIG-{fig} 懸臂, L={L}mm"
+    main = result.entries[-1]
+    main.geometry.component_id = "D49-MEMBER-1"
+    main.geometry.source_drawing = drawing
+    main.geometry.source_revision = profile["revision"]
+    main.geometry.shape_kind = "stock_section_cut"
+    main.geometry.shape_spec = f'{row["member1"]}; CUT L+200={main_len}'
+    main.geometry.formula = "L + 200"
+    main.geometry.parameters = {
+        "L_mm": row["L"], "end_allowance_mm": 200,
+        "weld_size_mm": row["weld_size"], "figure": row["fig"],
+    }
+    main.geometry.fabrication_ready = True
+    set_remark(main, f"FIG-{row['fig']}主梁，L+200={main_len}mm")
 
-    # ② Member 2 (斜撐, 僅 FIG-B)
-    if data["member2"]:
-        m2_type, m2_dim = _parse_member(data["member2"])
-        # 斜撐長度 ≈ L×√2 (45° 對角), 簡化取 L
-        brace_len = round(L * 1.414)
+    blockers = ["D-49只給base plate厚度，未給完整平面外形尺寸"]
+    brace_len = None
+    if row["member2"]:
+        raw = overrides.get("brace_cut_length_mm")
+        if raw not in (None, ""):
+            try:
+                brace_len = float(raw)
+            except (TypeError, ValueError):
+                brace_len = 0
+            if brace_len <= 0:
+                result.error = "Type 41: brace_cut_length_mm必須大於0"
+                return result
+        else:
+            brace_len = 0
+            blockers.append("FIG-B斜撐切長/兩端切角未由D-49尺寸化，需brace_cut_length_mm")
+        m2_type, m2_dim = _parse_member(row["member2"])
         add_steel_section_entry(
-            result, m2_type, m2_dim, brace_len,
-            material=_STRUCTURAL_MATERIAL,
+            result, m2_type, m2_dim, brace_len, material=STRUCTURAL_A36_SS400
         )
-        result.entries[-1].remark = f"FIG-B 斜撐, ~{brace_len}mm"
+        brace = result.entries[-1]
+        brace.geometry.component_id = "D49-MEMBER-2"
+        brace.geometry.source_drawing = drawing
+        brace.geometry.source_revision = profile["revision"]
+        brace.geometry.shape_kind = "stock_section_cut"
+        brace.geometry.shape_spec = (
+            f'{row["member2"]}; CUT={brace_len:g}'
+            if brace_len else f'{row["member2"]}; CUT LENGTH TBD'
+        )
+        brace.geometry.formula = "user override" if brace_len else "not dimensioned"
+        brace.geometry.parameters = {"brace_cut_length_mm": brace_len or None}
+        brace.geometry.fabrication_ready = False
+        brace.geometry.fabrication_blockers = [
+            "兩端切角/貼合輪廓未標",
+            *([] if brace_len else ["切長未標"]),
+        ]
+        set_remark(brace, "FIG-B斜撐；切長依現場/加工圖確認")
 
-    # ③ Base Plate — A283 Gr.C
-    bp_t = data["base_plate_t"]
-    bd = data["bolt_dist"]
-    # Base Plate 大小取 bolt_dist + 2*b 的正方形
-    bp_size = bd + 2 * data["b"]
-    add_plate_entry(result, plate_a=bp_size, plate_b=bp_size,
-                    plate_thickness=bp_t, plate_name="BASE PLATE",
-                        plate_role="base_plate",
-                    material=_SUPPORT_PLATE_MATERIAL)
-    result.entries[-1].remark = f"{bp_size}x{bp_size}x{bp_t}t, A283 Gr.C"
+    plate_qty = 1 if row["fig"] == "A" else 2
+    add_custom_entry(
+        result, name="BASE PLATE",
+        spec=f'{row["base_plate_t"]}t; PLAN SIZE TBD',
+        material=SUPPORT_PLATE_A36_SS400, quantity=plate_qty,
+        unit_weight=0, unit="PC",
+    )
+    plate = result.entries[-1]
+    plate.role = "base_plate"
+    plate.geometry.role = "base_plate"
+    plate.geometry.component_id = "D49-BASE-PLATE"
+    plate.geometry.source_drawing = drawing
+    plate.geometry.source_revision = profile["revision"]
+    plate.geometry.shape_kind = "partially_dimensioned_plate"
+    plate.geometry.shape_spec = f'PLATE THK {row["base_plate_t"]}; PLAN SIZE TBD; QTY {plate_qty}'
+    plate.geometry.parameters = {
+        "thickness_mm": row["base_plate_t"], "quantity": plate_qty,
+        "bolt_spacing_a_mm": row["bolt_dist"], "edge_b_mm": row["b"],
+    }
+    plate.geometry.fabrication_ready = False
+    plate.geometry.fabrication_blockers = [blockers[0]]
 
-    # ④ EXP. BOLT (M-45)
-    eb_dia = data["exp_bolt_dia"]
-    m45 = get_m45_by_dia(eb_dia)
-    eb_qty = 4  # 4 EA standard
+    bolt_qty = plate_qty * 2
+    m45 = get_m45_by_dia(row["exp_bolt_dia"])
+    spec = f'EB-{row["exp_bolt_dia"]}'
     if m45:
-        add_custom_entry(result, name="EXP.BOLT", spec=f"EB-{eb_dia}",
-                         material=_EXPANSION_BOLT_MATERIAL, quantity=eb_qty,
-                         unit_weight=m45["L"] / 1000 * 0.5, unit="SET")
-        result.entries[-1].remark = (
-            f"M-45, Ø{eb_dia}, L={m45['L']}mm, "
-            f"容許拉力={m45['tensile_kg']}kg, 剪力={m45['shear_kg']}kg"
-        )
-    else:
-        add_custom_entry(result, name="EXP.BOLT", spec=eb_dia,
-                         material=_EXPANSION_BOLT_MATERIAL, quantity=eb_qty,
-                         unit_weight=0.5, unit="SET")
-
+        spec += f'; L={m45["L"]}'
+    add_custom_entry(
+        result, name="EXP.BOLT", spec=spec,
+        material=EXPANSION_BOLT_SUS304, quantity=bolt_qty,
+        unit_weight=0, unit="PC",
+    )
+    bolt = result.entries[-1]
+    bolt.geometry.component_id = "M45-EXPANSION-BOLT"
+    bolt.geometry.source_drawing = "M-45"
+    bolt.geometry.source_revision = "1"
+    bolt.geometry.shape_kind = "purchased_fastener"
+    bolt.geometry.parameters = {
+        "diameter": row["exp_bolt_dia"], "quantity": bolt_qty,
+        "length_mm": m45["L"] if m45 else None,
+    }
+    bolt.geometry.fabrication_ready = m45 is not None
+    bom_ready = not row["member2"] or bool(brace_len)
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": drawing,
+        "source_revision": profile["revision"],
+        "branch": f'{fullstring}/FIG-{row["fig"]}',
+        "bom_ready": bom_ready,
+        "fabrication_ready": False,
+        "blockers": blockers,
+        "main_cut_length_mm": main_len,
+        "brace_cut_length_mm": brace_len,
+        "base_plate_quantity": plate_qty,
+        "expansion_bolt_quantity": bolt_qty,
+    }
+    result.warnings.extend(blockers)
+    result.evidence.append(
+        make_evidence("type41_series_row", row, "visual_transcription", source=drawing, confidence=0.99)
+    )
     return result

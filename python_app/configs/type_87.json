@@ -1,0 +1,36 @@
+{
+  "type_id": "87",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-109 與 22A D-108 建立 adjustable support post。H 明確視為 ground-to-load 組立高度而非 pipe cut；來源表中的 pipe/plate/thread E 已建檔，中威 solid round plate D 可精算，其餘中心孔、M-2、M-42 與 field cut 未定部分歸零。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-87_D-109.pdf",
+      "detail_no": "109",
+      "revision": "1",
+      "lower_component_types": ["G", "J", "R"],
+      "rod_aliases": {"M27": "1"},
+      "top_plate_name": "BASE PLATE F",
+      "rows": {
+        "1": {"B": "3in STD.WT PIPE", "C": "120x120x9", "E": 160, "top_plate": "210x210x9", "internal_disc": {"diameter_mm": 72, "thickness_mm": 9}},
+        "1.5": {"B": "4in STD.WT PIPE", "C": "150x150x9", "E": 185, "top_plate": "290x290x9", "internal_disc": {"diameter_mm": 96, "thickness_mm": 9}},
+        "2": {"B": "6in STD.WT PIPE", "C": "200x200x12", "E": 215, "top_plate": "290x290x12", "internal_disc": {"diameter_mm": 148, "thickness_mm": 12}},
+        "2.5": {"B": "8in STD.WT PIPE", "C": "250x250x16", "E": 245, "top_plate": "390x390x16", "internal_disc": {"diameter_mm": 197, "thickness_mm": 12}}
+      }
+    },
+    "ctci_22a_5123a": {
+      "drawing": "TYPE-87_D-108.pdf",
+      "detail_no": "108",
+      "revision": "1",
+      "lower_component_types": ["G", "T", "R"],
+      "rod_aliases": {},
+      "top_plate_name": "TOP PLATE D",
+      "rows": {
+        "1": {"B": "3in STD.WT PIPE", "C": "120x120x9", "E": 190, "top_plate": "210x210x9"},
+        "1.5": {"B": "4in STD.WT PIPE", "C": "150x150x9", "E": 215, "top_plate": "290x290x9"},
+        "2": {"B": "6in STD.WT PIPE", "C": "200x200x12", "E": 245, "top_plate": "290x290x12"},
+        "2.5": {"B": "8in STD.WT PIPE", "C": "250x250x16", "E": 275, "top_plate": "390x390x16"}
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "type_id": "61",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依三套 D-72/D-73/D-74 重製：移除 OD+50 方形 reinforcing pad 假設，建立 trunnion pipe 最低 schedule/wall、來源 profile、capacity 與加工圖 blocker；pad 僅在提供完整展開尺寸 override 時算重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "geometry_drawing": "TYPE-61_D-72.pdf",
+      "capacity_drawings": "TYPE-61_D-73.pdf / TYPE-61_D-74.pdf",
+      "revision": "1",
+      "default_material": "A53 Gr.B",
+      "temperature_unit": "degF"
+    },
+    "ctci_22a_5123a": {
+      "geometry_drawing": "TYPE-61_D-72.pdf",
+      "capacity_drawings": "TYPE-61_D-73.pdf / TYPE-61_D-74.pdf",
+      "revision": "1",
+      "default_material": "A53 Gr.B",
+      "temperature_unit": "degF"
+    },
+    "ctci_20e4588": {
+      "geometry_drawing": "TYPE-61_D-72.pdf",
+      "capacity_drawings": "TYPE-61_D-73.pdf / TYPE-61_D-74.pdf",
+      "revision": "1A",
+      "default_material": "A53 Gr.B",
+      "temperature_unit": "degC"
+    }
+  },
+  "trunnion_pipe_table": {
+    "2": {
+      "schedule": "80S",
+      "rule": "SCH.80"
+    },
+    "3": {
+      "schedule": "40S",
+      "rule": "SCH.40 OR GREATER"
+    },
+    "4": {
+      "schedule": "40S",
+      "rule": "SCH.40 OR GREATER"
+    },
+    "6": {
+      "schedule": "40S",
+      "rule": "SCH.40 OR GREATER"
+    },
+    "8": {
+      "schedule": "40S",
+      "rule": "SCH.40 OR GREATER"
+    },
+    "10": {
+      "schedule": "40S",
+      "rule": "SCH.40 OR GREATER"
+    },
+    "12": {
+      "minimum_wall_mm": 9.525,
+      "rule": "3/8in WALL OR GREATER"
+    },
+    "14": {
+      "minimum_wall_mm": 9.525,
+      "rule": "3/8in WALL OR GREATER"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "type_id": "101",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威與 20E D-110 建立 small-bore rib support。保留 6t×50、60°、190H、20 offset、來源別 rib 數與位置規則；兩管 OD/交角/cope contour 未提供前不以 190/sin60 假造 finished cut。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-101_D-110.pdf",
+      "revision": "1",
+      "line_sizes": [0.5, 0.75, 1, 1.5],
+      "rib_count": 3,
+      "plan_spacing_deg": 120,
+      "location_rule": "THREE RIBS EQUALLY SPACED AROUND BRANCH",
+      "material_symbols": {"(S)": "SUS304", "(A)": "ALLOY STEEL"}
+    },
+    "ctci_20e4588": {
+      "drawing": "TYPE-101_D-110.pdf",
+      "revision": "1A",
+      "line_sizes": [0.5, 0.75, 1, 1.5],
+      "rib_count": 1,
+      "plan_spacing_deg": null,
+      "location_rule": "ONE RIB; PRIORITY/SECOND-CHOICE LOCATION PER D-110",
+      "material_symbols": {"(S)": "STAINLESS STEEL", "(A)": "ALLOY STEEL", "(R)": "LTCS"},
+      "warnings": ["20E D-110 designation block uses (S)/(A), while explanatory note also defines (R) for LTCS；A/R source notation conflict retained for engineering confirmation."]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "type_id": "01C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 DSP-500-006 C-1 建立 1-1/2in 以下 cold stanchion。保存 H/100、N-9 lower component 與 plate material symbol；H 為現場切配，支管接觸與 weep-hole datum 未完整，不以組立尺寸估重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/01C.pdf",
+      "drawing_no": "C-1",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-1"],
+      "title": "C-1 TYPE 01C COLD PIPE STANCHION ASSEMBLY",
+      "component_id": "C1-TYPE01C-ASSEMBLY",
+      "source_spec": "1-1/2in AND SMALLER; 5C TO -9C",
+      "designation_variants": [
+        {"fields": [{"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 01C 格式應為 01C-{H/100}{N9 LOWER}[(A)|(S)]，例如 01C-05B(A)",
+      "static_parameters": {
+        "supported_line_max_in": 1.5,
+        "supporting_pipe": "1-1/2in SCH.80",
+        "detail_z_plate_mm": {"width": 70, "height": 125, "thickness": 6},
+        "upper_plates": ["50x9t", "9t"],
+        "weep_hole_diameter_mm": 6,
+        "weld_mm": 6
+      },
+      "references": ["N-9 LOWER COMPONENT"],
+      "blockers": [
+        "H shall be cut to suit in field and is not a drawing-finished stock length",
+        "supported-line attachment contour and special-main-line case are not uniquely dimensioned",
+        "diameter-6 weep-hole center datum and N-9 lower component recipe remain unresolved"
+      ]
+    }
+  }
+}

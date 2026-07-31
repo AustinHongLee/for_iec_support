@@ -1,0 +1,35 @@
+{
+  "company": "Chang Chun owner standard",
+  "code": "FS15",
+  "name": "管架 FS15",
+  "drawing": "DES-M15172 / FS15",
+  "source_file": "單張-本案有關/長春/FS15H.pdf",
+  "revision": "04.24'08",
+  "default_H1_mm": 300,
+  "serials": {
+    "1": {
+      "section": "50*50*6",
+      "H_max": 1000,
+      "anchor": "M16x200L",
+      "nut": "M16x40L",
+      "expansion": "EB2-M16-100L",
+      "loads_kg": {"500": 80, "1000": 40, "1500": null}
+    },
+    "2": {
+      "section": "75*75*9",
+      "H_max": 1500,
+      "anchor": "M16x200L",
+      "nut": "M16x40L",
+      "expansion": "EB2-M16-100L",
+      "loads_kg": {"500": 190, "1000": 190, "1500": 135}
+    }
+  },
+  "fix_hardware": {
+    "A": {"name": "L型基礎螺栓", "field": "anchor", "material": "A307 Gr.B", "role": "machine_bolt"},
+    "B": {"name": "螺栓連帽", "field": "nut", "material": "A307 Gr.B 鍍鋅", "role": "machine_bolt"},
+    "E": {"name": "擴展螺栓", "field": "expansion", "material": "", "role": "expansion_bolt"}
+  },
+  "version": "1.1",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依DES-M15172 FS15重建；鎖定M16x40L與EB2-M16-100L，不沿用益高的50L/125L。2026-07-31固定螺栓依名義M×L列可追溯理論估重，供應商成品重仍待確認。"
+}

@@ -60,8 +60,12 @@ def test_type59_small_and_large_lug_plate_shape_specs():
     assert not stainless.error
     assert not large.error
     assert [entry.name for entry in small.entries] == ["TYPE 59 翼形角板"]
-    assert [entry.name for entry in stainless.entries] == ["TYPE 59 翼形角板"]
-    assert [entry.name for entry in large.entries] == ["TYPE 59 翼形角板"]
+    assert [entry.name for entry in stainless.entries] == [
+        "TYPE 59 翼形角板", "M-26 U-BOLT ROD", "M-26 FINISHED HEX NUTS",
+    ]
+    assert [entry.name for entry in large.entries] == [
+        "TYPE 59 翼形角板", "M-26 U-BOLT ROD", "M-26 FINISHED HEX NUTS",
+    ]
     assert _lug_plate(small).geometry.shape_spec == "A80 x B55 x P25 x C15 x t9"
     assert _lug_plate(stainless).geometry.shape_spec == "A150 x B100 x P25 x C50 x t9"
     assert _lug_plate(large).geometry.shape_spec == "A150 x B130 x P25 x C50 x t12"
@@ -70,3 +74,10 @@ def test_type59_small_and_large_lug_plate_shape_specs():
     assert _lug_plate(large).unit_weight == _expected_lug_weight(150, 130, 50, 12)[1]
     assert _lug_plate(large).total_weight == _expected_lug_weight(150, 130, 50, 12, qty=2)[2]
     assert _lug_plate(large).quantity == 2
+    assert stainless.entries[1].spec.startswith("UB-6B;")
+    assert large.entries[1].spec.startswith("UB-14B;")
+    assert stainless.entries[2].quantity == 4
+    assert stainless.entries[2].unit_weight > 0
+    assert stainless.entries[2].geometry.parameters[
+        "estimated_unit_weight_kg"
+    ] == stainless.entries[2].unit_weight

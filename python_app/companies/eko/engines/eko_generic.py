@@ -12,7 +12,7 @@ from core.models import AnalysisResult, set_remark
 from core.steel import add_steel_section_entry
 from core.plate import add_plate_entry
 from core.pipe import add_pipe_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 from core.material_specs import SUPPORT_PIPE_A53GRB
 from .. import ubolt as _ubolt
 from .. import plating as _plating
@@ -53,6 +53,19 @@ def _row(config, parsed, result):
         s = parsed.get("serial")
         if s is not None and str(s) in tbl:
             return tbl[str(s)]
+        if config.get("strict_serial"):
+            allowed = ", ".join(sorted(tbl))
+            if s is None:
+                result.error = (
+                    f"{config.get('code', 'EKO')}: 缺少序號，無法決定型鋼規格"
+                    f"（應填 {allowed}）"
+                )
+            else:
+                result.error = (
+                    f"{config.get('code', 'EKO')}: 未知序號 {s}"
+                    f"（應填 {allowed}），無法決定型鋼規格"
+                )
+            return None
         first = sorted(tbl)[0]
         result.warnings.append(f"缺/未知序號 {s!r}，預設序號 {first}")
         return tbl[first]
@@ -114,6 +127,8 @@ def calculate(parsed, config, overrides=None):
         fixm = "N"
 
     row = _row(config, parsed, result)
+    if result.error:
+        return result
 
     def _active(c):
         w = c.get("when")
@@ -168,9 +183,15 @@ def calculate(parsed, config, overrides=None):
             bf = c.get("by_fix", {})
             if fixm in bf:
                 b = bf[fixm]
-                add_custom_entry(result, b["name"], b.get("spec", ""), b.get("mat", "A307-B"),
-                                 b.get("qty", 4), 0.0, unit="SET",
-                                 remark=f"適用 {code}{fixm} (重量另計)", category="螺栓類")
+                add_estimated_fastener_entry(
+                    result,
+                    name=b["name"],
+                    spec=b.get("spec", ""),
+                    material=b.get("mat", "A307-B"),
+                    quantity=b.get("qty", 4),
+                    unit="SET",
+                    remark=f"適用 {code}{fixm}",
+                )
             elif fixm == "W":
                 result.warnings.append(f"{code}W 焊接固定：免鑽孔、不含固定螺栓")
             elif fixm == "N":

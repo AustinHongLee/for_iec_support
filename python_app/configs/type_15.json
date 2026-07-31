@@ -1,148 +1,84 @@
 {
   "type_id": "15",
-  "source": "data/type15_table.py",
+  "_version": "1.1.0",
+  "source": "中威 D-16 + 中鼎 22A_5123A D-16 + 中鼎 20E4588 D-16",
   "migrated": "2026-04-29",
-  "TYPE15_LH_LIMITS": {
-    "2": [
-      [
-        500,
-        1000
-      ],
-      [
-        1000,
-        500
-      ]
-    ],
-    "3": [
-      [
-        500,
-        2000
-      ],
-      [
-        1000,
-        1000
-      ]
-    ],
-    "4": [
-      [
-        500,
-        3000
-      ],
-      [
-        1000,
-        1500
-      ]
-    ],
-    "6": [
-      [
-        500,
-        4000
-      ],
-      [
-        1000,
-        3500
-      ]
-    ],
-    "8": [
-      [
-        500,
-        5000
-      ],
-      [
-        1000,
-        4500
-      ]
-    ],
-    "10": [
-      [
-        1000,
-        5000
-      ]
-    ],
-    "12": [
-      [
-        1000,
-        5000
-      ]
-    ]
-  },
-  "TYPE15_TABLE": {
-    "2": {
-      "D": 190,
-      "F": 9,
-      "K": 70,
-      "M": 160,
-      "P": 95,
-      "Q": 150,
-      "B": 80,
-      "member": "C100X50X5",
-      "pipe_sch": "SCH.40"
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三份 D-16。中威採 Channel、2~12 吋及 L/H 矩陣；22A/20E4588 採單支 H Beam + I×J×T 補強板、4~12 吋、L<=1000 與各尺寸 H(MAX)。22A 12 吋 F=16，20E4588 F=19。Member 切長改按 L-2×6t Stopper，supporting pipe 切長納入 base/top plate、member depth，CTCI 分支再扣 reinforcement T。Wing 與 Stopper 轉為 polygon 淨面積；P 現場切割及 Ø6 weep-hole 缺定位保留 blocker。2026-07-31 起 L/H 超界依毫米差與比例分級，最多只允許至圖示上限 2 倍且超額不逾 2000mm，超過仍停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-15_D-16.pdf",
+      "revision": "1",
+      "table_source": "TYPE15_CW_TABLE",
+      "limit_source": "TYPE15_CW_LH_LIMITS",
+      "member_family": "channel",
+      "reinforcement_plate": false,
+      "l_max_mm": null
     },
-    "3": {
-      "D": 260,
-      "F": 12,
-      "K": 70,
-      "M": 160,
-      "P": 130,
-      "Q": 160,
-      "B": 110,
-      "member": "C100X50X5",
-      "pipe_sch": "SCH.40"
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-15_D-16.pdf",
+      "revision": "1",
+      "table_source": "TYPE15_CTCI_22A_TABLE",
+      "limit_source": null,
+      "member_family": "h_beam",
+      "reinforcement_plate": true,
+      "l_max_mm": 1000
     },
-    "4": {
-      "D": 260,
-      "F": 12,
-      "K": 85,
-      "M": 185,
-      "P": 120,
-      "Q": 170,
-      "B": 135,
-      "member": "C125X65X6",
-      "pipe_sch": "SCH.40"
-    },
-    "6": {
-      "D": 380,
-      "F": 16,
-      "K": 95,
-      "M": 210,
-      "P": 180,
-      "Q": 190,
-      "B": 190,
-      "member": "C150X75X9",
-      "pipe_sch": "SCH.40"
-    },
-    "8": {
-      "D": 380,
-      "F": 16,
-      "K": 110,
-      "M": 260,
-      "P": 150,
-      "Q": 210,
-      "B": 240,
-      "member": "C200X90X8",
-      "pipe_sch": "SCH.40"
-    },
-    "10": {
-      "D": 450,
-      "F": 16,
-      "K": 250,
-      "M": 260,
-      "P": 180,
-      "Q": 220,
-      "B": 295,
-      "member": "C200X90X8",
-      "pipe_sch": "SCH.40"
-    },
-    "12": {
-      "D": 500,
-      "F": 19,
-      "K": 250,
-      "M": 260,
-      "P": 190,
-      "Q": 240,
-      "B": 345,
-      "member": "C200X90X8",
-      "pipe_sch": "STD.WT"
+    "ctci_20e4588": {
+      "drawing": "單張-本案有關/中鼎/長春_Type/TYPE-15_D-16.pdf",
+      "revision": "1",
+      "table_source": "TYPE15_CTCI_20E_TABLE",
+      "limit_source": null,
+      "member_family": "h_beam",
+      "reinforcement_plate": true,
+      "l_max_mm": 1000
     }
+  },
+  "fabrication_contract": {
+    "stopper_thickness_mm": 6,
+    "stopper_quantity": 2,
+    "stopper_chamfer_mm": 10,
+    "wing_quantity": 4,
+    "wing_top_land_mm": 20,
+    "wing_lower_right_vertical_mm": 25,
+    "wing_bottom_left_chamfer_mm": 10,
+    "wing_P_basis": "FIELD CUT TO SUIT (D-16 NOTE 3)",
+    "weld_member_and_pipe_mm": 6,
+    "weld_base_to_existing_steel_cw_mm": 6,
+    "weld_base_to_existing_steel_ctci_mm": 8,
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null
+  },
+  "TYPE15_CW_LH_LIMITS": {
+    "2": [[500, 1000], [1000, 500]],
+    "3": [[500, 2000], [1000, 1000]],
+    "4": [[500, 3000], [1000, 1500]],
+    "6": [[500, 4000], [1000, 3500]],
+    "8": [[500, 5000], [1000, 4500]],
+    "10": [[1000, 5000]],
+    "12": [[1000, 5000]]
+  },
+  "TYPE15_CW_TABLE": {
+    "2": {"D": 190, "F": 9, "K": 70, "M": 160, "P": 95, "Q": 150, "B": 80, "member": "C100X50X5", "pipe_sch": "SCH.40"},
+    "3": {"D": 260, "F": 12, "K": 70, "M": 160, "P": 130, "Q": 160, "B": 110, "member": "C100X50X5", "pipe_sch": "SCH.40"},
+    "4": {"D": 260, "F": 12, "K": 85, "M": 185, "P": 120, "Q": 170, "B": 135, "member": "C125X65X6", "pipe_sch": "SCH.40"},
+    "6": {"D": 380, "F": 16, "K": 95, "M": 210, "P": 180, "Q": 190, "B": 190, "member": "C150X75X9", "pipe_sch": "SCH.40"},
+    "8": {"D": 380, "F": 16, "K": 110, "M": 260, "P": 150, "Q": 210, "B": 240, "member": "C200X90X8", "pipe_sch": "SCH.40"},
+    "10": {"D": 450, "F": 16, "K": 250, "M": 260, "P": 180, "Q": 220, "B": 295, "member": "C200X90X8", "pipe_sch": "SCH.40"},
+    "12": {"D": 500, "F": 19, "K": 250, "M": 260, "P": 190, "Q": 240, "B": 345, "member": "C200X90X8", "pipe_sch": "STD.WT"}
+  },
+  "TYPE15_CTCI_22A_TABLE": {
+    "4": {"D": 260, "F": 12, "K": 150, "M": 160, "P": 120, "Q": 170, "B": 135, "I": 84, "J": 47, "T": 6, "member": "H100X100X6X8", "pipe_sch": "SCH.40", "H_MAX": 3000},
+    "6": {"D": 380, "F": 16, "K": 200, "M": 210, "P": 180, "Q": 190, "B": 190, "I": 130, "J": 72, "T": 6, "member": "H150X150X7X10", "pipe_sch": "SCH.40", "H_MAX": 3000},
+    "8": {"D": 380, "F": 16, "K": 200, "M": 210, "P": 150, "Q": 210, "B": 240, "I": 130, "J": 72, "T": 6, "member": "H150X150X7X10", "pipe_sch": "SCH.40", "H_MAX": 4000},
+    "10": {"D": 450, "F": 16, "K": 250, "M": 260, "P": 180, "Q": 220, "B": 295, "I": 176, "J": 96, "T": 9, "member": "H200X200X8X12", "pipe_sch": "SCH.40", "H_MAX": 4000},
+    "12": {"D": 500, "F": 16, "K": 250, "M": 260, "P": 190, "Q": 240, "B": 345, "I": 176, "J": 96, "T": 9, "member": "H200X200X8X12", "pipe_sch": "STD.WT", "H_MAX": 4000}
+  },
+  "TYPE15_CTCI_20E_TABLE": {
+    "4": {"D": 260, "F": 12, "K": 150, "M": 160, "P": 120, "Q": 170, "B": 135, "I": 84, "J": 47, "T": 6, "member": "H100X100X6X8", "pipe_sch": "SCH.40", "H_MAX": 3000},
+    "6": {"D": 380, "F": 16, "K": 200, "M": 210, "P": 180, "Q": 190, "B": 190, "I": 130, "J": 72, "T": 6, "member": "H150X150X7X10", "pipe_sch": "SCH.40", "H_MAX": 3000},
+    "8": {"D": 380, "F": 16, "K": 200, "M": 210, "P": 150, "Q": 210, "B": 240, "I": 130, "J": 72, "T": 6, "member": "H150X150X7X10", "pipe_sch": "SCH.40", "H_MAX": 4000},
+    "10": {"D": 450, "F": 16, "K": 250, "M": 260, "P": 180, "Q": 220, "B": 295, "I": 176, "J": 96, "T": 9, "member": "H200X200X8X12", "pipe_sch": "SCH.40", "H_MAX": 4000},
+    "12": {"D": 500, "F": 19, "K": 250, "M": 260, "P": 190, "Q": 240, "B": 345, "I": 176, "J": 96, "T": 9, "member": "H200X200X8X12", "pipe_sch": "STD.WT", "H_MAX": 4000}
   }
 }

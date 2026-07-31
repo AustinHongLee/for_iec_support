@@ -229,7 +229,13 @@ def test_export_readiness_explains_analysis_assumptions_and_final_gate(monkeypat
         window._auto_analyze_timer.setInterval(10)
         QTest.qWait(40)
         _APP.processEvents()
-        assert window.export_readiness_label.text() == "已就緒：可匯出"
+        assert (
+            window.export_readiness_label.text()
+            == "BOM 可匯出：1 筆加工／密度待核"
+        )
+        assert "不代表這些支撐已可直接出加工圖" in (
+            window.export_readiness_label.toolTip()
+        )
     finally:
         window.close()
 

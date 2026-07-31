@@ -1,0 +1,23 @@
+{
+  "type_id": "119",
+  "version": "1.2",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-132 與 M-57/M-58/M-59 建立 guide support。2026-07-30 獨立稽核複驗確認 M-58 的 B=actual pipe OD+18 是兩腳內淨距，1~8 吋 U-bolt 展開修正為 pi*(B+rod dia)/2+2E。第二輪複驗另確認 M-57 每組為兩片 180° saddle、四片 lug、兩組 machine bolt/nut joint 與兩片 180° lining；已知鋼材總重不變。10~32 吋使用 M-59 U-band；橡膠與 purchased fastener weight 不猜估。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-119_D-132.pdf / M-57 / M-58 / M-59",
+      "revision": "1",
+      "allowed_sizes": [1, 1.5, 2, 2.5, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 32],
+      "small_rows": {
+        "1": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "1.5": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "2": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "2.5": {"B": 50, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "3": {"B": 50, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "4": {"B": 65, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "6": {"B": 65, "D": 14, "L": 25, "u_bolt_dia_mm": 13},
+        "8": {"B": 65, "D": 14, "L": 25, "u_bolt_dia_mm": 13}
+      }
+    }
+  }
+}

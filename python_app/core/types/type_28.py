@@ -1,154 +1,162 @@
-"""
-Type 28 計算器  (判讀來源: D-31, E1906-DSP-500-006)
-格式: 28-L50-1005L
+"""Type 28 source-aware portal frame with two M-42 feet (D-31)."""
+from __future__ import annotations
 
-第二段: 型鋼代碼 (L50, L75, C125, C150)
-第三段: LL+HH+M42Letter
-        前2位 = L(橫梁跨距) ×100mm
-        後2位 = H(支腿高度, TO GRADE OR FDN) ×100mm
-        末1位 = M-42 下部組件型式字母 (NOTE 4: USE TYPE-L & P ONLY)
-
-結構: 門型支撐 (Portal Frame)
-────────────────────────────────────────────────────────────
-
-  ELEV:
-       ┌──── L ────┐
-       │            │
-   H   │  MEMBER"M" │   H
-       │            │
-       └────────────┘
-     WELD TO PLATE     WELD TO PLATE
-     (SEE NOTE 4)      (SEE NOTE 4)
-
-  力傳遞: 管線 → 上橫梁 → 左右支腿 → M-42 底板 → 基礎
-
-  門型框架由三段 MEMBER 組成:
-    左腿(H) + 橫梁(L) + 右腿(H)
-
-  圖面標示 "FOR CHANNEL" — C125/C150 用槽鋼; L50/L75 用角鐵
-
-使用模式 (D-31 圖面左右兩視圖):
-  - FOR HOR. LINE (左側圖): 水平管放置於門型橫梁上方
-    → Channel(C125/C150) 開口朝外, 管線置於凹槽內較穩定
-  - FOR VERTICAL LINE (右側圖): 垂直管以 U-BOLT(D-68) 側掛夾持
-    → Angle(L50/L75) 截面 L 型, 適合搭配 U-bolt 側掛
-  ※ STANDARD U-BOLT(D-68) (NOT FURNISHED) — U-bolt 不含在本 Type BOM 內
-
-BOM (所有 MEMBER 共通, 無板件):
-  ① 左腿 ×1  長度 = H
-  ② 上橫梁 ×1  長度 = L
-  ③ 右腿 ×1  長度 = H
-  ④ M-42 lower component ×1 set
-
-DIMENSIONS TABLE (D-31):
-  MEMBER "M"    | L MAX | H MAX
-  L50×50×6      | 1000  |  500
-  L75×75×9      | 1000  | 1500
-  C125×65×6     | 1500  | 1500
-  C150×75×9     | 1500  | 1500
-
-NOTE 1: "H" & "L" SHALL BE CUT TO SUIT IN FIELD.
-NOTE 3: IF THE FOUNDATION IS NOT USED, "H" = FROM LOWEST POINT OF PAVING.
-NOTE 4: THIS TYPE SHALL BE USED WITH M-42. USE TYPE-L & P ONLY.
-
-VBA BUG: Section_Length_L 漏乘 * 100，導致 L 值差 100 倍。
-         Python 版已修正，且採三件式結構表達。
-"""
+from ..config_loader import load_config
+from ..bom_policy import exclude_unresolved_entry, scale_entry_quantity
+from ..hardware_material import HardwareKind, parse_hardware_material_context, resolve_hardware_material
+from ..issues import (
+    register_host_m42_variance,
+    register_source_envelope,
+)
+from ..m42 import perform_action_by_letter, source_allows_m42_type
 from ..models import AnalysisResult, set_remark
-from ..parser import get_part
+from ..source_profiles import normalize_source_profile
 from ..steel import add_steel_section_entry
-from ..m42 import perform_action_by_letter
-from data.steel_sections import get_section_details
-
-# ── D-31 限制表 ──────────────────────────────────────────
-_LIMITS = {
-    "L50":  {"L_max": 1000, "H_max":  500},
-    "L75":  {"L_max": 1000, "H_max": 1500},
-    "C125": {"L_max": 1500, "H_max": 1500},
-    "C150": {"L_max": 1500, "H_max": 1500},
-}
+from ..truth import make_evidence
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def _parse(fullstring):
+    parts = str(fullstring).split("-")
+    if len(parts) != 3 or len(parts[2]) != 5 or not parts[2][:4].isdigit() or not parts[2][-1].isalpha():
+        raise ValueError("格式應為 28-{M}-{LL}{HH}{M42}")
+    l_mm = int(parts[2][:2]) * 100
+    h_mm = int(parts[2][2:4]) * 100
+    if l_mm <= 0 or h_mm <= 0:
+        raise ValueError("L與H必須大於0")
+    return parts[1].upper(), l_mm, h_mm, parts[2][-1].upper()
+
+
+def _line_orientation(overrides):
+    raw = str(overrides.get("line_orientation", "")).strip().upper()
+    aliases = {"H": "HORIZONTAL", "HOR": "HORIZONTAL", "HORIZONTAL": "HORIZONTAL",
+               "V": "VERTICAL", "VER": "VERTICAL", "VERTICAL": "VERTICAL"}
+    if not raw:
+        return None
+    if raw not in aliases:
+        raise ValueError("line_orientation只接受HORIZONTAL或VERTICAL")
+    return aliases[raw]
+
+
+def _decorate_m42(entries, profile):
+    for index, entry in enumerate(entries, start=1):
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.component_id = f"D31-M42-BOTH-{index}"
+        entry.geometry.parameters = dict(entry.geometry.parameters or {})
+        entry.geometry.parameters["portal_legs"] = ["LEFT", "RIGHT"]
+        entry.geometry.parameters["m42_set_count"] = 2
+
+
+def calculate(fullstring, overrides=None, source_profile=None):
     result = AnalysisResult(fullstring=fullstring)
-
-    # ── 第二段: 型鋼代碼 ──
-    part2 = get_part(fullstring, 2)
-    details = get_section_details(part2)
-    if not details:
-        result.error = f"Type 28: 未知型鋼代碼 {part2}"
+    overrides = overrides or {}
+    config = load_config("28", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 28: 尚未建立來源 profile {profile_id}"
         return result
-
-    section_type = details["type"]   # "Angle" or "Channel"
-    full_size = details["size"]      # "L50*50*6" or "C125*65*6"
-
-    # ── 第三段: LLHH + M42Letter ──
-    part3 = get_part(fullstring, 3)
-    if not part3 or len(part3) < 5:
-        result.error = f"Type 28: 第三段格式錯誤 '{part3}' (需至少5字元, 如 1005L)"
-        return result
-
-    m42_letter = part3[-1].upper()
-    if m42_letter.isdigit():
-        result.error = f"Type 28: 缺少 M-42 型式字母 (末位='{m42_letter}' 不是字母)"
-        return result
-
-    # NOTE 4: USE TYPE-L & P ONLY
-    if m42_letter not in ("L", "P"):
-        result.warnings.append(
-            f"M-42 型式 '{m42_letter}' 非標準 (NOTE 4: USE TYPE-L & P ONLY)"
-        )
-
-    digits = part3[:-1]  # 去掉末位字母
     try:
-        section_L = int(digits[:2]) * 100  # 前兩位 = L (橫梁跨距)
-        section_H = int(digits[2:]) * 100  # 後兩位 = H (支腿高度)
-    except ValueError:
-        result.error = f"Type 28: 無法解析 L/H 值 '{part3}'"
+        member, l_mm, h_mm, letter = _parse(fullstring)
+        orientation = _line_orientation(overrides)
+    except ValueError as exc:
+        result.error = f"Type 28: {exc}"
         return result
-
-    # ── 超限檢查 ──
-    limits = _LIMITS.get(part2, {"L_max": 1500, "H_max": 1500})
-    if section_L > limits["L_max"]:
-        result.warnings.append(
-            f"L={section_L}mm 超出 {part2} 標準範圍 (≤ {limits['L_max']}mm)"
+    row = config[profile["table"]].get(member)
+    if not row:
+        result.error = f"Type 28 / {profile_id}: D-31未表列 MEMBER {member}"
+        return result
+    if letter not in profile["allowed_m42"]:
+        if not source_allows_m42_type(profile_id, letter):
+            result.error = (
+                f"Type 28 / {profile_id}: M-42 {letter} 不存在於此來源 M-42 圖"
+            )
+            return result
+        register_host_m42_variance(
+            result,
+            type_label=f"Type 28 / {profile_id}",
+            source_ref="D-31",
+            letter=letter,
+            host_allowed=profile["allowed_m42"],
         )
-    if section_H > limits["H_max"]:
-        result.warnings.append(
-            f"H={section_H}mm 超出 {part2} 標準範圍 (≤ {limits['H_max']}mm)"
-        )
-
-    # ═══════════════════════════════════════════════════════
-    # ①~③ MEMBER "M" — 門型框架三件式
-    #    左腿(H) + 橫梁(L) + 右腿(H)
-    #
-    #    VBA BUG: Section_Length_L 漏乘 *100
-    #    VBA: Total = (H * 100 * 2) + L_digits  ← 錯
-    #    Python 版已修正 L 尺寸, 並拆成三件輸出.
-    # ═══════════════════════════════════════════════════════
-    section_dim = full_size[1:]  # 去掉前綴字母
-
-    usage_hint = "Channel:管置上方" if section_type == "Channel" else "Angle:可U-bolt側掛"
-
-    add_steel_section_entry(result, section_type, section_dim, section_H)
-    set_remark(result.entries[-1],
-               f"左立柱，H={section_H}（{usage_hint}）",
-               f"Left leg, H={section_H} ({usage_hint})")
-
-    add_steel_section_entry(result, section_type, section_dim, section_L)
-    set_remark(result.entries[-1],
-               f"上橫梁，L={section_L}（{usage_hint}）",
-               f"Top beam, L={section_L} ({usage_hint})")
-
-    add_steel_section_entry(result, section_type, section_dim, section_H)
-    set_remark(result.entries[-1],
-               f"右立柱，H={section_H}（{usage_hint}）",
-               f"Right leg, H={section_H} ({usage_hint})")
-
-    # ═══════════════════════════════════════════════════════
-    # ④ M-42 下部組件 (底板 + 螺栓)
-    #    NOTE 4: USE TYPE-L & P ONLY
-    # ═══════════════════════════════════════════════════════
-    perform_action_by_letter(result, m42_letter, full_size)
-
+    if not register_source_envelope(
+        result,
+        type_label=f"Type 28 / {profile_id}",
+        source_ref=f"D-31 {member} L/H(MAX)",
+        checks=(
+            ("L", l_mm, row["L_MAX"], True),
+            ("H", h_mm, row["H_MAX"], True),
+        ),
+    ):
+        return result
+    ctx = parse_hardware_material_context(overrides, legacy_material_keys=("material",), legacy_material_kinds=(HardwareKind.STRUCTURAL_STRUT,))
+    material = resolve_hardware_material(HardwareKind.STRUCTURAL_STRUT, service=ctx.service, overrides=ctx.material_overrides)
+    layout = overrides.get("supported_line_layout")
+    blockers = [
+        "D-31要求H/L依現場裁切，門架角部端切/貼合需加工圖展開",
+    ]
+    if orientation is None:
+        blockers.append("水平管/垂直管配置未編入designation；缺line_orientation")
+    if not layout:
+        blockers.append("管數、管徑與中心位置未編入designation；缺supported_line_layout")
+    if orientation == "VERTICAL":
+        blockers.append("垂直管用D-68 U-bolt且NOT FURNISHED；採購/孔位需另行展開")
+    for cid, role, length, segment in (
+        ("D31-LEFT-LEG", "左立柱", h_mm, "H"),
+        ("D31-TOP-BEAM", "上橫梁", l_mm, "L"),
+        ("D31-RIGHT-LEG", "右立柱", h_mm, "H"),
+    ):
+        add_steel_section_entry(result, row["section_type"], row["lookup_dim"], length, material=material)
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = profile["drawing"]
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "field_cut_stock_section"
+        entry.geometry.shape_spec = f"{row['full_spec']}; CUT {segment}={length}"
+        entry.geometry.parameters = {
+            "segment": segment, "cut_length_mm": length, "assembly_L_mm": l_mm,
+            "assembly_H_mm": h_mm, "line_orientation": orientation,
+            "supported_line_layout": layout, "u_bolt_standard": "D-68" if orientation == "VERTICAL" else None,
+            "u_bolt_furnished": False,
+        }
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = blockers[:]
+        set_remark(entry, f"{role}，現場裁切{segment}={length}", f"{role}, field cut {segment}={length}")
+    start = len(result.entries)
+    perform_action_by_letter(
+        result,
+        letter,
+        row["full_spec"].replace("X", "*"),
+        source_profile=profile_id,
+    )
+    if result.error:
+        result.entries.clear()
+        return result
+    m42_entries = list(result.entries[start:])
+    _decorate_m42(m42_entries, profile)
+    for entry in m42_entries:
+        if entry.category == "螺栓類" and entry.unit_weight <= 0:
+            exclude_unresolved_entry(
+                result,
+                entry,
+                reason=(
+                    f"M-42 fastener {entry.spec} 只有名義直徑、沒有長度；"
+                    "左右兩組皆不以 0 kg 採購件列入材料 BOM"
+                ),
+            )
+            continue
+        scale_entry_quantity(entry, 2)
+    m42_exact = member not in ("C100", "H250")
+    if not m42_exact:
+        blockers.append(f"{member}未在M-42精確member row表列，lower component需人工核對")
+    result.meta["fabrication"] = {
+        "source_profile": profile_id, "source_drawing": profile["drawing"], "source_revision": profile["revision"],
+        "branch": f"{member}/M42-{letter}/{orientation or 'ORIENTATION-TBD'}",
+        "bom_ready": m42_exact, "fabrication_ready": False, "blockers": blockers,
+        "L_mm": l_mm, "H_mm": h_mm, "m42_sets": 2,
+        "m42_bom_presentation": "one geometry row with quantity scaled for LEFT+RIGHT",
+        "excluded_bom_components": result.meta.get("excluded_bom_components", []),
+    }
+    result.warnings.append("門架型鋼與兩組M-42已計；管線配置及角部端切仍需加工圖輸入")
+    result.evidence.append(make_evidence("type28_member_row", row, "visual_transcription", source=profile["drawing"], confidence=0.99))
     return result

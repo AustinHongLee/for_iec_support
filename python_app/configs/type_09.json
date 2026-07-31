@@ -1,11 +1,101 @@
 {
   "type_id": "09",
-  "source": "data/type09_table.py",
-  "migrated": "2026-04-29",
+  "name": "Threaded Adjustable Dummy Support TYPE-09",
+  "drawing_no": "D-9",
+  "applicable_range": "Supported line 2\"~4\"；來源別 H/M-42/adjusting bolt",
+  "designation_format": {
+    "pattern": "09-{supported_line_size}B-{HH}{M42_letter}",
+    "example": "09-2B-05B"
+  },
+  "variation_axes": {
+    "connection": {
+      "label": "主管接點",
+      "kind": "choice",
+      "choices": ["elbow", "straight"],
+      "default": "elbow"
+    },
+    "upper_material": {
+      "label": "上段 dummy leg 材質",
+      "kind": "material",
+      "default_from": "global",
+      "allow_unknown": true
+    }
+  },
+  "material_rules": {
+    "upper_dummy_leg": "特殊主管時同主管材質",
+    "lower_supporting_pipe": "A53 Gr.B / black steel",
+    "supporting_pipe_size_schedule": "2\" SCH.40",
+    "adjusting_bolt_and_nuts": "A307-B galvanized"
+  },
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing_standard": "HP6-DSD-A4-500-001",
+      "drawing": "TYPE-09_D-9.pdf",
+      "revision": "1",
+      "h_max_mm": 1500,
+      "h_min_mm": 200,
+      "h_min_inclusive": false,
+      "allowed_lower_components": ["B", "H"],
+      "delete_m42_plate_a_for": ["B", "H"],
+      "b_height_from_lowest_paving": true,
+      "adjusting_bolt_spec": "1-5/8\" X 150L, FULL THREADED",
+      "adjusting_bolt_diameter_mm": 41.275,
+      "heavy_hex_nut_spec": "1-5/8\"",
+      "heavy_hex_nut_quantity": 2,
+      "m42_drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf",
+      "m42_revision": "1"
+    },
+    "ctci_22a_5123a": {
+      "drawing_standard": "D7TS-701-E",
+      "drawing": "TYPE-09_D-9.pdf",
+      "revision": "1",
+      "h_max_mm": 1800,
+      "h_min_mm": 300,
+      "h_min_inclusive": true,
+      "allowed_lower_components": ["B", "C", "H", "R"],
+      "delete_m42_plate_a_for": ["B", "C", "H"],
+      "b_height_from_lowest_paving": false,
+      "adjusting_bolt_spec": "1-3/4\" X 150L, FULL THREADED",
+      "adjusting_bolt_diameter_mm": 44.45,
+      "heavy_hex_nut_spec": "1-3/4\"",
+      "heavy_hex_nut_quantity": 2,
+      "m42_drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf",
+      "m42_revision": "1"
+    },
+    "ctci_20e4588": {
+      "drawing_standard": "STM-05.01",
+      "drawing": "TYPE-09_D-9.pdf",
+      "revision": "1",
+      "h_max_mm": 1500,
+      "h_min_mm": 200,
+      "h_min_inclusive": false,
+      "allowed_lower_components": ["B", "C", "H"],
+      "delete_m42_plate_a_for": ["B", "H"],
+      "b_height_from_lowest_paving": true,
+      "adjusting_bolt_spec": "M42 X 150L, FULL THREADED",
+      "adjusting_bolt_diameter_mm": 42,
+      "heavy_hex_nut_spec": "M42",
+      "heavy_hex_nut_quantity": 2,
+      "m42_drawing": "M42.pdf pages 1-3",
+      "m42_revision": "1A/1",
+      "type_c_note": "M-42 plate a is the 150x150x9 resting plate shown in D-9; weld to embedded plate/free surface per D-9 detail."
+    }
+  },
+  "line_size_table": {
+    "2": {
+      "L": 106
+    },
+    "3": {
+      "L": 93
+    },
+    "4": {
+      "L": 106
+    }
+  },
   "TYPE09_TABLE": {
     "2": {
       "support_pipe": 2,
-      "pipe_sch": "SCH.80",
+      "pipe_sch": "SCH.40",
       "L": 106
     },
     "3": {
@@ -18,5 +108,29 @@
       "pipe_sch": "SCH.40",
       "L": 106
     }
-  }
+  },
+  "fabrication_contract": {
+    "supporting_pipe_size_in": 2,
+    "supporting_pipe_schedule": "SCH.40",
+    "special_upper_straight_length_mm": 100,
+    "adjusting_clearance_mm": 100,
+    "adjusting_bolt_length_mm": 150,
+    "field_weld_mm": 6,
+    "bolt_weight_basis": "nominal solid-cylinder blank estimate; purchased threaded product actual weight not supplied",
+    "known_blocker": "上段 dummy leg 與直管/彎頭的相貫 cope 輪廓未在 D-9 尺寸化；編碼本身也不含 connection branch。"
+  },
+  "version": "1.1",
+  "last_modified": "2026-07-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對中威 E25-24、中鼎 22A_5123A、中鼎 20E4588 D-9/M-42/M-43：拆分 H、M-42 型式、plate-a 刪除規則與調整螺栓；Supporting Pipe統一為2 SCH40，上段L+100/100、下段H-200。2026-07-31 起 H下限仍硬停止、上限採有限外插分級；主體圖未列但同來源M-42已定義者列高風險暫算。",
+  "change_log": [
+    {
+      "date": "2026-04-29",
+      "desc": "舊 VBA 表格移轉為 JSON"
+    },
+    {
+      "date": "2026-07-29",
+      "desc": "建立三來源 D-9/M-42 recipe 與加工圖安全契約"
+    }
+  ]
 }

@@ -1,0 +1,43 @@
+{
+  "type_id": "25C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-47 建立 max P=5500kg sliding braced trunnion support。保存 CR/pipe/C、B/L 公式、L75/L100、10t gusset/slotted holes。A/C 是組立尺寸且多件 brace/interface 未唯一化，保持零重量 reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/25C.pdf",
+      "drawing_no": "C-47",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-47"],
+      "title": "C-47 TYPE 25C SLIDING BRACED TRUNNION SUPPORT",
+      "component_id": "C47-TYPE25C-ASSEMBLY",
+      "source_spec": "MAXIMUM P=5500 kg",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "trunnion_cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "trunnion_pipe_size_in", "kind": "pipe_size"},
+            {"name": "C_mm", "kind": "positive_mm"}
+          ]
+        }
+      ],
+      "designation_error": "Type 25C 格式應為 25C-{TRUNNION CR#}-{TRUNNION PIPE}B-{C mm}",
+      "static_parameters": {
+        "maximum_load_kg": 5500,
+        "B_formula": "pipe_OD/2 + pipe_insulation_thickness + 25",
+        "L_formula": "pipe_OD/2 + pipe_insulation_thickness + 125",
+        "sections": ["L75x75x9", "L100x100x10"],
+        "gusset_plate_thickness_mm": 10,
+        "slotted_hole_mm": {"width": 22, "slot_length_callout_mm": 10},
+        "bolts": "4 x 3/4in x 50L"
+      },
+      "references": ["N-12A CLIP TYPE 4", "C-18 COLD SUPPORT", "C-45 NOTE 1", "PROJECT ENDING PLATE / TRUNNION"],
+      "blockers": [
+        "C and derived A/B/L are assembly dimensions, not a released multi-member cut list",
+        "brace end preparations, gusset/slot datum and piece quantities are incomplete",
+        "ending plate/trunnion, C-18 cold support and field-shim interfaces remain unresolved"
+      ]
+    }
+  }
+}

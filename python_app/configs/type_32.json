@@ -1,0 +1,31 @@
+{
+  "type_id": "32", "_version": "1.0.0", "source": "三來源 TYPE-32_D-37.pdf",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三份D-37。來源分流member/envelope；結構為吊架底梁L加左右吊腿H各一。記錄6mm焊道、角部接合與existing steel介面，BOM可算但施工接合面仍需現場確認。2026-07-31 起 L/H 超界採有限外插警示/高風險/硬停止三級。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {"drawing": "單張-本案有關/中威/TYPE-32_D-37.pdf", "revision": "1", "table": "CW_TABLE"},
+    "ctci_22a_5123a": {"drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-32_D-37.pdf", "revision": "1", "table": "CTCI_22A_TABLE"},
+    "ctci_20e4588": {"drawing": "單張-本案有關/中鼎/長春_Type/TYPE-32_D-37.pdf", "revision": "1", "table": "CTCI_20E_TABLE"}
+  },
+  "CW_TABLE": {
+    "L50": {"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","L_MAX":1000,"H_MAX":1000},
+    "L75": {"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","L_MAX":1000,"H_MAX":1500},
+    "C125": {"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","L_MAX":1500,"H_MAX":1500},
+    "C150": {"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","L_MAX":1500,"H_MAX":1500},
+    "H250": {"section_type":"H Beam","lookup_dim":"250*125*6","full_spec":"H250X125X6X9","L_MAX":1500,"H_MAX":1500}
+  },
+  "CTCI_22A_TABLE": {
+    "L50": {"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","L_MAX":1000,"H_MAX":1000},
+    "L75": {"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","L_MAX":1000,"H_MAX":1500},
+    "C125": {"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","L_MAX":1500,"H_MAX":1500},
+    "C150": {"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","L_MAX":2000,"H_MAX":2000}
+  },
+  "CTCI_20E_TABLE": {
+    "L50": {"section_type":"Angle","lookup_dim":"50*50*6","full_spec":"L50X50X6","L_MAX":1000,"H_MAX":1000},
+    "L75": {"section_type":"Angle","lookup_dim":"75*75*9","full_spec":"L75X75X9","L_MAX":1000,"H_MAX":1500},
+    "C100": {"section_type":"Channel","lookup_dim":"100*50*5","full_spec":"C100X50X5","L_MAX":1200,"H_MAX":1500},
+    "C125": {"section_type":"Channel","lookup_dim":"125*65*6","full_spec":"C125X65X6","L_MAX":1500,"H_MAX":1500},
+    "C150": {"section_type":"Channel","lookup_dim":"150*75*9","full_spec":"C150X75X9","L_MAX":2000,"H_MAX":2000}
+  },
+  "fabrication_contract": {"layout":"HANGER_FRAME","segments":["H","L","H"],"fillet_weld_mm":6,"existing_steel_interface":true}
+}

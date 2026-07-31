@@ -1,208 +1,339 @@
+"""Type 65 trapeze hanger — D-79.
+
+The D-79 member/rod table is source truth.  H is an assembly dimension to the
+top of member M, not a finished M-23 rod cut.  Rod weight is therefore emitted
+only when ``rod_cut_length_mm`` is explicitly supplied.
 """
-Type 65 計算器 — Trapeze Hanger with Cross Member
-圖號: D-79
-格式: 65-{D}B-{LLHH}
-例: 65-6B-1505 → D=6", L=1500mm, H=500mm
-D = equivalent line size
-L = LL × 100 mm (500/1000/1500/2000/2500)
-H = HH × 100 mm
-"""
-from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value
-from ..steel import add_steel_section_entry
+from __future__ import annotations
+
 from ..bolt import add_custom_entry
-from ..component_rules import estimate_m28_weight, estimate_rod_weight
+from ..config_loader import load_config
 from ..hardware_material import (
     HardwareKind,
     MaterialSpec,
     parse_hardware_material_context,
     resolve_hardware_material,
 )
-from data.type65_table import get_type65_data, snap_l_bucket
+from ..models import AnalysisResult, set_remark
+from ..parser import get_lookup_value, get_part
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
 from data.m23_table import build_m23_item
 from data.m28_table import get_m28_by_rod_size
+from data.type65_table import get_type65_data, snap_l_bucket
 
 
-def _material(
-    kind: HardwareKind,
-    *,
-    service,
-    overrides,
-) -> MaterialSpec:
-    return resolve_hardware_material(kind, service=service, overrides=overrides)
+def _section(member: str) -> tuple[str, str]:
+    if member.startswith("L"):
+        return "Angle", member[1:]
+    if member.startswith("C"):
+        return "Channel", member[1:]
+    raise ValueError(f"Unsupported D-79 member {member}")
 
 
-def _attach_material_identity(result: AnalysisResult, material: MaterialSpec):
-    if result.entries:
-        result.entries[-1].material_canonical_id = material.canonical_id
+def _material(kind: HardwareKind, context) -> MaterialSpec:
+    return resolve_hardware_material(
+        kind,
+        service=context.service,
+        overrides=context.material_overrides,
+    )
 
 
-def _add_custom_entry(
+def _add_zero_hardware(
     result: AnalysisResult,
+    *,
     name: str,
     spec: str,
     material: MaterialSpec,
     quantity: int,
-    unit_weight: float,
-    unit: str = "SET",
-    remark: str = "",
-    category: str = "螺栓類",
+    component_id: str,
+    drawing: str,
+    revision: str,
+    blocker: str,
 ):
     add_custom_entry(
         result,
         name,
         spec,
-        material.name,
+        material,
         quantity,
-        unit_weight,
-        unit,
-        remark=remark,
-        category=category,
+        0,
+        "PC",
+        remark=blocker,
+        category="螺栓類",
+        manufacturing_type="purchased",
     )
-    _attach_material_identity(result, material)
+    entry = result.entries[-1]
+    entry.geometry.component_id = component_id
+    entry.geometry.source_drawing = drawing
+    entry.geometry.source_revision = revision
+    entry.geometry.shape_kind = "standard_hardware_reference"
+    entry.geometry.parameters = {"quantity": quantity, "spec": spec}
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
+    set_remark(entry, blocker)
 
 
-def _parse_member_spec(member_str: str):
-    """解析 member 字串如 'L75*75*9' → ('Angle', '75*75*9')
-    或 'C125*65*6' → ('Channel', '125*65*6')"""
-    if member_str.startswith("L"):
-        return "Angle", member_str[1:]
-    elif member_str.startswith("C"):
-        return "Channel", member_str[1:]
-    elif member_str.startswith("H"):
-        return "H Beam", member_str[1:]
-    return "Angle", member_str
-
-
-# Stiffener plate dimensions (width_mm, height_mm, thickness_mm) by nominal pipe size.
-# Source: geometry-based estimate, dimensions increase with pipe size.
-# Weight = W × H × T × 7.85e-6 kg
-_STIFFENER_PL = {
-    12: (200, 150,  8),
-    14: (225, 160,  8),
-    16: (250, 170, 10),
-    18: (280, 180, 10),
-    20: (310, 190, 12),
-    24: (370, 210, 12),
-    28: (430, 230, 14),
-    30: (460, 240, 14),
-    32: (490, 260, 16),
-    34: (520, 270, 16),
-    36: (550, 280, 19),
-    42: (630, 310, 19),
-}
-
-
-def _stiffener_pl(d_size: int) -> tuple[int, int, int]:
-    """依管徑取最近（不超過）的 stiffener PL 規格。"""
-    candidates = sorted(k for k in _STIFFENER_PL if k <= d_size)
-    return _STIFFENER_PL[candidates[-1]] if candidates else (200, 150, 8)
-
-
-def _build_inference_remark(item: dict | None) -> str:
-    if not item or not item.get("row_inferred"):
-        return ""
-    return item.get("inference_notes", "row inferred from neighboring sizes")
-
-
-def calculate(fullstring: str, overrides: dict | None = None) -> AnalysisResult:
+def calculate(
+    fullstring: str,
+    overrides: dict | None = None,
+    source_profile: str | None = None,
+) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
-    material_context = parse_hardware_material_context(
+    overrides = overrides or {}
+    config = load_config("65", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 65: 尚未建立來源 profile {profile_id}"
+        return result
+
+    part2 = get_part(fullstring, 2)
+    part3 = get_part(fullstring, 3)
+    if not part2 or not part3 or len(part3) != 4 or not part3.isdigit():
+        result.error = "Type 65 格式應為 65-{D}B-{LLHH}"
+        return result
+    line_size = get_lookup_value(part2.replace("B", ""))
+    l_mm = int(part3[:2]) * 100
+    h_mm = int(part3[2:]) * 100
+    if not 0 < l_mm <= 2500:
+        result.error = f"Type 65: L={l_mm} mm 超出 D-79 0<L<=2500"
+        return result
+    if not 0 < h_mm <= 3000:
+        result.error = f"Type 65: H={h_mm} mm 超出 D-79 0<H<=3000"
+        return result
+
+    row = get_type65_data(line_size)
+    if not row:
+        result.error = (
+            f'Type 65: D-79 未表列 {line_size:g}"；'
+            '允許 2,3,4,6,8,10,12,14,16,18,20,24"'
+        )
+        return result
+    bucket = snap_l_bucket(l_mm)
+    member = row["member_by_l"].get(bucket) if bucket else None
+    if not member:
+        result.error = f"Type 65: L={l_mm} mm 無 D-79 member 選型"
+        return result
+
+    context = parse_hardware_material_context(
         overrides,
         all_hardware_keys=("hardware_material", "material", "upper_material"),
     )
-    service = material_context.service
-    material_overrides = material_context.material_overrides
-    strut_material = _material(HardwareKind.STRUCTURAL_STRUT, service=service, overrides=material_overrides)
-    rod_material = _material(HardwareKind.THREADED_ROD, service=service, overrides=material_overrides)
-    bracket_material = _material(HardwareKind.BEAM_ATTACHMENT, service=service, overrides=material_overrides)
-    stiffener_material = _material(HardwareKind.GUSSET_PLATE, service=service, overrides=material_overrides)
+    member_material = _material(HardwareKind.STRUCTURAL_STRUT, context)
+    rod_material = _material(HardwareKind.THREADED_ROD, context)
+    bracket_material = _material(HardwareKind.BEAM_ATTACHMENT, context)
+    nut_material = _material(HardwareKind.HEAVY_HEX_NUT, context)
+    washer_material = _material(HardwareKind.HEAVY_HEX_NUT, context)
+    stiffener_material = _material(HardwareKind.GUSSET_PLATE, context)
+    blockers: list[str] = []
 
-    # ── 解析: 65-{D}B-{LLHH} ──
-    part2 = get_part(fullstring, 2)  # {D}B
-    part3 = get_part(fullstring, 3)  # {LLHH}
-
-    if not part2 or not part3:
-        result.error = "格式錯誤，應為 65-{D}B-{LLHH}"
-        return result
-
-    d_str = part2.replace("B", "").strip()
-    d_size = get_lookup_value(d_str)
-
-    # 拆 LLHH (4 digits)
-    p3 = part3.strip()
-    if len(p3) != 4 or not p3.isdigit():
-        result.error = f"LLHH 應為 4 位數字，實際='{p3}'"
-        return result
-
-    ll = int(p3[:2])
-    hh = int(p3[2:])
-    l_mm = ll * 100
-    h_mm = hh * 100
-
-    if h_mm < 300:
-        result.error = f"H={h_mm}mm 過短"
-        return result
-
-    # ── 查表 ──
-    data = get_type65_data(d_str)
-    if not data:
-        result.error = f"管徑 {d_str}\" 不在 Type 65 查詢表中 (2\"~24\")"
-        return result
-
-    rod_size = data["rod_size"]
-
-    # L bucket
-    l_bucket = snap_l_bucket(l_mm)
-    if not l_bucket:
-        result.error = f"L={l_mm}mm 超出最大值 2500mm"
-        return result
-
-    member_spec = data["member_by_l"].get(l_bucket)
-    if not member_spec:
-        result.error = f"L bucket={l_bucket}mm 無對應 member"
-        return result
-
-    if l_mm != l_bucket:
-        result.warnings.append(f"L={l_mm}mm 取至標準 bucket {l_bucket}mm")
-
-    # ① Cross Member ×1 (依 L bucket)
-    sec_type, sec_dim = _parse_member_spec(member_spec)
-    add_steel_section_entry(result, sec_type, sec_dim, l_mm, 1, strut_material.name)
-    _attach_material_identity(result, strut_material)
-
-    # ② Welded Eye Rod ×2 (M-23), 長度 ≈ H
-    rod_item = build_m23_item(rod_size, h_mm)
-    _add_custom_entry(
-        result, "WELDED EYE ROD",
-        rod_item["designation"] if rod_item else f"M-23, {rod_size}, L={h_mm}mm",
-        rod_material, 2, rod_item["unit_weight_kg"] if rod_item else estimate_rod_weight(rod_size, h_mm), "PC",
-        remark=_build_inference_remark(rod_item),
+    section_type, section_dim = _section(member)
+    add_steel_section_entry(
+        result,
+        section_type,
+        section_dim,
+        l_mm,
+        1,
+        member_material,
     )
-    if not rod_item:
-        result.warnings.append(f"M-23 table 尚無 rod size {rod_size}，暫以 rod 鋼材重量估算")
-
-    # ③ Angle Bracket ×2 (M-28)
-    bracket_item = get_m28_by_rod_size(rod_size)
-    _add_custom_entry(
-        result, "ANGLE BRACKET",
-        bracket_item["type"] if bracket_item else f"M-28, {rod_size}",
-        bracket_material, 2, bracket_item["unit_weight_kg"] if bracket_item else estimate_m28_weight(rod_size), "SET",
-        remark=_build_inference_remark(bracket_item),
-    )
-    if not bracket_item:
-        result.warnings.append(f"M-28 table 尚無 rod size {rod_size}，angle bracket 重量暫用估算值")
-
-    # ④ Stiffener (D ≥ 12")
-    if d_size >= 12:
-        pl_w, pl_h, pl_t = _stiffener_pl(d_size)
-        stiffener_wt = round(pl_w * pl_h * pl_t * 7.85e-6, 2)
-        stiffener_desc = f"PL {pl_w}x{pl_h}x{pl_t}"
-        _add_custom_entry(
-            result, "STIFFENER",
-            stiffener_desc,
-            stiffener_material, 1, stiffener_wt, "SET"
+    member_entry = result.entries[-1]
+    member_entry.geometry.component_id = "D79-MEMBER-M"
+    member_entry.geometry.source_drawing = profile["drawing"]
+    member_entry.geometry.source_revision = profile["revision"]
+    member_entry.geometry.shape_kind = "field_cut_structural_member"
+    member_entry.geometry.shape_spec = f"{member}; CUT L={l_mm}"
+    member_entry.geometry.parameters = {
+        "member": member,
+        "cut_length_mm": l_mm,
+        "selection_bucket_mm": bucket,
+        "rod_hole_diameter_rule": "A+3",
+        "rod_hole_quantity": 2,
+        "end_offset_mm": 60,
+        "fillet_weld_Y_mm": row["weld_y"],
+    }
+    member_blockers = [
+        "D-79 NOTE 2：member M 長度 L 應於現場切配；shop drawing 需回填現場確認長度"
+    ]
+    if member_entry.weight_per_unit <= 0:
+        member_blockers.append(
+            f"{member} 的來源每米重尚未建表，該 member 重量暫為 0"
         )
-        result.warnings.append(f'12" & larger: Stiffener ({stiffener_desc}) 重量為幾何估算值')
+    member_entry.geometry.fabrication_ready = False
+    member_entry.geometry.fabrication_blockers = member_blockers
+    blockers.extend(member_blockers)
+    set_remark(
+        member_entry,
+        f"D-79 依 next-greater L column={bucket} mm 選型；實切 L={l_mm} mm；"
+        + "；".join(member_blockers),
+    )
 
+    rod_size = row["rod_size"]
+    rod_cut = overrides.get("rod_cut_length_mm")
+    if rod_cut not in (None, ""):
+        rod_cut = int(rod_cut)
+        rod_item = build_m23_item(rod_size, rod_cut)
+        if rod_cut <= 0 or not rod_item:
+            result.error = f"Type 65: rod_cut_length_mm / M-23 {rod_size} 無效"
+            return result
+        add_custom_entry(
+            result,
+            "WELDED EYE ROD",
+            rod_item["designation"],
+            rod_material,
+            2,
+            rod_item["unit_weight_kg"],
+            "PC",
+            category="螺栓類",
+            item_class="primary_structure",
+            manufacturing_type="raw_cut",
+        )
+        rod = result.entries[-1]
+        rod.length = rod_cut
+        rod.geometry.fabrication_ready = True
+    else:
+        rod_blocker = (
+            "D-79 的 H 是上方支承面至 member M 上表的組立尺寸，"
+            "未包含 M-28 take-off、穿板與螺帽餘長；需提供 rod_cut_length_mm"
+        )
+        add_custom_entry(
+            result,
+            "WELDED EYE ROD",
+            f"M-23 {rod_size}; CUT LENGTH TBD",
+            rod_material,
+            2,
+            0,
+            "PC",
+            category="螺栓類",
+            item_class="reference_only",
+            manufacturing_type="raw_cut",
+        )
+        rod = result.entries[-1]
+        rod.geometry.fabrication_ready = False
+        rod.geometry.fabrication_blockers = [rod_blocker]
+        blockers.append(rod_blocker)
+    rod.geometry.component_id = "D79-M23-WELDED-EYE-RODS"
+    rod.geometry.source_drawing = profile["drawing"]
+    rod.geometry.source_revision = profile["revision"]
+    rod.geometry.shape_kind = "welded_eye_rod"
+    rod.geometry.shape_spec = f"M-23 {rod_size}; QTY2"
+    rod.geometry.parameters = {
+        "rod_size": rod_size,
+        "quantity": 2,
+        "assembly_H_mm": h_mm,
+        "cut_length_mm": rod_cut or None,
+    }
+    set_remark(
+        rod,
+        f"override cut length={rod_cut} mm"
+        if rod_cut not in (None, "")
+        else blockers[-1],
+    )
+
+    bracket = get_m28_by_rod_size(rod_size)
+    bracket_blocker = "M-28 已有尺寸/載重查表，但來源未提供可採信單重；採購重量歸零待供應商"
+    _add_zero_hardware(
+        result,
+        name="ANGLE BRACKET",
+        spec=bracket["type"] if bracket else f"M-28 {rod_size}",
+        material=bracket_material,
+        quantity=2,
+        component_id="D79-M28-ANGLE-BRACKETS",
+        drawing="M-28",
+        revision="",
+        blocker=bracket_blocker,
+    )
+    blockers.append(bracket_blocker)
+
+    nut_blocker = "D-79 每支 eye rod 標示 3 個 finished hex nuts；來源未給單重"
+    _add_zero_hardware(
+        result,
+        name="FINISHED HEX NUT",
+        spec=f'for {rod_size} rod',
+        material=nut_material,
+        quantity=6,
+        component_id="D79-FINISHED-HEX-NUTS",
+        drawing=profile["drawing"],
+        revision=profile["revision"],
+        blocker=nut_blocker,
+    )
+    blockers.append(nut_blocker)
+
+    washer_blocker = "D-79 每支 eye rod 標示上下 washer；來源未給 washer 規格/單重"
+    _add_zero_hardware(
+        result,
+        name="WASHER",
+        spec=f'for {rod_size} rod',
+        material=washer_material,
+        quantity=4,
+        component_id="D79-WASHERS",
+        drawing=profile["drawing"],
+        revision=profile["revision"],
+        blocker=washer_blocker,
+    )
+    blockers.append(washer_blocker)
+
+    if line_size >= 12:
+        stiffener_blocker = (
+            'D-79 僅標示 12" & larger 的 stiffener、60 mm 與三邊 6 mm 焊；'
+            "未充分標示片數及完整輪廓，舊版依管徑遞增的自創尺寸已移除"
+        )
+        add_custom_entry(
+            result,
+            "STIFFENER SET",
+            "SEE D-79 DETAIL; 60; 6 FILLET 3 SIDES",
+            stiffener_material,
+            1,
+            0,
+            "SET",
+            remark=stiffener_blocker,
+            category="鋼板類",
+            item_class="reference_only",
+            manufacturing_type="plate_cut",
+        )
+        stiffener = result.entries[-1]
+        stiffener.geometry.component_id = "D79-STIFFENER-REFERENCE"
+        stiffener.geometry.source_drawing = profile["drawing"]
+        stiffener.geometry.source_revision = profile["revision"]
+        stiffener.geometry.shape_kind = "member_end_stiffener"
+        stiffener.geometry.parameters = {
+            "applies_from_line_size_in": 12,
+            "shown_length_mm": 60,
+            "fillet_weld_mm": 6,
+            "weld_sides": 3,
+        }
+        stiffener.geometry.fabrication_ready = False
+        stiffener.geometry.fabrication_blockers = [stiffener_blocker]
+        blockers.append(stiffener_blocker)
+
+    result.warnings.extend(blockers)
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": profile["drawing"],
+        "source_revision": profile["revision"],
+        # An explicit rod cut only resolves that one line.  Field-fit member
+        # confirmation plus supplier weights for M-28/nuts/washers remain open.
+        "bom_ready": not blockers,
+        "fabrication_ready": False,
+        "blockers": blockers,
+        "assembly_dimensions": {
+            "line_size_in": line_size,
+            "L_mm": l_mm,
+            "H_mm": h_mm,
+            "selection_bucket_mm": bucket,
+            "member": member,
+            "rod_size": rod_size,
+            "weld_Y_mm": row["weld_y"],
+        },
+    }
+    result.evidence.append(
+        make_evidence(
+            "type65_d79_row",
+            result.meta["fabrication"]["assembly_dimensions"],
+            "visual_transcription",
+            source=profile["drawing"],
+            confidence=0.99,
+        )
+    )
     return result

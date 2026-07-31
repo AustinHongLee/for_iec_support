@@ -29,7 +29,7 @@ def test_type01_declares_existing_override_axes_with_unknown_material_enabled():
         "schedule",
         "l_value",
     ]
-    assert config["data_updated_at"] == "2026-07-12"
+    assert config["data_updated_at"] == "2026-07-31"
     assert config["data_update_note"]
 
 

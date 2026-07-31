@@ -1,0 +1,45 @@
+{
+  "type_id": "125",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-135 逐列建立 U-bolt/I-Rod 尺寸、扭矩、溫度級別與單點載重。designation 不含 I-Rod 並排數與材質溫度級。2026-07-31 回看原圖確認 L 為冠頂外緣至端部、P 為兩腳中心距；U-bolt 依 PI*P/2+2*(L-P/2-d1/2) 展開，連同圖示2只螺帽以碳鋼密度列高風險理論估重。U-bolt 成品材質/nut grade/供應商重量及 I-Rod hole offsets/profile density 仍未提供。",
+  "variation_axes": {
+    "i_rod_count": {
+      "label": "I-Rod 並排片數",
+      "kind": "choice",
+      "choices": ["", "1", "2", "3"]
+    },
+    "i_rod_temperature_class": {
+      "label": "I-Rod 溫度級",
+      "kind": "choice",
+      "choices": ["", "regular", "high_temp", "peek"]
+    }
+  },
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-125_D-135.pdf",
+      "revision": "1",
+      "temperature_classes": {
+        "regular": {"label": "THERMOPLASTIC I-ROD REGULAR", "maximum_temperature_C": 83},
+        "high_temp": {"label": "THERMOPLASTIC I-ROD HIGH TEMP", "maximum_temperature_C": 171},
+        "peek": {"label": "THERMOPLASTIC I-ROD PEEK", "maximum_temperature_C": 249}
+      },
+      "rows": {
+        "0.5": {"pipe_od_D_mm": 21.3, "bolt_diameter": "1/4in", "bolt_leg_L_mm": 65, "span_P_mm": 31.0, "thread_A_mm": 33, "i_rod_I_mm": 11.1, "i_rod_F_mm": 63.5, "hole_G": "3/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 4.07, "single_point_load_limit_kg": 3632},
+        "0.75": {"pipe_od_D_mm": 26.7, "bolt_diameter": "1/4in", "bolt_leg_L_mm": 71, "span_P_mm": 36.0, "thread_A_mm": 33, "i_rod_I_mm": 11.1, "i_rod_F_mm": 76.2, "hole_G": "3/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 4.07, "single_point_load_limit_kg": 3632},
+        "1": {"pipe_od_D_mm": 33.4, "bolt_diameter": "3/8in", "bolt_leg_L_mm": 75, "span_P_mm": 45.0, "thread_A_mm": 40, "i_rod_I_mm": 11.1, "i_rod_F_mm": 76.2, "hole_G": "1/2in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 9.49, "single_point_load_limit_kg": 3632},
+        "1.25": {"pipe_od_D_mm": 42.2, "bolt_diameter": "3/8in", "bolt_leg_L_mm": 92, "span_P_mm": 54.0, "thread_A_mm": 40, "i_rod_I_mm": 11.1, "i_rod_F_mm": 88.9, "hole_G": "1/2in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 9.49, "single_point_load_limit_kg": 3632},
+        "1.5": {"pipe_od_D_mm": 48.3, "bolt_diameter": "3/8in", "bolt_leg_L_mm": 97, "span_P_mm": 61.0, "thread_A_mm": 40, "i_rod_I_mm": 11.1, "i_rod_F_mm": 101.6, "hole_G": "1/2in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 9.49, "single_point_load_limit_kg": 3632},
+        "2": {"pipe_od_D_mm": 60.3, "bolt_diameter": "3/8in", "bolt_leg_L_mm": 110, "span_P_mm": 71.0, "thread_A_mm": 40, "i_rod_I_mm": 11.1, "i_rod_F_mm": 114.3, "hole_G": "1/2in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 9.49, "single_point_load_limit_kg": 3632},
+        "2.5": {"pipe_od_D_mm": 73.0, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 122, "span_P_mm": 94.0, "thread_A_mm": 40, "i_rod_I_mm": 11.1, "i_rod_F_mm": 127.0, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "3": {"pipe_od_D_mm": 88.9, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 138, "span_P_mm": 106.0, "thread_A_mm": 50, "i_rod_I_mm": 11.1, "i_rod_F_mm": 152.4, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "4": {"pipe_od_D_mm": 114.3, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 170, "span_P_mm": 130.0, "thread_A_mm": 60, "i_rod_I_mm": 11.1, "i_rod_F_mm": 177.8, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "5": {"pipe_od_D_mm": 141.3, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 191, "span_P_mm": 156.0, "thread_A_mm": 60, "i_rod_I_mm": 11.1, "i_rod_F_mm": 203.2, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "6": {"pipe_od_D_mm": 168.3, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 233, "span_P_mm": 183.0, "thread_A_mm": 65, "i_rod_I_mm": 11.1, "i_rod_F_mm": 228.6, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "8": {"pipe_od_D_mm": 219.1, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 290, "span_P_mm": 236.0, "thread_A_mm": 90, "i_rod_I_mm": 11.1, "i_rod_F_mm": 279.4, "hole_G": "5/8in", "i_rod_H_in": 1.0, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 3632},
+        "10": {"pipe_od_D_mm": 273.1, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 339, "span_P_mm": 306.0, "thread_A_mm": 95, "i_rod_I_mm": 17.5, "i_rod_F_mm": 342.9, "hole_G": "5/8in", "i_rod_H_in": 1.5, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 4540},
+        "12": {"pipe_od_D_mm": 323.9, "bolt_diameter": "1/2in", "bolt_leg_L_mm": 378, "span_P_mm": 340.0, "thread_A_mm": 95, "i_rod_I_mm": 17.5, "i_rod_F_mm": 406.4, "hole_G": "5/8in", "i_rod_H_in": 1.5, "tightening_torque_Nm": 20.34, "single_point_load_limit_kg": 4540}
+      }
+    }
+  }
+}

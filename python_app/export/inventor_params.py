@@ -25,7 +25,12 @@ from datetime import date
 from typing import Optional
 
 
-def extract_params(designation: str, type_id: str, support_qty: int = 1) -> Optional[dict]:
+def extract_params(
+    designation: str,
+    type_id: str,
+    support_qty: int = 1,
+    source_profile: str | None = None,
+) -> Optional[dict]:
     """從 Pipe Shoe 計算結果提取 Inventor 參數字典。
 
     回傳格式::
@@ -42,17 +47,34 @@ def extract_params(designation: str, type_id: str, support_qty: int = 1) -> Opti
     from core.pipe_shoe_engine import (
         PIPE_SHOE_TYPE_IDS,
         calculate,
+        get_fabrication_context,
         get_sizing_context,
     )
 
     if type_id not in PIPE_SHOE_TYPE_IDS:
         return None
 
-    ctx = get_sizing_context(designation, type_id)
+    ctx = get_sizing_context(
+        designation,
+        type_id,
+        source_profile=source_profile,
+    )
     if ctx is None:
         return None
 
-    result = calculate(designation, type_id)
+    result = calculate(
+        designation,
+        type_id,
+        source_profile=source_profile,
+    )
+    fabrication = (
+        result.meta.get("fabrication")
+        or get_fabrication_context(
+            designation,
+            type_id,
+            source_profile=source_profile,
+        )
+    )
     support_qty = max(1, int(support_qty or 1))
 
     rows: list[tuple] = []
@@ -76,6 +98,55 @@ def extract_params(designation: str, type_id: str, support_qty: int = 1) -> Opti
         f"{ctx['pipe_size_str']} / OD {ctx['OD_mm']:g} / SCH10S t={ctx['wall_mm']:g}",
         "圖面用：管路摘要",
     )
+    if fabrication is not None:
+        add_text(
+            "IEC_SourceProfile",
+            fabrication["source_profile"],
+            "加工圖依據：來源 profile",
+        )
+        add_text(
+            "IEC_SourceDrawing",
+            fabrication["source_drawing"],
+            "加工圖依據：原始圖號/檔名",
+        )
+        add_text(
+            "IEC_SourceRevision",
+            fabrication["drawing_revision"],
+            "加工圖依據：原圖版次",
+        )
+        add_text(
+            "IEC_FabricationReady",
+            "YES" if fabrication["fabrication_ready"] else "NO",
+            "是否已具備足以產生加工圖的幾何",
+        )
+        add_text(
+            "IEC_FabricationBranch",
+            fabrication["branch"],
+            "D-80/D-80B/D-80C 分支",
+        )
+        add_text(
+            "IEC_FabricationBlockers",
+            " | ".join(fabrication["blockers"]),
+            "尚缺的加工尺寸、輪廓或件號對應",
+        )
+        for key, value in sorted(fabrication.get("dimensions", {}).items()):
+            if isinstance(value, (str, int, float)):
+                unit = "mm" if key.endswith("_mm") else "ul"
+                add(f"fab_{key}", value, unit, f"來源圖加工參數：{key}")
+        if not fabrication["fabrication_ready"]:
+            add_text(
+                "IEC_Warnings",
+                result.error or "加工圖參數未完成",
+                "圖面用：停算原因",
+            )
+            return {
+                "params": rows,
+                "designation": designation,
+                "type_id": type_id,
+                "warnings": [result.error] if result.error else [],
+                "fabrication_ready": False,
+                "fabrication_blockers": list(fabrication["blockers"]),
+            }
 
     # ── 管鞋幾何 ──────────────────────────────────────────────────────────────
     add("HOPS_mm",       ctx["HOPS_mm"],         "mm", "管鞋高度 (管中心至底板底面)")
@@ -224,6 +295,16 @@ def extract_params(designation: str, type_id: str, support_qty: int = 1) -> Opti
         "designation": designation,
         "type_id":     type_id,
         "warnings":    list(result.warnings),
+        "fabrication_ready": (
+            fabrication["fabrication_ready"]
+            if fabrication is not None
+            else None
+        ),
+        "fabrication_blockers": (
+            list(fabrication["blockers"])
+            if fabrication is not None
+            else []
+        ),
     }
 
 

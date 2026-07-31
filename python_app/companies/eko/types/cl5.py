@@ -4,7 +4,7 @@
 import math
 from core.models import AnalysisResult
 from core.plate import add_plate_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_estimated_fastener_entry
 
 
 def _row(table, pipe):
@@ -25,6 +25,13 @@ def calculate(parsed, config, overrides=None):
     add_plate_entry(result, plate_a=dev_len, plate_b=row["E"], plate_thickness=row["t"],
                     plate_name="管夾", material=config.get("clamp_material", "A36"), plate_qty=1,
                     notes_zh=f"2半片彎板;帶寬{row['E']}x厚{row['t']};展開≈π(A{row['A']}+t)={dev_len}")
-    add_custom_entry(result, "螺栓連帽", row["bolt"], config.get("bolt_material", "A307-B 鍍鋅"),
-                     2, 0.0, unit="SET", remark="管夾兩側鎖固 ×2 (重量另計)", category="螺栓類")
+    add_estimated_fastener_entry(
+        result,
+        name="螺栓連帽",
+        spec=row["bolt"],
+        material=config.get("bolt_material", "A307-B 鍍鋅"),
+        quantity=2,
+        unit="SET",
+        remark="管夾兩側鎖固 ×2",
+    )
     return result

@@ -1,0 +1,59 @@
+{
+  "company": "Chung Wei Engineering Consulting",
+  "code": "PO",
+  "name": "PLATFORM OPENING PO1/PO2/PO3",
+  "drawing": "E1906-DSP-500-006 / SP-04~SP-06",
+  "source_file": "單張-本案有關/中威/SPECIAL SUPPORT Standard(R1)0220.pdf",
+  "revision": "R1 cover / PO sheets Rev.0",
+  "material": "ASTM A36",
+  "clearance_each_side_mm": 25,
+  "po1": {
+    "surface": "grating",
+    "L_values_mm": [90, 120, 150, 180, 210, 240, 270, 300],
+    "flat_bar_widths_mm": [50, 75],
+    "thickness_mm": 6,
+    "quantity_each": 2,
+    "total_weight_kg": {
+      "90": 1.06,
+      "120": 1.41,
+      "150": 1.77,
+      "180": 2.12,
+      "210": 2.47,
+      "240": 2.83,
+      "270": 3.18,
+      "300": 3.53
+    }
+  },
+  "po2": {
+    "surface": "grating",
+    "L_values_mm": [400, 500, 600],
+    "flat_bar_width_mm": 125,
+    "thickness_mm": 6,
+    "quantity": 1,
+    "developed_length_formula": "pi * (L + 6)",
+    "total_weight_kg": {
+      "400": 7.4,
+      "500": 9.2,
+      "600": 11.1
+    }
+  },
+  "po3": {
+    "surface": "checker_plate",
+    "L_values_mm": [100, 200, 300, 400, 500, 600],
+    "flat_bar_width_mm": 25,
+    "thickness_mm": 6,
+    "quantity": 1,
+    "developed_length_formula": "pi * (L + 6)",
+    "total_weight_kg": {
+      "100": 0.392,
+      "200": 0.762,
+      "300": 1.132,
+      "400": 1.502,
+      "500": 1.872,
+      "600": 2.242
+    }
+  },
+  "version": "1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐頁核對SPECIAL SUPPORT Standard(R1)0220第2~4頁。OPEN-□吋依使用者確認為非標準PO清單碼：□是公稱管徑，D取pipe OD+2xinsulation或flange OD，L至少D+兩側各25mm並向上選PO表列值。因來源為E19-06而目前專案為E25-24，結果一律列高風險暫算。"
+}

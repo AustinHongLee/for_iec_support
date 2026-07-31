@@ -1,9 +1,16 @@
 {
   "type_id": "56",
+  "_version": "1.0.0",
   "source": "data/type56_table.py",
   "migrated": "2026-04-29",
-  "data_updated_at": "2026-05-06",
-  "data_update_note": "依最新 D-67 判讀重整 Type 56 plate/member 分支與 3~24in BOM 數量",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30複驗全重製：保留D-67/D-67A表列A~R。僅<=2-1/2吋PL100x100x6x2為完整BOM；3吋以上撤除無圖據矩形拆料與完整母H重量，改為零重量Member C assembly reference。26~42另列D-91的120°/L400/t>=12 reference，但母管材質與實厚未定前不計重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawings": ["單張-本案有關/中威/TYPE-56_D-67.pdf", "單張-本案有關/中威/TYPE-56_D-67A.pdf"],
+      "revision": "1"
+    }
+  },
   "TYPE56_TABLE_1": {
     "0.75": {
       "A": null,

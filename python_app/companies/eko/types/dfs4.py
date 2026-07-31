@@ -4,7 +4,7 @@
 from core.models import AnalysisResult, set_remark
 from core.plate import add_plate_entry
 from core.pipe import add_pipe_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_estimated_fastener_entry
 from core.material_specs import SUPPORT_PIPE_A53GRB
 
 _VALID_FIX = {"A", "B", "E", "W"}
@@ -45,14 +45,37 @@ def calculate(parsed, config, overrides=None):
     b = config.get("bolts", {})
     qty = config.get("bolt_qty", 4)
     if fix == "A":
-        add_custom_entry(result, "L型基礎螺栓", b["anchor_bolt"]["spec"], b["anchor_bolt"]["material"],
-                         qty, 0.0, unit="SET", remark="適用 DFS4A (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="L型基礎螺栓",
+            spec=b["anchor_bolt"]["spec"],
+            material=b["anchor_bolt"]["material"],
+            quantity=qty,
+            kind="foundation_bolt",
+            unit="SET",
+            remark="適用 DFS4A",
+        )
     elif fix == "B":
-        add_custom_entry(result, "螺栓連帽", b["nut_bolt"]["spec"], b["nut_bolt"]["material"],
-                         qty, 0.0, unit="SET", remark="適用 DFS4B (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="螺栓連帽",
+            spec=b["nut_bolt"]["spec"],
+            material=b["nut_bolt"]["material"],
+            quantity=qty,
+            unit="SET",
+            remark="適用 DFS4B",
+        )
     elif fix == "E":
-        add_custom_entry(result, "擴展螺栓", b["exp_bolt"]["spec"], b["exp_bolt"]["material"],
-                         qty, 0.0, unit="SET", remark="適用 DFS4E (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="擴展螺栓",
+            spec=b["exp_bolt"]["spec"],
+            material=b["exp_bolt"]["material"],
+            quantity=qty,
+            kind="expansion_bolt",
+            unit="SET",
+            remark="適用 DFS4E",
+        )
     else:
         result.warnings.append("DFS4W 焊接固定：底板免鑽孔、不含固定螺栓")
     return result

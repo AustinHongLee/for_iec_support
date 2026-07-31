@@ -1,5 +1,9 @@
 {
   "type_id": "41",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對中威D-49；兩份中鼎無圖。Member1在41-4~9均為H150，舊41-5~7 L75錯誤已修正。主梁圖示長度為L+200；Fig.B brace切長與base plate完整平面尺寸未標，改為blocker，不再用Lx1.414或猜正方板。M-45 expansion bolt 已具英制直徑與毫米長度者列理論估重，供應商成品重量待確認。",
+  "source_profiles": {"cw_e25_24_hp6":{"drawing":"單張-本案有關/中威/TYPE-41_D-49.pdf","revision":"1"}},
   "source": "data/type41_table.py",
   "migrated": "2026-04-29",
   "TYPE41_TABLE": {
@@ -54,11 +58,11 @@
     "41-5": {
       "support_no": "41-5",
       "L": 610,
-      "member1": "L75*75*9",
+      "member1": "H150*150*7",
       "member2": "L75*75*9",
       "base_plate_t": 16,
       "exp_bolt_dia": "5/8\"",
-      "bolt_dist": 200,
+      "bolt_dist": 250,
       "weld_size": 6,
       "b": 30,
       "fig": "B"
@@ -66,11 +70,11 @@
     "41-6": {
       "support_no": "41-6",
       "L": 915,
-      "member1": "L75*75*9",
+      "member1": "H150*150*7",
       "member2": "L75*75*9",
       "base_plate_t": 16,
       "exp_bolt_dia": "5/8\"",
-      "bolt_dist": 200,
+      "bolt_dist": 250,
       "weld_size": 6,
       "b": 30,
       "fig": "B"
@@ -78,11 +82,11 @@
     "41-7": {
       "support_no": "41-7",
       "L": 1220,
-      "member1": "L75*75*9",
-      "member2": "L100*100*10",
+      "member1": "H150*150*7",
+      "member2": "L75*75*9",
       "base_plate_t": 19,
       "exp_bolt_dia": "3/4\"",
-      "bolt_dist": 230,
+      "bolt_dist": 250,
       "weld_size": 6,
       "b": 35,
       "fig": "B"

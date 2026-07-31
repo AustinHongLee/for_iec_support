@@ -1,12 +1,33 @@
 {
   "type_id": "51",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "2026-07-30複驗重製：D-62範圍修正為3/4~24，圖上不存在1/2；22A 24吋H修正350。D-62A channel切長仍須member_cut_length_mm。中威D-62A的80°弧與其引用D-91的120°互相衝突，改列零重量reference並保持BOM blocked；22A 120°且D-91明示NOT FURNISHED。2026-07-31依本專案決議，中威1/2吋可高風險借用3/4吋列暫算，但正式BOM、下料與加工圖維持阻擋。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawings": ["單張-本案有關/中威/TYPE-51_D-62.pdf", "單張-本案有關/中威/TYPE-51_D-62A.pdf"],
+      "revision": "1",
+      "member_overrides": {},
+      "high_risk_size_substitutions": {"0.5": 0.75},
+      "saddle_angle_deg": 80,
+      "reinforcing_pad": "included_with_conflict"
+    },
+    "ctci_22a_5123a": {
+      "drawings": ["單張-本案有關/中鼎/22A_5123A/TYPE-51_D-62.pdf", "單張-本案有關/中鼎/22A_5123A/TYPE-51_D-62A.pdf"],
+      "revision": "1",
+      "member_overrides": {
+        "8":{"member":"L75*75*9"},"10":{"member":"L75*75*9"},
+        "12":{"member":"L75*75*9"},"14":{"member":"L75*75*9"},
+        "16":{"member":"L75*75*9"},"18":{"member":"L75*75*9"},
+        "20":{"member":"L75*75*9"},"24":{"member":"L75*75*9","H":350}
+      },
+      "saddle_angle_deg": 120,
+      "reinforcing_pad": "not_furnished"
+    }
+  },
   "source": "data/type51_table.py",
   "migrated": "2026-04-29",
   "TYPE51_TABLE": {
-    "0.5": {
-      "member": null,
-      "H": 25
-    },
     "0.75": {
       "member": null,
       "H": 25

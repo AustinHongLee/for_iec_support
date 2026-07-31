@@ -1,0 +1,92 @@
+{
+  "type_id": "105",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威與 20E D-114/D-115 分開建立 Member M/N/P。designation L 僅列 field-fit 備料；FIG-A 的 N 可精算，FIG-C/E 的 P 只有 300 MAX envelope，沒有 finished cut，不以 300 假算重量。H294/H390 未有核定 kg/m，保留零重量 reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "geometry_drawing": "TYPE-105_D-114.pdf",
+      "table_drawing": "TYPE-105_D-115.pdf",
+      "revision": "1",
+      "rows": {
+        "L50": {
+          "member_m": {"kind": "Angle", "spec": "50*50*6", "source_spec": "L50x50x6", "weight_ready": true},
+          "member_n": {"kind": "Plate", "source_spec": "PL60x60x6", "length_mm": 60, "width_mm": 60, "thickness_mm": 6},
+          "member_p": "L50x50x6"
+        },
+        "L65": {
+          "member_m": {"kind": "Angle", "spec": "65*65*6", "source_spec": "L65x65x6", "weight_ready": true},
+          "member_n": {"kind": "Plate", "source_spec": "PL80x80x6", "length_mm": 80, "width_mm": 80, "thickness_mm": 6},
+          "member_p": "L65x65x6"
+        },
+        "L75": {
+          "member_m": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "65*65*6", "source_spec": "L65x65x6", "length_mm": 40},
+          "member_p": "L75x75x9"
+        },
+        "C100": {
+          "member_m": {"kind": "Channel", "spec": "100*50*5", "source_spec": "C100x50x5", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "65*65*6", "source_spec": "L65x65x6", "length_mm": 65},
+          "member_p": "L75x75x9"
+        },
+        "C125": {
+          "member_m": {"kind": "Channel", "spec": "125*65*6", "source_spec": "C125x65x6", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "65*65*6", "source_spec": "L65x65x6", "length_mm": 80},
+          "member_p": "L75x75x9"
+        },
+        "H150": {
+          "member_m": {"kind": "H Beam", "spec": "150*150*7", "source_spec": "H150x150x7x10", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "length_mm": 90},
+          "member_p": null
+        },
+        "H194": {
+          "member_m": {"kind": "H Beam", "spec": "194*150*6", "source_spec": "H194x150x6x9", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "100*100*10", "source_spec": "L100x100x10", "length_mm": 135},
+          "member_p": null
+        },
+        "H294": {
+          "member_m": {"kind": "H Beam", "spec": "294*200*8", "source_spec": "H294x200x8x12", "weight_ready": false},
+          "member_n": {"kind": "Angle", "spec": "100*100*10", "source_spec": "L100x100x10", "length_mm": 200},
+          "member_p": null
+        },
+        "H390": {
+          "member_m": {"kind": "H Beam", "spec": "390*300*10", "source_spec": "H390x300x10x16", "weight_ready": false},
+          "member_n": {"kind": "Angle", "spec": "100*100*10", "source_spec": "L100x100x10", "length_mm": 300},
+          "member_p": null
+        }
+      }
+    },
+    "ctci_20e4588": {
+      "geometry_drawing": "TYPE-105_D-114.pdf",
+      "table_drawing": "TYPE-105_D-115.pdf",
+      "revision": "1A",
+      "rows": {
+        "L50": {
+          "member_m": {"kind": "Angle", "spec": "50*50*6", "source_spec": "L50x50x6", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "40*40*5", "source_spec": "L40x40x5", "length_mm": 40},
+          "member_p": "L50x50x6"
+        },
+        "L75": {
+          "member_m": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "50*50*6", "source_spec": "L50x50x6", "length_mm": 40},
+          "member_p": "L75x75x9"
+        },
+        "C100": {
+          "member_m": {"kind": "Channel", "spec": "100*50*5", "source_spec": "C100x50x5", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "length_mm": 65},
+          "member_p": "L75x75x9"
+        },
+        "C125": {
+          "member_m": {"kind": "Channel", "spec": "125*65*6", "source_spec": "C125x65x6", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "length_mm": 80},
+          "member_p": "L75x75x9"
+        },
+        "C150": {
+          "member_m": {"kind": "Channel", "spec": "150*75*9", "source_spec": "C150x75x9", "weight_ready": true},
+          "member_n": {"kind": "Angle", "spec": "75*75*9", "source_spec": "L75x75x9", "length_mm": 80},
+          "member_p": "L75x75x9"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type_id": "81",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-97/D-98 建立 Type 81。D-97 復用同來源 D-81 clamp/gasket/member core；D-98 保留 D-81A 多片 saddle reference。舊 M-4/M-47 集中估重停用，未完成 field-cut 與多片輪廓前不宣稱加工圖完成。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-81_D-97.pdf",
+      "large_drawing": "TYPE-81_D-98.pdf",
+      "revision": "1",
+      "small_detail_no": "97",
+      "large_detail_no": "98",
+      "small_sizes": [0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24],
+      "large_sizes": [26, 28, 30, 32, 36, 40, 42]
+    }
+  }
+}

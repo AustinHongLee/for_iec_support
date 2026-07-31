@@ -98,7 +98,9 @@ def get_type73_spring_data(mark: str) -> dict | None:
     if not row:
         return None
     item = deepcopy(row)
-    item["unit_weight_kg"] = _estimate_spring_weight_kg(item)
+    item["unit_weight_kg"] = 0.0
+    item["retired_ideal_helix_estimate_kg"] = _estimate_spring_weight_kg(item)
+    item["weight_status"] = "blocked_finished_spring_weight_not_given"
     return item
 
 
@@ -111,6 +113,12 @@ def build_type73_strap_item(line_size) -> dict | None:
     row = get_type73_data(line_size)
     if not row:
         return None
+    width_mm, thickness_mm = _parse_bar_size(row["steel_bar_size"])
+    hole_count = get_type73_bolt_count(line_size)
+    hole_diameter_mm = (size_to_float(row["bolt_dia"]) or 0) * 25.4 + 3
+    gross_area_mm2 = row["A"] * width_mm
+    hole_area_mm2 = hole_count * math.pi * (hole_diameter_mm / 2) ** 2
+    net_area_mm2 = gross_area_mm2 - hole_area_mm2
     return {
         "name": "STRAP",
         "spec": (
@@ -119,8 +127,19 @@ def build_type73_strap_item(line_size) -> dict | None:
         ),
         "material": TYPE73_MATERIAL,
         "category": "鋼板類",
-        "unit_weight_kg": _estimate_flat_bar_weight_kg(row["A"], row["steel_bar_size"]),
-        "weight_status": "estimated_from_A_times_bar_size",
+        "blank_length_mm": row["A"],
+        "blank_width_mm": width_mm,
+        "thickness_mm": thickness_mm,
+        "hole_count": hole_count,
+        "hole_diameter_mm": hole_diameter_mm,
+        "gross_area_mm2": gross_area_mm2,
+        "cutout_area_mm2": hole_area_mm2,
+        "net_area_mm2": net_area_mm2,
+        "unit_weight_kg": round(
+            net_area_mm2 * thickness_mm * STEEL_DENSITY_KG_PER_MM3,
+            2,
+        ),
+        "weight_status": "calculated_from_M53_developed_AxF_minus_Dplus3_holes",
     }
 
 
@@ -138,4 +157,3 @@ def estimate_type73_gusset_weight_kg(row: dict) -> float:
 
 def list_type73_sizes() -> list[str]:
     return list(TYPE73_TABLE.keys())
-

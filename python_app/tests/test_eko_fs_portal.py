@@ -82,16 +82,14 @@ def test_fs15_gamma_two_pieces_no_selfubolt():
     assert len(angs) == 2 and {a.length for a in angs} == {600, 300}
     # FS15 本體★不自帶 U型螺栓(型式H/V皆然)
     assert not _n(rh, "U型螺栓")
-    # 型式V：不自帶 U型螺栓，改提醒「另以 UB1 標註」；帶管徑→附參考規格
+    # 型式V：FS15 圖號不得夾帶管徑，U型螺栓應另列 UB1。
     rv = _a("FS15W-V-1\"-2-1500H")
-    assert not _n(rv, "U型螺栓")                        # 不自帶
-    assert any("UB1" in w for w in rv.warnings)         # 提醒另計
-    assert any("M10" in w for w in rv.warnings)         # 帶管徑1"→參考規格
-    assert len(_n(rv, "角鋼")) == 2                    # 立柱+頂臂
+    assert rv.error and "圖面格式沒有" in rv.error
+    assert not rv.entries
 
 
-def test_fs15_serial1_over_h_warns():
-    # 序1(L50×50×6) 荷重表 H1500 不可 → 警告
+def test_fs15_serial1_over_h_blocks():
+    # 序1(L50×50×6) 荷重表 H1500 不可，會影響選鋼，必須阻擋。
     r = _a("FS15A-H-1-1500H-300H1")
-    assert not r.error
-    assert any("超出荷重表上限" in w for w in r.warnings)
+    assert r.error and "序號 1" in r.error
+    assert not r.entries

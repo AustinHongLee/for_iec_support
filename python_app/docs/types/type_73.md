@@ -1,63 +1,19 @@
 # Type 73 — Spring Strap Support
 
 | 項目 | 內容 |
-|------|------|
-| 圖號 | D-88 / D-88A |
-| 圖名 | DETAIL OF PIPE SUPPORT |
-| 分類 | Spring strap support |
-| 適用範圍 | 1"~24" |
-| 狀態 | 已實作 calculator；多數重量為幾何估算 |
+|---|---|
+| 圖面 | D-88 / D-88A / M-53 |
+| 編號 | `73-{line_size}B-{S|G}` |
+| 範圍 | 1"~24" |
+| 狀態 | M-53 strap 淨重可精算；其餘構件維持阻擋 |
 
----
+M-53 的 `A` 是平板展開總長，因此 strap 使用 `A×F×T`，並扣除圖面 `D+3` 孔，可輸出淨面積、孔資料與重量。
 
-## 系統本質
+以下舊估算已停用：
 
-Type 73 是帶 spring coil 的 strap support。圖面分成 slide / guide 兩種孔位邏輯，主體 strap 參照 `M-53`，spring data 在 D-88A。
+- D-88A spring 不再以理想螺旋線長推成品重量。
+- `G` 是組立高度，不是 stud finished cut；需 `stud_cut_length_mm`。
+- Washer 沒有完整規格／單重。
+- 6" 以上 gusset 的 E/H/R 與「same thickness as bar」不足以唯一建立片數及淨輪廓，不再用 `E×H/2` 三角形估重。
 
-主要 callout：
-
-- `STRAP SEE M-53`
-- `"D" SIZE STUD BOLTS`
-- `WASHERS`
-- `GUSSET SAME THICKNESS AS BAR FOR 6" LINES & LARGER`
-- `SPRING MARK NO. FOR ENG. DATA SEE SHT D-88A`
-
----
-
-## 編碼格式
-
-```text
-73-{line_size}B-{S|G}
-```
-
-範例：
-
-```text
-73-6B-G
-```
-
-| 段位 | 例 | 意義 |
-|------|----|------|
-| `73` | `73` | Type number |
-| line size | `6B` | 管徑 |
-| support mode | `G` | `S` = slide support，`G` = guide support |
-
----
-
-## Calculator Handoff
-
-| 構件 | 來源 | 精度 |
-|------|------|------|
-| STRAP | Type 73 table + M-53 designation | 幾何估算，`M-53` 尚非 weight-ready |
-| SPRING COIL | D-88A spring coil table | wire geometry calculated |
-| STUD BOLT | D-88 `D` / `G` | rod geometry estimate |
-| WASHER | D-88 callout | placeholder estimate |
-| GUSSET | D-88 table `E/H`，6" 以上 | triangular plate estimate |
-
----
-
-## 殘留風險
-
-- PDF 無文字層，尺寸表由 rendered bitmap AI visual transcription 建立
-- M-53 目前只有 dimension lookup，沒有 source unit-weight table
-- Baseplate / hole detail A/B/C 目前只以 warnings 註記，未拆成完整製造件
+所以目前只有 strap 可標為 fabrication-ready；整組仍不是完整 BOM。

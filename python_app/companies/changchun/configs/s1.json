@@ -1,0 +1,20 @@
+{
+  "company": "Chang Chun owner standard",
+  "code": "S1",
+  "name": "管蹄 S1",
+  "drawing": "DES-M15172 / S1",
+  "source_file": "單張-本案有關/長春/S1.pdf",
+  "revision": "06.13'08",
+  "pipe_min_in": 0.5,
+  "pipe_max_in": 24,
+  "stiffener_min_size_in": 12,
+  "bands": [
+    {"max_size": 2.5, "stem_t": 6, "stem_L": 150, "base_t": 6, "base_L": 150, "base_W": 75, "stiff_t": 0, "stiff_W": 0, "reinf_t": 3, "reinf_L": 200},
+    {"max_size": 8, "stem_t": 9, "stem_L": 300, "base_t": 9, "base_L": 300, "base_W": 150, "stiff_t": 0, "stiff_W": 0, "reinf_t": 6, "reinf_L": 350},
+    {"max_size": 16, "stem_t": 12, "stem_L": 250, "base_t": 12, "base_L": 300, "base_W": 300, "stiff_t": 12, "stiff_W": 200, "reinf_t": 9, "reinf_L": 350},
+    {"max_size": 24, "stem_t": 12, "stem_L": 250, "base_t": 12, "base_L": 300, "base_W": 300, "stiff_t": 12, "stiff_W": 250, "reinf_t": 9, "reinf_L": 350}
+  ],
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依新寄DES-M15172 S1逐頁重建；10吋仍採無加強板型式，12~24吋才加入兩片加強板，與益高S1分流。"
+}

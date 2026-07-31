@@ -9,5 +9,6 @@
     {"max_size":16,"stem_t":12,"stem_L":250,"base_t":12,"base_L":300,"base_W":300,"stiff_t":12,"stiff_W":200,"reinf_t":9,"reinf_L":350},
     {"max_size":24,"stem_t":12,"stem_L":250,"base_t":12,"base_L":300,"base_W":300,"stiff_t":12,"stiff_W":250,"reinf_t":9,"reinf_L":350}
   ],
-  "version":"1.0","data_updated_at":"2026-07-21","data_update_note":"依 S1.pdf 4段(子代理核對)。管蹄柱高與加強板高=H;補強板弧寬需管OD,預設不出(以 sus_pipe override 啟用)。"
+  "validation":{"required":["pipe","H"],"allowed":["pipe","H"],"pipe":{"min":0.5,"max":24}},
+  "version":"1.1","data_updated_at":"2026-07-27","data_update_note":"v1.1 依圖號格式強制管徑與H，避免缺H時只算部分鋼構。原資料依 S1.pdf 4段；管蹄柱高與加強板高=H;補強板弧寬需管OD,預設不出(以 sus_pipe override 啟用)。"
 }

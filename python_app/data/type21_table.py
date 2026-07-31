@@ -32,9 +32,8 @@ FIG_L_MAP = {
     for k, v in _DATA["FIG_L_MAP"].items()
 }
 
-# MEMBER_H_MAX
+# Backward-compatible default-source aliases.
 MEMBER_H_MAX = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
-    for k, v in _DATA["MEMBER_H_MAX"].items()
+    key: value["H_MAX"]
+    for key, value in _DATA["CW_MEMBER_TABLE"].items()
 }
-

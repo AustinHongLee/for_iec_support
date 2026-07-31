@@ -1,0 +1,35 @@
+{
+  "type_id": "03C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-3 建立 2~4in adjustable cold stanchion。保存 H/100、N-9 lower component、2in SCH.40 dummy leg 與 1-5/8x150 full-thread adjuster；H/接觸輪廓未定時不計重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/03C.pdf",
+      "drawing_no": "C-3",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-3"],
+      "title": "C-3 TYPE 03C ADJUSTABLE COLD STANCHION",
+      "component_id": "C3-TYPE03C-ASSEMBLY",
+      "source_spec": "2in TO 4in; 5C TO -9C",
+      "designation_variants": [
+        {"fields": [{"name": "line_size_in", "kind": "pipe_size"}, {"kind": "height_lower"}]}
+      ],
+      "designation_error": "Type 03C 格式應為 03C-{LINE}B-{H/100}{N9 LOWER}",
+      "allowed_values": {"line_size_in": [2, 3, 4]},
+      "static_parameters": {
+        "supporting_pipe": "2in SCH.40",
+        "full_thread_adjuster": "1-5/8in x 150 mm",
+        "rest_interface": "REST ON PLATE",
+        "weld_mm": 6
+      },
+      "references": ["N-9 LOWER COMPONENT"],
+      "blockers": [
+        "H shall be cut to suit in field",
+        "dummy-leg weld-nut/rest-plate details and supplier hardware weight are incomplete",
+        "supported-line attachment contour and N-9 lower component recipe remain unresolved"
+      ]
+    }
+  }
+}

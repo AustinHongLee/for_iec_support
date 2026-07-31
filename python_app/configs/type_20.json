@@ -1,20 +1,35 @@
 {
   "type_id": "20",
-  "source": "data/type20_table.py",
+  "_version": "1.1.0",
+  "source": "三來源 TYPE-20_D-22.pdf",
   "migrated": "2026-04-29",
-  "MEMBER_H_MAX": {
-    "L50": 1500,
-    "L65": 1500,
-    "L75": 2000,
-    "C100": 3000
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三份D-22。中威與兩份中鼎採各自member/H(MAX)。Slot width=U-bolt rod size+3、半長30、Z依supported line size；designation不含line size/rod size時保留blocker；D-80與standard U-bolt不供應。2026-07-31 起 H上限採有限外插分級，未表列member仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {"drawing": "單張-本案有關/中威/TYPE-20_D-22.pdf", "revision": "1", "member_table": "CW_MEMBER_TABLE"},
+    "ctci_22a_5123a": {"drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-20_D-22.pdf", "revision": "1", "member_table": "CTCI_MEMBER_TABLE"},
+    "ctci_20e4588": {"drawing": "單張-本案有關/中鼎/長春_Type/TYPE-20_D-22.pdf", "revision": "1", "member_table": "CTCI_MEMBER_TABLE"}
   },
-  "Z_TABLE": {
-    "2": 76,
-    "3": 104,
-    "4": 130,
-    "6": 184,
-    "8": 235,
-    "10": 286,
-    "12": 340
-  }
+  "fabrication_contract": {
+    "slot_count": 2,
+    "slot_half_length_mm": 30,
+    "slot_length_mm": 60,
+    "slot_width_formula": "U-BOLT ROD SIZE + 3mm",
+    "left_detail_dimension_mm": 80,
+    "right_detail_dimension_mm": 30,
+    "fillet_weld_mm": 6,
+    "not_furnished": ["D-80 interface", "STANDARD U-BOLT", "WASHER/U-BOLT assembly"]
+  },
+  "CW_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 1500},
+    "L65": {"section_type": "Angle", "lookup_dim": "65*65*6", "full_spec": "L65X65X6", "H_MAX": 1500},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 2000},
+    "C100": {"section_type": "Channel", "lookup_dim": "100*50*5", "full_spec": "C100X50X5", "H_MAX": 3000}
+  },
+  "CTCI_MEMBER_TABLE": {
+    "L50": {"section_type": "Angle", "lookup_dim": "50*50*6", "full_spec": "L50X50X6", "H_MAX": 1000},
+    "L75": {"section_type": "Angle", "lookup_dim": "75*75*9", "full_spec": "L75X75X9", "H_MAX": 1500},
+    "C125": {"section_type": "Channel", "lookup_dim": "125*65*6", "full_spec": "C125X65X6X8", "H_MAX": 2000}
+  },
+  "Z_TABLE": {"2": 76, "3": 104, "4": 130, "6": 184, "8": 235, "10": 286, "12": 340}
 }

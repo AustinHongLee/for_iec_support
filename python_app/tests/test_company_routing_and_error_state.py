@@ -47,9 +47,10 @@ def test_error_row_has_prominent_background_and_company():
         table.set_project(rows, project_result)
 
         assert table.item(0, 9).text() == "益高"
-        assert table.item(0, 8).text().startswith("益高型號 CS1")
-        assert table.item(0, 8).font().bold()
-        assert table.item(0, 8).background().color().name().upper() == "#FFF0F0"
+        assert table.item(0, 6).text() == ""
+        assert table.item(0, 11).text().startswith("益高型號 CS1")
+        assert table.item(0, 11).font().bold()
+        assert table.item(0, 11).background().color().name().upper() == "#FFF0F0"
         assert table.rowHeight(0) == 32
     finally:
         table.close()

@@ -1,0 +1,12 @@
+{
+  "type_id": "78",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "複驗 D-93 與 M-54：保留 Fig.1 尺寸與 (A) 焊接語意，停用把成形後 B 跨距當平板展開長的 B*C*T 重量。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-78_D-93.pdf",
+      "revision": "1"
+    }
+  }
+}

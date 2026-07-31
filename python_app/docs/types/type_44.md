@@ -1,5 +1,7 @@
 # Type 44 — 曲面設備直接斜撐支撐 (Vessel Direct Inclined Support)
 
+> **2026-07-29 原圖複核更正**：框架 BOM 攤開為縱向 Channel 2 支（各 `H+Q+3`）、橫向 Channel 2 支（各 `2Q+6`）、Clip Plate 2 片與 Bolt 2 支；不是單支 Channel／單片 Plate。MIN. CHANNEL 選型圖尚未完整轉成矩陣，保留人工核對 blocker。
+
 > **圖號**: 44 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **圖面頁**: D-53 (1/1)
 > **日期**: 12/12/19

@@ -132,6 +132,15 @@
   "Hmax": 900,
   "applicable": "3/4\"~24\" 可焊"
  },
+ "validation": {
+  "required": ["fix", "pipe", "H"],
+  "allowed": ["fix", "pipe", "H", "H1"],
+  "fixes": ["A", "B", "E", "N", "W"],
+  "pipe": {"min": 0.75, "max": 24},
+  "dimensions": {
+   "H": {"max": 900, "max_inclusive": false}
+  }
+ },
  "extra_warnings": [
   "禁用:設計溫度<-30或>400°C、壓力>70kg/cm²G;H須>4C+D/2+25"
  ],
@@ -139,11 +148,11 @@
   "pattern": "FS5{A/B/E/N/W}-□\"-□H-□H1",
   "example": "FS5N-4\"-600H"
  },
- "data_update_note": "依FS5.pdf",
+ "data_update_note": "依FS5.pdf。2026-07-27加入圖面格式、3/4~24吋與嚴格H<900驗證；H下限4C+D/2+25仍需保溫厚度C輸入後才能完整檢核。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

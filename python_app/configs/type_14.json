@@ -1,7 +1,31 @@
 {
   "type_id": "14",
-  "source": "data/type14_table.py",
+  "_version": "1.1.0",
+  "source": "單張-本案有關/中威/TYPE-14_D-14.pdf + TYPE-14_D-15.pdf",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對中威 D-14/D-15；22A/20E4588無Type 14。L是6t Stopper外側總長，Channel切長L-12；Wing與Stopper採淨面積；10/12吋雙Channel間距仍缺。2026-07-31 起 L/H上限採有限外插分級；缺來源圖仍硬停止。EXP.BOLT維持零假單重與加工blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-14_D-14.pdf",
+      "limit_drawing": "單張-本案有關/中威/TYPE-14_D-15.pdf",
+      "revision": "1",
+      "table_source": "TYPE14_TABLE",
+      "limit_source": "TYPE14_LH_LIMITS"
+    }
+  },
+  "fabrication_contract": {
+    "stopper_thickness_mm": 6,
+    "stopper_quantity": 2,
+    "stopper_chamfer_mm": 10,
+    "wing_quantity": 4,
+    "wing_P_basis": "FIELD CUT TO SUIT (D-14 NOTE 3)",
+    "anchor_quantity": 4,
+    "anchor_unit_weight_status": "not provided",
+    "weld_mm": 6,
+    "weep_hole_diameter_mm": 6,
+    "weep_hole_center_offset_mm": null
+  },
   "TYPE14_LH_LIMITS": {
     "2": [
       [

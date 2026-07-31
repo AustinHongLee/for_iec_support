@@ -1,16 +1,15 @@
-"""N-20 Cradle No. of Cold Support metadata table."""
-from .component_metadata_registry import build_metadata_component, clone_metadata_component
+"""N-20 cradle selection lookup (small pipe, insulation 25~75 mm)."""
+
+from .cold_support_core_tables import get_cradle_selection, get_selection_sheet_component
 
 
-N20_TABLE = build_metadata_component(
-    component_id="N-20",
-    name_en="CRADLE NO. OF COLD SUPPORT.1",
-    category="component_cold",
-    pdf_file="N-20-CRADLE NO. OF COLD SUPPORT.1.pdf",
-    summary="Metadata-only intake entry for N-20 cold-support cradle.",
-    notes=["Cradle dimensions require PDF visual transcription."],
-)
+N20_TABLE = get_selection_sheet_component("N-20")
 
 
 def get_n20_component() -> dict:
-    return clone_metadata_component(N20_TABLE)
+    return get_selection_sheet_component("N-20")
+
+
+def get_n20_by_pipe_and_insulation(pipe_size_in, insulation_thickness_mm):
+    row = get_cradle_selection(pipe_size_in, insulation_thickness_mm)
+    return row if row and row["component_id"] == "N-20" else None

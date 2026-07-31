@@ -1,0 +1,40 @@
+{
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "建立 M-42/M-42A/M-43 來源別可用型式與扣件規格。板尺寸沿用已核對的 M-43 共通尺寸列；22A 開放已核對型式，20E4588另依D-24直接指示開放Type P。2026-07-31完整M×L的20E machine bolt改列可追溯理論估重；中威/22A expansion bolt只有直徑、沒有長度，維持0kg而不再套1kg/組假預設。",
+  "profiles": {
+    "cw_e25_24_hp6": {
+      "allowed_types": ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "U", "V", "W", "X", "Y"],
+      "drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-42A.pdf / M-43.pdf",
+      "revision": "1",
+      "fastener_kind": "EXP.BOLT",
+      "fastener_specs": {
+        "1_6": "5/8\"",
+        "8_10": "3/4\"",
+        "12_plus": "7/8\""
+      }
+    },
+    "ctci_22a_5123a": {
+      "allowed_types": ["B", "C", "E", "F", "G", "H", "K", "L", "R", "S", "T"],
+      "drawing": "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-42A.pdf / M-43.pdf",
+      "revision": "1",
+      "fastener_kind": "EXP.BOLT",
+      "fastener_specs": {
+        "1_6": "5/8\"",
+        "8_10": "3/4\"",
+        "12_plus": "1\""
+      }
+    },
+    "ctci_20e4588": {
+      "allowed_types": ["B", "C", "E", "F", "G", "H", "K", "L", "P", "R", "S", "T"],
+      "drawing": "M42.pdf pages 1-3",
+      "revision": "1A/1",
+      "fastener_kind": "MACH.BOLT W/ HEX NUT",
+      "fastener_specs": {
+        "1_6": "M16 X 40",
+        "8_10": "M20 X 60",
+        "12_plus": "M24 X 60"
+      }
+    }
+  }
+}

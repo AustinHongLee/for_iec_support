@@ -2,7 +2,7 @@
 混凝土墩(1:2:4)。體積=平面積×高(高由 H 或預設)。TYPE E=籃式過濾器基礎(M×N)+L型基礎螺栓×2。
 資料來源 configs/cm1.json。被眾多 FS 引用(『詳見 CM1x』);多數情況高度由父支撐 H1 帶入。"""
 from core.models import AnalysisResult
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 
 
 def calculate(parsed, config, overrides=None):
@@ -34,6 +34,14 @@ def calculate(parsed, config, overrides=None):
         result.warnings.append(f"未指定高度,以預設 {height}mm 概算(實務由 H1/現場決定)")
     if t == "E":
         a = config.get("type_e_anchor", {})
-        add_custom_entry(result, "L型基礎螺栓", a.get("spec", "M12x200L"), a.get("material", "A307-B"),
-                         a.get("qty", 2), 0.0, unit="SET", remark="籃式過濾器基礎 (重量另計)", category="螺栓類")
+        add_estimated_fastener_entry(
+            result,
+            name="L型基礎螺栓",
+            spec=a.get("spec", "M12x200L"),
+            material=a.get("material", "A307-B"),
+            quantity=a.get("qty", 2),
+            kind="foundation_bolt",
+            unit="SET",
+            remark="籃式過濾器基礎",
+        )
     return result

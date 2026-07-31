@@ -1,83 +1,100 @@
-"""
-Type 78 calculator — Small-pipe strap anchor/support (D-93).
-
-Format:
-    78-{line_size}B[(anchor_type)]
-
-Example:
-    78-2B(A)
-
-The drawing calls out STRAP FIG.1 SEE M-54.
-"""
+"""Type 78 M-54 Fig.1 strap — D-93."""
 from __future__ import annotations
 
 from ..bolt import add_custom_entry
-from ..models import AnalysisResult
+from ..config_loader import load_config
+from ..models import AnalysisResult, set_remark
 from ..parser import extract_parts, get_lookup_value, get_part
-from ..truth import apply_truth_contract, make_evidence, validate_named_invariants
+from ..source_profiles import normalize_source_profile
+from ..truth import make_evidence
 from data.m54_table import build_m54_item
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(
+    fullstring: str,
+    overrides: dict | None = None,
+    source_profile: str | None = None,
+) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    config = load_config("78", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 78: 尚未建立來源 profile {profile_id}"
+        return result
 
-    part2 = get_part(fullstring, 2) or ""
-    line_token, anchor = extract_parts(part2)
+    token, anchor = extract_parts(get_part(fullstring, 2) or "")
     part3 = get_part(fullstring, 3)
     if part3 and part3.startswith("("):
         anchor = part3
-    if not line_token:
-        result.error = "格式錯誤，應為 78-{line_size}B[(A)]，例如 78-2B(A)"
+    if not token:
+        result.error = "Type 78 格式應為 78-{line_size}B[(A)]"
         return result
-
-    line_size = get_lookup_value(line_token)
+    line_size = get_lookup_value(token)
     strap = build_m54_item(line_size, fig_no=1)
     if not strap:
-        result.error = f'Type 78: 管徑 {line_token} ({line_size:g}") 不在範圍 3/4"~4"'
+        result.error = f'Type 78: M-54 未表列 {line_size:g}"；範圍 3/4"~4"'
         return result
 
+    dims = strap["dimensions_mm"]
+    blocker = (
+        "M-54 的 B 是成形後外側跨距；缺 flat development/bend allowance，"
+        "禁止再以 B×C×T 當 STRAP 淨重"
+    )
     add_custom_entry(
         result,
         "STRAP",
         strap["spec"],
         strap["material"],
         1,
-        strap["unit_weight_kg"],
+        0,
         "PC",
-        remark="STRAP FIG.1 SEE M-54; no Fig.2 bolt-hole deduction",
+        remark=blocker,
         category="鋼板類",
+        item_class="reference_only",
+        manufacturing_type="shaped_plate",
     )
-    if anchor:
-        result.warnings.append(f"{anchor}: IF USED AS ANCHOR is a weld/detail note; no extra BOM item added")
+    entry = result.entries[-1]
+    entry.geometry.component_id = "D93-M54-FIG1-STRAP"
+    entry.geometry.source_drawing = "TYPE-78_D-93.pdf / STRAP_M-54.pdf"
+    entry.geometry.source_revision = profile["revision"]
+    entry.geometry.shape_kind = "formed_pipe_strap"
+    entry.geometry.shape_spec = (
+        f'M-54 FIG.1; A={dims["A"]}; B={dims["B"]}; C={dims["C"]}; '
+        f'T={dims["T"]}; H={dims["H"]}; R={dims["R"]}; D={dims["D"]}'
+    )
+    entry.geometry.parameters = {
+        "line_size_in": line_size,
+        "figure": 1,
+        **dims,
+        "anchor_option": bool(anchor),
+        "anchor_weld_mm": 6 if anchor else None,
+    }
+    entry.geometry.fabrication_ready = False
+    entry.geometry.fabrication_blockers = [blocker]
+    set_remark(
+        entry,
+        blocker
+        + ("；(A) 僅增加 D-93 6 mm anchor weld note，不增加另一零件" if anchor else ""),
+    )
 
-    invariant_errors = validate_named_invariants(
-        {"unit_weight": strap["unit_weight_kg"]},
-        {"strap_weight_positive": lambda x: x["unit_weight"] > 0},
+    result.warnings.append(blocker)
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": profile["drawing"],
+        "source_revision": profile["revision"],
+        "bom_ready": False,
+        "fabrication_ready": False,
+        "blockers": [blocker],
+        "assembly_dimensions": entry.geometry.parameters,
+    }
+    result.evidence.append(
+        make_evidence(
+            "type78_d93_m54_dimensions",
+            entry.geometry.parameters,
+            "visual_transcription",
+            source="TYPE-78_D-93.pdf / STRAP_M-54.pdf",
+            confidence=0.99,
+        )
     )
-    return apply_truth_contract(
-        result,
-        type_id="78",
-        evidence=[
-            make_evidence(
-                "strap_fig",
-                "M-54 FIG.1",
-                "visual_transcription",
-                source="pdf_visual",
-                page=1,
-                note_ref="STRAP FIG. 1 SEE M-54",
-                confidence=0.78,
-                note="M-54 is table-backed but currently from visual transcription",
-            ),
-            make_evidence(
-                "strap_weight",
-                strap["unit_weight_kg"],
-                "formula",
-                source="formula",
-                page=1,
-                note_ref="M-54 Fig.1 no Fig.2 hole deduction",
-                confidence=0.74,
-            ),
-        ],
-        invariant_errors=invariant_errors,
-        review_reasons=["Type 78 depends on M-54 visual-transcribed dimensions"],
-    )
+    return result

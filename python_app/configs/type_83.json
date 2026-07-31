@@ -1,0 +1,41 @@
+{
+  "type_id": "83",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依三套 D-101/D-102（20E 另含 D-101A）建立來源別 Type 83。基礎 shoe 復用同來源 Type 80/D-80；axial-stop 的片數、沿管 cut 與 fireproofing 選配未唯一化前保留零重量 assembly reference。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "small_drawing": "TYPE-83_D-101.pdf",
+      "large_drawing": "TYPE-83_D-102.pdf",
+      "revision": "1",
+      "small_detail_no": "101",
+      "large_detail_no": "102",
+      "small_stop_spec": "AXIAL STOP PER D-101; SOURCE BRANCHES 9t PLATE / L40 / L50",
+      "large_stop_spec": "NO.1~NO.4 AXIAL STOP SET PER D-102",
+      "stop_material": "A36/SS400",
+      "fireproofing_option": false
+    },
+    "ctci_22a_5123a": {
+      "small_drawing": "TYPE-83_D-101.pdf",
+      "large_drawing": "TYPE-83_D-102.pdf",
+      "revision": "1",
+      "small_detail_no": "101",
+      "large_detail_no": "102",
+      "small_stop_spec": "AXIAL STOP PER D-101; FIREPROOFING OPTION",
+      "large_stop_spec": "NO.1~NO.4 AXIAL STOP SET PER D-102; FIREPROOFING OPTION",
+      "stop_material": "A36/SS400",
+      "fireproofing_option": true
+    },
+    "ctci_20e4588": {
+      "small_drawing": "TYPE-83_D-101.pdf / TYPE-83_D-101A.pdf",
+      "large_drawing": "TYPE-83_D-102.pdf",
+      "revision": "1A",
+      "small_detail_no": "101",
+      "large_detail_no": "102",
+      "small_stop_spec": "<=4: PL9x150x35; 6/8: L40x40x5; 10~24: L50x50x6",
+      "large_stop_spec": "NO.1 L75x75x9 QTY2 / NO.2 PL6x66x66 QTY4 / NO.3,4 PL12",
+      "stop_material": "A36/SS400",
+      "fireproofing_option": true
+    }
+  }
+}

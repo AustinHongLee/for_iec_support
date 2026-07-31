@@ -2,15 +2,15 @@
     "type_id": "01",
     "name": "Pipe Support TYPE-01",
     "drawing_no": "STM-05.01",
-    "applicable_range": "2\" ~ 50\"",
+    "applicable_range": "依來源：中威 2\"~50\"；中鼎 22A/20E4588 2\"~24\"",
     "h_limit": 1500,
     "h_unit_mm": 100,
     "notes": [
-        "材質隨主管線 (L.T.C.S. / Alloy / SUS / Stress Relief)",
+        "Supporting Pipe B 整支材質隨主管線 (L.T.C.S. / Alloy / SUS / Stress Relief)",
         "H 由現場切割，需搭配 M-42 底板",
         "L 值基於 Long Radius Elbow 焊接位置",
         "焊接尺寸不超過管壁厚",
-        "H ≤ 1500mm 適用，支撐到 Grade 或 Plate",
+        "H 限制依來源：中威/20E4588 為 H<1500；22A 為 H≤1200",
         "若 lower component type 為 A/B/E/G，H 應從鋪面最低點起算"
     ],
     "connection_types": {
@@ -32,8 +32,7 @@
         "F": "Both Axial Stop & Guide (軸向止擋+導向)"
     },
     "material_rules": {
-        "upper_pipe": "跟隨主管線材質 (預設 SUS304)",
-        "lower_pipe": "A53Gr.B (固定黑鐵)",
+        "supporting_pipe_b": "整支跟隨主管線材質 (預設 SUS304)",
         "default_upper": "SUS304"
     },
     "designation_format": {
@@ -55,7 +54,7 @@
             "default": "elbow"
         },
         "upper_material": {
-            "label": "上段管材質",
+            "label": "Supporting Pipe B 材質",
             "kind": "material",
             "default_from": "global",
             "allow_unknown": true
@@ -65,6 +64,57 @@
             "kind": "table_override",
             "fields": ["pipe_size", "schedule", "l_value"]
         }
+    },
+    "source_profiles": {
+        "cw_e25_24_hp6": {
+            "drawing_standard": "HP6-DSD-A4-500-001",
+            "drawing": "TYPE-01_D-1.pdf",
+            "revision": "1",
+            "table_source": "root",
+            "h_max_mm": 1500,
+            "h_max_inclusive": false,
+            "allowed_lower_components": ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "U", "V", "W", "X", "Y"],
+            "m42_drawings": ["LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf", "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42A.pdf", "LOWER-COMPONENT-OF-BASE-SUPPORT_M-43.pdf"],
+            "m42_revision": "1"
+        },
+        "ctci_22a_5123a": {
+            "drawing_standard": "D7TS-701-E",
+            "drawing": "TYPE-01_D-1.pdf",
+            "revision": "1",
+            "table_source": "ctci_2_to_24",
+            "h_max_mm": 1200,
+            "h_max_inclusive": true,
+            "allowed_lower_components": ["B", "C", "E", "F", "G", "H", "K", "L", "R", "S", "T"],
+            "m42_drawings": ["LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf", "LOWER-COMPONENT-OF-BASE-SUPPORT_M-42A.pdf", "LOWER-COMPONENT-OF-BASE-SUPPORT_M-43.pdf"],
+            "m42_revision": "1"
+        },
+        "ctci_20e4588": {
+            "drawing_standard": "STM-05.01",
+            "drawing": "TYPE-01_D-1.pdf",
+            "revision": "1",
+            "table_source": "ctci_2_to_24",
+            "h_max_mm": 1500,
+            "h_max_inclusive": false,
+            "allowed_lower_components": ["B", "C", "E", "F", "G", "H", "K", "L", "R", "S", "T"],
+            "m42_drawings": ["M42.pdf#page=1", "M42.pdf#page=2", "M42.pdf#page=3"],
+            "m42_revision": "1A/1"
+        }
+    },
+    "source_tables": {
+        "ctci_2_to_24": [
+            {"line_size": 2,  "pipe_size": "1-1/2", "schedule": "SCH.80", "L": 71},
+            {"line_size": 3,  "pipe_size": "2",     "schedule": "SCH.40", "L": 93},
+            {"line_size": 4,  "pipe_size": "3",     "schedule": "SCH.40", "L": 139},
+            {"line_size": 6,  "pipe_size": "4",     "schedule": "SCH.40", "L": 186},
+            {"line_size": 8,  "pipe_size": "6",     "schedule": "SCH.40", "L": 271},
+            {"line_size": 10, "pipe_size": "8",     "schedule": "SCH.40", "L": 353},
+            {"line_size": 12, "pipe_size": "8",     "schedule": "SCH.40", "L": 370},
+            {"line_size": 14, "pipe_size": "10",    "schedule": "SCH.40", "L": 473},
+            {"line_size": 16, "pipe_size": "10",    "schedule": "SCH.40", "L": 491},
+            {"line_size": 18, "pipe_size": "12",    "schedule": "STD.WT", "L": 572},
+            {"line_size": 20, "pipe_size": "12",    "schedule": "STD.WT", "L": 594},
+            {"line_size": 24, "pipe_size": "12",    "schedule": "STD.WT", "L": 647}
+        ]
     },
     "table": [
         {"line_size": 2,  "pipe_size": "1-1/2", "schedule": "SCH.80",  "L": 71},
@@ -94,12 +144,13 @@
         {"line_size": 48, "pipe_size": "28",    "schedule": "STD.WT",  "L": 1355},
         {"line_size": 50, "pipe_size": "28",    "schedule": "STD.WT",  "L": 1382}
     ],
-    "version": "1.1",
+    "version": "1.2",
     "last_modified": "2026-04-23",
-    "data_updated_at": "2026-07-12",
-    "data_update_note": "variation_axes 啟用 upper_material 未定選項；未定時沿用全域預設值概算，僅新增 assumption evidence，不變更 BOM 計算路徑。",
+    "data_updated_at": "2026-07-31",
+    "data_update_note": "依中威 E25-24、中鼎 22A_5123A、中鼎 20E4588 三張 D-1 拆分管徑表、H 上限與 M-42 可用型式；Supporting Pipe B 改為整支同主管材質與單一切長，並加入加工圖來源、構件 ID、切口/約束缺口與 fabrication readiness 契約。2026-07-31 起 H 超界採有限外插分級：小幅警示、高風險卡正式放行、過度超界仍硬停止。",
     "change_log": [
         {"date": "2026-04-15", "desc": "初版建立，從 VBA 遷移"},
-        {"date": "2026-04-23", "desc": "依 D-1 Rev.1 補齊 2\"~50\" table 與 NOTE 6 paving warning"}
+        {"date": "2026-04-23", "desc": "依 D-1 Rev.1 補齊 2\"~50\" table 與 NOTE 6 paving warning"},
+        {"date": "2026-07-29", "desc": "建立三來源 D-1/M-42 profile 與加工圖安全契約"}
     ]
 }

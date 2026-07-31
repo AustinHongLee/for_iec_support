@@ -186,6 +186,10 @@ def _write_manager_cover_sheet(
         f"使用 Type {type_count:,} 種    "
         f"全案總重 {summary.total_weight:,.2f} kg"
     )
+    if export_context and export_context.get("source_profile_label"):
+        subtitle += (
+            f"    圖面來源 {export_context['source_profile_label']}"
+        )
     _setup_sheet(ws, "請款分類查核入口", "H1", subtitle=subtitle, audience="主管 / 請款 / 業主", freeze_title=False)
     _set_widths(ws, [22, 14, 10, 18, 22, 22, 14, 14])
     ws.sheet_view.zoomScale = 105
@@ -203,11 +207,14 @@ def _write_manager_cover_sheet(
 
     if export_context:
         assumption_count = int(export_context.get("assumption_count") or 0)
+        high_issue_count = int(export_context.get("high_issue_count") or 0)
+        warning_issue_count = int(export_context.get("warning_issue_count") or 0)
         mode = export_context.get("mode")
         reason = str(export_context.get("exception_reason") or "").strip()
-        if mode == "final" and assumption_count:
+        if mode == "final" and (assumption_count or high_issue_count):
             banner_text = (
-                f"精算版例外放行：仍含 {assumption_count} 筆假設值；"
+                f"精算版例外放行：仍含 {assumption_count} 筆假設值、"
+                f"{high_issue_count} 項高風險；"
                 f"放行原因：{reason}"
             )
             banner_color = "F8CBAD"
@@ -215,9 +222,16 @@ def _write_manager_cover_sheet(
             banner_text = "精算版：未檢出假設值，可作為發包前查核版本。"
             banner_color = "E2F0D9"
         else:
-            banner_text = (
-                f"概算版：含 {assumption_count} 筆假設值，不得作為發包依據"
-            )
+            if warning_issue_count or high_issue_count:
+                banner_text = (
+                    f"概算版：假設 {assumption_count}、一般警示 "
+                    f"{warning_issue_count}、高風險 {high_issue_count}；"
+                    "不得作為發包依據"
+                )
+            else:
+                banner_text = (
+                    f"概算版：含 {assumption_count} 筆假設值，不得作為發包依據"
+                )
             banner_color = "FFF2CC"
         ws.merge_cells("A5:H5")
         banner = ws["A5"]

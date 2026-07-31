@@ -82,15 +82,24 @@
   "Hmax": 2000,
   "applicable": "1\"~24\""
  },
+ "validation": {
+  "required": ["fix", "pipe", "H"],
+  "allowed": ["fix", "pipe", "H", "H1"],
+  "fixes": ["A", "B", "E", "N", "W"],
+  "pipe": {"min": 1, "max": 24},
+  "dimensions": {
+   "H": {"max": 2000}
+  }
+ },
  "designation_format": {
   "pattern": "FS8{A/B/E/N/W}-□\"-□H-□H1",
   "example": "FS8N-4\"-600H-300H1"
  },
- "data_update_note": "依FS8.pdf;管夾以引用列示;底板200×135;水泥墩CM1D",
+ "data_update_note": "依FS8.pdf;管夾以引用列示;底板200×135;水泥墩CM1D。2026-07-27加入必填欄位、1~24吋與H≤2000硬驗證。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

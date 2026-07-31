@@ -71,6 +71,44 @@ def test_estimate_workbook_has_cover_warning_and_assumption_summary():
     assert "SUS304" in values
 
 
+def test_high_risk_issue_requires_final_export_exception_and_is_listed():
+    project = analyze_project_rows(
+        [
+            ProjectInputRow(
+                "10-3B-05U",
+                overrides={"connection": "elbow"},
+            )
+        ],
+        source_profile="cw_e25_24_hp6",
+    )
+    estimate = build_export_context(project, mode="概算")
+    final = build_export_context(project, mode="精算")
+    released = build_export_context(
+        project,
+        mode="精算",
+        exception_reason="工程師確認本案可採用同來源 M-42 U",
+    )
+
+    assert estimate["high_issue_count"] == 1
+    assert estimate["warning_issue_count"] == 0
+    assert final_export_allowed(estimate)
+    assert not final_export_allowed(final)
+    assert final_export_allowed(released)
+
+    workbook = build_project_workbook(project, export_context=estimate)
+    values = [
+        cell.value
+        for row in workbook["計算標準與假設"].iter_rows()
+        for cell in row
+    ]
+    assert any(
+        "本次匯出警示／高風險彙總" in str(value)
+        for value in values
+        if value
+    )
+    assert "HOST_M42_NOT_LISTED" in values
+
+
 def test_project_mode_selector_is_enabled_and_defaults_to_estimate():
     window = MainWindow()
     try:

@@ -26,7 +26,7 @@ def test_project_export_preview_summarizes_workbook_before_save():
     assert preview.success_count == 2
     assert preview.error_count == 0
     assert preview.review_required_count >= 1
-    assert "未知" in preview.confidence_summary
+    assert "估算" in preview.confidence_summary
     assert preview.material_line_count > 0
     assert preview.total_weight > 0
     assert preview.sheet_names == (

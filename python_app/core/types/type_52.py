@@ -13,6 +13,13 @@ from core.parser import get_part
 from core import pipe_shoe_engine
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(
+    fullstring: str,
+    source_profile: str | None = None,
+) -> AnalysisResult:
     type_id = get_part(fullstring, 1)   # "52", "53", ... "67"
-    return pipe_shoe_engine.calculate(fullstring, type_id)
+    return pipe_shoe_engine.calculate(
+        fullstring,
+        type_id,
+        source_profile=source_profile,
+    )

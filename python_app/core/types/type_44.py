@@ -1,98 +1,143 @@
-"""
-Type 44 計算器 — 曲面設備直接斜撐支撐 (D-53)
-格式: 44-{line_size}B-{MEMBER}-{H} {A|B}
+"""Type 44 source-aware vessel frame support (D-53)."""
+from __future__ import annotations
 
-H = P - √(R² - Q²)
-無 Trunnion, 無 Lug Plate, 僅 8"~14"
-
-BOM: ① Channel (H) ② L50 斜撐 (條件: H≥1200) ③ Plate 90×45×6 ④ M.B.
-"""
-from ..models import AnalysisResult
-from ..parser import get_part, get_lookup_value
-from ..steel import add_steel_section_entry
-from ..plate import add_plate_entry
 from ..bolt import add_custom_entry
-from ..material_specs import (
-    ANCHOR_BOLT_SUS304,
-    STRUCTURAL_A36_SS400,
-    SUPPORT_PLATE_A36_SS400,
-)
+from ..config_loader import load_config
+from ..material_specs import ANCHOR_BOLT_SUS304, STRUCTURAL_A36_SS400, SUPPORT_PLATE_A36_SS400
+from ..models import AnalysisResult, set_remark
+from ..parser import get_lookup_value
+from ..plate import add_plate_entry
+from ..source_profiles import normalize_source_profile
+from ..steel import add_steel_section_entry
+from ..truth import make_evidence
 from data.steel_sections import get_section_details
-from data.type44_table import get_type44_q, get_type44_brace, TYPE44_BRACE_H_MIN
+from data.type44_table import get_type44_brace
 
 
-_STRUCTURAL_MATERIAL = STRUCTURAL_A36_SS400
-_SUPPORT_PLATE_MATERIAL = SUPPORT_PLATE_A36_SS400
-_ANCHOR_BOLT_MATERIAL = ANCHOR_BOLT_SUS304
-
-
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(fullstring, overrides=None, source_profile=None):
     result = AnalysisResult(fullstring=fullstring)
-
-    # 第二段: 管徑
-    part2 = get_part(fullstring, 2)
-    if not part2:
-        result.error = "Type 44: 缺少管徑"
+    config = load_config("44", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 44: 尚未建立來源 profile {profile_id}"
         return result
-    line_size = get_lookup_value(part2)
-    q_val = get_type44_q(line_size)
-    if q_val is None:
-        result.error = f"Type 44: 管徑 {part2} ({line_size}\") 不在範圍 (8\"/10\"/12\"/14\")"
+    parts = str(fullstring).split("-")
+    if len(parts) not in (4, 5):
+        result.error = "Type 44: 格式應為 44-{line size}B-{M}-{H} {A/B}[-{Q mm}]"
+        return result
+    line_size = get_lookup_value(parts[1])
+    member = parts[2].upper()
+    details = get_section_details(member)
+    try:
+        token = parts[3].split()
+        h_mm = int(token[0])
+        fig = token[1].upper() if len(token) > 1 else "A"
+        q_mm = int(parts[4]) if len(parts) == 5 else config["TYPE44_PIPE_Q"][str(int(line_size))]
+    except (KeyError, TypeError, ValueError):
+        result.error = "Type 44: line size/H/Q無法依D-53解析"
+        return result
+    if member not in config["TYPE44_MEMBERS"] or not details:
+        result.error = f"Type 44: D-53未支援MEMBER {member}"
+        return result
+    if fig not in ("A", "B") or h_mm <= 0 or q_mm <= 0:
+        result.error = "Type 44: H/Q需大於0，FIG需為A/B"
         return result
 
-    # 第三段: 型鋼代碼
-    part3 = get_part(fullstring, 3)
-    if not part3:
-        result.error = "Type 44: 缺少型鋼代碼"
-        return result
-    member_code = part3.strip()
-    details = get_section_details(member_code)
-    if not details:
-        result.error = f"Type 44: 未知型鋼 {member_code} (支援 C100/C125/C150)"
-        return result
+    drawing = profile["drawing"]
+    longitudinal = h_mm + q_mm + 3
+    transverse = 2 * q_mm + 6
+    blockers = [
+        "D-53的MIN. CHANNEL REQUIRED圖表尚未完整轉成可驗證選型矩陣",
+        "縱向member在vessel曲面端的實際端切/起點需設備幾何確認",
+    ]
+    for cid, role, length, qty, formula in (
+        ("D53-LONGITUDINAL", "縱向member", longitudinal, 2, "H + Q + 3"),
+        ("D53-TRANSVERSE", "橫向member", transverse, 2, "2Q + 6"),
+    ):
+        add_steel_section_entry(
+            result, details["type"], details["size"][1:], length,
+            material=STRUCTURAL_A36_SS400, steel_qty=qty,
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = cid
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.formula = formula
+        entry.geometry.parameters = {
+            "H_mm": h_mm, "Q_mm": q_mm, "quantity": qty,
+            "figure": fig, "fillet_weld_mm": 6,
+        }
+        entry.geometry.fabrication_ready = cid == "D53-TRANSVERSE"
+        if cid == "D53-LONGITUDINAL":
+            entry.geometry.fabrication_blockers = [blockers[1]]
+        set_remark(entry, f"{role}，{length}mm ×{qty}")
 
-    # 第四段: "H FIG"
-    part4 = get_part(fullstring, 4)
-    if not part4:
-        result.error = "Type 44: 缺少 H 值與 FIG 類型"
-        return result
-    parts4 = part4.strip().split()
-    h_mm = int(parts4[0])
-    fig_type = parts4[1].upper() if len(parts4) > 1 else "A"
+    if h_mm >= config["TYPE44_BRACE_H_MIN"]:
+        brace = get_type44_brace(fig)
+        add_steel_section_entry(
+            result, "Angle", "50*50*6", brace["length"],
+            material=STRUCTURAL_A36_SS400,
+        )
+        entry = result.entries[-1]
+        entry.geometry.component_id = "D53-L50-BRACE"
+        entry.geometry.source_drawing = drawing
+        entry.geometry.source_revision = profile["revision"]
+        entry.geometry.shape_kind = "stock_section_cut"
+        entry.geometry.parameters = {
+            "figure": fig, "theta_deg": 30 if fig == "A" else 45,
+            "cut_length_mm": brace["length"],
+        }
+        entry.geometry.fabrication_ready = False
+        entry.geometry.fabrication_blockers = ["斜撐兩端切角/貼合輪廓未完整尺寸化"]
+        blockers.append("斜撐兩端切角/貼合輪廓未完整尺寸化")
 
-    section_type = details["type"]
-    section_dim = details["size"][1:]
-    theta = 30 if fig_type == "A" else 45
-
-    # ① Channel 主柱 — length = H
-    add_steel_section_entry(
-        result, section_type, section_dim, h_mm, material=_STRUCTURAL_MATERIAL
+    add_plate_entry(
+        result, 90, 45, 6, "CLIP PLATE",
+        material=SUPPORT_PLATE_A36_SS400, plate_qty=2,
+        plate_role="generic_plate", bolt_switch=True,
+        bolt_hole=16, bolt_size='1/2"x30',
     )
-    result.entries[-1].remark = f"主柱, H={h_mm}mm, Q={q_val}mm"
+    plate = result.entries[-1]
+    plate.geometry.component_id = "D53-CLIP-PLATE"
+    plate.geometry.source_drawing = drawing
+    plate.geometry.source_revision = profile["revision"]
+    plate.geometry.shape_kind = "rectangular_plate"
+    plate.geometry.holes.count = 1
+    plate.geometry.parameters.update({"quantity": 2, "fillet_weld_mm": 6})
+    plate.geometry.fabrication_ready = True
 
-    # ② L50 斜撐 (條件: H ≥ 1200)
-    if h_mm >= TYPE44_BRACE_H_MIN:
-        brace = get_type44_brace(fig_type)
-        if brace:
-            add_steel_section_entry(
-                result, "Angle", "50*50*6", brace["length"],
-                material=_STRUCTURAL_MATERIAL,
-            )
-            result.entries[-1].remark = (
-                f"斜撐 FIG-{fig_type}(θ={theta}°), "
-                f"L={brace['length']}mm, H≥{TYPE44_BRACE_H_MIN}"
-            )
-
-    # ③ Plate 90×45×6 (承托板)
-    add_plate_entry(result, plate_a=90, plate_b=45,
-                    plate_thickness=6, plate_name="PLATE",
-                        plate_role="generic_plate",
-                    material=_SUPPORT_PLATE_MATERIAL, plate_qty=1)
-    result.entries[-1].remark = "承托板"
-
-    # ④ M.B. 1/2"×30
-    add_custom_entry(result, name="M.BOLT", spec='1/2"x30',
-                     material=_ANCHOR_BOLT_MATERIAL, quantity=2,
-                     unit_weight=0.3, unit="SET")
-
+    add_custom_entry(
+        result, name="M.BOLT", spec='1/2"x30',
+        material=ANCHOR_BOLT_SUS304, quantity=2,
+        unit_weight=0, unit="PC",
+    )
+    bolt = result.entries[-1]
+    bolt.geometry.component_id = "D53-M-BOLT"
+    bolt.geometry.source_drawing = drawing
+    bolt.geometry.source_revision = profile["revision"]
+    bolt.geometry.shape_kind = "purchased_fastener"
+    bolt.geometry.parameters = {"spec": '1/2"x30', "quantity": 2, "hole_diameter_mm": 16}
+    bolt.geometry.fabrication_ready = True
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": drawing,
+        "source_revision": profile["revision"],
+        "branch": f'{member}/FIG-{fig}/{"BRACED" if h_mm >= config["TYPE44_BRACE_H_MIN"] else "UNBRACED"}',
+        "bom_ready": True,
+        "fabrication_ready": False,
+        "blockers": blockers,
+        "longitudinal_cut_length_mm": longitudinal,
+        "transverse_cut_length_mm": transverse,
+        "Q_mm": q_mm,
+    }
+    result.warnings.extend(blockers)
+    result.evidence.append(
+        make_evidence(
+            "type44_dimensions",
+            {"line_size": line_size, "Q": q_mm, "H": h_mm, "member": member},
+            "visual_transcription", source=drawing, confidence=0.95,
+        )
+    )
     return result

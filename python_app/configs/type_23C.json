@@ -1,0 +1,44 @@
+{
+  "type_id": "23C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-39 建立 trunnion cold-support frame。保存 trunnion CR/pipe/C/B、B=OD/2+insulation+60、L100/L75、clip/wood block/stud；C/B 是組立尺寸，ending plate/trunnion 與 C-16/N表未完整，不估重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/23C.pdf",
+      "drawing_no": "C-39",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-39"],
+      "title": "C-39 TYPE 23C TRUNNION COLD-SUPPORT FRAME",
+      "component_id": "C39-TYPE23C-ASSEMBLY",
+      "source_spec": "TRUNNION COLD SUPPORT / VESSEL INTERFACE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "trunnion_cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "trunnion_pipe_size_in", "kind": "pipe_size"},
+            {"name": "C_mm", "kind": "positive_mm"},
+            {"name": "B_mm", "kind": "positive_mm"}
+          ]
+        }
+      ],
+      "designation_error": "Type 23C 格式應為 23C-{TRUNNION CR#}-{TRUNNION PIPE}B-{C mm}-{B mm}",
+      "static_parameters": {
+        "B_formula": "pipe_OD/2 + pipe_insulation_thickness + 60",
+        "sections": ["L100x100x10", "L75x75x9"],
+        "clip": "N-12 CLIP TYPE 2",
+        "wood_block": "N-28 WOOD BLOCK-1",
+        "stud": "3/4in x 120 A193 Gr.B8 with 2 A194 Gr.8A nuts",
+        "stud_holes": "2-diameter22",
+        "support_plate_width_mm": 180
+      },
+      "references": ["N-12/N-12A", "N-28", "C-16", "PROJECT ENDING PLATE / TRUNNION"],
+      "blockers": [
+        "B and C are assembly dimensions, not unique L100/L75 finished cuts",
+        "ending plate/trunnion pipe are OTHER SPECIFIED",
+        "C-16 cold support, N-12/N-28 and field-shim recipes remain unresolved"
+      ]
+    }
+  }
+}

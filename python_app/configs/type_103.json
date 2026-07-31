@@ -1,0 +1,52 @@
+{
+  "type_id": "103",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威、22A 與 20E D-112 逐圖建立 support no./figure/anchor profile。FIG-C 為兩片板；中威/22A 的 d 僅代表 expansion-bolt nominal size，未把它誤當孔徑，20E 才依獨立 d 欄計算四孔淨板。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-103_D-112.pdf",
+      "revision": "1",
+      "anchor_material": "EXPANSION BOLT PER PROJECT SPEC",
+      "anchors_not_furnished": false,
+      "not_furnished_members": ["cantilever/brace members beyond D-112 plate detail"],
+      "rows": {
+        "1": {"A": 150, "B": 15, "T": 9, "anchor_spec": "1/4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "2": {"A": 150, "B": 20, "T": 9, "anchor_spec": "3/8in EXPANSION BOLT", "hole_diameter_mm": null},
+        "3": {"A": 200, "B": 25, "T": 16, "anchor_spec": "1/2in EXPANSION BOLT", "hole_diameter_mm": null},
+        "4": {"A": 250, "B": 30, "T": 19, "anchor_spec": "5/8in EXPANSION BOLT", "hole_diameter_mm": null},
+        "5": {"A": 250, "B": 35, "T": 19, "anchor_spec": "3/4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "6": {"A": 250, "B": 40, "T": 19, "anchor_spec": "7/8in EXPANSION BOLT", "hole_diameter_mm": null}
+      }
+    },
+    "ctci_22a_5123a": {
+      "drawing": "TYPE-103_D-112.pdf",
+      "revision": "1",
+      "anchor_material": "EXPANSION BOLT PER PROJECT SPEC",
+      "anchors_not_furnished": false,
+      "not_furnished_members": ["cantilever/brace members beyond D-112 plate detail"],
+      "rows": {
+        "1": {"A": 150, "B": 15, "T": 9, "anchor_spec": "1/4in x 4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "2": {"A": 150, "B": 20, "T": 9, "anchor_spec": "3/8in x 4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "3": {"A": 200, "B": 25, "T": 16, "anchor_spec": "1/2in x 4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "4": {"A": 250, "B": 30, "T": 19, "anchor_spec": "5/8in x 4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "5": {"A": 250, "B": 35, "T": 19, "anchor_spec": "3/4in x 4in EXPANSION BOLT", "hole_diameter_mm": null},
+        "6": {"A": 250, "B": 40, "T": 19, "anchor_spec": "7/8in x 4in EXPANSION BOLT", "hole_diameter_mm": null}
+      }
+    },
+    "ctci_20e4588": {
+      "drawing": "TYPE-103_D-112.pdf",
+      "revision": "1A",
+      "anchor_material": "EMBEDDED BOLT PER PROJECT SPEC",
+      "anchors_not_furnished": true,
+      "not_furnished_members": ["embedded bolts", "cantilever/brace members beyond D-112 plate detail"],
+      "rows": {
+        "1": {"A": 150, "B": 15, "T": 9, "anchor_spec": "M8 EMBEDDED BOLT", "hole_diameter_mm": 10},
+        "2": {"A": 150, "B": 20, "T": 9, "anchor_spec": "M10 EMBEDDED BOLT", "hole_diameter_mm": 12},
+        "3": {"A": 200, "B": 25, "T": 16, "anchor_spec": "M12 EMBEDDED BOLT", "hole_diameter_mm": 16},
+        "4": {"A": 250, "B": 30, "T": 19, "anchor_spec": "M16 EMBEDDED BOLT", "hole_diameter_mm": 19},
+        "5": {"A": 250, "B": 35, "T": 19, "anchor_spec": "M20 EMBEDDED BOLT", "hole_diameter_mm": 22}
+      }
+    }
+  }
+}

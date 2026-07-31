@@ -1,5 +1,9 @@
 {
   "type_id": "44",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "核對中威D-53；兩份中鼎無圖。框架依plan拆為兩支縱向member與兩支橫向member，外側兩個clip plate/bolt；H>=1200才加brace。選型圖仍需人工確認，保留blocker。1/2x30 M.BOLT 改列可追溯理論估重，供應商成品重量待確認。",
+  "source_profiles": {"cw_e25_24_hp6":{"drawing":"單張-本案有關/中威/TYPE-44_D-53.pdf","revision":"1"}},
   "source": "data/type44_table.py",
   "migrated": "2026-04-29",
   "TYPE44_BRACE": {

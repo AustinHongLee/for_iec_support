@@ -1,290 +1,39 @@
 {
   "type_id": "58",
+  "_version": "1.2.0",
   "source": "data/type58_table.py",
   "migrated": "2026-04-29",
-  "TYPE_SPEC": {
-    "engine": "table_parts_v1",
-    "designation": {
-      "pipe_size_part": 2,
-      "figure_part": 3,
-      "default_figure": "A",
-      "allowed_figures": [
-        "A",
-        "B"
-      ],
-      "pipe_size_range": [
-        0.25,
-        30
-      ],
-      "size_key": "parse_pipe_size",
-      "support_no_template": "{size_key}"
-    },
-    "missing_pipe_error": "缺少管徑欄位",
-    "range_error": "管徑 {size}\" 超出 Type 58 範圍 (1/4\"~30\")",
-    "missing_row_error": "管徑 {support_no}\" 不在 Type 58 查詢表中",
-    "table_key": "TYPE58_TABLE",
-    "components": [
-      {
-        "id": "steel_plate",
-        "kind": "plate",
-        "name": "STEEL PLATE",
-        "plate_a_field": "plate_l",
-        "plate_b_field": "plate_b",
-        "plate_thickness_field": "plate_t",
-        "quantity": 1,
-        "material": "support_plate_a36_ss400"
-      },
-      {
-        "id": "u_bolt",
-        "kind": "custom",
-        "name": "U-BOLT",
-        "spec": "M-26, {rod_size}",
-        "quantity": 1,
-        "material": "u_bolt_a36_ss400",
-        "unit": "SET",
-        "unit_weight_map": {
-          "field": "rod_size",
-          "default": 1.0,
-          "values": {
-            "1/4\"": 0.1,
-            "3/8\"": 0.2,
-            "1/2\"": 0.4,
-            "5/8\"": 0.6,
-            "3/4\"": 0.9,
-            "7/8\"": 1.3,
-            "1\"": 1.8,
-            "1-1/8\"": 2.3,
-            "1-1/4\"": 2.9,
-            "1-3/8\"": 3.5,
-            "1-1/2\"": 4.2,
-            "1-5/8\"": 5.0
-          }
-        }
-      }
-    ],
-    "warnings": [
-      {
-        "when_figure": "B",
-        "template": "FIG-B: 鋼板安裝於型鋼上, X={x}mm"
-      }
-    ]
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "2026-07-30 M-26再次逐尺寸複驗：D-69 plate L/B/T、兩孔、孔距與FIG-B焊腳保持原圖真值；M-26 U-bolt rod名義展開用pi*B/2+2*E。2026-07-31 rod依來源幾何算重，4只finished nuts改列比例六角幾何理論估重，不再固定為0；供應商成品重仍待確認。M-26未給材料grade、thread pitch/class/runout與加工餘量，完整加工圖仍blocked。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-58_D-69.pdf",
+      "revision": "1",
+      "m26_drawing": "單張-本案有關/中威/U-BOLT_M-26.pdf"
+    }
   },
   "TYPE58_TABLE": {
-    "1/4": {
-      "rod_size": "1/4\"",
-      "hole_d": 8,
-      "hole_pitch": 30,
-      "plate_l": 90,
-      "plate_b": 50,
-      "plate_t": 6,
-      "x": 4
-    },
-    "3/8": {
-      "rod_size": "1/4\"",
-      "hole_d": 8,
-      "hole_pitch": 30,
-      "plate_l": 90,
-      "plate_b": 50,
-      "plate_t": 6,
-      "x": 4
-    },
-    "1/2": {
-      "rod_size": "3/8\"",
-      "hole_d": 12,
-      "hole_pitch": 38,
-      "plate_l": 90,
-      "plate_b": 50,
-      "plate_t": 6,
-      "x": 5
-    },
-    "3/4": {
-      "rod_size": "3/8\"",
-      "hole_d": 12,
-      "hole_pitch": 45,
-      "plate_l": 90,
-      "plate_b": 60,
-      "plate_t": 6,
-      "x": 6
-    },
-    "1": {
-      "rod_size": "1/2\"",
-      "hole_d": 16,
-      "hole_pitch": 50,
-      "plate_l": 100,
-      "plate_b": 65,
-      "plate_t": 6,
-      "x": 7
-    },
-    "1-1/4": {
-      "rod_size": "1/2\"",
-      "hole_d": 16,
-      "hole_pitch": 55,
-      "plate_l": 100,
-      "plate_b": 70,
-      "plate_t": 9,
-      "x": 8
-    },
-    "1-1/2": {
-      "rod_size": "1/2\"",
-      "hole_d": 16,
-      "hole_pitch": 60,
-      "plate_l": 110,
-      "plate_b": 75,
-      "plate_t": 9,
-      "x": 9
-    },
-    "2": {
-      "rod_size": "5/8\"",
-      "hole_d": 18,
-      "hole_pitch": 75,
-      "plate_l": 125,
-      "plate_b": 90,
-      "plate_t": 9,
-      "x": 10
-    },
-    "2-1/2": {
-      "rod_size": "5/8\"",
-      "hole_d": 18,
-      "hole_pitch": 85,
-      "plate_l": 140,
-      "plate_b": 100,
-      "plate_t": 9,
-      "x": 12
-    },
-    "3": {
-      "rod_size": "5/8\"",
-      "hole_d": 18,
-      "hole_pitch": 100,
-      "plate_l": 160,
-      "plate_b": 110,
-      "plate_t": 9,
-      "x": 14
-    },
-    "4": {
-      "rod_size": "3/4\"",
-      "hole_d": 22,
-      "hole_pitch": 120,
-      "plate_l": 180,
-      "plate_b": 130,
-      "plate_t": 12,
-      "x": 16
-    },
-    "5": {
-      "rod_size": "3/4\"",
-      "hole_d": 22,
-      "hole_pitch": 140,
-      "plate_l": 200,
-      "plate_b": 150,
-      "plate_t": 12,
-      "x": 18
-    },
-    "6": {
-      "rod_size": "3/4\"",
-      "hole_d": 22,
-      "hole_pitch": 160,
-      "plate_l": 220,
-      "plate_b": 170,
-      "plate_t": 12,
-      "x": 20
-    },
-    "8": {
-      "rod_size": "7/8\"",
-      "hole_d": 24,
-      "hole_pitch": 200,
-      "plate_l": 260,
-      "plate_b": 210,
-      "plate_t": 12,
-      "x": 24
-    },
-    "10": {
-      "rod_size": "1\"",
-      "hole_d": 28,
-      "hole_pitch": 240,
-      "plate_l": 310,
-      "plate_b": 250,
-      "plate_t": 16,
-      "x": 28
-    },
-    "12": {
-      "rod_size": "1\"",
-      "hole_d": 28,
-      "hole_pitch": 270,
-      "plate_l": 350,
-      "plate_b": 280,
-      "plate_t": 16,
-      "x": 30
-    },
-    "14": {
-      "rod_size": "1-1/8\"",
-      "hole_d": 30,
-      "hole_pitch": 300,
-      "plate_l": 380,
-      "plate_b": 310,
-      "plate_t": 16,
-      "x": 32
-    },
-    "16": {
-      "rod_size": "1-1/4\"",
-      "hole_d": 34,
-      "hole_pitch": 340,
-      "plate_l": 420,
-      "plate_b": 350,
-      "plate_t": 19,
-      "x": 36
-    },
-    "18": {
-      "rod_size": "1-1/4\"",
-      "hole_d": 34,
-      "hole_pitch": 380,
-      "plate_l": 460,
-      "plate_b": 390,
-      "plate_t": 19,
-      "x": 38
-    },
-    "20": {
-      "rod_size": "1-3/8\"",
-      "hole_d": 38,
-      "hole_pitch": 420,
-      "plate_l": 500,
-      "plate_b": 430,
-      "plate_t": 19,
-      "x": 42
-    },
-    "24": {
-      "rod_size": "1-1/2\"",
-      "hole_d": 40,
-      "hole_pitch": 500,
-      "plate_l": 580,
-      "plate_b": 510,
-      "plate_t": 22,
-      "x": 48
-    },
-    "26": {
-      "rod_size": "1-1/2\"",
-      "hole_d": 40,
-      "hole_pitch": 540,
-      "plate_l": 630,
-      "plate_b": 550,
-      "plate_t": 22,
-      "x": 52
-    },
-    "28": {
-      "rod_size": "1-5/8\"",
-      "hole_d": 44,
-      "hole_pitch": 580,
-      "plate_l": 670,
-      "plate_b": 590,
-      "plate_t": 22,
-      "x": 56
-    },
-    "30": {
-      "rod_size": "1-5/8\"",
-      "hole_d": 44,
-      "hole_pitch": 620,
-      "plate_l": 710,
-      "plate_b": 630,
-      "plate_t": 25,
-      "x": 60
-    }
+    "0.25":{"rod_size":"1/4\"","hole_d":8,"hole_pitch":30,"plate_l":90,"plate_b":50,"plate_t":6,"x":4},
+    "0.5":{"rod_size":"1/4\"","hole_d":8,"hole_pitch":30,"plate_l":90,"plate_b":50,"plate_t":6,"x":4},
+    "0.75":{"rod_size":"1/4\"","hole_d":8,"hole_pitch":35,"plate_l":90,"plate_b":50,"plate_t":6,"x":4},
+    "1":{"rod_size":"1/4\"","hole_d":8,"hole_pitch":41,"plate_l":90,"plate_b":50,"plate_t":6,"x":4},
+    "1.25":{"rod_size":"3/8\"","hole_d":11,"hole_pitch":52,"plate_l":90,"plate_b":50,"plate_t":6,"x":4},
+    "1.5":{"rod_size":"3/8\"","hole_d":11,"hole_pitch":60,"plate_l":120,"plate_b":50,"plate_t":6,"x":4},
+    "2":{"rod_size":"3/8\"","hole_d":11,"hole_pitch":71,"plate_l":120,"plate_b":50,"plate_t":6,"x":4},
+    "2.5":{"rod_size":"1/2\"","hole_d":14,"hole_pitch":87,"plate_l":150,"plate_b":50,"plate_t":6,"x":4},
+    "3":{"rod_size":"1/2\"","hole_d":14,"hole_pitch":103,"plate_l":180,"plate_b":50,"plate_t":6,"x":4},
+    "3.5":{"rod_size":"1/2\"","hole_d":14,"hole_pitch":116,"plate_l":180,"plate_b":50,"plate_t":6,"x":4},
+    "4":{"rod_size":"1/2\"","hole_d":14,"hole_pitch":129,"plate_l":200,"plate_b":65,"plate_t":9,"x":5},
+    "5":{"rod_size":"1/2\"","hole_d":14,"hole_pitch":156,"plate_l":230,"plate_b":65,"plate_t":9,"x":5},
+    "6":{"rod_size":"5/8\"","hole_d":17,"hole_pitch":187,"plate_l":250,"plate_b":65,"plate_t":9,"x":5},
+    "8":{"rod_size":"5/8\"","hole_d":17,"hole_pitch":238,"plate_l":320,"plate_b":65,"plate_t":9,"x":5},
+    "10":{"rod_size":"3/4\"","hole_d":21,"hole_pitch":295,"plate_l":370,"plate_b":65,"plate_t":9,"x":5},
+    "12":{"rod_size":"7/8\"","hole_d":24,"hole_pitch":349,"plate_l":450,"plate_b":90,"plate_t":12,"x":6},
+    "14":{"rod_size":"7/8\"","hole_d":24,"hole_pitch":381,"plate_l":550,"plate_b":90,"plate_t":12,"x":6},
+    "16":{"rod_size":"7/8\"","hole_d":24,"hole_pitch":432,"plate_l":550,"plate_b":90,"plate_t":12,"x":6},
+    "18":{"rod_size":"1\"","hole_d":27,"hole_pitch":486,"plate_l":600,"plate_b":90,"plate_t":12,"x":6},
+    "20":{"rod_size":"1\"","hole_d":27,"hole_pitch":537,"plate_l":650,"plate_b":100,"plate_t":16,"x":6},
+    "24":{"rod_size":"1\"","hole_d":27,"hole_pitch":638,"plate_l":750,"plate_b":100,"plate_t":16,"x":6},
+    "30":{"rod_size":"1\"","hole_d":27,"hole_pitch":791,"plate_l":800,"plate_b":100,"plate_t":16,"x":6}
   }
 }

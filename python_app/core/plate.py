@@ -31,6 +31,22 @@ MATERIAL_DENSITY = {
 }
 
 
+def resolve_plate_density(material_name: str) -> tuple[float, str, bool]:
+    """
+    Return the legacy plate density together with its evidence state.
+
+    Unknown labels retain 7.85 g/cm³ so existing BOM totals do not change
+    silently, but the result is marked review-required rather than drawing truth.
+    """
+    if material_name in MATERIAL_DENSITY:
+        return (
+            MATERIAL_DENSITY[material_name],
+            f"core.plate.MATERIAL_DENSITY[{material_name}]",
+            False,
+        )
+    return 7.85, "core.plate.legacy_unverified_default_7_85", True
+
+
 def _material_name_and_identity(
     material: str | MaterialSpec | None,
     *,
@@ -87,7 +103,9 @@ def add_plate_entry(
         default=_DEFAULT_PLATE_MATERIAL,
     )
 
-    density = MATERIAL_DENSITY.get(material_name, 7.85)
+    density, density_source, density_requires_review = resolve_plate_density(
+        material_name
+    )
     gross_area = gross_area_mm2 or plate_a * plate_b
     weight_area = net_area_mm2 or gross_area
     weight = weight_area * plate_thickness * density / 1_000_000
@@ -148,6 +166,9 @@ def add_plate_entry(
             shape_kind=shape_kind,
         )
     )
+    entry.density_g_cm3 = density
+    entry.density_source = density_source
+    entry.density_requires_review = density_requires_review
     entry.remark = remark           # 向後相容保留
     entry.role = resolved_role      # Phase 1 新增
     entry.geometry = geometry       # Phase 1 新增

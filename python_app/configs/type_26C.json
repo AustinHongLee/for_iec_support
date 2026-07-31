@@ -1,0 +1,35 @@
+{
+  "type_id": "26C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-48 建立 trunnion-on-trunnion cold support reference。designation 保存 CR、trunnion pipe size、T1/T2 type；ending plate/trunnion、C-16 wood block/field shim 與 weep-hole datum 未完整，不估重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/26C.pdf",
+      "drawing_no": "C-48",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-48"],
+      "title": "C-48 TYPE 26C TRUNNION-ON-TRUNNION COLD SUPPORT",
+      "component_id": "C48-TYPE26C-ASSEMBLY",
+      "source_spec": "TRUNNION PIPE / COLD SUPPORT INTERFACE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "trunnion_cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "trunnion_pipe_size_in", "kind": "pipe_size"},
+            {"name": "trunnion_type", "kind": "choice", "values": ["T1", "T2"]}
+          ]
+        }
+      ],
+      "designation_error": "Type 26C 格式應為 26C-{TRUNNION CR#}-{TRUNNION PIPE}B-{T1|T2}",
+      "static_parameters": {"weep_hole_diameter_mm": 6, "interface": "field shim to suit"},
+      "references": ["C-16 COLD SUPPORT", "PROJECT ENDING PLATE / TRUNNION"],
+      "blockers": [
+        "ending plate and trunnion pipe are OTHER SPECIFIED",
+        "C-16 cold-support/wood-block and field-shim geometry remain unresolved",
+        "diameter-6 weep-hole datum and intersection cope are not dimensioned"
+      ]
+    }
+  }
+}

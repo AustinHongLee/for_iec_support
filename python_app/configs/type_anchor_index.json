@@ -14,6 +14,14 @@
       "family": "type_01_tee_variant",
       "note": "Tee variant of Type 01; reuses Type 01 calculator and config."
     },
+    "82A": {
+      "anchor_kind": "storage_alias",
+      "storage_id": "82",
+      "calculation_anchor": "configs/type_82.json",
+      "calculator": "python_app/core/types/type_82A.py",
+      "family": "type_82_fixed_variant",
+      "note": "Fixed variant of Type 82; shares the dimension table but uses D-100A source drawings and zero guide clearance."
+    },
     "52": {
       "anchor_kind": "shared_spec",
       "calculation_anchor": "configs/pipe_shoe_spec.json",
@@ -45,18 +53,12 @@
     "66": {
       "anchor_kind": "shared_spec",
       "calculation_anchor": "configs/pipe_shoe_spec.json",
+      "fabrication_anchor": "configs/type_66_fabrication.json",
       "calculator": "python_app/core/types/type_52.py",
       "engine": "pipe_shoe_engine",
       "family": "pipe_shoe"
     },
     "67": {
-      "anchor_kind": "shared_spec",
-      "calculation_anchor": "configs/pipe_shoe_spec.json",
-      "calculator": "python_app/core/types/type_52.py",
-      "engine": "pipe_shoe_engine",
-      "family": "pipe_shoe"
-    },
-    "85": {
       "anchor_kind": "shared_spec",
       "calculation_anchor": "configs/pipe_shoe_spec.json",
       "calculator": "python_app/core/types/type_52.py",

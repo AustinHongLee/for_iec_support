@@ -33,5 +33,15 @@ TYPE19_TABLE = {
 # ── 原始查詢函式（interface 不變）────────────────────────
 def get_type19_data(pipe_size: float) -> dict | None:
     """查表取得 Type 19 資料, 回傳 dict 或 None"""
-    return TYPE19_TABLE.get(pipe_size)
-
+    row = TYPE19_TABLE.get(pipe_size)
+    if row is None:
+        return None
+    # Backward-compatible aliases for callers not yet source-aware.
+    return {
+        **row,
+        "L": row["drawing_L_mm"],
+        "section_type": (
+            "Angle" if row["section_family"] == "angle" else "H Beam"
+        ),
+        "dim": row["lookup_dim"],
+    }

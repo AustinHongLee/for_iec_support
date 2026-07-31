@@ -77,8 +77,8 @@ def test_package_internal_links_only_target_included_sheets(tmp_path):
 def test_claim_summary_drills_into_reconciled_weight_sources():
     project = analyze_project_rows(
         [
-            ProjectInputRow("10-6B-16", 2, drawing_line_number="DL-010", serial="10"),
-            ProjectInputRow("15-8B-1532", 1, drawing_line_number="DL-015", serial="15"),
+                ProjectInputRow("10-6B-14A", 2, drawing_line_number="DL-010", serial="10"),
+            ProjectInputRow("15-8B-1040", 1, drawing_line_number="DL-015", serial="15"),
         ]
     )
     workbook = build_project_workbook(project, ("長官-支撐分類", "查核-支撐明細"))

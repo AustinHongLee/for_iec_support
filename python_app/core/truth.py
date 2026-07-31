@@ -176,12 +176,33 @@ def apply_truth_contract(
         result.evidence = evidence
     if not getattr(result, "evidence", None):
         result.evidence = []
+    existing_meta = dict(getattr(result, "meta", None) or {})
+    truth_keys = {
+        "type_id",
+        "truth_level",
+        "truth_level_code",
+        "confidence",
+        "sources",
+        "source_labels",
+        "requires_review",
+        "review_reasons",
+        "invariant_errors",
+    }
+    extension_meta = {
+        key: value
+        for key, value in existing_meta.items()
+        if key not in truth_keys
+    }
     result.meta = build_meta(
         type_id=type_id,
         evidence=result.evidence,
         invariant_errors=invariant_errors or [],
         review_reasons=review_reasons or [],
     )
+    # Calculation engines may attach domain contracts (for example fabrication
+    # geometry) before the shared truth wrapper runs.  Preserve those extensions
+    # while keeping truth fields authoritative and freshly calculated.
+    result.meta.update(extension_meta)
     return result
 
 

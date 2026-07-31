@@ -1,5 +1,9 @@
 # Type 39 — Vessel 斜撐支撐 (Vessel Braced Support)
 
+H 圖示上限採有限外插分級；未表列 member/figure 或缺 M-34/M-35/M-36 row 仍停止。
+
+> **2026-07-29 原圖複核更正**：兩片標準 Lug Plate 各有 4 或 6 孔，K Bolt 合計為 8 或 12 支，不是每個 Detail 各 1 set。中威／22A 使用 `3/4"x50`，20E 使用 `M20X50`。斜撐端切仍保留加工 blocker。
+
 > **圖號**: 39 &nbsp;|&nbsp; **分類**: 支撐型式 &nbsp;|&nbsp; **狀態**: ✅ 已實作
 > **圖面編號**: E1906-DSP-500-006 &nbsp;|&nbsp; **日期**: 12/12/19
 

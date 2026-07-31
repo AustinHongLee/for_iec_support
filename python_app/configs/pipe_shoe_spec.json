@@ -1,6 +1,8 @@
 {
   "_comment": "Pipe Shoe family TypeSpec — covers types 52/53/54/55/66/67 (D-62, D-62A, D-80)",
-  "_version": "1.0.0",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-29",
+  "data_update_note": "新增中威 E25-24、中鼎 22A_5123A、中鼎 20E4588 三套 D-80 source profile；依來源拆分 Type 52 D-63、Type 53 D-64，並建立中威/22A Type 67 D-81、Type 54 D-65、Type 55 D-66 至 14 吋的可證實 recipe；圖面未標完整長度或異形淨面積者不虛構下料。",
 
   "variants": {
     "52": { "angle_wedge": true  },
@@ -51,6 +53,317 @@
     ]
   },
 
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing_refs": ["TYPE-66_D-80.pdf", "TYPE-66_D-80A.pdf", "TYPE-66_D-80B.pdf"],
+      "small_group_max": 8,
+      "gusset_min": 10,
+      "type52_retainer_groups": [
+        {
+          "lte": 8,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ],
+          "unresolved_callouts": [
+            "D-63 的 PL12t 未標完整平面尺寸與數量，暫不列入可算重量"
+          ]
+        }
+      ],
+      "type53_max_hardened_size": 24,
+      "type53_guide_groups": [
+        {
+          "lte": 24,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 }
+          ]
+        }
+      ],
+      "d81_max_hardened_size": 14,
+      "d81_default_lops_by_size": [
+        { "lte": 2.5, "v": 150 },
+        { "lte": 8, "v": 250 },
+        { "else": true, "v": 300 }
+      ],
+      "type54_retainer_groups": [
+        {
+          "lte": 8,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true },
+            { "kind": "plate", "name": "Retainer_54_12x150x40", "length": 150, "width": 40, "thickness": 12, "qty": 2 }
+          ]
+        }
+      ],
+      "type55_guide_groups": [
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 }
+          ]
+        }
+      ]
+    },
+    "ctci_22a_5123a": {
+      "drawing_refs": ["TYPE-66_D-80.pdf", "TYPE-66_D-80A.pdf", "TYPE-66_D-80B.pdf", "TYPE-66_D-80C.pdf"],
+      "small_group_max": 5,
+      "gusset_min": 6,
+      "type52_retainer_groups": [
+        {
+          "lte": 4,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ],
+          "unresolved_callouts": [
+            "D-63 的 PL6t 未標完整平面尺寸與數量，暫不列入可算重量"
+          ]
+        }
+      ],
+      "type53_max_hardened_size": 24,
+      "type53_guide_groups": [
+        {
+          "lte": 4,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 }
+          ]
+        },
+        {
+          "lte": 24,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 },
+            {
+              "kind": "triangle_plate",
+              "name": "Guide_53_6x35x35",
+              "length": 35,
+              "width": 35,
+              "thickness": 6,
+              "qty": 2
+            }
+          ]
+        }
+      ],
+      "d81_max_hardened_size": 14,
+      "d81_default_lops_by_size": [
+        { "lte": 2.5, "v": 150 },
+        { "lte": 5, "v": 250 },
+        { "else": true, "v": 300 }
+      ],
+      "type54_retainer_groups": [
+        {
+          "lte": 4,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2, "cut_in_field": true },
+            { "kind": "plate", "name": "Retainer_54_6x150x40", "length": 150, "width": 40, "thickness": 6, "qty": 2 }
+          ]
+        }
+      ],
+      "type55_guide_groups": [
+        {
+          "lte": 4,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 }
+          ],
+          "unresolved_callouts": [
+            "D-66 的 6t×35×35 TYP. 小件雖有外框尺寸，但 Detail a 為裁角/異形；淨面積與數量未充分標示，暫不列入可算重量"
+          ]
+        }
+      ],
+      "sizing": {
+        "A_by_size": [
+          { "lte": 5,  "v": 100 },
+          { "lte": 14, "v": 130 },
+          { "lte": 20, "v": 250 },
+          { "else": true, "v": 300 }
+        ],
+        "B_by_size": [
+          { "lte": 5,  "v": 0 },
+          { "lte": 14, "v": 9 },
+          { "else": true, "v": 12 }
+        ],
+        "C_by_size": [
+          { "lte": 5,  "v": "200*100*5.5" },
+          { "lte": 14, "v": "200*200*8" },
+          { "else": true, "v": "FB12" }
+        ],
+        "D_by_size": [
+          { "lte": 2.5, "v": 150 },
+          { "else": true, "v": 250 }
+        ],
+        "E_by_size": [
+          { "lte": 1.5, "v": 0 },
+          { "else": true, "v": 50 }
+        ],
+        "pad_t_fallback_by_size": [
+          { "else": true, "rule": "sch10s_wall" }
+        ]
+      }
+    },
+    "ctci_20e4588": {
+      "drawing_refs": ["66.pdf"],
+      "small_group_max": 8,
+      "gusset_min": 10,
+      "type52_retainer_groups": [
+        {
+          "lte": 4,
+          "components": [
+            {
+              "kind": "plate",
+              "name": "Retainer_52_9x150x25",
+              "length": 150,
+              "width": 25,
+              "thickness": 9,
+              "qty": 2
+            },
+            {
+              "kind": "plate",
+              "name": "Retainer_52_9x14x14",
+              "length": 14,
+              "width": 14,
+              "thickness": 9,
+              "qty": 2
+            }
+          ]
+        },
+        {
+          "lte": 8,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 },
+            {
+              "kind": "plate",
+              "name": "Retainer_52_9x14x14",
+              "length": 14,
+              "width": 14,
+              "thickness": 9,
+              "qty": 2
+            }
+          ]
+        },
+        {
+          "else": true,
+          "components": [
+            { "kind": "angle", "spec": "50*50*6", "length": 150, "qty": 2 },
+            {
+              "kind": "plate",
+              "name": "Retainer_52_6x44x23",
+              "length": 44,
+              "width": 23,
+              "thickness": 6,
+              "qty": 2
+            },
+            {
+              "kind": "plate",
+              "name": "Retainer_52_9x14x14",
+              "length": 14,
+              "width": 14,
+              "thickness": 9,
+              "qty": 2
+            }
+          ]
+        }
+      ],
+      "type53_max_hardened_size": 24,
+      "type53_guide_groups": [
+        {
+          "lte": 4,
+          "components": [
+            {
+              "kind": "plate",
+              "name": "Guide_53_9x150x40",
+              "length": 150,
+              "width": 40,
+              "thickness": 9,
+              "qty": 2
+            }
+          ]
+        },
+        {
+          "lte": 8,
+          "components": [
+            { "kind": "angle", "spec": "40*40*5", "length": 150, "qty": 2 },
+            {
+              "kind": "triangle_plate",
+              "name": "Guide_53_6x35x35",
+              "length": 35,
+              "width": 35,
+              "thickness": 6,
+              "qty": 2
+            }
+          ]
+        },
+        {
+          "lte": 24,
+          "components": [
+            { "kind": "angle", "spec": "50*50*6", "length": 150, "qty": 2 },
+            {
+              "kind": "triangle_plate",
+              "name": "Guide_53_6x44x44",
+              "length": 44,
+              "width": 44,
+              "thickness": 6,
+              "qty": 2
+            }
+          ]
+        }
+      ],
+      "sizing": {
+        "A_by_size": [
+          { "lte": 8,  "v": 100 },
+          { "lte": 14, "v": 130 },
+          { "lte": 20, "v": 250 },
+          { "else": true, "v": 300 }
+        ],
+        "B_by_size": [
+          { "lte": 8,  "v": 0 },
+          { "lte": 14, "v": 9 },
+          { "else": true, "v": 12 }
+        ],
+        "C_by_size": [
+          { "lte": 8,  "v": "200*100*5.5" },
+          { "lte": 14, "v": "200*200*8" },
+          { "else": true, "v": "FB12" }
+        ],
+        "D_by_size": [
+          { "lte": 2.5, "v": 150 },
+          { "else": true, "v": 250 }
+        ],
+        "E_by_size": [
+          { "else": true, "v": 15 }
+        ],
+        "pad_t_fallback_by_size": [
+          { "else": true, "rule": "sch10s_wall" }
+        ]
+      }
+    }
+  },
+
   "components": [
     {
       "id":    "pad",
@@ -58,8 +371,8 @@
       "when":  "pad_symbol != N/A",
       "role":  "reinforcement_pad",
       "thickness_rule": "pad_t_fallback_by_size",
-      "length_expr":    "LOPS + E*2 if pipe_size <= 8 else LOPS + E*2 + 25*2",
-      "_length_comment": "<=8: LOPS + E*2; >=10: LOPS + E*2 + 25*2",
+      "length_expr":    "LOPS + E*2 if pipe_size <= small_group_max else LOPS + E*2 + 25*2",
+      "_length_comment": "small source-profile group: LOPS + E*2; large group: LOPS + E*2 + 25*2",
       "width_expr":     "OD*pi/3",
       "_width_comment": "120-degree developed width"
     },
@@ -79,8 +392,8 @@
       "when":   "C != FB12",
       "role":   "h_section",
       "spec_ref": "C",
-      "length_expr": "LOPS if pipe_size <= 8 else LOPS+25*2",
-      "_length_comment": "<=8: LOPS or D; 10~14: LOPS + 25*2",
+      "length_expr": "LOPS if pipe_size <= small_group_max else LOPS+25*2",
+      "_length_comment": "small source-profile group: LOPS or D; large group: LOPS + 25*2",
       "remark_template": "由H{C}裁切；長=LOPS+25×2；《購買逻輯》1支H型鵋對分=2組支撐 [CUT FROM H{C}; L=LOPS+25*2; 1 purchased H-beam split in half = 2 supports]"
     },
     {
@@ -109,7 +422,7 @@
     {
       "id":       "gusset",
       "name":     "FB_52Type_3",
-      "when":     "pipe_size >= 10 and not (type_id == '54' and pipe_size <= 14)",
+      "when":     "pipe_size >= gusset_min and not (type_id == '54' and pipe_size <= 14)",
       "role":     "generic_plate",
       "thickness_ref": "B",
       "length_expr":   "HOPS",

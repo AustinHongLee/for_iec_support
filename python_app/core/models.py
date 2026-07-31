@@ -60,6 +60,12 @@ class GeometryHints:
     gross_area_mm2 : 外接矩形/毛坯面積
     cutout_area_mm2: 扣除面積，例如缺角三角形
     net_area_mm2   : 實際算重淨面積；0 表示使用 length x width
+    component_id   : 圖面件號／穩定零件識別，供加工圖與 CAD 對應
+    source_drawing : 幾何直接依據的圖號
+    source_revision: 幾何直接依據的版次
+    fabrication_ready : 是否已具備足以出加工圖的幾何
+    fabrication_blockers : 尚缺的加工尺寸／輪廓／製程資料
+    parameters     : CAD/加工圖可直接消費的具名尺寸與製程參數
     """
     role: str = ""
     formula: str = ""
@@ -70,6 +76,12 @@ class GeometryHints:
     gross_area_mm2: float = 0.0
     cutout_area_mm2: float = 0.0
     net_area_mm2: float = 0.0
+    component_id: str = ""
+    source_drawing: str = ""
+    source_revision: str = ""
+    fabrication_ready: bool = False
+    fabrication_blockers: List[str] = field(default_factory=list)
+    parameters: dict = field(default_factory=dict)
 
 
 # ── 主要 dataclass ───────────────────────────────────────────
@@ -98,6 +110,9 @@ class AnalysisEntry:
     stock_id: str = ""                  # 採購/庫存用短碼，依材料與幾何生成
     item_class: str = ""                # primary_structure / fabricated_part / accessory / reference_only
     manufacturing_type: str = ""        # raw_cut / plate_cut / shaped_plate / purchased / not_furnished
+    density_g_cm3: float = 0.0           # 算重採用密度；0 表示不以體積密度算重
+    density_source: str = ""             # 密度查表／來源識別，供加工與採購稽核
+    density_requires_review: bool = False  # True 表示密度是未由來源釋出的 fallback
 
     # ── Phase 0 新增欄位（optional，向後相容）────────────────
     role: str = ""                      # ComponentRole 的值，例如 "lug_plate"

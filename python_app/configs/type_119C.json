@@ -1,0 +1,27 @@
+{
+  "type_id": "119C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-67 與 N-1~N-3/N-5/N-20~N-23 複驗：CR/pipe 反查 insulation、F/H/R/T1、層構造、密度與容許載重；多解時要求 insulation_thickness_mm，並使用 300 cradle envelope 解 N-3 軸向長度。Q 成形展開未釋出，仍不計重。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/119C.pdf",
+      "drawing_no": "C-67",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "member_q_branches": {
+        "small": {
+          "sizes": [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12],
+          "section": "L75x75x9"
+        },
+        "large": {
+          "sizes": [14, 16, 18, 20, 22, 24],
+          "section": "L100x100x10"
+        }
+      },
+      "envelope_mm": {"foam_and_vapor_barrier": 450, "jacket": 400, "cradle": 300, "minimum_side_foam": 10},
+      "references": ["N-1", "N-2", "N-3", "N-5", "N-20~N-23", "C-21"],
+      "weld_mm": 6
+    }
+  }
+}

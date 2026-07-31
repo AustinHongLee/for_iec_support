@@ -24,12 +24,17 @@
    "qty": 1
   }
  ],
+ "validation": {
+  "required": ["pipe"],
+  "allowed": ["pipe"],
+  "pipe": {"min": 0.5, "max": 8}
+ },
  "extra_warnings": [
   "VA2 適用8\"以下；lug板焊於結構，管以U型螺栓(詳UB1)固定"
  ],
- "data_update_note": "依VA2.pdf件號表；lug板 t9×150×100(A283 Gr.C)+U型螺栓(詳UB)",
+ "data_update_note": "v1.1 強制只接受管徑並依圖面限制≤8吋。原資料依VA2.pdf件號表；U型螺栓依UB1。",
  "code": "VA2",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

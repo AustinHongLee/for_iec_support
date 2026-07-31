@@ -1,0 +1,55 @@
+{
+  "type_id": "19C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-28 建立 -9~-254C elbow trunnion cold support，逐列保存 line-to-trunnion Pipe B table 與 trunnion pipe code/CR/line。C-14 cradle、ending plate/trunnion scope、field shim 與 intersection cut 未完整，組立歸零。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/19C.pdf",
+      "drawing_no": "C-28",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-28"],
+      "title": "C-28 TYPE 19C ELBOW TRUNNION COLD SUPPORT",
+      "component_id": "C28-TYPE19C-ASSEMBLY",
+      "source_spec": "PIPE TRUNNION AT ELBOW; -9C TO -254C",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "trunnion_pipe_code", "kind": "code", "pattern": "[A-Z0-9.]+B?"},
+            {"name": "trunnion_cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        }
+      ],
+      "designation_error": "Type 19C 格式應為 19C-{TRUNNION PIPE CODE}-{CR#}-{LINE}B",
+      "lookups": [
+        {
+          "name": "line_size",
+          "field": "line_size_in",
+          "rows": {
+            "2": {"trunnion_pipe_B": "1-1/2in SCH.80"},
+            "3": {"trunnion_pipe_B": "2in SCH.40"},
+            "4": {"trunnion_pipe_B": "3in SCH.40"},
+            "6": {"trunnion_pipe_B": "4in SCH.40"},
+            "8": {"trunnion_pipe_B": "6in SCH.40"},
+            "10": {"trunnion_pipe_B": "8in SCH.40"},
+            "12": {"trunnion_pipe_B": "10in SCH.40"},
+            "14": {"trunnion_pipe_B": "12in STD.WT"},
+            "16": {"trunnion_pipe_B": "12in STD.WT"},
+            "18": {"trunnion_pipe_B": "14in STD.WT"},
+            "20": {"trunnion_pipe_B": "14in STD.WT"},
+            "24": {"trunnion_pipe_B": "16in STD.WT"}
+          }
+        }
+      ],
+      "static_parameters": {"weld_mm": 6, "interface": "existing steel / field shim"},
+      "references": ["C-14 STEEL SHOE", "PROJECT ENDING PLATE AND TRUNNION"],
+      "blockers": [
+        "trunnion/line intersection and ending-plate geometry are OTHER SPECIFIED",
+        "C-14 cold cradle/shoe and field-shim geometry remain unresolved",
+        "designation trunnion pipe code cannot by itself prove a finished cut length"
+      ]
+    }
+  }
+}

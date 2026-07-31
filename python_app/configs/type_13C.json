@@ -1,0 +1,49 @@
+{
+  "type_id": "13C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-17/C-18 與 N-1~N-5/N-24~N-26 複驗：大型管徑嚴格限 30/36/42/48/54/60，CR/pipe 反查 insulation、F/H/R/T1/T2/A/B、320 kg/m3 與來源載重；多解時要求 insulation_thickness_mm。2026-07-30 獨立稽核確認 N-24 標 KG、N-25/N-26 標 LB 且數值相同，裁決前只保留 raw value/source sheet，不輸出 canonical kg/lb。板件淨輪廓仍不完整。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/13C.pdf",
+      "drawing_no": "C-17/C-18",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-17", "C-18"],
+      "title": "C-17/C-18 TYPE 13C LARGE-BORE RESTING COLD SUPPORT",
+      "component_id": "C17-C18-TYPE13C-ASSEMBLY",
+      "source_spec": "RESTING; PIPE 30in AND LARGER",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ]
+        },
+        {
+          "fields": [
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+"},
+            {"name": "line_size_in", "kind": "pipe_size"}
+          ],
+          "defaults": {"cradle_length_code": "NONE"}
+        }
+      ],
+      "designation_error": "Type 13C 格式應為 13C-[B-]{CR#}-{LINE>=30}B",
+      "allowed_values": {"line_size_in": [30, 36, 42, 48, 54, 60]},
+      "static_parameters": {
+        "cradle_lengths_mm": {"NONE": 300, "B": 600},
+        "end_stiffener_rule": {"CR32_through_CR66": 2, "above_CR66": 3},
+        "inner_cradle_width_mm": 400,
+        "jacket_foam_vapor_width_mm": 500
+      },
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE", "include_shield": true}
+      ],
+      "references": ["N-1", "N-2", "N-3", "N-4", "N-5", "N-24~N-26", "C-14/C-15"],
+      "blockers": [
+        "plate/stiffener net contours and galvanized material grade are incomplete"
+      ]
+    }
+  }
+}

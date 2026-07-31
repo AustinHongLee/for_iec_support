@@ -1,158 +1,19 @@
-# TYPE-65 — Trapeze Hanger with Cross Member
+# Type 65 — Trapeze Hanger
 
 | 項目 | 內容 |
-|------|------|
-| 圖號 | D-79 |
-| 分類 | Trapeze / cross-member hanger |
-| 適用範圍 | 2"~24" |
-| 圖面頁數 | 1 |
-| 狀態 | ✅ 已分析（待 calculator） |
+|---|---|
+| 圖面 | D-79 |
+| 編號 | `65-{D}B-{LLHH}` |
+| 表列管徑 | 2、3、4、6、8、10、12、14、16、18、20、24" |
+| 狀態 | Member/rod/Y 表已依原圖重抄；吊桿切長及採購重量仍阻擋 |
 
----
+`L=LL×100 mm`、`H=HH×100 mm`。Member M 依 500/1000/1500/2000/2500 mm 的 next-greater 欄選型，但 NOTE 2 仍要求現場切配。圖面沒有 2-1/2" 或 5" 列。
 
-## 系統本質
+## 加工圖契約
 
-TYPE-65 是典型的 trapeze hanger：
+- H 是上方支承面至 member M 上表的組立尺寸，不是 M-23 finished cut。
+- 未提供 `rod_cut_length_mm` 時，兩支 M-23 只列零重量 reference。
+- M-28、每支 3 個 finished nuts、上下 washers 均列出數量，但來源單重不足時歸零。
+- 12" 以上 stiffener 只保留 60 mm／三邊 6 mm 焊等已知資料；完整輪廓與片數不再依管徑自創。
 
-- 上方以 `ANGLE BRACKET (M-28)` 固定
-- 垂直件是 `"A" WELDED EYE ROD (M-23)`
-- 下方橫梁是 `MEMBER "M"`
-- 被支撐管線放在橫梁上
-
-這種型式的計算重點非常明確：
-
-- 2 支吊桿
-- 2 個 angle bracket
-- 1 支橫向 member
-- 必要時 12" 以上加 stiffener
-
----
-
-## 編碼格式
-
-圖面範例：
-
-```text
-65-2B-1505
-```
-
-拆解如下：
-
-- `65` = Type 編號
-- `2B` = equivalent line size `D`
-- `15` = `L` 尺寸（100 mm）
-- `05` = `H` 尺寸（100 mm）
-
-所以格式可整理為：
-
-```text
-65-{D}B-{LLHH}
-```
-
-其中：
-
-- `L = LL × 100 mm`
-- `H = HH × 100 mm`
-
----
-
-## 圖面表格
-
-表格欄位：
-
-| 欄位 | 含義 |
-|------|------|
-| `LINE SIZE "D"` | 等效管徑 |
-| `ROD SIZE "A"` | 吊桿尺寸 |
-| `MEMBER "M"` | 依不同 `L` 區間選用型鋼 |
-| `Y` | 焊角尺寸 |
-
-`MEMBER "M"` 不是單一欄，而是分成：
-
-- `L=500`
-- `L=1000`
-- `L=1500`
-- `L=2000`
-- `L=2500`
-
-這代表 calculator 必須先把輸入的 `L` 落到對應欄位，再選出 member。
-
----
-
-## 12" & Larger 的補強
-
-圖面左側另外畫了：
-
-- `STIFFENER FOR 12" & LARGER`
-
-所以 Claude 實作時要把這件事當成條件邏輯：
-
-- 若 `D >= 12"`，除基本 member 外，還要再加 stiffener plate
-
-如果第一版不確定 stiffener 展開尺寸如何建模，也至少要：
-
-- 加 remark
-- 或用 custom plate entry 佔位
-
----
-
-## Calculator Handoff
-
-### 最小輸入
-
-```text
-65-{line_size}B-{LLHH}
-```
-
-### BOM 建議
-
-| 構件 | 數量 | 來源 |
-|------|------|------|
-| Angle Bracket | 2 | `M-28`, size = rod size `A` |
-| Welded Eye Rod | 2 | `M-23`, size = `A`, length ≈ `H` |
-| Cross Member | 1 | 依 `D` 與 `L bucket` 查 `MEMBER "M"` |
-| Washer / Hex Nut | 視系統策略 | 圖面有標示 |
-| Stiffener | 條件式 | `D >= 12"` |
-
-### 建議 table
-
-```python
-TYPE65_TABLE = {
-    '2': {
-        'rod_size': '3/8"',
-        'member_by_l': {
-            500: 'L65X65X6',
-            1000: 'L65X65X6',
-            1500: 'L75X75X9',
-            2000: 'L90X90X10',
-            2500: 'L90X90X10',
-        },
-        'weld_y': 6,
-    },
-}
-```
-
-### 實作重點
-
-- `L` 為 bucket 化尺寸，不是連續公式
-- `H` 主要對應 rod 長度
-- `Dimension "L" shall be cut to suit in field`，所以超出 bucket 的輸入需要你決定是：
-  - 向上取最接近 bucket
-  - 或限制只能輸入 500/1000/1500/2000/2500
-
-我會建議第一版先只接受這五種標準值，最穩。
-
----
-
-## 與相近 Type 的差異
-
-| Type | 本質 | 差異 |
-|------|------|------|
-| `64` | 兩條管之間的 rod hanger | `65` 是由上部結構吊一支橫梁來承管 |
-| `31/32` | 框架式鋼構支撐 | `65` 是吊掛，不是立柱或框架 |
-
----
-
-## 給 Claude 的一句話摘要
-
-> TYPE-65 = `line size D` 先決定 rod size，再用 `L bucket` 選 cross member；BOM 主要是 `2 rods + 2 angle brackets + 1 member + optional stiffener`。
+因此型鋼備料重量可算，不代表整組已達 BOM 或加工圖完成狀態。

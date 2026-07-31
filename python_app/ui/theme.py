@@ -46,6 +46,7 @@ TOKENS = {
         "status_busy": "#175CD3",
         "status_ok": "#15803D",
         "status_warn": "#C2570A",
+        "status_high": "#C2410C",
         "status_error": "#DC2626",
         "scroll_handle": "#C3CCD9",
         "splitter": "#E2E7EE",

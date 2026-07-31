@@ -1,0 +1,106 @@
+{
+  "type_id": "17C",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-23/C-24/C-25 與 N-15/N-16 再複驗。2026-07-30 獨立稽核補記：C-23 的 CR5/CR6 bar_Q=50x6 與同列 W=2(RG+T) 及 N-15 的 75x10 衝突，runtime 維持 N-15 自洽列值，host bar_Q 禁止用於下料；N-16 螺栓 2/4 件與 Section V-V 孔數互相矛盾，數量標為 provisional。Member M kg/m 來自未註明標準版次的共用 project lookup，待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/17C.pdf",
+      "drawing_no": "C-23/C-24/C-25",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-23", "C-24", "C-25"],
+      "title": "C-23~C-25 TYPE 17C HORIZONTAL COLD GUIDE",
+      "component_id": "C23-C25-TYPE17C-ASSEMBLY",
+      "source_spec": "GUIDE FOR HORIZONTAL PIPE 24in AND SMALLER",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "cradle_length_code", "kind": "choice", "values": ["A", "B"]},
+            {"name": "cradle_no", "kind": "code", "pattern": "CR\\d+(?:\\.\\d+)?"},
+            {"name": "line_size_in", "kind": "pipe_size"},
+            {"name": "guide_code", "kind": "choice", "values": ["G"]}
+          ]
+        }
+      ],
+      "designation_error": "Type 17C 格式應為 17C-{A|B}-{CR2.5~CR40}-{LINE<=24}B-G",
+      "allowed_values": {"line_size_in": [0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24]},
+      "lookups": [
+        {
+          "name": "cradle",
+          "field": "cradle_no",
+          "rows": {
+            "CR2.5": {"bar_Q": "50x6", "RG_mm": 42, "H_mm": 79, "W_mm": 96},
+            "CR3": {"bar_Q": "50x6", "RG_mm": 50, "H_mm": 87, "W_mm": 112},
+            "CR3.5": {"bar_Q": "50x6", "RG_mm": 57, "H_mm": 94, "W_mm": 126},
+            "CR4": {"bar_Q": "50x6", "RG_mm": 63, "H_mm": 100, "W_mm": 138},
+            "CR4.5": {"bar_Q": "50x6", "RG_mm": 70, "H_mm": 107, "W_mm": 152},
+            "CR5": {"bar_Q": "50x6", "RG_mm": 76, "H_mm": 113, "W_mm": 172, "bar_Q_status": "host_sheet_conflict_do_not_use_for_fabrication", "bar_Q_source_conflict": "C-23 says 50x6, but W=2(RG+T) requires T=10 and N-15 releases 75x10; runtime uses N-15"},
+            "CR6": {"bar_Q": "50x6", "RG_mm": 92, "H_mm": 129, "W_mm": 204, "bar_Q_status": "host_sheet_conflict_do_not_use_for_fabrication", "bar_Q_source_conflict": "C-23 says 50x6, but W=2(RG+T) requires T=10 and N-15 releases 75x10; runtime uses N-15"},
+            "CR7": {"bar_Q": "75x10", "RG_mm": 105, "H_mm": 142, "W_mm": 230},
+            "CR8": {"bar_Q": "75x10", "RG_mm": 117, "H_mm": 154, "W_mm": 254},
+            "CR9": {"bar_Q": "75x10", "RG_mm": 130, "H_mm": 167, "W_mm": 280},
+            "CR10": {"bar_Q": "75x10", "RG_mm": 146, "H_mm": 183, "W_mm": 312},
+            "CR11": {"bar_Q": "75x10", "RG_mm": 158, "H_mm": 195, "W_mm": 336},
+            "CR12": {"bar_Q": "75x10", "RG_mm": 171, "H_mm": 208, "W_mm": 362},
+            "CR14": {"bar_Q": "75x12", "RG_mm": 187, "H_mm": 224, "A_mm": 130, "B_mm": 10, "C_mm": 60, "D_mm": 30, "G_mm": 30, "angle_S": "65x65x6", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR15": {"bar_Q": "75x12", "RG_mm": 200, "H_mm": 237, "A_mm": 135, "B_mm": 10, "C_mm": 60, "D_mm": 30, "G_mm": 30, "angle_S": "65x65x6", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR16": {"bar_Q": "75x12", "RG_mm": 213, "H_mm": 249, "A_mm": 140, "B_mm": 10, "C_mm": 70, "D_mm": 30, "G_mm": 40, "angle_S": "75x75x9", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR17": {"bar_Q": "75x12", "RG_mm": 225, "H_mm": 262, "A_mm": 150, "B_mm": 10, "C_mm": 80, "D_mm": 30, "G_mm": 40, "angle_S": "75x75x9", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR18": {"bar_Q": "90x12", "RG_mm": 238, "H_mm": 275, "A_mm": 155, "B_mm": 10, "C_mm": 80, "D_mm": 40, "G_mm": 40, "angle_S": "75x75x9", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR19": {"bar_Q": "90x12", "RG_mm": 251, "H_mm": 287, "A_mm": 160, "B_mm": 10, "C_mm": 80, "D_mm": 40, "G_mm": 40, "angle_S": "75x75x9", "hole_E_mm": 15, "bolts_V": "1/2in x 45"},
+            "CR20": {"bar_Q": "90x16", "RG_mm": 267, "H_mm": 304, "A_mm": 170, "B_mm": 10, "C_mm": 90, "D_mm": 40, "G_mm": 40, "angle_S": "75x75x9", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR21": {"bar_Q": "90x16", "RG_mm": 279, "H_mm": 316, "A_mm": 175, "B_mm": 10, "C_mm": 90, "D_mm": 40, "G_mm": 55, "angle_S": "100x100x10", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR22": {"bar_Q": "100x16", "RG_mm": 292, "H_mm": 329, "A_mm": 180, "B_mm": 10, "C_mm": 90, "D_mm": 50, "G_mm": 55, "angle_S": "100x100x10", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR23": {"bar_Q": "100x16", "RG_mm": 305, "H_mm": 342, "A_mm": 185, "B_mm": 10, "C_mm": 90, "D_mm": 50, "G_mm": 55, "angle_S": "100x100x10", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR24": {"bar_Q": "100x16", "RG_mm": 318, "H_mm": 354, "A_mm": 190, "B_mm": 10, "C_mm": 90, "D_mm": 50, "G_mm": 55, "angle_S": "100x100x10", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR25": {"bar_Q": "100x16", "RG_mm": 330, "H_mm": 367, "A_mm": 200, "B_mm": 10, "C_mm": 100, "D_mm": 50, "G_mm": 55, "angle_S": "100x100x10", "hole_E_mm": 19, "bolts_V": "5/8in x 50"},
+            "CR26": {"bar_Q": "130x20", "RG_mm": 343, "H_mm": 360, "A_mm": 205, "B_mm": 10, "C_mm": 105, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 55"},
+            "CR27": {"bar_Q": "130x20", "RG_mm": 356, "H_mm": 392, "A_mm": 210, "B_mm": 10, "C_mm": 110, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 55"},
+            "CR28": {"bar_Q": "130x20", "RG_mm": 368, "H_mm": 405, "A_mm": 220, "B_mm": 10, "C_mm": 120, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 55"},
+            "CR29": {"bar_Q": "130x20", "RG_mm": 381, "H_mm": 418, "A_mm": 225, "B_mm": 10, "C_mm": 125, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 55"},
+            "CR30": {"bar_Q": "130x25", "RG_mm": 394, "H_mm": 431, "A_mm": 230, "B_mm": 10, "C_mm": 130, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR31": {"bar_Q": "130x25", "RG_mm": 410, "H_mm": 446, "A_mm": 235, "B_mm": 10, "C_mm": 135, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR32": {"bar_Q": "130x25", "RG_mm": 422, "H_mm": 459, "A_mm": 245, "B_mm": 10, "C_mm": 145, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR33": {"bar_Q": "130x25", "RG_mm": 435, "H_mm": 471, "A_mm": 250, "B_mm": 10, "C_mm": 150, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR34": {"bar_Q": "130x25", "RG_mm": 448, "H_mm": 495, "A_mm": 255, "B_mm": 10, "C_mm": 155, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR35": {"bar_Q": "130x25", "RG_mm": 460, "H_mm": 497, "A_mm": 260, "B_mm": 10, "C_mm": 160, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR36": {"bar_Q": "130x25", "RG_mm": 473, "H_mm": 510, "A_mm": 265, "B_mm": 10, "C_mm": 165, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR37": {"bar_Q": "130x25", "RG_mm": 486, "H_mm": 523, "A_mm": 275, "B_mm": 10, "C_mm": 175, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR38": {"bar_Q": "130x25", "RG_mm": 498, "H_mm": 535, "A_mm": 280, "B_mm": 10, "C_mm": 180, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR39": {"bar_Q": "130x25", "RG_mm": 511, "H_mm": 548, "A_mm": 285, "B_mm": 10, "C_mm": 185, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"},
+            "CR40": {"bar_Q": "130x25", "RG_mm": 524, "H_mm": 561, "A_mm": 290, "B_mm": 10, "C_mm": 190, "D_mm": 50, "G_mm": 25, "hole_E_mm": 19, "bolts_V": "5/8in x 60"}
+          }
+        }
+      ],
+      "static_parameters": {
+        "clearance_mm": 3,
+        "bar_W_formula": "2 * (RG + T)",
+        "cradle_detail": "C-21",
+        "small_u_band": "N-15",
+        "large_u_band": "N-16"
+      },
+      "component_bindings": [
+        {"component_id": "COLD-SUPPORT-CORE"},
+        {
+          "component_id": "N-15",
+          "when": {
+            "cradle_no": ["CR2.5", "CR3", "CR3.5", "CR4", "CR4.5", "CR5", "CR6", "CR7", "CR8", "CR9", "CR10", "CR11", "CR12"]
+          }
+        },
+        {
+          "component_id": "N-16",
+          "when": {
+            "cradle_no": ["CR14", "CR15", "CR16", "CR17", "CR18", "CR19", "CR20", "CR21", "CR22", "CR23", "CR24", "CR25", "CR26", "CR27", "CR28", "CR29", "CR30", "CR31", "CR32", "CR33", "CR34", "CR35", "CR36", "CR37", "CR38", "CR39", "CR40"]
+          }
+        }
+      ],
+      "references": ["C-14", "C-21", "N-15", "N-16", "N-20~N-23"],
+      "blockers": [
+        "N-15/N-16 specify carbon steel but do not release its material grade",
+        "N-16 Member-M joint preparation/weld recipe is not completely released",
+        "machine-bolt material/grade, nuts and finished unit weights are not specified"
+      ]
+    }
+  }
+}

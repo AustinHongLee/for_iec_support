@@ -1,17 +1,8 @@
-"""
-N-6 Special Base Plate metadata table.
-"""
-from .component_metadata_registry import build_metadata_component, clone_metadata_component
+"""N-6 special-base-plate source lookup."""
+
+from .cold_restraint_tables import N6_COMPONENT, get_n6_component
 
 
-N6_TABLE = build_metadata_component(
-    component_id="N-6",
-    name_en="SPECIAL BASE PLATE",
-    category="component_cold",
-    pdf_file="N-6-SPECIAL BASE PLATE.pdf",
-    summary="Metadata-only entry for the special base plate used in the cold-support family.",
-)
+N6_TABLE = N6_COMPONENT
 
-
-def get_n6_component() -> dict:
-    return clone_metadata_component(N6_TABLE)
+__all__ = ["N6_TABLE", "get_n6_component"]

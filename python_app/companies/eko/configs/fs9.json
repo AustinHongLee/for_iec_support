@@ -66,15 +66,23 @@
  "limits": {
   "Hmax": 4000
  },
+ "validation": {
+  "required": ["fix", "serial", "L", "H"],
+  "allowed": ["fix", "serial", "L", "H", "H1"],
+  "fixes": ["A", "B", "E", "W"],
+  "dimensions": {
+   "H": {"max": 4000}
+  }
+ },
  "designation_format": {
   "pattern": "FS9{A/B/E/W}-序號-□L-□H-□H1",
   "example": "FS9E-2-400L-3000H-300H1"
  },
- "data_update_note": "立柱引用DFS4;槽鋼C150x75x6.5(每米重後援)長=L;gusset鋼板依序號",
+ "data_update_note": "立柱引用DFS4;槽鋼C150x75x6.5(每米重後援)長=L;gusset鋼板依序號。2026-07-27依圖面將固定方式、序號、L、H設為必填，管徑欄位不得取代序號。",
  "company": "EKO",
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

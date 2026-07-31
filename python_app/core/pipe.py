@@ -57,6 +57,7 @@ def add_pipe_entry(result: AnalysisResult, pipe_size, pipe_thickness: str,
     entry.total_weight = entry.unit_weight * entry.quantity
     entry.unit = "M"
     entry.factor = 1
+    entry.qty_subtotal = entry.quantity * entry.factor
     entry.length_subtotal = round(entry.quantity * entry.factor * pipe_length / 1000, 3)
     entry.weight_output = entry.factor * entry.total_weight
     entry.category = "管路類"

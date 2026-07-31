@@ -1,0 +1,19 @@
+{
+  "type_id": "115",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-128 建立 small non-ferrous continuous support。Member M 依 designation L 下料，Plate P 片數採 ceil(L/Nmax)+1 並含兩端、等距重算且保持不超過 Nmax；整體 existing-steel 安裝位置仍列 project blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-115_D-128.pdf",
+      "revision": "1",
+      "rows": {
+        "0.5": {"member_m_spec": "50*50*6", "plate_size": 40, "plate_thickness": 6, "N_max": 800, "L_max": 3000},
+        "0.75": {"member_m_spec": "50*50*6", "plate_size": 40, "plate_thickness": 6, "N_max": 800, "L_max": 3000},
+        "1": {"member_m_spec": "75*75*9", "plate_size": 60, "plate_thickness": 6, "N_max": 1000, "L_max": 4000},
+        "1.5": {"member_m_spec": "75*75*9", "plate_size": 60, "plate_thickness": 6, "N_max": 1000, "L_max": 4000},
+        "2": {"member_m_spec": "100*100*10", "plate_size": 80, "plate_thickness": 6, "N_max": 1000, "L_max": 5000}
+      }
+    }
+  }
+}

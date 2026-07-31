@@ -1,0 +1,66 @@
+{
+  "type_id": "21C",
+  "version": "1.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-32/C-33/C-34 建立 cold-insulated vessel to hot-insulated pipe support。designation 保存 line/C/shoe height M；3/4、6/8/10、12~24 分支與 B 公式保存。pipe shoe/guide assembly 為 other specified，C 不作 finished cut。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/21C.pdf",
+      "drawing_no": "C-32/C-33/C-34",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "source_pages": ["C-32", "C-33", "C-34"],
+      "title": "C-32~C-34 TYPE 21C VESSEL-TO-HOT-PIPE SUPPORT",
+      "component_id": "C32-C34-TYPE21C-ASSEMBLY",
+      "source_spec": "COLD-INSULATED VESSEL AND HOT-INSULATED PIPE",
+      "designation_variants": [
+        {
+          "fields": [
+            {"name": "line_size_in", "kind": "pipe_size"},
+            {"name": "C_mm", "kind": "positive_mm"},
+            {"name": "shoe_height_M_mm", "kind": "positive_mm"}
+          ]
+        }
+      ],
+      "designation_error": "Type 21C 格式應為 21C-{LINE}B-{C mm}-{SHOE HEIGHT M mm}",
+      "branch_selections": [
+        {
+          "name": "pipe_group",
+          "field": "line_size_in",
+          "branches": {
+            "three_four": {
+              "values": [3, 4],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "clip": "N-12 CLIP TYPE 2",
+              "pipe_interface": "STM-05.01 D-63 GUIDE ASSEMBLY / PIPE SHOE"
+            },
+            "six_eight_ten": {
+              "values": [6, 8, 10],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "clip": "N-12 CLIP TYPE 2",
+              "B_formula": "pipe_OD/2 + M + 48"
+            },
+            "twelve_to_twenty_four": {
+              "values": [12, 14, 16, 18, 20, 22, 24],
+              "sections": ["L75x75x9", "L100x100x10"],
+              "clip": "N-12 CLIP TYPE 2",
+              "B_formula": "pipe_OD/2 + M + 48"
+            }
+          }
+        }
+      ],
+      "static_parameters": {
+        "vessel_clip_stud": "3/4in x 120 A193 Gr.B8 with 2 A194 Gr.8A nuts",
+        "vessel_clip_holes": "2-diameter22",
+        "support_plate_width_mm": 180,
+        "weld_mm": 6
+      },
+      "references": ["N-12/N-12A", "N-28", "STM-05.01 D-63", "C-32 NOTE 1"],
+      "blockers": [
+        "C is an assembly reach, not a proven set of finished member cuts",
+        "pipe shoe/guide assembly and hot-insulation interface are OTHER SPECIFIED",
+        "dimension A, wood block and vessel clip recipes remain unresolved"
+      ]
+    }
+  }
+}

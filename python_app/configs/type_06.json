@@ -1,0 +1,64 @@
+{
+  "type_id": "06",
+  "version": "2.1",
+  "source": "單張-本案有關/中威/TYPE-06_D-6.pdf + LUG-PLATE_TYPE-F_M-37.pdf",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "逐圖重驗中威 D-6/M-37。補回原計算遺漏的 M-37 Type-F lug plate 與 2/4 支 K bolt，保存 A/B 管位資料；H/L/Member 改為硬限制。D-6 範例 0510-0401 本身存在 A+B不等於L，故不擅自正規化，改列組立圖 blocker。2026-07-31：完整英制 K bolt 直徑×長度改列可追溯理論估重，供應商成品重量仍須確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-06_D-6.pdf",
+      "revision": "1",
+      "lug_drawing": "單張-本案有關/中威/LUG-PLATE_TYPE-F_M-37.pdf",
+      "lug_revision": "1",
+      "member_table": "TYPE06_MEMBERS"
+    }
+  },
+  "constraints": {
+    "H_max_mm": 1500,
+    "L_max_mm": 1000
+  },
+  "fabrication_contract": {
+    "weld_mm": 6,
+    "field_cut_dimensions": ["H", "L"],
+    "default_A_B": "L/2",
+    "designation_sample_conflict": "D-6 sample 06-L50-0510-0401 yields A+B=500 while L=1000"
+  },
+  "TYPE06_MEMBERS": {
+    "L50": {
+      "section_type": "Angle",
+      "lookup_dim": "50*50*6",
+      "full_spec": "L50X50X6",
+      "lug_type": "LGP-F-1",
+      "hole_count": 2,
+      "J": 19,
+      "K": "5/8\"X40"
+    },
+    "L65": {
+      "section_type": "Angle",
+      "lookup_dim": "65*65*6",
+      "full_spec": "L65X65X6",
+      "lug_type": "LGP-F-2",
+      "hole_count": 2,
+      "J": 22,
+      "K": "3/4\"X50"
+    },
+    "L75": {
+      "section_type": "Angle",
+      "lookup_dim": "75*75*9",
+      "full_spec": "L75X75X9",
+      "lug_type": "LGP-F-3",
+      "hole_count": 2,
+      "J": 22,
+      "K": "3/4\"X50"
+    },
+    "C150": {
+      "section_type": "Channel",
+      "lookup_dim": "150*75*9",
+      "full_spec": "C150X75X9",
+      "lug_type": "LGP-F-6",
+      "hole_count": 4,
+      "J": 22,
+      "K": "3/4\"X50"
+    }
+  }
+}

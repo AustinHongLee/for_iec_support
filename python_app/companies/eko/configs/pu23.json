@@ -63,13 +63,22 @@
    }
   }
  ],
+ "validation": {
+  "required": ["fix", "L", "L1"],
+  "allowed": ["fix", "L", "L1"],
+  "fixes": ["W", "B"],
+  "dimensions": {
+   "L": {"max": 1400},
+   "L1": {"max": 900}
+  }
+ },
  "extra_warnings": [
   "PU23 無管徑代號(PU23{W/B}-□L-□L1)；適用2.1/2\"~14\"管線；Lmax=1400、L1max=900、L1現場切割配合",
   "逐桿分列：縱槽鋼×2(len=L)、橫槽鋼×1(len=L1)"
  ],
- "data_update_note": "依PU23.pdf件號表；C150×75×9(縱×2=L,橫×1=L1)+底板12t×200×215(A283,僅B)+螺栓M16×60L",
+ "data_update_note": "v1.1 強制固定方式、L、L1並拒絕管徑等多餘欄位；依圖面限制L≤1400、L1≤900。原資料依PU23.pdf件號表。",
  "code": "PU23",
  "company": "EKO",
- "version": "1.0",
- "data_updated_at": "2026-07-21"
+ "version": "1.1",
+ "data_updated_at": "2026-07-27"
 }

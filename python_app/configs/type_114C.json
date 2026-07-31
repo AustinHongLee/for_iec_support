@@ -1,0 +1,23 @@
+{
+  "type_id": "114C",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-57/C-58/C-59、N-1~N-5/N-7A/N-8/N-13/N-14/N-20~N-23 複驗。2026-07-30 獨立稽核確認 C-58 <=2in PLAN 明列 N-7A SUB1，現已接 rod 展開/重量與四顆 nuts reference；該 PLAN 沒有 B，故 B 不再由 F+13 虛構。3/4in 接 N-8；其餘有 B 的分支才套 F+13。<=10in 接 N-13，12~24in 接 N-14；設備輪廓仍維持 vendor blocker。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/114C.pdf",
+      "drawing_no": "C-57/C-58/C-59",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "branches": {
+        "small_2_and_under": {"sizes": [0.5, 0.75, 1, 1.25, 1.5, 2], "C_max_mm": 1000, "sections": ["L75x75x9"], "support_reference": "C-21 / N-7A SPECIAL U-BOLT SUB1", "clip_reference": "N-13 CLIP TYPE 5", "dimension_B_formula": null},
+        "three_four": {"sizes": [3, 4], "C_max_mm": 1000, "sections": ["L75x75x9", "L100x100x10"], "support_reference": "N-8 STRAP", "clip_reference": "N-13 CLIP TYPE 5", "dimension_B_formula": "F + 13"},
+        "six_ten": {"sizes": [6, 8, 10], "C_max_mm": 1000, "sections": ["L75x75x9", "L100x100x10"], "support_reference": "N-20~N-23 / C-21", "clip_reference": "N-13 CLIP TYPE 5", "dimension_B_formula": "F + 13"},
+        "twelve_twenty_four": {"sizes": [12, 14, 16, 18, 20, 22, 24], "C_max_mm": 1100, "sections": ["L75x75x9", "L130x130x12"], "support_reference": "N-20~N-23 / C-21", "clip_reference": "N-14 CLIP TYPE 6", "dimension_B_formula": "F + 13"}
+      },
+      "cradle_length_reference": "C-24",
+      "stud_hole_diameter_mm": 22,
+      "weld_mm": 6
+    }
+  }
+}

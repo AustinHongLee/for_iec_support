@@ -1,68 +1,191 @@
 {
   "type_id": "11",
-  "source": "data/type11_table.py",
+  "_version": "1.1.0",
+  "source": "D-11 source drawings",
   "migrated": "2026-04-29",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對中威 E25-24 與中鼎 22A_5123A D-11：拆分尺寸範圍、M-42 型式、全牙螺桿與22A尾碼D。移除H-391猜式，改為現場切長覆寫；彈簧1、washer 2。2026-07-31 起主體圖未列但同來源M-42已定義者列高風險暫算；離散H與彈簧選型範圍仍硬停止。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-11_D-11.pdf",
+      "revision": "1",
+      "table_source": "TYPE11_TABLE",
+      "allowed_lower_components": [
+        "G",
+        "J"
+      ],
+      "allowed_h_mm": [
+        600,
+        1200
+      ],
+      "designation_requires_installed_length": false,
+      "threaded_rod": {
+        "spec": "1-5/8\"*300L",
+        "diameter_mm": 41.275,
+        "length_mm": 300,
+        "material": "SOURCE UNSPECIFIED",
+        "material_canonical_id": "UNRESOLVED_D11_CW_THREADED_ROD",
+        "source_material_explicit": false
+      },
+      "heavy_hex_nut": {
+        "spec": "1-5/8\"",
+        "quantity": 2,
+        "material": "SOURCE UNSPECIFIED",
+        "material_canonical_id": "UNRESOLVED_D11_CW_HEAVY_HEX_NUT",
+        "source_material_explicit": false
+      }
+    },
+    "ctci_22a_5123a": {
+      "drawing": "單張-本案有關/中鼎/22A_5123A/TYPE-11_D-11.pdf",
+      "revision": "1",
+      "table_source": "ctci_22a_5123a",
+      "allowed_lower_components": [
+        "G",
+        "R",
+        "T"
+      ],
+      "allowed_h_mm": [
+        600,
+        1200
+      ],
+      "designation_requires_installed_length": true,
+      "threaded_rod": {
+        "spec": "1-3/4\"*300L",
+        "diameter_mm": 44.45,
+        "length_mm": 300,
+        "material": "A307-B GALV.",
+        "material_canonical_id": "UNRESOLVED_A307_B_GALV",
+        "source_material_explicit": true
+      },
+      "heavy_hex_nut": {
+        "spec": "1-3/4\"",
+        "quantity": 2,
+        "material": "A307-B GALV.",
+        "material_canonical_id": "UNRESOLVED_A307_B_GALV",
+        "source_material_explicit": true
+      }
+    }
+  },
+  "source_tables": {
+    "ctci_22a_5123a": {
+      "2": {
+        "L": 71,
+        "spring_mark": "SPR12",
+        "spring_wire": 12,
+        "spring_id": 46,
+        "spring_k": 25,
+        "spring_free_len": 100,
+        "spring_max_defl": 22
+      },
+      "3": {
+        "L": 81,
+        "spring_mark": "SPR12",
+        "spring_wire": 12,
+        "spring_id": 46,
+        "spring_k": 25,
+        "spring_free_len": 100,
+        "spring_max_defl": 22
+      },
+      "4": {
+        "L": 97,
+        "spring_mark": "SPR12",
+        "spring_wire": 12,
+        "spring_id": 46,
+        "spring_k": 25,
+        "spring_free_len": 100,
+        "spring_max_defl": 22
+      }
+    }
+  },
+  "fabrication_contract": {
+    "upper_pipe_size_in": 1.5,
+    "upper_pipe_schedule": "SCH.80",
+    "upper_straight_tail_mm": 100,
+    "supporting_pipe_size_in": 2,
+    "supporting_pipe_schedule": "SCH.40",
+    "supporting_pipe_material": "A53Gr.B",
+    "supporting_pipe_cut_basis": "FIELD CUT TO SUIT (D-11 NOTE 4)",
+    "minimum_base_clearance_mm": 50,
+    "field_weld_mm": 6,
+    "washer": {
+      "outer_diameter_mm": 92,
+      "inner_diameter_mm": 50,
+      "thickness_mm": 9,
+      "quantity": 2,
+      "material": "WROUGHT STEEL"
+    },
+    "spring": {
+      "active_coils": 4,
+      "inactive_coils": 2,
+      "quantity": 1,
+      "material": "ASTM A229"
+    }
+  },
   "TYPE11_HARDWARE_TABLE": {
     "threaded_rod": {
       "name": "M.B.(FULL THREADED)",
       "spec": "1-5/8\"*300L",
-      "material": "A307Gr.B(HDG)",
+      "material": "SOURCE UNSPECIFIED",
       "quantity": 1,
-      "unit_weight_kg": 3.2,
+      "unit_weight_kg": 3.15,
       "unit": "EA",
       "category": "螺栓類",
       "length_mm": 300,
-      "remark": "legacy Type 11 calculator assumption"
+      "remark": "D-11 nominal solid-cylinder blank estimate; source material not specified"
     },
     "hex_nut": {
       "name": "HEAVY HEX NUT",
       "spec": "1-5/8\"",
-      "material": "A307Gr.B(HDG)",
+      "material": "SOURCE UNSPECIFIED",
       "quantity": 2,
-      "unit_weight_kg": 0.4,
+      "unit_weight_kg": 0,
       "unit": "EA",
       "category": "螺栓類",
-      "remark": "legacy Type 11 calculator assumption"
+      "remark": "D-11 purchased-item weight not provided"
     },
     "washer": {
       "name": "WASHER",
-      "spec": "92*9t*50",
-      "material": "A36/SS400",
+      "spec": "OD92/ID50*9t",
+      "material": "WROUGHT STEEL",
       "quantity": 2,
-      "unit_weight_kg": 1.0,
+      "unit_weight_kg": 0.33,
       "unit": "EA",
       "category": "鋼板類",
-      "remark": "legacy Type 11 calculator assumption"
+      "remark": "D-11 exact annular geometry weight"
     }
   },
   "TYPE11_SPRING_TABLE": {
     "SPR12": {
       "name": "SPRING",
       "material": "ASTM A229",
-      "quantity": 2,
-      "unit_weight_kg": 1.0,
+      "quantity": 1,
+      "unit_weight_kg": 0.97,
       "unit": "EA",
       "category": "彈簧類",
       "wire_mm": 12,
       "id_mm": 46,
+      "active_coils": 4,
+      "inactive_coils": 2,
       "spring_k_kg_per_mm": 25,
       "free_len_mm": 100,
       "max_defl_mm": 22,
-      "remark": "legacy Type 11 calculator assumption"
+      "remark": "D-11 six-coil nominal wire-blank estimate"
     },
     "SPR14": {
       "name": "SPRING",
       "material": "ASTM A229",
-      "quantity": 2,
-      "unit_weight_kg": 1.0,
+      "quantity": 1,
+      "unit_weight_kg": 1.37,
       "unit": "EA",
       "category": "彈簧類",
       "wire_mm": 14,
       "id_mm": 46,
+      "active_coils": 4,
+      "inactive_coils": 2,
       "spring_k_kg_per_mm": 42,
       "free_len_mm": 115,
       "max_defl_mm": 24,
-      "remark": "legacy Type 11 calculator assumption"
+      "remark": "D-11 six-coil nominal wire-blank estimate"
     }
   },
   "TYPE11_TABLE": {

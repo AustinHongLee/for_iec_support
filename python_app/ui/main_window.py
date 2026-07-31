@@ -8,6 +8,8 @@ IEC 管架支撐分析工具
   右: Side Panel (選中項目的設定, 可單筆覆寫)
 """
 import csv
+import glob
+import html as html_lib
 import json
 import os
 import re
@@ -48,6 +50,14 @@ from core.project_import import (
 )
 from core.project_aggregation import ProjectInputRow, analyze_project_rows
 from core.config_loader import load_config, get_type_table_as_dict, get_variation_axes
+from core.source_profiles import (
+    CTCI_20E4588,
+    CTCI_22A_5123A,
+    CW_E25_24_HP6,
+    DEFAULT_SOURCE_PROFILE,
+    normalize_source_profile,
+    source_profile_choices,
+)
 from companies.registry import design_company_label
 from ui.theme import TOKENS, build_stylesheet
 from ui.type_manager import TypeManagerWidget, load_catalog
@@ -57,6 +67,7 @@ from ui.project_header import ProjectHeader
 from ui.data_maintenance_page import DataMaintenancePage
 from ui.support_master_table import SupportMasterTable
 from ui.bom_detail_panel import BomDetailPanel, is_header_visible_for_view
+from ui.result_readiness import entry_readiness, result_readiness
 from ui.project_import_dialog import (
     ProjectImportGuideDialog,
     ProjectImportPreviewDialog,
@@ -65,7 +76,17 @@ from ui.project_import_dialog import (
 # PDF/資源路徑
 _UI_DIR = os.path.dirname(os.path.abspath(__file__))
 _APP_DIR = os.path.dirname(_UI_DIR)
+_REPO_DIR = os.path.dirname(_APP_DIR)
 _PDF_DIR = os.path.join(_APP_DIR, "assets", "Type")
+_SOURCE_PDF_DIRS = {
+    CW_E25_24_HP6: os.path.join(_REPO_DIR, "單張-本案有關", "中威"),
+    CTCI_22A_5123A: os.path.join(
+        _REPO_DIR, "單張-本案有關", "中鼎", "22A_5123A"
+    ),
+    CTCI_20E4588: os.path.join(
+        _REPO_DIR, "單張-本案有關", "中鼎", "長春_Type"
+    ),
+}
 
 # 結果表格群組背景色 (header_row_color, body_row_color)
 _RESULT_GROUP_COLORS = [
@@ -110,6 +131,7 @@ _PROJECT_ROW_ALIASES = {
     "quantity": ("數量", "quantity", "qty", "count", "組數", "支數"),
     "unit": ("單位", "unit", "uom"),
     "enabled": ("enabled", "啟用"),
+    "source_profile": ("source_profile", "圖面來源", "來源設定"),
     "overrides": ("overrides_json", "overrides"),
     "description": ("description", "desc", "描述", "中文說明", "說明", "品名"),
     "item_code": ("item_code", "item code", "料號", "code"),
@@ -127,6 +149,7 @@ _PROJECT_XLSX_FIELD_LABELS = {
     "item_code": "料號備援",
     "nominal_size": "管徑（開孔必填）",
     "insulation": "保溫厚度（開孔用）",
+    "source_profile": "圖面來源覆寫",
 }
 
 
@@ -162,6 +185,8 @@ class MainWindow(QMainWindow):
         self._pending_undo_completion_message = ""
         self._last_global_material_text = _UNCONFIRMED_GLOBAL_MATERIAL_LABEL
         self._global_material_confirmed = False
+        self._source_profile_id = DEFAULT_SOURCE_PROFILE
+        self._last_source_profile_id = DEFAULT_SOURCE_PROFILE
         set_analysis_setting("upper_material", _DEFAULT_ESTIMATE_MATERIAL)
         self._auto_analyze_timer = QTimer(self)
         self._auto_analyze_timer.setSingleShot(True)
@@ -261,6 +286,7 @@ class MainWindow(QMainWindow):
             "global_material_confirmed": self._global_material_confirmed,
             "project_name": self.project_header.project_name_label.text(),
             "analysis_has_run": self._analysis_has_run,
+            "source_profile_id": self._source_profile_id,
         }
         self.btn_undo.setEnabled(True)
         self.btn_undo.setToolTip(f"復原上一步：{description}（Ctrl+Z）")
@@ -307,6 +333,17 @@ class MainWindow(QMainWindow):
             self.material_combo.setCurrentText(material_text)
             self.material_combo.blockSignals(False)
             self._last_global_material_text = material_text
+
+            source_profile_id = snapshot["source_profile_id"]
+            self._source_profile_id = source_profile_id
+            self._last_source_profile_id = source_profile_id
+            self.project_header.source_profile_combo.blockSignals(True)
+            source_index = self.project_header.source_profile_combo.findData(
+                source_profile_id
+            )
+            if source_index >= 0:
+                self.project_header.source_profile_combo.setCurrentIndex(source_index)
+            self.project_header.source_profile_combo.blockSignals(False)
 
             self._project_rows = deepcopy(snapshot["project_rows"])
             self._rebuild_item_list_from_project_rows()
@@ -392,6 +429,11 @@ class MainWindow(QMainWindow):
                 "A335-P11", "A335-P22", "A312-TP304", "A312-TP316",
             ],
             current_material=get_analysis_setting("upper_material", "SUS304"),
+            source_profiles=source_profile_choices(),
+            current_source_profile=self._source_profile_id,
+        )
+        self.project_header.source_profile_combo.currentIndexChanged.connect(
+            self._on_source_profile_changed
         )
         self.material_combo = self.project_header.material_combo
         self.material_combo.insertItem(0, _UNCONFIRMED_GLOBAL_MATERIAL_LABEL)
@@ -1016,6 +1058,7 @@ class MainWindow(QMainWindow):
             ("serial", "流水號"),
             ("designation", "型號"),
             ("material", "材質"),
+            ("readiness", "BOM／加工"),
         )
         for key, placeholder in filter_specs:
             combo = QComboBox()
@@ -1031,7 +1074,8 @@ class MainWindow(QMainWindow):
         status_combo = QComboBox()
         status_combo.addItem("全部狀態", "")
         status_combo.addItem("✓ 正常", "✓")
-        status_combo.addItem("⚠ 待確認", "⚠")
+        status_combo.addItem("⚠ 一般警示", "⚠")
+        status_combo.addItem("▲ 高風險", "▲")
         status_combo.addItem("✗ 錯誤", "✗")
         status_combo.addItem("— 未分析", "—")
         status_combo.currentIndexChanged.connect(self._apply_result_filter)
@@ -1099,6 +1143,9 @@ class MainWindow(QMainWindow):
         self.summary_support_label = self._make_summary_value_label(
             "--", color["metric_support"], font["metric_value"]
         )
+        self.summary_review_label = self._make_summary_value_label(
+            "--", color["status_warn"], font["metric_value"]
+        )
         self.summary_material_label = self._make_summary_value_label(
             "--", color["status_warn"], font["metric_value"]
         )
@@ -1119,6 +1166,8 @@ class MainWindow(QMainWindow):
         row.addLayout(self._make_summary_metric("錯誤項目", self.summary_error_label))
         row.addWidget(self._make_summary_separator())
         row.addLayout(self._make_summary_metric("支撐組數", self.summary_support_label))
+        row.addWidget(self._make_summary_separator())
+        row.addLayout(self._make_summary_metric("待確認", self.summary_review_label))
         row.addWidget(self._make_summary_separator())
         row.addLayout(self._make_summary_metric("材質確認", self.summary_material_label))
         row.addStretch()
@@ -1284,7 +1333,12 @@ class MainWindow(QMainWindow):
         overrides = row.overrides or {}
         material_pending = self._row_material_pending(row)
         tags = []
-        tags.append(design_company_label(row.designation))
+        tags.append(
+            design_company_label(
+                row.designation,
+                row.source_profile or self._source_profile_id,
+            )
+        )
         tags.append(f"{row.quantity} {row.unit or '組'}")
         if overrides.get("connection"):
             tags.append("Tee" if overrides["connection"] == "tee" else "Elbow")
@@ -1296,6 +1350,12 @@ class MainWindow(QMainWindow):
             tags.append("⚠ 全域材質未確認")
         if any(overrides.get(k) for k in ("pipe_size", "schedule", "l_value")):
             tags.append("自訂值")
+        if row.source_profile:
+            profile_label = dict(source_profile_choices()).get(
+                row.source_profile,
+                row.source_profile,
+            )
+            tags.append(f"來源覆寫:{profile_label}")
 
         primary_line = f"{designation}  ·  {'  ·  '.join(tags)}"
         item_widget.setText(f"{primary_line}\n{source_line}")
@@ -1567,7 +1627,7 @@ class MainWindow(QMainWindow):
                     f,
                     fieldnames=[
                         "Drawing line number", "流水號.sort", "數量", "單位", "型號",
-                        "enabled", "overrides_json",
+                        "enabled", "source_profile", "overrides_json",
                     ],
                 )
                 writer.writeheader()
@@ -1579,6 +1639,9 @@ class MainWindow(QMainWindow):
                         "單位": row.unit or "組",
                         "型號": row.designation,
                         "enabled": "1" if row.enabled else "0",
+                        "source_profile": (
+                            row.source_profile or self._source_profile_id
+                        ),
                         "overrides_json": json.dumps(
                             row.overrides or {},
                             ensure_ascii=False,
@@ -1691,6 +1754,13 @@ class MainWindow(QMainWindow):
                 continue
             enabled_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["enabled"]) or "1"
             overrides_text = self._project_field_value(raw, _PROJECT_ROW_ALIASES["overrides"])
+            source_profile_text = self._project_field_value(
+                raw, _PROJECT_ROW_ALIASES["source_profile"]
+            )
+            if source_profile_text:
+                source_profile_text = normalize_source_profile(
+                    source_profile_text
+                )
             drawing = self._project_field_value(
                 raw, _PROJECT_ROW_ALIASES["drawing_line_number"]
             )
@@ -1721,6 +1791,7 @@ class MainWindow(QMainWindow):
                     quantity=quantity,
                     enabled=self._parse_list_enabled(enabled_text),
                     overrides=self._parse_list_overrides(overrides_text, idx),
+                    source_profile=source_profile_text,
                     drawing_line_number=drawing,
                     serial=serial,
                     unit=self._normalize_project_unit_value(
@@ -2376,10 +2447,15 @@ class MainWindow(QMainWindow):
         self._refresh_item_list_display()
         if 0 <= self._selected_index < len(self._project_rows):
             selected = self._project_rows[self._selected_index]
+            panel_overrides = dict(selected.overrides or {})
+            panel_overrides["__source_profile"] = selected.source_profile
+            panel_overrides["__project_source_profile"] = (
+                self._source_profile_id
+            )
             self.side_panel.show_item(
                 self._selected_index,
                 selected.designation,
-                selected.overrides or {},
+                panel_overrides,
             )
         self._clear_analysis_outputs()
         total_supports = sum(row.quantity for row in self._project_rows if row.enabled)
@@ -2433,6 +2509,7 @@ class MainWindow(QMainWindow):
             "serial": "流水號",
             "designation": "型號",
             "material": "材質",
+            "readiness": "BOM/加工",
             "status": "狀態",
         }
         for key, value in filters.items():
@@ -2441,7 +2518,7 @@ class MainWindow(QMainWindow):
                 combo = self.result_column_filters[key]
                 display_value = combo.currentText().replace("✓ ", "").replace(
                     "⚠ ", ""
-                ).replace("✗ ", "").replace("— ", "")
+                ).replace("▲ ", "").replace("✗ ", "").replace("— ", "")
             chip = QPushButton(f"{field_labels.get(key, key)}: {display_value}  ×")
             chip.setToolTip("按一下移除此條件")
             chip.setStyleSheet(
@@ -2474,7 +2551,9 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "result_column_filters"):
             return
         for key, values in self.support_master_table.filter_options().items():
-            combo = self.result_column_filters[key]
+            combo = self.result_column_filters.get(key)
+            if combo is None:
+                continue
             current = combo.currentText()
             combo.blockSignals(True)
             combo.clear()
@@ -2691,6 +2770,14 @@ class MainWindow(QMainWindow):
             }
             matched_groups &= status_groups
 
+        # Master-table-only filters (for example BOM / fabrication readiness)
+        # must hide the same support groups in the part-level detail view.
+        matched_groups &= {
+            f"project:{index}"
+            for index in range(self.support_master_table.rowCount())
+            if not self.support_master_table.isRowHidden(index)
+        }
+
         visible_count = 0
         for row, group_key in enumerate(row_groups):
             is_visible = group_key in matched_groups
@@ -2709,6 +2796,7 @@ class MainWindow(QMainWindow):
         success_count: int | None = None,
         error_count: int | None = None,
         support_count: int | None = None,
+        review_count: int | None = None,
         material_confirmed: int | None = None,
         material_total: int | None = None,
         reset: bool = False,
@@ -2737,6 +2825,18 @@ class MainWindow(QMainWindow):
         if reset or support_count is not None:
             text = "--" if support_count is None else f"{support_count} 組"
             self.summary_support_label.setText(text)
+
+        if reset or review_count is not None:
+            text = "--" if review_count is None else str(review_count)
+            self.summary_review_label.setText(text)
+            color = (
+                TOKENS["color"]["status_warn"]
+                if review_count
+                else TOKENS["color"]["metric_ok"]
+            )
+            self.summary_review_label.setStyleSheet(
+                f"color: {color}; background: transparent;"
+            )
 
         if reset or material_confirmed is not None or material_total is not None:
             text = (
@@ -2827,10 +2927,21 @@ class MainWindow(QMainWindow):
         mode = self.project_header.mode_combo.currentText()
         context = build_export_context(self._project_result, mode=mode)
         assumption_count = context["assumption_count"]
+        high_issue_count = context["high_issue_count"]
+        warning_issue_count = context["warning_issue_count"]
+        engineering_review_count = sum(
+            1
+            for row_result in self._project_result.rows
+            if not row_result.single_result.error
+            and result_readiness(row_result.single_result).needs_attention
+        )
         checklist = (
             f"啟用項目：{enabled_count} 筆\n"
             f"分析錯誤：{error_count} 筆\n"
             f"假設值：{assumption_count} 筆\n"
+            f"一般警示：{warning_issue_count} 項\n"
+            f"高風險：{high_issue_count} 項\n"
+            f"BOM／加工待確認：{engineering_review_count} 筆\n"
             f"匯出模式：{context['mode_label']}"
         )
         if error_count:
@@ -2839,17 +2950,27 @@ class MainWindow(QMainWindow):
                 "error",
                 checklist + "\n可匯出查核結果，但應先處理錯誤列。",
             )
-        elif context["mode"] == "final" and assumption_count:
+        elif context["mode"] == "final" and (assumption_count or high_issue_count):
+            gate_label = f"{assumption_count} 筆假設"
+            if high_issue_count:
+                gate_label += f"／{high_issue_count} 項高風險"
             self._set_export_readiness_label(
-                f"精算未就緒：{assumption_count} 筆假設",
+                f"精算未就緒：{gate_label}",
                 "warn",
-                checklist + "\n精算匯出需要先處理假設值，或填寫例外放行原因。",
+                checklist + "\n精算匯出需要先處理假設與高風險項目，或填寫例外放行原因。",
             )
         elif assumption_count:
             self._set_export_readiness_label(
                 f"概算可匯出：含 {assumption_count} 筆假設",
                 "warn",
                 checklist + "\n匯出檔會保留假設值證據。",
+            )
+        elif engineering_review_count:
+            self._set_export_readiness_label(
+                f"BOM 可匯出：{engineering_review_count} 筆加工／密度待核",
+                "warn",
+                checklist
+                + "\n目前可匯出 BOM 查核資料，但不代表這些支撐已可直接出加工圖。",
             )
         else:
             self._set_export_readiness_label(
@@ -3101,10 +3222,15 @@ class MainWindow(QMainWindow):
             overrides=overrides,
         )
         self._update_item_display(row)
+        panel_overrides = dict(self._project_rows[row].overrides or {})
+        panel_overrides["__source_profile"] = (
+            self._project_rows[row].source_profile
+        )
+        panel_overrides["__project_source_profile"] = self._source_profile_id
         self.side_panel.show_item(
             row,
             new_designation,
-            self._project_rows[row].overrides or {},
+            panel_overrides,
         )
         self._invalidate_analysis_outputs("支撐編碼已編輯，請重新分析")
 
@@ -3249,8 +3375,11 @@ class MainWindow(QMainWindow):
         )
         self._selected_index = row
         project_row = self._project_rows[row]
+        panel_overrides = dict(project_row.overrides or {})
+        panel_overrides["__source_profile"] = project_row.source_profile
+        panel_overrides["__project_source_profile"] = self._source_profile_id
         self.side_panel.show_item(
-            row, project_row.designation, project_row.overrides or {}
+            row, project_row.designation, panel_overrides
         )
         self.support_master_table.select_support(row)
         row_result = self._row_result_for_project_index(row)
@@ -3276,16 +3405,25 @@ class MainWindow(QMainWindow):
 
     def _on_override_changed(self, idx: int, overrides: dict):
         """Side Panel 發出覆寫變更"""
+        source_profile = str(overrides.get("__source_profile") or "")
         # 移除空值
-        clean = {k: v for k, v in overrides.items() if v}
+        clean = {
+            k: v
+            for k, v in overrides.items()
+            if v and k != "__source_profile"
+        }
         if 0 <= idx < len(self._project_rows):
             old_clean = self._project_rows[idx].overrides or {}
-            if old_clean == clean:
+            if (
+                old_clean == clean
+                and self._project_rows[idx].source_profile == source_profile
+            ):
                 return
             self._capture_undo_state("修改覆寫設定")
             self._project_rows[idx] = replace(
                 self._project_rows[idx],
                 overrides=clean or None,
+                source_profile=source_profile,
             )
             self._update_item_display(idx)
             scheduled = self._invalidate_and_schedule_reanalysis(
@@ -3331,7 +3469,8 @@ class MainWindow(QMainWindow):
                 )
 
             self._project_result = analyze_project_rows(
-                self._project_rows_for_analysis()
+                self._project_rows_for_analysis(),
+                source_profile=self._source_profile_id,
             )
             self._results = [row.scaled_result for row in self._project_result.rows]
             self._display_results()
@@ -3354,10 +3493,27 @@ class MainWindow(QMainWindow):
 
             error_count = sum(1 for r in self._results if r.error)
             success_count = len(self._results) - error_count
+            review_count = sum(
+                1
+                for row_index in range(self.support_master_table.rowCount())
+                if (
+                    self.support_master_table.item(row_index, 0) is not None
+                    and self.support_master_table.item(row_index, 0).text() in {"⚠", "▲"}
+                )
+                or (
+                    self.support_master_table.item(row_index, 5) is not None
+                    and any(
+                        marker
+                        in self.support_master_table.item(row_index, 5).text()
+                        for marker in ("待補", "待核")
+                    )
+                )
+            )
             self._set_result_summary(
                 success_count=success_count,
                 error_count=error_count,
                 support_count=self._project_result.total_support_count,
+                review_count=review_count,
             )
             if error_count:
                 self._set_status(
@@ -3538,22 +3694,37 @@ class MainWindow(QMainWindow):
             is_first = True
             group_weight = 0.0
             group_start_row = self.result_table.rowCount()
+            support_readiness = result_readiness(single_result)
+            issue_symbol = (
+                "▲"
+                if support_readiness.issue_severity == "high"
+                else "⚠"
+                if support_readiness.issue_count
+                else ""
+            )
 
             for single_entry, scaled_entry in zip(single_result.entries, scaled_result.entries):
                 row = self.result_table.rowCount()
                 self.result_table.insertRow(row)
-                bg = QColor(hdr_color if is_first else body_color)
+                if support_readiness.issue_severity == "high":
+                    bg = QColor("#FFF0E6" if is_first else "#FFF8F1")
+                elif support_readiness.issue_count:
+                    bg = QColor("#FFF9E6" if is_first else "#FFFCF2")
+                else:
+                    bg = QColor(hdr_color if is_first else body_color)
+
+                designation_text = input_row.designation if is_first else ""
+                if is_first and issue_symbol:
+                    designation_text = f"{issue_symbol} {designation_text}"
+                elif is_first and material_unknown:
+                    designation_text = f"⚠ {designation_text}"
 
                 values = [
                     input_row.drawing_line_number if is_first else "",   # 0 Drawing line number
                     input_row.serial if is_first else "",                # 1 流水號.sort
                     str(input_row.quantity) if is_first else "",         # 2 數量
                     (input_row.unit or "組") if is_first else "",        # 3 單位
-                    (
-                        f"⚠ {input_row.designation}"
-                        if is_first and material_unknown
-                        else input_row.designation if is_first else ""
-                    ),                                                    # 4 型號
+                    designation_text,                                    # 4 型號
                     get_type_code(input_row.designation) if is_first else "",  # 5 Type
                     str(single_entry.item_no),                            # 6 項次
                     single_entry.name,                                    # 7 品名
@@ -3579,10 +3750,13 @@ class MainWindow(QMainWindow):
                     if col == 4 and is_first:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                         item.setForeground(QColor(
-                            TOKENS["color"]["status_warn"]
-                            if material_unknown
+                            TOKENS["color"]["status_high"]
+                            if support_readiness.issue_severity == "high"
+                            else TOKENS["color"]["status_warn"]
+                            if support_readiness.issue_count or material_unknown
                             else "#1A3A6B"
                         ))
+                        item.setToolTip(support_readiness.tooltip)
                     elif col == 15:
                         item.setFont(QFont("Microsoft JhengHei UI", 10, QFont.Weight.Bold))
                     self.result_table.setItem(row, col, item)
@@ -3656,7 +3830,8 @@ class MainWindow(QMainWindow):
             self,
             "精算匯出已擋下",
             (
-                f"目前仍有 {context['assumption_count']} 筆假設值，預設不得匯出精算版。\n\n"
+                f"目前仍有 {context['assumption_count']} 筆假設值、"
+                f"{context['high_issue_count']} 項高風險，預設不得匯出精算版。\n\n"
                 "是否申請本次例外放行？放行原因會記錄在封面。"
             ),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
@@ -3745,17 +3920,20 @@ class MainWindow(QMainWindow):
 
         export_context = self._prepare_export_context()
         if self._project_result is not None and export_context is None:
-            self._set_status("warn", "匯出已擋下：精算版仍有未定假設")
+            self._set_status("warn", "匯出已擋下：精算版仍有未定假設或高風險")
             return
         if (
             self._project_result is not None
             and ext != ".xlsx"
-            and export_context.get("assumption_count")
+            and (
+                export_context.get("assumption_count")
+                or export_context.get("high_issue_count")
+            )
         ):
             QMessageBox.warning(
                 self,
                 "請改用 Excel 匯出",
-                "目前含假設值；CSV/PDF 無法保留概算／例外放行標示，請改用 Excel。",
+                "目前含假設值或高風險；CSV/PDF 無法完整保留分級與例外放行標示，請改用 Excel。",
             )
             return
 
@@ -3837,6 +4015,35 @@ class MainWindow(QMainWindow):
         else:
             self.material_cutting_page.generate(self._results)
         self.main_tabs.setCurrentWidget(self.material_cutting_page)
+
+    def _on_source_profile_changed(self, _index):
+        profile_id = self.project_header.source_profile_combo.currentData()
+        try:
+            profile_id = normalize_source_profile(profile_id)
+        except ValueError as exc:
+            self._set_status("error", str(exc))
+            return
+        previous_profile = self._source_profile_id
+        if profile_id == previous_profile:
+            return
+        self._capture_undo_state("變更圖面來源")
+        self._source_profile_id = profile_id
+        self._last_source_profile_id = profile_id
+        label = self.project_header.source_profile_combo.currentText()
+        self._refresh_item_list_display()
+        if 0 <= self._selected_index < len(self._project_rows):
+            self._on_item_selected(self._selected_index)
+        if not self._project_rows:
+            self._set_status("info", f"專案圖面來源：{label}")
+            return
+        scheduled = self._invalidate_and_schedule_reanalysis(
+            f"專案圖面來源已改為 {label}",
+            apply_message="圖面來源已變更，正在依新來源重新分析…",
+        )
+        if not scheduled:
+            self.side_panel.set_apply_state(
+                "圖面來源已變更；首次分析請按左側按鈕", "info"
+            )
 
     def _on_material_changed(self, text):
         text = str(text or "").strip()
@@ -3951,6 +4158,7 @@ class SidePanel(QGroupBox):
         self._rb_elbow = None
         self._rb_tee = None
         self._mat_combo = None
+        self._source_profile_combo = None
         self._pipe_edit = None
         self._sch_edit = None
         self._l_edit = None
@@ -3962,6 +4170,8 @@ class SidePanel(QGroupBox):
         self._btn_inventor = None
         self._current_result = None
         self._current_designation = ""
+        self._project_source_profile = DEFAULT_SOURCE_PROFILE
+        self._preview_source_profile = DEFAULT_SOURCE_PROFILE
         self.setMinimumWidth(280)
 
         outer = QVBoxLayout(self)
@@ -4135,7 +4345,36 @@ class SidePanel(QGroupBox):
         cat_entry = self._get_catalog_entry(type_code)
         pdf_file = cat_entry.get("pdf_file", "") or f"{type_code.zfill(2)}.pdf"
 
-        pdf_path = os.path.join(_PDF_DIR, pdf_file)
+        pdf_path = ""
+        normalized_source = normalize_source_profile(
+            self._preview_source_profile or DEFAULT_SOURCE_PROFILE
+        )
+        source_dir = _SOURCE_PDF_DIRS.get(normalized_source)
+        base_type = type_code[:-1] if type_code.endswith("T") else type_code
+        if source_dir and os.path.isdir(source_dir):
+            if normalized_source == CTCI_20E4588:
+                legacy_names = [
+                    f"{base_type}.pdf",
+                    f"{base_type.zfill(2)}.pdf",
+                ]
+                for name in legacy_names:
+                    candidate = os.path.join(source_dir, name)
+                    if os.path.exists(candidate):
+                        pdf_path = candidate
+                        break
+            else:
+                source_pattern = os.path.join(
+                    source_dir,
+                    f"TYPE-{base_type.zfill(2)}_*.pdf",
+                )
+                matches = sorted(
+                    glob.glob(source_pattern),
+                    key=lambda value: os.path.basename(value).casefold(),
+                )
+                if matches:
+                    pdf_path = matches[0]
+        if not pdf_path:
+            pdf_path = os.path.join(_PDF_DIR, pdf_file)
         if _FITZ_AVAILABLE and os.path.exists(pdf_path):
             try:
                 doc = fitz.open(pdf_path)
@@ -4220,6 +4459,7 @@ class SidePanel(QGroupBox):
         self._rb_elbow = None
         self._rb_tee = None
         self._mat_combo = None
+        self._source_profile_combo = None
         self._pipe_edit = None
         self._sch_edit = None
         self._l_edit = None
@@ -4265,6 +4505,7 @@ class SidePanel(QGroupBox):
         self._calc_logic_browser.clear()
         self._detail_tabs.setCurrentIndex(0)
         self._detail_tabs.setTabText(1, "計算結果")
+        self._detail_tabs.setTabToolTip(1, "")
         self._splitter.setVisible(False)
         self._placeholder.setVisible(True)
 
@@ -4295,6 +4536,10 @@ class SidePanel(QGroupBox):
         self._building = True
         self._idx = idx
         self._overrides = dict(current_overrides)
+        self._project_source_profile = str(
+            current_overrides.get("__project_source_profile")
+            or DEFAULT_SOURCE_PROFILE
+        )
         self._current_designation = item_text
         self._current_result = None
         self._clear_detail()
@@ -4302,11 +4547,17 @@ class SidePanel(QGroupBox):
         self._splitter.setVisible(True)
         self._detail_tabs.setCurrentIndex(0)
         self._detail_tabs.setTabText(1, "計算結果")
+        self._detail_tabs.setTabToolTip(1, "")
 
         type_code = get_type_code(item_text)
         self._current_type_code = type_code
 
         # ── 載入 PDF 預覽 ──
+        effective_source_profile = (
+            current_overrides.get("__source_profile")
+            or self._project_source_profile
+        )
+        self._preview_source_profile = effective_source_profile
         self._load_pdf_for_type(type_code)
 
         # ── 標題 ──
@@ -4338,6 +4589,25 @@ class SidePanel(QGroupBox):
 
         # ── 覆寫設定 ──
         self._add_dw(self._section_label("覆寫設定"))
+        source_group = QGroupBox("本列圖面來源")
+        source_layout = QHBoxLayout(source_group)
+        self._source_profile_combo = QComboBox()
+        self._source_profile_combo.addItem("跟隨專案來源", "")
+        for profile_id, label in source_profile_choices():
+            self._source_profile_combo.addItem(label, profile_id)
+        source_index = self._source_profile_combo.findData(
+            current_overrides.get("__source_profile", "")
+        )
+        if source_index >= 0:
+            self._source_profile_combo.setCurrentIndex(source_index)
+        self._source_profile_combo.setToolTip(
+            "只有少數混合圖面列才覆寫；一般保持「跟隨專案來源」"
+        )
+        self._source_profile_combo.currentIndexChanged.connect(
+            self._on_field_changed
+        )
+        source_layout.addWidget(self._source_profile_combo)
+        self._add_dw(source_group)
         self._variation_axes = get_variation_axes(type_code, config=config)
         if self._variation_axes:
             self._build_override_form(
@@ -4400,6 +4670,7 @@ class SidePanel(QGroupBox):
             if self._btn_inventor:
                 self._btn_inventor.setEnabled(False)
             self._detail_tabs.setTabText(1, "計算結果 ✗")
+            self._detail_tabs.setTabToolTip(1, str(msg))
             return
 
         html = (
@@ -4411,7 +4682,18 @@ class SidePanel(QGroupBox):
             'tr:nth-child(even) td { background: #F8FAFB; }'
             '.r { text-align: right; }'
             '.c { text-align: center; }'
+            '.readiness { padding: 6px 8px; border-radius: 5px; '
+            'font-weight: 600; margin: 4px 0 8px 0; }'
+            '.ready { color: #15803D; background: #E9F9EE; border: 1px solid #BBEFCB; }'
+            '.warn { color: #9A4D0A; background: #FFF7E6; border: 1px solid #F4D6B4; }'
             '</style>'
+        )
+        support_state = result_readiness(result)
+        readiness_class = "warn" if support_state.needs_attention else "ready"
+        html += (
+            f'<div class="readiness {readiness_class}">'
+            f'{html_lib.escape(support_state.compact_label)}'
+            '</div>'
         )
         html += (
             f'<p style="font-weight:bold; color:#333; margin-bottom:6px;">'
@@ -4421,7 +4703,7 @@ class SidePanel(QGroupBox):
             '<table><tr>'
             '<th>#</th><th>品名</th><th>公式 / 備註</th>'
             '<th>材質</th><th class="r">L(mm)</th>'
-            '<th class="c">數</th><th class="r">重(kg)</th>'
+            '<th class="c">數</th><th class="r">重(kg)</th><th>成熟度</th>'
             '</tr>'
         )
         for e in result.entries:
@@ -4429,26 +4711,52 @@ class SidePanel(QGroupBox):
                 (e.geometry.formula if e.geometry and e.geometry.formula else "")
                 or e.remark or "—"
             )
+            entry_state = entry_readiness(e)
+            density_text = (
+                f"{e.density_g_cm3:g} g/cm³"
+                if getattr(e, "density_g_cm3", 0)
+                else "密度不適用"
+            )
+            state_text = (
+                f"{entry_state.density_label}（{density_text}）<br>"
+                f"{entry_state.fabrication_label}"
+            )
+            state_color = "#9A4D0A" if entry_state.needs_attention else "#15803D"
             html += (
                 f'<tr>'
                 f'<td class="c">{e.item_no}</td>'
-                f'<td>{e.name}</td>'
-                f'<td style="font-family:Consolas; font-size:9pt;">{formula}</td>'
-                f'<td>{e.material}</td>'
+                f'<td>{html_lib.escape(str(e.name))}</td>'
+                f'<td style="font-family:Consolas; font-size:9pt;">'
+                f'{html_lib.escape(str(formula))}</td>'
+                f'<td>{html_lib.escape(str(e.material))}</td>'
                 f'<td class="r">{e.length:.0f}</td>'
                 f'<td class="c">{e.quantity}</td>'
                 f'<td class="r">{e.weight_output:.3f}</td>'
+                f'<td style="color:{state_color}; font-size:9pt;">{state_text}</td>'
                 f'</tr>'
             )
         html += '</table>'
+        if support_state.blockers:
+            html += (
+                '<p style="color:#9A4D0A; font-size:9pt; margin-top:7px;">'
+                '<b>加工待補：</b><br>'
+                + '<br>'.join(
+                    f'• {html_lib.escape(item)}' for item in support_state.blockers
+                )
+                + '</p>'
+            )
         if result.warnings:
             html += (
                 '<p style="color:#E65100; font-size:9pt; margin-top:6px;">⚠ '
-                + '<br>'.join(result.warnings)
+                + '<br>'.join(html_lib.escape(str(item)) for item in result.warnings)
                 + '</p>'
             )
         self._result_browser.setHtml(html)
-        self._detail_tabs.setTabText(1, "計算結果 ✓")
+        self._detail_tabs.setTabText(
+            1,
+            "計算結果 ⚠" if support_state.needs_attention else "計算結果 ✓",
+        )
+        self._detail_tabs.setTabToolTip(1, support_state.tooltip)
 
         # 計算成功後啟用 Inventor 匯出按鈕
         if self._btn_inventor:
@@ -4621,6 +4929,10 @@ class SidePanel(QGroupBox):
 
     def _collect_declared_overrides(self) -> dict:
         overrides = {}
+        if self._source_profile_combo is not None:
+            source_profile = self._source_profile_combo.currentData()
+            if source_profile:
+                overrides["__source_profile"] = source_profile
         for axis_name, axis in self._variation_axes.items():
             kind = axis.get("kind")
             widget = self._axis_widgets.get(axis_name)
@@ -4746,6 +5058,13 @@ class SidePanel(QGroupBox):
     def _on_field_changed(self):
         if self._building or self._idx < 0:
             return
+        if self.sender() is self._source_profile_combo:
+            effective_source_profile = (
+                self._source_profile_combo.currentData()
+                or self._project_source_profile
+            )
+            self._preview_source_profile = effective_source_profile
+            self._load_pdf_for_type(self._current_type_code)
         if self._variation_axes:
             overrides = self._collect_declared_overrides()
             self._overrides = overrides
@@ -4757,6 +5076,10 @@ class SidePanel(QGroupBox):
                 self.advanceRequested.emit(self._idx)
             return
         overrides = {}
+        if self._source_profile_combo is not None:
+            source_profile = self._source_profile_combo.currentData()
+            if source_profile:
+                overrides["__source_profile"] = source_profile
         if self._rb_tee is not None:
             overrides["connection"] = "tee" if self._rb_tee.isChecked() else "elbow"
         if self._mat_combo is not None:
@@ -4791,7 +5114,11 @@ class SidePanel(QGroupBox):
             mw = parent.parent()
             if hasattr(mw, "_project_rows") and self._idx < len(mw._project_rows):
                 row = mw._project_rows[self._idx]
-                self.show_item(self._idx, row.designation, {})
+                self.show_item(
+                    self._idx,
+                    row.designation,
+                    {"__source_profile": ""},
+                )
 
 
 # ══════════════════════════════════════════════════

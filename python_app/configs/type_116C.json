@@ -1,0 +1,22 @@
+{
+  "type_id": "116C",
+  "version": "1.1",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 C-62/C-63 與 cold-core/N-7/N-12/N-12A/N-13/N-28 複驗。2026-07-30 獨立稽核確認 FIG-B 已釋出 N-12 Clip Type 1、N-28 Wood Block-1、4-DIA22 孔、4 支 DIA3/4x120 A193 Gr.B8 stud bolts、每支 2 顆 A194 Gr.8A nuts，以及 C-21 polyurethane density 320 kg/m3 例外；現已接入 BOM/reference。FIG-A 維持 N-7/N-13；FIG-C 不誤接 vessel components。未知 supplier weight 與完整接合輪廓仍 blocked。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "python_app/assets/Type/116C.pdf",
+      "drawing_no": "C-62/C-63",
+      "drawing_standard": "DSP-500-006",
+      "revision": "0",
+      "figures": {
+        "A": {"sections": ["L75x75x9", "C100x50x5x7.5"], "references": ["N-13 CLIP TYPE 5", "N-7 SPECIAL U-BOLT SUB", "C-14 STEEL SHOE", "C-21/C-26/C-27 COLD SUPPORT"], "interface": "vessel clip"},
+        "B": {"sections": [], "references": ["N-12 CLIP TYPE 1", "N-12A NOTE 2 DIMENSION A", "N-28 WOOD BLOCK 1", "C-21 COLD SUPPORT", "C-63 A193 Gr.B8 STUD BOLTS / A194 Gr.8A NUTS"], "interface": "vessel clip"},
+        "C": {"sections": [], "references": ["C-21 COLD SUPPORT"], "interface": "existing surface"}
+      },
+      "cradle_length_reference": "C-21",
+      "cradle_dimension_reference": "C-26/C-27",
+      "weld_mm": 6
+    }
+  }
+}

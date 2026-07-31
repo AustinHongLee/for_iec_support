@@ -375,7 +375,30 @@ def _write_calc_reference_sheet(
     ws.row_dimensions[row].height = 24
     row += 1
 
-    for item, standard, desc in _STANDARDS_TABLE:
+    standards_rows = list(_STANDARDS_TABLE)
+    if export_context and export_context.get("source_profile_label"):
+        override_count = len(
+            export_context.get("source_override_rows") or []
+        )
+        routing = export_context.get("source_routing") or []
+        routing_text = "、".join(
+            f"{item['label']} {item['rows']}列"
+            for item in routing
+        )
+        standards_rows.insert(
+            0,
+            (
+                "本案 Type 圖面來源",
+                export_context["source_profile_label"],
+                (
+                    "專案先選來源後再計算；"
+                    + (f"實際分流：{routing_text}；" if routing_text else "")
+                    + f"另有 {override_count} 列使用明示的單列來源覆寫。"
+                ),
+            ),
+        )
+
+    for item, standard, desc in standards_rows:
         for col, val in enumerate([item, standard, desc], 1):
             cell = ws.cell(row=row, column=col, value=val)
             cell.border = styles["border"]
@@ -528,6 +551,48 @@ def _write_calc_reference_sheet(
                 cell.border = styles["border"]
                 cell.alignment = Alignment(
                     vertical="center", horizontal="left", wrap_text=True, indent=1
+                )
+            row += 1
+
+    issue_rows = (
+        list(export_context.get("issue_rows") or [])
+        if export_context
+        else []
+    )
+    if issue_rows:
+        row += 1
+        _section_header(ws, row, "本次匯出警示／高風險彙總", span_cols=6)
+        row += 1
+        headers = ["型號", "級別", "代碼", "說明", "BOM放行", "加工放行"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.fill = styles["subheader_fill"]
+            cell.font = styles["bold_font"]
+            cell.alignment = styles["center"]
+            cell.border = styles["border"]
+        row += 1
+        for issue in issue_rows:
+            values = [
+                issue.get("designation", ""),
+                "高風險" if issue.get("severity") == "high" else "一般警示",
+                issue.get("code", ""),
+                issue.get("message", ""),
+                "可" if issue.get("bom_allowed") else "待確認",
+                "可" if issue.get("fabrication_allowed") else "待確認",
+            ]
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(row=row, column=col, value=value)
+                cell.border = styles["border"]
+                cell.alignment = Alignment(
+                    vertical="center",
+                    horizontal="center" if col in (2, 5, 6) else "left",
+                    wrap_text=True,
+                    indent=1 if col in (1, 3, 4) else 0,
+                )
+            fill = "FCE4D6" if issue.get("severity") == "high" else "FFF2CC"
+            for col in range(1, 7):
+                ws.cell(row=row, column=col).fill = PatternFill(
+                    "solid", fgColor=fill
                 )
             row += 1
 

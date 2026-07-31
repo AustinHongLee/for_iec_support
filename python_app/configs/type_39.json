@@ -1,5 +1,13 @@
 {
   "type_id": "39",
+  "_version": "1.1.0",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐張核對三份D-45及M-34/M-35/M-36。幾何/公式共用；20E使用M20x50，CW/22A使用3/4x50。每片lug plate的K bolt數等於4孔或6孔。2026-07-31 起 H上限採有限外插分級；未表列member/figure仍硬停止；完整公英制 K bolt 直徑×長度列理論估重，供應商成品重量待確認。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {"drawing":"單張-本案有關/中威/TYPE-39_D-45.pdf","revision":"1","bolt_spec":"3/4\"x50"},
+    "ctci_22a_5123a": {"drawing":"單張-本案有關/中鼎/22A_5123A/TYPE-39_D-45.pdf","revision":"1","bolt_spec":"3/4\"x50"},
+    "ctci_20e4588": {"drawing":"單張-本案有關/中鼎/長春_Type/TYPE-39_D-45.pdf","revision":"1B","bolt_spec":"M20X50"}
+  },
   "source": "data/type39_table.py",
   "migrated": "2026-04-29",
   "TYPE39_FORMULAS": {

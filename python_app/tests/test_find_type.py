@@ -42,17 +42,17 @@ def test_locate_type_spec_engine():
 
     info = locate_type("57")
     assert info["handler"]["calculator"] == "python_app/core/types/type_57.py"
-    assert info["config"]["type_spec_engine"] == "table_parts_v1"
+    assert info["config"]["type_spec_engine"] is None
 
     info = locate_type("58")
 
     assert info["handler"]["supported"] is True
     assert info["handler"]["calculator"] == "python_app/core/types/type_58.py"
     assert info["config"]["exists"] is True
-    assert info["config"]["type_spec_engine"] == "table_parts_v1"
+    assert info["config"]["type_spec_engine"] is None
 
     info = locate_type("60")
-    assert info["config"]["type_spec_engine"] == "table_plate_v1"
+    assert info["config"]["type_spec_engine"] is None
 
 
 def test_locate_storage_alias_type():

@@ -1,0 +1,18 @@
+{
+  "company": "Chang Chun owner standard",
+  "code": "PU5",
+  "name": "托撐管架 PU5",
+  "drawing": "DES-M15172 / PU5",
+  "source_file": "單張-本案有關/長春/PU5.pdf",
+  "revision": "05.02'08",
+  "ubolt_source_drawing": "M-26",
+  "ubolt_source_file": "單張-本案有關/中威/U-BOLT_M-26.pdf",
+  "ubolt_source_revision": "1",
+  "fix_hardware": {
+    "B": {"name": "螺栓連帽含墊圈", "spec": "M12x50L W./WASHER", "material": "A307-B 鍍鋅", "role": "machine_bolt"},
+    "E": {"name": "擴展螺栓", "spec": "EB2-M12-70L", "material": "", "role": "expansion_bolt"}
+  },
+  "version": "1.2",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "依DES-M15172 PU5重建；EB2固定為M12-70L，與益高M12x110L分流。2026-07-31確認專案清單會以1.1/2B等NB寫法替代原圖1.1/2吋標示；解析器接受尾碼B作為管徑單位。依本案使用者確認，PU5所列UB1以中威M-26尺寸展開，U-bolt鋼棒算幾何重量、四只螺帽與固定螺栓列可追溯理論估重；供應商成品重量仍待確認。"
+}

@@ -7,10 +7,12 @@
 成員長度來源(len)：H / L / H1 / H2 / sumL(所有□L相加, 用於 SS34 兩側懸挑) / 固定整數。
 逐桿分列規則見 [[feedback-cutting-members]]。資料來源：各 ss*.json（依各圖普查/轉錄）。
 """
+import math
+
 from core.models import AnalysisResult, set_remark
 from core.steel import add_steel_section_entry
 from core.plate import add_plate_entry
-from core.bolt import add_custom_entry
+from core.bolt import add_custom_entry, add_estimated_fastener_entry
 from .. import ubolt as _ubolt
 from .. import plating as _plating
 
@@ -37,6 +39,15 @@ def _add_member(result, stype, sdim, length, qty, mat, config):
 def _length(lv, parsed):
     if isinstance(lv, int):
         return lv
+    if isinstance(lv, dict) and lv.get("formula") == "diagonal":
+        base = parsed.get(lv.get("base", "L"))
+        if base is None:
+            return None
+        run = base - lv.get("end_offset", 0)
+        angle = lv.get("angle_deg", 0)
+        if run <= 0 or not 0 < angle < 90:
+            return None
+        return round(run / math.cos(math.radians(angle)))
     if lv == "sumL":
         return sum(parsed.get("L_list") or []) or None
     return {"H": parsed.get("H"), "L": parsed.get("L"),
@@ -143,13 +154,27 @@ def calculate(parsed, config, overrides=None):
         if fixm == "B" and config.get("nut_bolt"):
             nb = config["nut_bolt"]
             spec = sb.get(str(serial), {}).get("B") if nb.get("spec") == "serial" else nb["spec"]
-            add_custom_entry(result, "螺栓連帽", spec, "A307-B 鍍鋅", nb.get("qty", 4), 0.0,
-                             unit="SET", remark=f"適用 {code}B, ×{nb.get('qty',4)} (重量另計)", category="螺栓類")
+            add_estimated_fastener_entry(
+                result,
+                name="螺栓連帽",
+                spec=spec,
+                material="A307-B 鍍鋅",
+                quantity=nb.get("qty", 4),
+                unit="SET",
+                remark=f"適用 {code}B, ×{nb.get('qty',4)}",
+            )
         elif fixm == "E" and config.get("exp_bolt"):
             eb = config["exp_bolt"]
             spec = sb.get(str(serial), {}).get("E") if eb.get("spec") == "serial" else eb["spec"]
-            add_custom_entry(result, "擴展螺栓", spec, "碳鋼(鍍鋅)", eb.get("qty", 4), 0.0,
-                             unit="SET", remark=f"適用 {code}E, ×{eb.get('qty',4)} (重量另計)", category="螺栓類")
+            add_estimated_fastener_entry(
+                result,
+                name="擴展螺栓",
+                spec=spec,
+                material="碳鋼(鍍鋅)",
+                quantity=eb.get("qty", 4),
+                unit="SET",
+                remark=f"適用 {code}E, ×{eb.get('qty',4)}",
+            )
     else:
         result.warnings.append(f"{code}{'' if config.get('always_welded') else fixm} 焊接固定：不含底板與螺栓")
 

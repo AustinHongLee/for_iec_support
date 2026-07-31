@@ -1,7 +1,14 @@
 {
   "type_id": "64",
-  "source": "data/type64_table.py",
-  "migrated": "2026-04-29",
+  "version": "2.0",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依 D-78 重抄 E/G 表：移除不存在的 1-1/4 列，補 3-1/2 列，修正 1/2 與 3-1/2 僅 FIG-B/C、4~12 吋 rod size；H 不再誤作 M-22 cut length，M-4/M-6 未有來源單重時歸零。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "TYPE-64_D-78.pdf",
+      "revision": "1"
+    }
+  },
   "TYPE64_FIGURE_MAP": {
     "A": {
       "upper_clamp": "M-6 TYPE-C",
@@ -23,59 +30,59 @@
   "TYPE64_ROD_TABLE": {
     "1/2\"": {
       "g": "3/8\"",
-      "fig_bc_only": false
+      "fig_bc_only": true
     },
     "3/4\"": {
       "g": "3/8\"",
       "fig_bc_only": false
     },
     "1\"": {
-      "g": "1/2\"",
-      "fig_bc_only": false
-    },
-    "1 1/4\"": {
-      "g": "1/2\"",
+      "g": "3/8\"",
       "fig_bc_only": false
     },
     "1 1/2\"": {
-      "g": "1/2\"",
+      "g": "3/8\"",
       "fig_bc_only": false
     },
     "2\"": {
-      "g": "5/8\"",
+      "g": "3/8\"",
       "fig_bc_only": false
     },
     "2 1/2\"": {
-      "g": "5/8\"",
+      "g": "1/2\"",
       "fig_bc_only": false
     },
     "3\"": {
+      "g": "1/2\"",
+      "fig_bc_only": false
+    },
+    "3 1/2\"": {
+      "g": "1/2\"",
+      "fig_bc_only": true
+    },
+    "4\"": {
       "g": "5/8\"",
       "fig_bc_only": false
     },
-    "4\"": {
-      "g": "3/4\"",
-      "fig_bc_only": false
-    },
     "5\"": {
-      "g": "3/4\"",
-      "fig_bc_only": true
+      "g": "5/8\"",
+      "fig_bc_only": false
     },
     "6\"": {
       "g": "3/4\"",
-      "fig_bc_only": true
+      "fig_bc_only": false
     },
     "8\"": {
       "g": "7/8\"",
-      "fig_bc_only": true
+      "fig_bc_only": false
     },
     "10\"": {
-      "g": "1\"",
-      "fig_bc_only": true
+      "g": "7/8\"",
+      "fig_bc_only": false
     },
     "12\"": {
-      "g": "1\"",
-      "fig_bc_only": true
+      "g": "7/8\"",
+      "fig_bc_only": false
     }
   }
 }

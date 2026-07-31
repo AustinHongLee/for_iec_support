@@ -1,0 +1,27 @@
+{
+  "type_id": "05",
+  "version": "2.0",
+  "source": "單張-本案有關/中威/TYPE-05_D-5.pdf",
+  "data_updated_at": "2026-07-31",
+  "data_update_note": "逐圖重驗中威 D-5。確認垂直切長 H-15、水平段 130、D-68 U-bolt 不供應。2026-07-31 起 H 上限採有限外插分級；D-5未列但同來源M-42已定義者列高風險暫算。Member與來源仍硬限制。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "drawing": "單張-本案有關/中威/TYPE-05_D-5.pdf",
+      "revision": "1",
+      "m42_drawing": "單張-本案有關/中威/LOWER-COMPONENT-OF-BASE-SUPPORT_M-42.pdf / M-43.pdf"
+    }
+  },
+  "constraints": {
+    "H_max_mm": 1500,
+    "members": ["L50", "L65", "L75"],
+    "allowed_m42": ["D", "L", "P", "R"]
+  },
+  "fabrication_contract": {
+    "vertical_formula": "H - 15",
+    "top_offset_mm": 15,
+    "horizontal_cut_length_mm": 130,
+    "weld_mm": 6,
+    "u_bolt_reference": "D-68",
+    "u_bolt_furnished": false
+  }
+}

@@ -3,8 +3,8 @@
  "kind": "fs",
  "engine": "fs_pipe",
  "material": "A36",
- "version": "1.1",
- "data_updated_at": "2026-07-21",
+ "version": "1.2",
+ "data_updated_at": "2026-07-27",
  "code": "FS31",
  "name": "保冷配管支撐 COLD SUPPORT",
  "structure": "保冷 stanchion(鋼管立柱+間隔板+夾塊N,2\"~16\")",
@@ -258,6 +258,15 @@
   "Hmax": 1500,
   "applicable": "2\"~16\" 保冷,-9~-254°C"
  },
+ "validation": {
+  "required": ["fix", "pipe", "H"],
+  "allowed": ["fix", "pipe", "H", "H1"],
+  "fixes": ["A", "B", "E", "N", "W"],
+  "pipe": {"min": 2, "max": 16},
+  "dimensions": {
+   "H": {"max": 1500}
+  }
+ },
  "extra_warnings": [
   "stud bolt 材質 A193 Gr.B8(配 A194 Gr.8A 螺帽);間隔板C×D×E厚,4-∅G孔;夾塊幾何另詳(數量N已列)"
  ],
@@ -265,5 +274,5 @@
   "pattern": "FS31{A/B/E/N/W}-□\"-□H-□H1",
   "example": "FS31E-4\"-800H-300H1"
  },
- "data_update_note": "v1.1 使用者補入 FS31 尺寸表(第2頁):支撐管徑/間隔板CDE/底板/螺栓/stud J/夾塊N 全列;正式可用"
+ "data_update_note": "v1.2 依FS31圖面嚴格限制2~16吋、H≤1500，拒絕無數值H1等多餘/畸形欄位。v1.1 使用者補入 FS31 尺寸表(第2頁):支撐管徑/間隔板CDE/底板/螺栓/stud J/夾塊N 全列;正式可用"
 }

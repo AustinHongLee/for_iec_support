@@ -1,111 +1,133 @@
-"""
-Type 72 calculator — Strap support (D-87).
-
-Designation:
-    72-{line_size}B
-
-Example:
-    72-2B
-
-The drawing references M-54 STRAP FIG.2, which is table-backed by
-`data.m54_table`.
-"""
+"""Type 72 M-54 Fig.2 strap support — D-87."""
 from __future__ import annotations
 
 from ..bolt import add_custom_entry
-from ..models import AnalysisResult
+from ..config_loader import load_config
+from ..models import AnalysisResult, HolePattern, set_remark
 from ..parser import get_lookup_value, get_part
-from ..truth import apply_truth_contract, make_evidence, validate_named_invariants
+from ..source_profiles import normalize_source_profile
+from ..truth import make_evidence
 from data.m45_table import get_m45_by_type
 from data.m54_table import build_m54_item
 from data.type72_table import get_type72_data
 
 
-def calculate(fullstring: str) -> AnalysisResult:
+def calculate(
+    fullstring: str,
+    overrides: dict | None = None,
+    source_profile: str | None = None,
+) -> AnalysisResult:
     result = AnalysisResult(fullstring=fullstring)
+    overrides = overrides or {}
+    config = load_config("72", strict=True)
+    profile_id = normalize_source_profile(source_profile)
+    profile = config["source_profiles"].get(profile_id)
+    if not profile:
+        result.error = f"Type 72: 尚未建立來源 profile {profile_id}"
+        return result
 
     part2 = get_part(fullstring, 2)
     if not part2:
-        result.error = "格式錯誤，應為 72-{line_size}B，例如 72-2B"
+        result.error = "Type 72 格式應為 72-{line_size}B"
         return result
-
     line_size = get_lookup_value(part2)
     row = get_type72_data(line_size)
-    if not row:
-        result.error = f"Type 72: 管徑 {part2} ({line_size:g}\") 不在範圍 3/4\"~4\""
+    strap = build_m54_item(line_size, fig_no=2)
+    if not row or not strap:
+        result.error = f'Type 72: D-87/M-54 未表列 {line_size:g}"；範圍 3/4"~4"'
         return result
 
-    strap = build_m54_item(line_size, fig_no=2)
+    strap_blocker = (
+        "M-54 的 B 是成形後外側跨距，不是已證實的平板展開長；"
+        "缺 bend allowance/展開基準，舊版 B×C×T 重量已停用"
+    )
     add_custom_entry(
         result,
         "STRAP",
-        strap["spec"] if strap else f"M-54 FIG.2, {row['line_size']}, B={row['B']} C={row['C']} T={row['T']}",
-        strap["material"] if strap else "Carbon Steel",
+        strap["spec"],
+        strap["material"],
         1,
-        strap["unit_weight_kg"] if strap else 0.0,
+        0,
         "PC",
-        remark="SEE M-54; weight calculated from M-54 BxCxT minus Fig.2 holes",
+        remark=strap_blocker,
         category="鋼板類",
+        item_class="reference_only",
+        manufacturing_type="shaped_plate",
     )
-    if not strap:
-        result.warnings.append("M-54 table lookup failed；Type 72 STRAP 重量無法精算")
+    strap_entry = result.entries[-1]
+    strap_entry.geometry.component_id = "D87-M54-FIG2-STRAP"
+    strap_entry.geometry.source_drawing = "TYPE-72_D-87.pdf / STRAP_M-54.pdf"
+    strap_entry.geometry.source_revision = profile["revision"]
+    strap_entry.geometry.shape_kind = "formed_pipe_strap"
+    strap_entry.geometry.shape_spec = (
+        f'M-54 FIG.2; A={row["A"]}; B={row["B"]}; C={row["C"]}; '
+        f'T={row["T"]}; H={row["H"]}; R={row["R"]}; D={row["D"]}'
+    )
+    strap_entry.geometry.holes = HolePattern(
+        pattern="single",
+        diameter=11,
+        count=2,
+        fastener_spec='EB-3/8"',
+    )
+    strap_entry.geometry.parameters = {
+        **row,
+        "figure": 2,
+        "hole_count": 2,
+        "hole_diameter_mm": 11,
+    }
+    strap_entry.geometry.fabrication_ready = False
+    strap_entry.geometry.fabrication_blockers = [strap_blocker]
+    set_remark(strap_entry, strap_blocker)
 
-    eb = get_m45_by_type("EB-3/8")
+    bolt = get_m45_by_type("EB-3/8")
+    bolt_blocker = (
+        "D-87/M-45 定義 EB-3/8 規格與鑽孔資料，但未給材料與單重；"
+        "移除舊版每組 1 kg placeholder"
+    )
     add_custom_entry(
         result,
         "EXP. BOLT",
-        eb["type"] if eb else 'EB-3/8"',
-        "SUS304",
+        bolt["type"] if bolt else "EB-3/8",
+        str(overrides.get("expansion_bolt_material") or "MATERIAL TBD"),
         2,
-        1.0,
+        0,
         "SET",
-        remark='2-phi11 holes; for EB-3/8" EXP. BOLT (M-45); weight estimated at 1.0 kg/SET, M-45 has no weight column',
+        remark=bolt_blocker,
+        manufacturing_type="purchased",
     )
-    if not eb:
-        result.warnings.append("M-45 table 找不到 EB-3/8，expansion bolt 以預設 1kg/SET 估算")
+    bolt_entry = result.entries[-1]
+    bolt_entry.geometry.component_id = "D87-M45-EXPANSION-BOLTS"
+    bolt_entry.geometry.source_drawing = "TYPE-72_D-87.pdf / M-45"
+    bolt_entry.geometry.source_revision = profile["revision"]
+    bolt_entry.geometry.shape_kind = "purchased_expansion_bolt"
+    bolt_entry.geometry.parameters = {
+        "designation": "EB-3/8",
+        "quantity": 2,
+        "hole_diameter_mm": 11,
+        **(bolt or {}),
+    }
+    bolt_entry.geometry.fabrication_ready = False
+    bolt_entry.geometry.fabrication_blockers = [bolt_blocker]
+    set_remark(bolt_entry, bolt_blocker)
 
-    invariant_errors = validate_named_invariants(
-        {"hole_count": 2, "bolt_count": 2, "plate_thickness": row["T"]},
-        {
-            "bolt_count_at_least_2": lambda x: x["bolt_count"] >= 2,
-            "hole_count_matches_bolt_count": lambda x: x["hole_count"] == x["bolt_count"],
-            "plate_thickness_positive": lambda x: x["plate_thickness"] > 0,
-        },
+    blockers = [strap_blocker, bolt_blocker]
+    result.warnings.extend(blockers)
+    result.meta["fabrication"] = {
+        "source_profile": profile_id,
+        "source_drawing": profile["drawing"],
+        "source_revision": profile["revision"],
+        "bom_ready": False,
+        "fabrication_ready": False,
+        "blockers": blockers,
+        "assembly_dimensions": {"line_size_in": line_size, **row},
+    }
+    result.evidence.append(
+        make_evidence(
+            "type72_d87_m54_dimensions",
+            result.meta["fabrication"]["assembly_dimensions"],
+            "visual_transcription",
+            source="TYPE-72_D-87.pdf / STRAP_M-54.pdf",
+            confidence=0.99,
+        )
     )
-    return apply_truth_contract(
-        result,
-        type_id="72",
-        evidence=[
-            make_evidence(
-                "strap_dimensions",
-                {"line_size": row["line_size"], "B": row["B"], "C": row["C"], "T": row["T"]},
-                "visual_transcription",
-                source="pdf_visual",
-                page=1,
-                note_ref="STRAP FIG.2 SEE M-54",
-                confidence=0.78,
-                note="M-54 table came from rendered vector-PDF visual transcription",
-            ),
-            make_evidence(
-                "strap_weight",
-                strap["unit_weight_kg"] if strap else None,
-                "formula",
-                source="formula",
-                page=1,
-                note_ref="2-phi11 bolt holes",
-                confidence=0.74,
-                note="Calculated from M-54 B*C*T minus Fig.2 holes; source dimensions still visual-transcribed",
-            ),
-            make_evidence(
-                "expansion_bolt",
-                "EB-3/8 x2",
-                "standard_table" if eb else "assumption",
-                source="standard_table" if eb else "missing_component_table",
-                page=1,
-                note_ref='FOR EB-3/8" EXP. BOLT (M-45)',
-                confidence=0.86 if eb else 0.45,
-            ),
-        ],
-        invariant_errors=invariant_errors,
-        review_reasons=["M-54 / Type 72 dimensions are visual-transcribed; reviewer spot-check required"],
-    )
+    return result

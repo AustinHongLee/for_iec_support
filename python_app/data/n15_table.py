@@ -1,16 +1,15 @@
-"""N-15 U-Band metadata table."""
-from .component_metadata_registry import build_metadata_component, clone_metadata_component
+"""N-15 U-band compatibility exports."""
 
-
-N15_TABLE = build_metadata_component(
-    component_id="N-15",
-    name_en="U-BAND.1",
-    category="component_cold",
-    pdf_file="N-15-U-BAND.1.pdf",
-    summary="Metadata-only intake entry for N-15 cold-service U-band.",
-    notes=["U-band dimensions require PDF visual transcription."],
+from .cold_interface_tables import (
+    N15_COMPONENT_INFO,
+    N15_TABLE,
+    get_n15_by_cradle,
+    get_n15_component,
 )
 
-
-def get_n15_component() -> dict:
-    return clone_metadata_component(N15_TABLE)
+__all__ = [
+    "N15_COMPONENT_INFO",
+    "N15_TABLE",
+    "get_n15_by_cradle",
+    "get_n15_component",
+]

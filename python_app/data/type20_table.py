@@ -25,8 +25,8 @@ with open(_JSON_PATH, encoding="utf-8") as _f:
 
 # MEMBER_H_MAX
 MEMBER_H_MAX = {
-    (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
-    for k, v in _DATA["MEMBER_H_MAX"].items()
+    key: value["H_MAX"]
+    for key, value in _DATA["CW_MEMBER_TABLE"].items()
 }
 
 # Z_TABLE
@@ -34,4 +34,3 @@ Z_TABLE = {
     (int(k) if isinstance(k, str) and k.lstrip("-").isdigit() else k): v
     for k, v in _DATA["Z_TABLE"].items()
 }
-

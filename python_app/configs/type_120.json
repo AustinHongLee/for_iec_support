@@ -1,0 +1,31 @@
+{
+  "type_id": "120",
+  "version": "1.2",
+  "data_updated_at": "2026-07-30",
+  "data_update_note": "依中威 D-133/D-134 與 M-57/M-58/M-59 建立 non-ferrous anchor support。2026-07-30 獨立稽核複驗確認 M-58 的 B 是兩腳內淨距，1~8 吋 U-bolt 展開修正為 pi*(B+rod dia)/2+2E。第二輪複驗確認 M-57 的兩片 saddle/兩片 lining/四片 lug/兩組 bolt joint，並改用 D-134 自己的 collar bolt J 表（不可沿用 M-57）；D-134 未釋出的 collar/bolt grade 不再猜成 A36/SS400。D-133 的 M-57 CUT 3MM FOR WELD、M-59 CUT TO SUIT 及 collar/pour-shoulder 完整輪廓未建立前不產生假 finished weight/cutting blank。",
+  "source_profiles": {
+    "cw_e25_24_hp6": {
+      "geometry_drawing": "TYPE-120_D-133.pdf",
+      "detail_drawing": "TYPE-120_D-134.pdf",
+      "revision": "1",
+      "allowed_sizes": [1, 1.5, 2, 2.5, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 32],
+      "collar_bolt_groups": [
+        {"max_size_in": 4, "spec": "1/4in x 40mm"},
+        {"max_size_in": 8, "spec": "3/8in x 50mm"},
+        {"max_size_in": 16, "spec": "1/2in x 60mm"},
+        {"max_size_in": 24, "spec": "5/8in x 80mm"},
+        {"max_size_in": 32, "spec": "3/4in x 90mm"}
+      ],
+      "small_rows": {
+        "1": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "1.5": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "2": {"B": 50, "D": 8, "L": 15, "u_bolt_dia_mm": 6},
+        "2.5": {"B": 50, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "3": {"B": 50, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "4": {"B": 65, "D": 11, "L": 20, "u_bolt_dia_mm": 10},
+        "6": {"B": 65, "D": 14, "L": 25, "u_bolt_dia_mm": 13},
+        "8": {"B": 65, "D": 14, "L": 25, "u_bolt_dia_mm": 13}
+      }
+    }
+  }
+}

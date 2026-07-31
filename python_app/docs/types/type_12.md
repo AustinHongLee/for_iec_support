@@ -1,55 +1,45 @@
 # Type 12 — 焊接式雙板夾持支撐
 
-| 項目 | 內容 |
-|------|------|
-| 中文名稱 | 焊接式雙板夾持支撐 |
-| 英文名稱 | Rigid Welded Dummy Pipe Support with Plate Reinforcement |
-| 圖號 | TYPE-12 |
-| 適用範圍 | 2~16 |
-| PDF | `12.pdf` |
-| 狀態 | ✅ 已分析 |
+H 圖示上限採有限外插分級；缺中威以外的來源圖、格式錯誤或過度外插仍停止。
 
----
+目前只開放中威 E25-24 D-12；22A_5123A 與 20E4588 都沒有 Type 12，
+選到這兩個來源時會停算。
 
-## 系統本質
-
-Supporting pipe + Plate P + Cover plate 組焊剛性支撐頭，板材材料可加尾碼 (A)合金/(S)不鏽鋼
-
-以 supporting pipe B 承接主管，再透過 Plate P + 6t Cover Plate 組焊固定的剛性支撐。Designation 依板材材料附加 (A)/(S) 符號。M42 底座類型 A/B/E/G 時 H 從地坪最低點起算。
-
----
-
-## 編碼格式
+## 編碼
 
 ```text
-12-{A}-{H}{M42}  或  12-{A}-{H}{M42}(A)/(S)  例: 12-6B-05B, 12-6B-05B(A)
+12-{A}B-{HH}{M42}
+12-{A}B-{HH}{M42}(A)
+12-{A}B-{HH}{M42}(S)
 ```
 
----
+NOTE 4 的板材類別為：
 
-## 核心運算邏輯
+- 無尾碼：CARBON STEEL
+- `(A)`：ALLOY STEEL
+- `(S)`：STAINLESS STEEL
 
-```text
-查表取 pipe_size_b/pipe_sch/plate 尺寸 → Support Pipe(H-100, A53Gr.B) + Plate P(材料依尾碼) + Cover Plate(75×75×6t) + M42
-```
+圖面只指定類別，沒有牌號。系統不再把 stainless 自動當成 SUS304，也不把
+carbon steel 自動當成 A36；最終 BOM 應以 `plate_material` 列覆寫確認牌號。
 
----
+## 已核對的 BOM 與幾何
 
-## 設計重點
+- 管徑表：2"~16"，H 必須 `≤1500 mm`。
+- Supporting Pipe B：依表取管徑／schedule；D-12 NOTE 3 明定現場切割，
+  未提供 `support_pipe_cut_length_mm` 時不計長度與重量。
+- Plate P：依表取 P 尺寸，數量 2 EA，兩片夾板的管中心距為 C。
+- Cover Plate：75×75×6t，1 EA。
+- 組焊：6 mm fillet weld。
+- 底部：依 M-42 字母建立來源別 lower component；A/B/E/G 的 H 從最低鋪面
+  高程起算。
 
-- 與 `M-42` 下部構件有關，最終組成會受到末段字母或允許型別限制。
+## 加工圖狀態
 
----
+Plate P、Cover Plate 與 M-42 已有 component ID、來源／版次、外形、數量及
+焊道參數。整體仍是 fabrication-partial：
 
-## 與相近 Type 的關係
+- Supporting Pipe B 的實際切長須由現場提供。
+- 圖面標了 Ø6 weep hole，但沒有孔中心離底板尺寸。
+- 板材只有 carbon/alloy/stainless 類別，尚缺實際牌號。
 
-| 類別 | 型式 | 說明 |
-|------|------|------|
-| Dummy Pipe 家族 | 01 / 07 / 09 / 10 / 11 / 12 / 13 / 16 | 共通點是從主管引出支撐腿，再決定底部承載或限制方式。 |
-
----
-
-## 備註
-
-- 本文件先依現有 `calculator`、`type_catalog.json` 與圖面可辨識資訊整理。
-- 若後續需要進一步資料化，可再補 `幾何參數表`、`BOM 結構表`、`PDF note 摘要` 與 `限制條件矩陣`。
+舊計算的 `H-100` supporting-pipe 公式沒有 D-12 尺寸依據，已移除。
